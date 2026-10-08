@@ -1,5 +1,6 @@
 """Deterministic, dependency-free betting math. Decimal odds and probabilities are not predictions."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
+from fractions import Fraction
 
 def implied_probability(american_odds: int) -> Decimal:
     """Return bookmaker implied probability for valid American odds."""
@@ -12,11 +13,23 @@ def no_vig_probabilities(american_odds: list[int]) -> list[Decimal]:
     """Proportional removal of overround for all mutually exclusive, exhaustive outcomes."""
     if len(american_odds) < 2:
         raise ValueError("At least two outcomes required")
-    probabilities = [implied_probability(o) for o in american_odds]
-    total = sum(probabilities)
+    # Normalize exact rational implied probabilities before converting to Decimal.
+    # Converting each implied probability first can cause symmetric markets (-110/-110)
+    # to round to 0.4999999999 rather than exactly 0.5.
+    weights = []
+    for odds in american_odds:
+        implied_probability(odds)  # Validate odds and reject bool/invalid integers.
+        if odds > 0:
+            weights.append(Fraction(100, odds + 100))
+        else:
+            weights.append(Fraction(-odds, -odds + 100))
+    total = sum(weights)
     if total <= 0:
         raise ValueError("Invalid market probabilities")
-    return [p / total for p in probabilities]
+    result = [Decimal((weight / total).numerator) / Decimal((weight / total).denominator) for weight in weights[:-1]]
+    # Preserve an exactly normalized total of 1 within Decimal's precision.
+    result.append(Decimal(1) - sum(result))
+    return result
 
 def net_profit(stake: Decimal, american_odds: int, outcome: str) -> Decimal:
     """Paper bet profit, excluding original stake; push and void return zero."""

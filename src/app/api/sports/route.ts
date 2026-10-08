@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
 const SPORTS: Record<string, string> = {
   nfl: "americanfootball_nfl", nba: "basketball_nba", mlb: "baseball_mlb",
   nhl: "icehockey_nhl", ncaaf: "americanfootball_ncaaf", ncaab: "basketball_ncaab",
