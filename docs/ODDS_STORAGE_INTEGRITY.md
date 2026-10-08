@@ -1,5 +1,7 @@
 # Odds snapshot uniqueness — database milestone
 
+> **Status update (2026-10-08):** The historical notes below describe the state when the database constraint was first applied. The collector now uses an atomic `ON CONFLICT DO NOTHING` write path, with insert counts from `return=representation`, after verification on its development branch. Supabase Production credentials are configured, but `SPORTSEDGE_INGEST_TOKEN` and a real ingestion smoke test are still pending. See [Atomic Odds Writes](./ATOMIC_ODDS_WRITES.md).
+
 ## Existing architecture inspected
 On 2026-10-08, SportsEdge's Supabase PostgreSQL 17.11 database contained 9 seeded sports and **zero** leagues, teams, games or odds snapshots. `games`, `leagues`, and `teams` already had provider-identity uniqueness. `odds_snapshots` previously had a primary key and a nonunique timeline index, but no logical capture deduplication.
 
