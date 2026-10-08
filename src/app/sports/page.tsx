@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 const SPORTS = [
   ["nfl","NFL"],["nba","NBA"],["mlb","MLB"],["nhl","NHL"],["soccer","Soccer"],
@@ -22,7 +23,7 @@ export default function SportsPage() {
   return (
     <main className="min-h-screen bg-[#101512] text-[#e9e9e2]">
       <div className="mx-auto max-w-6xl px-6 py-12 md:px-12">
-        <a href="/" className="text-xl font-semibold tracking-[-.06em]">sports<span className="text-[#c9df9a]">edge</span></a>
+        <Link href="/" className="text-xl font-semibold tracking-[-.06em]">sports<span className="text-[#c9df9a]">edge</span></Link>
         <div className="mt-14 border-b border-[#303b33] pb-10">
           <p className="font-mono text-xs uppercase tracking-[.2em] text-[#c9df9a]">Research / Sports AI</p>
           <h1 className="mt-5 text-5xl font-medium tracking-[-.07em] md:text-7xl">The sports desk.</h1>
