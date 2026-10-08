@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, readSportsConnection } from "@/lib/server/supabase-admin";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(request: Request) {
   // Keep privileged health checks inaccessible to anonymous internet visitors.
   const token = process.env.SPORTSEDGE_HEALTH_TOKEN;
