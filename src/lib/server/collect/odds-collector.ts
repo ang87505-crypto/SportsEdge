@@ -142,7 +142,7 @@ async function fetchMarket(track: Track, oddsApiKey: string, fetcher: Fetcher, t
 
 async function storeTrack(
   config: DbConfig, track: Track, games: NormalizedGame[], fetcher: Fetcher,
-): Promise<{ gamesSaved: number; oddsSaved: number }> {
+): Promise<{ gamesProcessed: number; oddsInserted: number }> {
   const definition = TRACKS[track];
   const leagueId = await upsertId(config, "leagues", {
     sport_code: definition.sportCode, provider: PROVIDER,
@@ -160,7 +160,7 @@ async function storeTrack(
     return id;
   }
 
-  let oddsSaved = 0;
+  let oddsInserted = 0;
   for (const game of games) {
     // Upsert game identity; do not alter any stored final scores.
     const homeId = await team(game.home);
@@ -185,10 +185,10 @@ async function storeTrack(
           returnRows: true,
         },
       );
-      oddsSaved += inserted.length;
+      oddsInserted += inserted.length;
     }
   }
-  return { gamesSaved: games.length, oddsSaved };
+  return { gamesProcessed: games.length, oddsInserted };
 }
 
 /**
