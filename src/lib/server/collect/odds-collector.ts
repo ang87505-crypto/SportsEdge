@@ -54,11 +54,15 @@ async function postRows<T>(
   const query = new URLSearchParams();
   if (options?.onConflict) query.set("on_conflict", options.onConflict);
   if (options?.returnRows) query.set("select", "id");
+  const preference = [
+    options?.ignoreDuplicates ? "resolution=ignore-duplicates" :
+      options?.onConflict ? "resolution=merge-duplicates" : null,
+    "missing=default",
+    options?.returnRows ? "return=representation" : "return=minimal",
+  ].filter(Boolean).join(",");
   const response = await fetcher(
     `${config.base}/rest/v1/${table}${query.size ? "?" + query : ""}`, {
-      method: "POST", headers: dbHeaders(config, {
-        Prefer: `${options?.ignoreDuplicates ? "resolution=ignore-duplicates" : options?.onConflict ? "resolution=merge-duplicates" : "return=minimal"}, ${options?.returnRows ? "return=representation" : "return=minimal"}`,
-      }),
+      method: "POST", headers: dbHeaders(config, { Prefer: preference }),
       body: JSON.stringify(rows), cache: "no-store",
       signal: AbortSignal.timeout(12_000),
     },
@@ -79,13 +83,38 @@ function rowId(raw: unknown): number {
 }
 
 async function upsertId(
-  config: DbConfig, table: "leagues" | "teams" | "games",
+  config: DbConfig, table: "leagues" | "teams",
   value: object, conflict: string, fetcher: Fetcher,
 ): Promise<number> {
   const rows = await postRows(config, table, [value], fetcher,
     { onConflict: conflict, returnRows: true });
   if (rows.length !== 1) throw new Error(`Expected exactly one ${table} row`);
   return rowId(rows[0]);
+}
+
+async function getOrCreateGame(
+  config: DbConfig, value: {
+    league_id: number; provider: string; provider_event_id: string;
+    home_team_id: number; away_team_id: number; starts_at: string; status: "scheduled";
+  }, fetcher: Fetcher,
+): Promise<number> {
+  const query = new URLSearchParams({
+    select: "id", provider: `eq.${value.provider}`,
+    provider_event_id: `eq.${value.provider_event_id}`, limit: "1",
+  });
+  const path = `games?${query}`;
+  const existing = await getRows<{ id: number | string }>(config, path, fetcher);
+  if (existing.length) return rowId(existing[0]);
+  // On conflict DO NOTHING; do NOT upsert "scheduled" over previously final games.
+  const inserted = await postRows<{ id: number | string }>(
+    config, "games", [value], fetcher,
+    { onConflict: "provider,provider_event_id", ignoreDuplicates: true, returnRows: true },
+  );
+  if (inserted.length === 1) return rowId(inserted[0]);
+  // A concurrent writer may have inserted the game first.
+  const found = await getRows<{ id: number | string }>(config, path, fetcher);
+  if (found.length !== 1) throw new Error("Could not resolve stored game identity");
+  return rowId(found[0]);
 }
 
 type StoredOdds = {
@@ -182,12 +211,12 @@ async function storeTrack(
     // Upsert game identity; do not alter any stored final scores.
     const homeId = await team(game.home);
     const awayId = await team(game.away);
-    const gameId = await upsertId(config, "games", {
+    const gameId = await getOrCreateGame(config, {
       league_id: leagueId, provider: PROVIDER,
       provider_event_id: game.providerEventId,
       home_team_id: homeId, away_team_id: awayId,
-      starts_at: game.startsAt,
-    }, "provider,provider_event_id", fetcher);
+      starts_at: game.startsAt, status: "scheduled",
+    }, fetcher);
     if (game.prices.length === 0) continue;
 
     const existing = await existingKeys(config, gameId, game.providerEventId, fetcher);
