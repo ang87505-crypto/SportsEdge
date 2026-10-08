@@ -1,5 +1,7 @@
 # SportsEdge — Dual-track secure odds collector (Milestone 1)
 
+> **Status update (2026-10-08):** Milestone 1 below is preserved as an historical implementation record. Since then, the `odds_snapshot_dedupe_v1` database constraint was applied, `SUPABASE_URL` and `SUPABASE_SECRET_KEY` were configured in Production, and the collector was updated to atomic conflict-ignore writes. See [Atomic Odds Writes](./ATOMIC_ODDS_WRITES.md) for current status. The ingestion token and live integration test remain outstanding.
+
 ## Inspection (October 8, 2026)
 
 Existing project: Next.js 16 / TypeScript; existing Supabase tables `sports`, `leagues`, `teams`, `games`, `odds_snapshots`, `model_predictions`, `paper_bets`. Only `sports` has 9 rows. All tables use RLS, with no public policies. No DB schema changes are made in this milestone. Vercel Production has `ODDS_API_KEY` but does not have backend Supabase credentials or collector authorization token.

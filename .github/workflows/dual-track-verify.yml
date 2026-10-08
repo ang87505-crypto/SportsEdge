@@ -21,8 +21,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Validate normalized market data (synthetic fixtures only)
-        run: node --test src/lib/ingestion/normalize.test.mjs
+      - name: Test provider normalization and atomic snapshot preparation
+        run: node --test src/lib/ingestion/*.test.mjs
       - name: Lint
         run: npm run lint
       - name: Production build (generates Next route types)
