@@ -1,0 +1,33 @@
+name: Independent build and audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - audit-six-month-backtest
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Isolated Next.js build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  reproduce:
+    name: Replay pinned public-domain match history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python analytics/verify_reproduced_snapshot.py
