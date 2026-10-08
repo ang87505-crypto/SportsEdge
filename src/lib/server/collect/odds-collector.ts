@@ -1,10 +1,10 @@
 import "server-only";
-import { TRACKS, normalizeOdds, oddsIdentity, type Track, type NormalizedPrice, type NormalizedGame } from "@/lib/ingestion/normalize";
+import { TRACKS, normalizeOdds, type Track, type NormalizedGame } from "@/lib/ingestion/normalize";
+import { buildSnapshotRows, ODDS_CONFLICT_COLUMNS } from "@/lib/ingestion/snapshot-rows";
 
 const PROVIDER = "the_odds_api";
 const MAX_GAMES_PER_TRACK = 80;
 const MAX_PRICES_PER_GAME = 60;
-const PAGE_SIZE = 1000;
 
 type Fetcher = typeof fetch;
 type DbConfig = { base: string; key: string };
@@ -117,52 +117,6 @@ async function getOrCreateGame(
   return rowId(found[0]);
 }
 
-type StoredOdds = {
-  sportsbook: string; market: string; selection: string;
-  observed_at: string; american_odds: number; provider: string;
-};
-
-async function existingKeys(config: DbConfig, gameId: number, eventId: string, fetcher: Fetcher): Promise<Set<string>> {
-  const keys = new Set<string>();
-  for (let offset = 0; offset <= 9_000; offset += PAGE_SIZE) {
-    const params = new URLSearchParams({
-      game_id: `eq.${gameId}`,
-      provider: `eq.${PROVIDER}`,
-      select: "sportsbook,market,selection,observed_at,american_odds,provider",
-      order: "id.asc",
-      limit: String(PAGE_SIZE),
-      offset: String(offset),
-    });
-    const rows = await getRows<StoredOdds>(config, `odds_snapshots?${params}`, fetcher);
-    for (const row of rows) {
-      const normalizedTime = new Date(row.observed_at).toISOString();
-      keys.add(oddsIdentity(eventId, {
-        sportsbook: row.sportsbook, market: "h2h", selection: row.selection,
-        observedAt: normalizedTime, americanOdds: row.american_odds,
-      }));
-    }
-    if (rows.length < PAGE_SIZE) return keys;
-  }
-  // Don't write without full duplicate visibility; later migration should
-  // enforce database-level uniqueness for concurrent ingestion.
-  throw new Error("Snapshot pagination safety limit exceeded");
-}
-
-function snapshotRows(gameId: number, eventId: string, prices: NormalizedPrice[], existing: Set<string>) {
-  const next: object[] = [];
-  for (const price of prices) {
-    const key = oddsIdentity(eventId, price);
-    if (existing.has(key)) continue;
-    existing.add(key);
-    next.push({
-      game_id: gameId, provider: PROVIDER, sportsbook: price.sportsbook,
-      market: price.market, selection: price.selection, line: null,
-      american_odds: price.americanOdds, observed_at: price.observedAt,
-    });
-  }
-  return next;
-}
-
 async function fetchMarket(track: Track, oddsApiKey: string, fetcher: Fetcher, time: Date) {
   const source = TRACKS[track].sourceSportKey;
   const url = new URL(`https://api.the-odds-api.com/v4/sports/${source}/odds/`);
@@ -219,13 +173,20 @@ async function storeTrack(
     }, fetcher);
     if (game.prices.length === 0) continue;
 
-    const existing = await existingKeys(config, gameId, game.providerEventId, fetcher);
-    const pending = snapshotRows(gameId, game.providerEventId, game.prices, existing);
-    // Store source-observed snapshots append-only. The DB sets ingested_at independently.
+    const pending = buildSnapshotRows(gameId, game.prices);
+    // Append-only, atomic ON CONFLICT DO NOTHING backed by the DB's verified
+    // NULLS NOT DISTINCT uniqueness constraint. "return=representation"
+    // accurately counts only rows inserted, including concurrent invocations.
     for (let i = 0; i < pending.length; i += 100) {
-      await postRows(config, "odds_snapshots", pending.slice(i, i + 100), fetcher);
+      const inserted = await postRows<{ id: number | string }>(
+        config, "odds_snapshots", pending.slice(i, i + 100), fetcher, {
+          onConflict: ODDS_CONFLICT_COLUMNS,
+          ignoreDuplicates: true,
+          returnRows: true,
+        },
+      );
+      oddsSaved += inserted.length;
     }
-    oddsSaved += pending.length;
   }
   return { gamesSaved: games.length, oddsSaved };
 }
@@ -234,8 +195,9 @@ async function storeTrack(
  * Fetch both feeds successfully BEFORE any DB writes, so an API outage will
  * not leave one newly collected track written while the other was not fetched.
  *
- * A DB failure during writes may leave a partial run; re-running reconciles it.
- * Sequential deduplication is best-effort until a DB unique index is approved.
+ * A DB failure during writes may leave a partial run; a retry reconciles it.
+ * Database-level uniqueness prevents duplicate odds rows even under concurrent
+ * invocations. It does not limit duplicate external API calls or provider quota.
  */
 export async function collectDualTracks(fetcher: Fetcher = fetch) {
   const config = configuredDb();
