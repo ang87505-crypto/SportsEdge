@@ -17,7 +17,7 @@ class WalkforwardTests(unittest.TestCase):
         for d, h, a, gh, ga in [
             ("2026-04-01", "A", "B", 1, 0),
             ("2026-04-02", "B", "C", 0, 0),
-            ("2026-04-03", "C", "A", 2, 1),
+            ("2026-04-03", "C", "A", 0, 1),
             ("2026-04-10", "A", "B", 3, 1),
             ("2026-04-10", "C", "A", 1, 0),
         ]:
@@ -35,7 +35,7 @@ class WalkforwardTests(unittest.TestCase):
         rows = [
             dict(date="2026-03-01", home="A", away="B", homeGoals=1, awayGoals=0, league="en"),
             dict(date="2026-03-02", home="B", away="C", homeGoals=0, awayGoals=0, league="en"),
-            dict(date="2026-03-03", home="C", away="A", homeGoals=2, awayGoals=1, league="en"),
+            dict(date="2026-03-03", home="C", away="A", homeGoals=0, awayGoals=1, league="en"),
             dict(date="2026-04-11", home="A", away="C", homeGoals=1, awayGoals=1, league="en"),
         ]
         games, _ = evaluate_league(rows)
