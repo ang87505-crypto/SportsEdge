@@ -2,8 +2,6 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { collectDualTracks } from "@/lib/server/collect/odds-collector";
 
-export const runtime = "nodejs";
-
 /**
  * Server-only collection trigger. There is NO public mutation API and no
  * automatic schedule until the owner configures credentials and approves cron.
