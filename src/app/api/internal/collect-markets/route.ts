@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { collectDualTracks } from "@/lib/server/collect/odds-collector";
+import { checkIngestionDatabase } from "@/lib/server/collect/readiness";
 
 /**
  * Server-only collection trigger. There is NO public mutation API and no
@@ -24,6 +25,11 @@ export async function GET(request: Request) {
     });
   }
   try {
+    // Authenticated, read-only probe. No Odds API usage or DB writes.
+    if (new URL(request.url).searchParams.get("probe") === "1") {
+      const result = await checkIngestionDatabase();
+      return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
+    }
     const report = await collectDualTracks();
     return NextResponse.json(report, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
