@@ -1,19 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const navigation = ["Overview", "Sports AI", "Paper Betting", "Stock Research", "Paper Trading"] as const;
 type View = (typeof navigation)[number];
 
 const products = [
   { id: "01", name: "Sports AI", category: "ANALYSIS", description: "Game research, probability models and market comparisons.", status: "In development" },
-  { id: "02", name: "Paper Betting", category: "SIMULATION", description: "Test strategies and record simulated bets without real money.", status: "Planned" },
+  { id: "02", name: "Paper Betting", category: "SIMULATION", description: "A shared research ledger tracks simulated wagers and verified results.", status: "Research live" },
   { id: "03", name: "Stock Research", category: "RESEARCH", description: "Company fundamentals, market context and watchlists.", status: "Planned" },
   { id: "04", name: "Paper Trading", category: "SIMULATION", description: "Build a virtual portfolio and measure your decisions.", status: "Planned" },
 ] as const;
 
 export default function Home() {
+  const router = useRouter();
   const [view, setView] = useState<View>("Overview");
+  const navigate = (item: View) => {
+    if (item === "Paper Betting") router.push("/paper-betting");
+    else if (item === "Sports AI") router.push("/sports");
+    else setView(item);
+  };
   const selected = products.find((item) => item.name === view);
 
   return (
@@ -25,7 +32,7 @@ export default function Home() {
           <div className="mt-16 mb-4 text-[10px] font-semibold tracking-[.18em] text-[#788779]">WORKSPACE / 01</div>
           <nav aria-label="Main navigation" className="space-y-1">
             {navigation.map((item, index) => (
-              <button key={item} onClick={() => setView(item)} className={`flex w-full items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors ${view === item ? "border-[#c9df9a] bg-[#202a21] text-[#e9e9e2]" : "border-transparent text-[#9ba79b] hover:bg-[#1a241c] hover:text-white"}`}>
+              <button key={item} onClick={() => navigate(item)} className={`flex w-full items-center justify-between border-l-2 px-3 py-3 text-left text-[13px] transition-colors ${view === item ? "border-[#c9df9a] bg-[#202a21] text-[#e9e9e2]" : "border-transparent text-[#9ba79b] hover:bg-[#1a241c] hover:text-white"}`}>
                 <span>{item}</span><span className="font-mono text-[10px] text-[#728174]">0{index + 1}</span>
               </button>
             ))}
@@ -43,7 +50,7 @@ export default function Home() {
             <div className="flex items-center gap-3"><span className="h-1.5 w-1.5 rounded-full bg-[#c9df9a]" /><span className="font-mono text-[10px] tracking-[.08em] text-[#aab5a8]">PREVIEW · V0.1</span></div>
           </header>
           <div className="flex gap-2 overflow-x-auto border-b border-[#303b33] px-5 py-3 lg:hidden">
-            {navigation.map((item) => <button key={item} onClick={() => setView(item)} className={`shrink-0 px-3 py-2 text-xs ${view === item ? "bg-[#c9df9a] text-[#101512]" : "text-[#a7b3a5]"}`}>{item}</button>)}
+            {navigation.map((item) => <button key={item} onClick={() => navigate(item)} className={`shrink-0 px-3 py-2 text-xs ${view === item ? "bg-[#c9df9a] text-[#101512]" : "text-[#a7b3a5]"}`}>{item}</button>)}
           </div>
 
           <div className="mx-auto max-w-[1150px] px-6 pb-20 pt-12 md:px-12 md:pt-16">
@@ -57,9 +64,9 @@ export default function Home() {
             </div>
 
             <div className="grid gap-8 border-b border-[#303b33] py-8 md:grid-cols-3">
-              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">DATA CONNECTIONS</div><div className="mt-3 text-2xl font-medium tracking-tight">Not connected</div></div>
-              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">AI MODELS</div><div className="mt-3 text-2xl font-medium tracking-tight">Not configured</div></div>
-              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">ENVIRONMENT</div><div className="mt-3 text-2xl font-medium tracking-tight">Development</div></div>
+              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">DATA CONNECTIONS</div><div className="mt-3 text-2xl font-medium tracking-tight">Stored sports feeds</div></div>
+              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">AI MODELS</div><div className="mt-3 text-2xl font-medium tracking-tight">NBA Elo research</div></div>
+              <div><div className="font-mono text-[10px] tracking-[.12em] text-[#829183]">ENVIRONMENT</div><div className="mt-3 text-2xl font-medium tracking-tight">Research preview</div></div>
             </div>
 
             <div className="mb-6 mt-14 flex items-baseline justify-between gap-4"><h2 className="text-[22px] font-medium tracking-[-.04em]">{view === "Overview" ? "The platform" : "Module details"}</h2><span className="font-mono text-[10px] text-[#829183]">{view === "Overview" ? "FOUR DISCIPLINES" : "EARLY ACCESS"}</span></div>
@@ -84,3 +91,4 @@ export default function Home() {
     </div>
   );
 }
+

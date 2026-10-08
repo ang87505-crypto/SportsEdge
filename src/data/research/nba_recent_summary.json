@@ -1,0 +1,326 @@
+{
+  "study": "Reconstructed retrospective NBA regular-season Elo baseline (not archived pregame predictions)",
+  "window_start": "2024-10-01",
+  "window_end": "2026-06-30",
+  "settings": {
+    "k_factor": 20.0,
+    "home_advantage": 65.0,
+    "initial_rating": 1500.0,
+    "probability_floor": 1e-06,
+    "min_training_games": 30
+  },
+  "training_games": 2460,
+  "evaluation_games": 2460,
+  "baseline_home_win_probability": 0.5617384240454915,
+  "accuracy": 0.6646341463414634,
+  "baseline_accuracy": 0.5491869918699187,
+  "log_loss": 0.618326979052279,
+  "baseline_log_loss": 0.6886199451385615,
+  "brier": 0.21421916048122785,
+  "baseline_brier": 0.24773817828044653,
+  "odds_available": false,
+  "roi_available": false,
+  "result_source_independently_verified": false,
+  "source_manifest": {
+    "license": "CC BY 4.0",
+    "publisher": "SportsDataverse",
+    "espn": [
+      {
+        "season": 2023,
+        "name": "nba_schedule_2023.csv",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_schedules/nba_schedule_2023.csv",
+        "sha256": "71aad62f4c082455ba7659b5cc900745a72b113b85bc22727ac04a603a9b5dca"
+      },
+      {
+        "season": 2024,
+        "name": "nba_schedule_2024.csv",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_schedules/nba_schedule_2024.csv",
+        "sha256": "ae89a6e51dec1817b41e457d02ffc4cfc26d25b411d318906c1ec5f39a6c5527"
+      },
+      {
+        "season": 2025,
+        "name": "nba_schedule_2025.csv",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_schedules/nba_schedule_2025.csv",
+        "sha256": "a7a5b6607a256c84a324f819e4461248bdff90a78b1ddb675a5a117a9a94e74f"
+      },
+      {
+        "season": 2026,
+        "name": "nba_schedule_2026.csv",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_schedules/nba_schedule_2026.csv",
+        "sha256": "5a4a7473fce1c49d56382211c5955ad405f421d59869143b1d501e997e79223e"
+      }
+    ],
+    "nba": [
+      {
+        "season": 2023,
+        "name": "nba_schedule_2023.csv.gz",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_schedules/nba_schedule_2023.csv.gz",
+        "sha256": "ef6fb13bfd82ddaac2b2898b967fefa4e0448b5a3c7f5c1c16e3d1414a194b8a"
+      },
+      {
+        "season": 2024,
+        "name": "nba_schedule_2024.csv.gz",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_schedules/nba_schedule_2024.csv.gz",
+        "sha256": "2b0a6eea3292c224771c702ba26813294cfd6dab7996f1d6f5d3d2b0b630c250"
+      },
+      {
+        "season": 2025,
+        "name": "nba_schedule_2025.csv.gz",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_schedules/nba_schedule_2025.csv.gz",
+        "sha256": "639e8145a750b80a4394d2e7044545019bcc0e39a979618c7ff9edbfcac02c9b"
+      },
+      {
+        "season": 2026,
+        "name": "nba_schedule_2026.csv.gz",
+        "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_schedules/nba_schedule_2026.csv.gz",
+        "sha256": "c1ff3711ef8b8ec4310c60159d1225a400facc7ce1e29bc64f09ae4130496509"
+      }
+    ]
+  },
+  "score_cross_source_reconciliation": "All admitted scores/teams/game dates agree between ESPN and NBA Stats mirrors; direct originals not independently audited",
+  "calibration": {
+    "sample_size": 2460,
+    "bins_requested": 10,
+    "bins_populated": 10,
+    "classification_threshold": 0.5,
+    "classification_accuracy": 0.6646341463414634,
+    "classification_accuracy_wilson_95": [
+      0.6457336945364087,
+      0.6830212247787744
+    ],
+    "brier_score": 0.21421916048122805,
+    "log_loss": 0.6183269790522776,
+    "log_loss_probability_clip": 1e-12,
+    "expected_calibration_error": 0.037024942737522486,
+    "max_calibration_error": 0.08384597374705428,
+    "calibration_bins": [
+      {
+        "lower_bound": 0.0,
+        "upper_bound": 0.1,
+        "upper_bound_inclusive": false,
+        "sample_size": 12,
+        "mean_probability": 0.08384597374705428,
+        "observed_frequency": 0.0,
+        "absolute_gap": 0.08384597374705428,
+        "observed_frequency_wilson_95": [
+          0.0,
+          0.2424940066552408
+        ]
+      },
+      {
+        "lower_bound": 0.1,
+        "upper_bound": 0.2,
+        "upper_bound_inclusive": false,
+        "sample_size": 69,
+        "mean_probability": 0.1691397128273673,
+        "observed_frequency": 0.11594202898550725,
+        "absolute_gap": 0.05319768384186006,
+        "observed_frequency_wilson_95": [
+          0.05993498142176161,
+          0.21245740530316215
+        ]
+      },
+      {
+        "lower_bound": 0.2,
+        "upper_bound": 0.3,
+        "upper_bound_inclusive": false,
+        "sample_size": 180,
+        "mean_probability": 0.2523229541422689,
+        "observed_frequency": 0.3055555555555556,
+        "absolute_gap": 0.05323260141328667,
+        "observed_frequency_wilson_95": [
+          0.24290760922735255,
+          0.37632952885327475
+        ]
+      },
+      {
+        "lower_bound": 0.3,
+        "upper_bound": 0.4,
+        "upper_bound_inclusive": false,
+        "sample_size": 289,
+        "mean_probability": 0.35254917881445313,
+        "observed_frequency": 0.3494809688581315,
+        "absolute_gap": 0.0030682099563216214,
+        "observed_frequency_wilson_95": [
+          0.2968095996800982,
+          0.4061013189092338
+        ]
+      },
+      {
+        "lower_bound": 0.4,
+        "upper_bound": 0.5,
+        "upper_bound_inclusive": false,
+        "sample_size": 310,
+        "mean_probability": 0.44951760559836706,
+        "observed_frequency": 0.4,
+        "absolute_gap": 0.04951760559836704,
+        "observed_frequency_wilson_95": [
+          0.34701028448811405,
+          0.4554377405976277
+        ]
+      },
+      {
+        "lower_bound": 0.5,
+        "upper_bound": 0.6,
+        "upper_bound_inclusive": false,
+        "sample_size": 376,
+        "mean_probability": 0.551158726355381,
+        "observed_frequency": 0.5079787234042553,
+        "absolute_gap": 0.04318000295112567,
+        "observed_frequency_wilson_95": [
+          0.4576218637914865,
+          0.5581742002259286
+        ]
+      },
+      {
+        "lower_bound": 0.6,
+        "upper_bound": 0.7,
+        "upper_bound_inclusive": false,
+        "sample_size": 440,
+        "mean_probability": 0.6488515956723123,
+        "observed_frequency": 0.6454545454545455,
+        "absolute_gap": 0.003397050217766817,
+        "observed_frequency_wilson_95": [
+          0.5996734306546099,
+          0.68871783486642
+        ]
+      },
+      {
+        "lower_bound": 0.7,
+        "upper_bound": 0.8,
+        "upper_bound_inclusive": false,
+        "sample_size": 398,
+        "mean_probability": 0.7510205813262577,
+        "observed_frequency": 0.6959798994974874,
+        "absolute_gap": 0.05504068182877031,
+        "observed_frequency_wilson_95": [
+          0.6490924967099755,
+          0.7391203085536268
+        ]
+      },
+      {
+        "lower_bound": 0.8,
+        "upper_bound": 0.9,
+        "upper_bound_inclusive": false,
+        "sample_size": 314,
+        "mean_probability": 0.8455122649340512,
+        "observed_frequency": 0.7929936305732485,
+        "absolute_gap": 0.05251863436080273,
+        "observed_frequency_wilson_95": [
+          0.7447699631980719,
+          0.8341350062250678
+        ]
+      },
+      {
+        "lower_bound": 0.9,
+        "upper_bound": 1.0,
+        "upper_bound_inclusive": true,
+        "sample_size": 72,
+        "mean_probability": 0.9230292060334264,
+        "observed_frequency": 0.8611111111111112,
+        "absolute_gap": 0.06191809492231526,
+        "observed_frequency_wilson_95": [
+          0.762868127494437,
+          0.9227726922970102
+        ]
+      }
+    ],
+    "odds_available": false,
+    "roi_available": false,
+    "source_independently_verified": false,
+    "warnings": [
+      "Descriptive retrospective metrics: no verified source, forward timing, sportsbook odds, or ROI established.",
+      "Wilson intervals assume independent Bernoulli trials; repeated team/season games may be correlated.",
+      "Some populated calibration bins have fewer than 20 games; bin rates are unstable."
+    ]
+  },
+  "per_season": {
+    "2024-25": {
+      "games": 1230,
+      "correct": 805,
+      "accuracy": 0.6544715447154471,
+      "baseline_accuracy": 0.5439024390243903
+    },
+    "2025-26": {
+      "games": 1230,
+      "correct": 830,
+      "accuracy": 0.6747967479674797,
+      "baseline_accuracy": 0.5544715447154471
+    }
+  },
+  "ratings": {
+    "1610612738": 1682.2009577576323,
+    "1610612755": 1512.3259770327393,
+    "1610612744": 1436.5766663913262,
+    "1610612747": 1625.8183015842626,
+    "1610612765": 1658.3650574018557,
+    "1610612753": 1539.6708654941524,
+    "1610612754": 1332.7716318896787,
+    "1610612764": 1221.895930380677,
+    "1610612737": 1563.6881802061525,
+    "1610612745": 1598.380267639515,
+    "1610612751": 1276.963028094437,
+    "1610612740": 1378.8483580330837,
+    "1610612748": 1498.9633062921046,
+    "1610612741": 1368.4622367129816,
+    "1610612761": 1515.853830222455,
+    "1610612739": 1627.5238414237206,
+    "1610612763": 1313.7680108458849,
+    "1610612752": 1620.582322442503,
+    "1610612750": 1577.2953646445478,
+    "1610612760": 1748.0523282746503,
+    "1610612759": 1703.0963119027494,
+    "1610612766": 1552.4768351362522,
+    "1610612762": 1277.315984099531,
+    "1610612743": 1653.0656663220987,
+    "1610612756": 1520.7055960012672,
+    "1610612742": 1362.9343228048351,
+    "1610612758": 1354.264622060516,
+    "1610612757": 1522.244129089225,
+    "1610612749": 1405.3690229536048,
+    "1610612746": 1550.521046865559
+  },
+  "ratings_as_of": "2026-04-13T00:30:00+00:00",
+  "team_names": {
+    "1610612742": "Dallas Mavericks",
+    "1610612759": "San Antonio Spurs",
+    "1610612750": "Minnesota Timberwolves",
+    "1610612740": "New Orleans Pelicans",
+    "1610612760": "Oklahoma City Thunder",
+    "1610612763": "Memphis Grizzlies",
+    "1610612743": "Denver Nuggets",
+    "1610612758": "Sacramento Kings",
+    "1610612747": "Los Angeles Lakers",
+    "1610612762": "Utah Jazz",
+    "1610612756": "Phoenix Suns",
+    "1610612746": "LA Clippers",
+    "1610612757": "Portland Trail Blazers",
+    "1610612744": "Golden State Warriors",
+    "1610612738": "Boston Celtics",
+    "1610612737": "Atlanta Hawks",
+    "1610612751": "Brooklyn Nets",
+    "1610612755": "Philadelphia 76ers",
+    "1610612739": "Cleveland Cavaliers",
+    "1610612766": "Charlotte Hornets",
+    "1610612748": "Miami Heat",
+    "1610612753": "Orlando Magic",
+    "1610612752": "New York Knicks",
+    "1610612754": "Indiana Pacers",
+    "1610612761": "Toronto Raptors",
+    "1610612749": "Milwaukee Bucks",
+    "1610612764": "Washington Wizards",
+    "1610612745": "Houston Rockets",
+    "1610612741": "Chicago Bulls",
+    "1610612765": "Detroit Pistons"
+  },
+  "source_revision": "3329d0dc07b1d88e9c4cd2761ad81538f43026faaf3fa5366f3d714258beec41",
+  "official_spot_checks": {
+    "matched_games": 6,
+    "sources": [
+      "https://www.nba.com/game/ATL-vs-BOS-0022400001/box-score",
+      "https://www.nba.com/news/live-updates-nba-regular-season-conclusion"
+    ],
+    "scope": "ATL-BOS 2024-11-12; BOS-ORL, CLE-WAS, MIA-ATL, LAL-UTA, POR-SAC 2026-04-12",
+    "discrepancy": "Recap says Nets 136 Raptors 101, whereas both mirrors and recap introduction indicate Toronto winner; not included in passed spot checks."
+  }
+}

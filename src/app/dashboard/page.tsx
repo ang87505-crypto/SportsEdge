@@ -9,7 +9,7 @@ type Game = { id: string; home: string; away: string; startsAt: string; bookmake
 type Feed = { status: string; games: Game[]; fetchedAt?: string; message?: string };
 const formatOdds = (value: number) => value > 0 ? `+${value}` : String(value);
 const panels = [
-  { title: "Paper bankroll", value: "Not started", description: "Virtual accounts are not enabled", icon: "◈" },
+  { title: "Paper bankroll", value: "Research live", description: "Shared virtual ledger; personal accounts pending", icon: "◈" },
   { title: "Model predictions", value: "Not trained", description: "No validated picks published", icon: "◎" },
   { title: "Historical results", value: "Collecting soon", description: "Results ingestion is pending", icon: "▤" },
   { title: "Stock research", value: "In development", description: "Watchlists and research tools", icon: "↗" },
@@ -55,7 +55,9 @@ export default function DashboardPage() {
             <Link href="/dashboard" className="edge-focus flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-3 font-semibold text-[#80efaf]"><span className="text-lg">▦</span> Overview</Link>
             <Link href="/sports" className="edge-focus edge-motion flex items-center gap-3 rounded-xl px-3 py-3 text-white/65 transition hover:bg-white/5 hover:text-white"><span className="text-lg">◎</span> Sports AI <span className="ml-auto text-emerald-200/40">↗</span></Link>
             <div className="px-9 pb-3 text-[11px] leading-7 text-emerald-100/35">Live odds · Nine sports</div>
-            {["Paper Betting","Stock Research","Paper Trading"].map(item=><div key={item} className="flex items-center justify-between rounded-xl px-3 py-3 text-white/45"><span>◌ &nbsp; {item}</span><span className="text-[9px] uppercase tracking-widest text-emerald-100/25">Soon</span></div>)}
+            <Link href="/research/nba" className="edge-focus block rounded-xl px-3 py-3 text-white/65 hover:bg-white/5">NBA research ↗</Link>
+            <Link href="/paper-betting" className="edge-focus block rounded-xl px-3 py-3 text-white/65 hover:bg-white/5">Paper Betting ↗</Link>
+            {["Stock Research","Paper Trading"].map(item=><div key={item} className="flex items-center justify-between rounded-xl px-3 py-3 text-white/45"><span>◌ &nbsp; {item}</span><span className="text-[9px] uppercase tracking-widest text-emerald-100/25">Soon</span></div>)}
           </nav>
           <div className="mt-auto rounded-2xl border border-emerald-300/10 bg-emerald-300/[.045] p-4">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[#a8e8bd]"><span className="h-2 w-2 rounded-full bg-amber-300"/> Development workspace</div>
@@ -115,7 +117,7 @@ export default function DashboardPage() {
           </section>
           <section className="mt-6 grid gap-5 lg:grid-cols-2">
             <div className="edge-glass rounded-[22px] p-7"><div className="mb-5 flex items-center justify-between"><h3 className="text-base font-semibold tracking-tight">Prediction models</h3><span className="rounded-full border border-amber-300/20 bg-amber-300/5 px-3 py-1 text-[10px] text-amber-200/70">Not trained</span></div><p className="text-[13px] leading-7 text-emerald-100/50">Probability evaluation, no-vig calculations, and historical validation code exist. Verified model predictions will appear after real training and backtesting.</p><div className="mt-6 h-1 overflow-hidden rounded-full bg-white/5"><div className="h-full w-1/3 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-300"/></div><p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-emerald-100/30">Research infrastructure / in progress</p></div>
-            <div className="edge-glass rounded-[22px] p-7"><div className="mb-5 flex items-center justify-between"><h3 className="text-base font-semibold tracking-tight">Paper betting</h3><span className="rounded-full border border-emerald-200/15 px-3 py-1 text-[10px] text-emerald-100/45">Coming soon</span></div><p className="text-[13px] leading-7 text-emerald-100/50">A separate virtual bankroll will track simulated bets, units, wins, losses, and ROI after secure accounts and settlement are implemented.</p><div className="mt-6 flex gap-2">{["Virtual only","No real-money bets","Auditable results"].map(tag=><span key={tag} className="rounded-lg bg-white/[.045] px-3 py-2 text-[10px] text-emerald-100/50">{tag}</span>)}</div></div>
+            <div className="edge-glass rounded-[22px] p-7"><div className="mb-5 flex items-center justify-between"><h3 className="text-base font-semibold tracking-tight">Paper betting</h3><span className="rounded-full border border-emerald-200/15 px-3 py-1 text-[10px] text-emerald-100/45">Research live</span></div><p className="text-[13px] leading-7 text-emerald-100/50">The shared research ledger records pregame simulated wagers and verified settlements. Personal accounts remain planned.</p><Link href="/paper-betting" className="edge-focus mt-4 inline-block text-sm text-emerald-200">Open paper ledger ↗</Link><div className="mt-6 flex gap-2">{["Virtual only","No real-money bets","Auditable results"].map(tag=><span key={tag} className="rounded-lg bg-white/[.045] px-3 py-2 text-[10px] text-emerald-100/50">{tag}</span>)}</div></div>
           </section>
           <footer className="mt-12 flex flex-wrap justify-between gap-4 border-t border-emerald-100/10 pt-6 text-[10px] uppercase tracking-[.15em] text-emerald-100/30"><span>SportsEdge © 2026</span><span>Research first. Risk aware.</span></footer>
         </main>
@@ -123,3 +125,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
