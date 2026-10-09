@@ -1,51 +1,11 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
-
-const SPORTS = [
-  ["nfl","NFL"],["nba","NBA"],["mlb","MLB"],["nhl","NHL"],["soccer","Soccer"],
-  ["ncaaf","College Football"],["ncaab","College Basketball"],["tennis","Tennis"],["mma","MMA / UFC"],
-] as const;
-type Game = { id: string; home: string; away: string; startsAt: string; bookmakers: { sportsbook: string; selection: string; americanOdds: number; updatedAt: string; noVigProbability?:number|null }[] };
-type Feed = { status: string; games: Game[]; fetchedAt?: string; message?: string; source?: string };
-export default function SportsPage() {
-  const [sport, setSport] = useState<string>("nba");
-  const [feed, setFeed] = useState<Feed | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch(`/api/sports?sport=${sport}`, { signal: controller.signal })
-      .then(async r => { const data: Feed = await r.json(); if (!r.ok) throw new Error(data.message || "Feed unavailable"); return data; })
-      .then(setFeed)
-      .catch(e => { if (!controller.signal.aborted) setFeed({ status: "error", games: [], message: e.message }); });
-    return () => controller.abort();
-  }, [sport]);
-  return (
-    <main className="min-h-screen bg-[#101512] text-[#e9e9e2]">
-      <div className="mx-auto max-w-6xl px-6 py-12 md:px-12">
-        <Link href="/" className="text-xl font-semibold tracking-[-.06em]">sports<span className="text-[#c9df9a]">edge</span></Link>
-        <div className="mt-14 border-b border-[#303b33] pb-10">
-          <p className="font-mono text-xs uppercase tracking-[.2em] text-[#c9df9a]">Research / Sports AI</p>
-          <h1 className="mt-5 text-5xl font-medium tracking-[-.07em] md:text-7xl">The sports desk.</h1>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-[#a5b2a5]">Upcoming matchups and observed market prices. No model picks or performance claims until validated.</p>
-        </div>
-        <div className="my-8 flex flex-wrap gap-2" role="group" aria-label="Choose sport">
-          {SPORTS.map(([id,name]) => <button key={id} onClick={() => {setSport(id);setFeed(null);}} aria-pressed={sport === id} className={`border px-4 py-2 text-xs transition-colors ${sport === id ? "border-[#c9df9a] bg-[#c9df9a] text-[#101512]" : "border-[#39483c] text-[#b8c3b5] hover:border-[#c9df9a]"}`}>{name}</button>)}
-        </div>
-        <div className="flex flex-wrap justify-between gap-3 border-b border-[#303b33] pb-5 text-xs text-[#a5b2a5]">
-          <span>{feed?.status === "stored" ? "SOURCE / STORED ODDS API SNAPSHOTS" : "SOURCE / NOT ACTIVE"}</span>
-          <span>{feed?.fetchedAt ? `Database read ${new Date(feed.fetchedAt).toLocaleString()}` : "No verified update yet"}</span>
-        </div>
-        {!feed ? <p className="py-12 text-[#a5b2a5]">Loading feed…</p> :
-         feed.status !== "stored" ? <div className="py-12"><h2 className="text-xl">Stored data unavailable</h2><p className="mt-3 text-sm text-[#a5b2a5]">{feed.message ?? "Provider connection required."}</p></div> :
-         feed.games.length === 0 ? <p className="py-12 text-[#a5b2a5]">No upcoming games returned for this sport.</p> :
-         <div>{feed.games.map(game => <article key={game.id} className="grid gap-5 border-b border-[#303b33] py-7 md:grid-cols-[1fr_1fr]">
-           <div><div className="text-xs text-[#8fa08e]">{new Date(game.startsAt).toLocaleString()}</div><h2 className="mt-2 text-xl font-medium">{game.away} <span className="text-[#7f917f]">@</span> {game.home}</h2></div>
-           <div>{game.bookmakers.length ? <div className="space-y-3">{game.bookmakers.slice(0,6).map((o,i) => <div key={i} className="text-xs"><div className="flex justify-between gap-3"><span className="text-[#a5b2a5]">{o.sportsbook} · {o.selection}</span><span className="font-mono">{o.americanOdds > 0 ? "+" : ""}{o.americanOdds}{o.noVigProbability!=null?` · ${(o.noVigProbability*100).toFixed(1)}% no-vig`:''}</span></div><p className="mt-1 text-[#8fa08e]">Quote observed {new Date(o.updatedAt).toLocaleString()}</p></div>)}</div> : <span className="text-xs text-[#8fa08e]">No available prices</span>}</div>
-         </article>)}</div>}
-        <p className="mt-12 border-l-2 border-[#c9df9a] pl-5 text-xs leading-6 text-[#9eac9e]">Stored quotes may be stale; viewing this page does not refresh the provider. <Link href="/research/nba" className="underline">NBA research and forecasts</Link> · <Link href="/paper-betting" className="underline">Paper research account</Link>.</p>
-      </div>
-    </main>
-  );
+import {useEffect,useState} from 'react';
+import {PageHeading,Action,Details,Empty} from '@/components/ui';
+type Quote={sportsbook:string;selection:string;americanOdds:number;updatedAt:string;noVigProbability?:number|null};
+type Game={id:string;home:string;away:string;startsAt:string;bookmakers:Quote[]};
+type Feed={status:string;games:Game[];message?:string;quoteLimitReached?:boolean};
+export default function Sports(){const [sport,setSport]=useState('nba'),[search,setSearch]=useState(''),[feed,setFeed]=useState<Feed|null>(null);
+ useEffect(()=>{const c=new AbortController();fetch(`/api/sports?sport=${sport}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw Error();return r.json();}).then(setFeed).catch(()=>{if(!c.signal.aborted)setFeed({status:'error',games:[]});});return()=>c.abort();},[sport]);
+ const games=feed?.games.filter(g=>`${g.home} ${g.away}`.toLowerCase().includes(search.toLowerCase()))??[];
+ return <><PageHeading eyebrow="SPORTS WORKSPACE" title="Find your next game." description="Start with the matchup. Open the details when you want to compare prices or understand the model." action={<Action href="/paper-betting" secondary>View paper bets</Action>}/><div className="two-grid"><section className="glass panel"><span className="pill">NBA · baseline model</span><h2 style={{marginTop:15}}>What does our model think?</h2><p>See predicted chances and the evidence behind them.</p><Action href="/research/nba" secondary>NBA forecasts & results</Action></section><section className="glass panel"><span className="pill pill-amber">Soccer · experimental</span><h2 style={{marginTop:15}}>Explore the EPL model.</h2><p>Home, away and draw predictions, with coverage limits explained.</p><Action href="/research/epl" secondary>EPL research</Action></section></div><div className="toolbar"><div className="tabs" role="group" aria-label="Sport"><button aria-pressed={sport==='nba'} onClick={()=>{if(sport!=='nba'){setSport('nba');setFeed(null);setSearch('');}}}>Basketball · NBA</button><button aria-pressed={sport==='soccer'} onClick={()=>{if(sport!=='soccer'){setSport('soccer');setFeed(null);setSearch('');}}}>Soccer · EPL</button></div><input className="search-input" aria-label="Search teams" placeholder="Search a team…" value={search} onChange={e=>setSearch(e.target.value)}/></div><div className="section-title"><h2>Upcoming games</h2><span className="quiet" style={{fontSize:12}}>{feed?.status==='stored'?`${games.length} matchups · stored prices`:'Checking data'}</span></div><div className="notice">Prices below are saved observations. <strong>They are not guaranteed to be available now.</strong> Each quote shows its own recording time.</div>{!feed?<div className="glass loading" role="status">Loading upcoming games…</div>:feed.status!=='stored'?<div className="glass"><Empty title="The feed is temporarily unavailable">Try this page again shortly. Your saved paper bets are separate from this feed.</Empty></div>:games.length===0?<div className="glass"><Empty title={search?'No teams match your search':'No upcoming games in this feed'}>{search?'Try a shorter team name.':'Check another sport or return when more games are available.'}</Empty></div>:games.map(g=><article key={g.id} className="glass game-card"><div className="game-header"><div><small>{new Date(g.startsAt).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} · your local time</small><h3>{g.away} <span className="quiet">at</span> {g.home}</h3></div><span className="pill">{g.bookmakers.length?`${new Set(g.bookmakers.map(q=>q.sportsbook)).size} books recorded`:'Prices unavailable'}</span></div><details><summary>Compare recorded odds <span aria-hidden="true">↗</span></summary><div className="table-wrap"><table className="data-table"><thead><tr><th>Team / outcome</th><th>Sportsbook</th><th>American odds</th><th>Market chance*</th><th>Recorded</th></tr></thead><tbody>{g.bookmakers.map((q,i)=><tr key={i}><td>{q.selection}</td><td>{q.sportsbook}</td><td>{q.americanOdds>0?'+':''}{q.americanOdds}</td><td>{q.noVigProbability==null?'Unavailable':`${(q.noVigProbability*100).toFixed(1)}%`}</td><td>{new Date(q.updatedAt).toLocaleString()}</td></tr>)}</tbody></table></div>{!g.bookmakers.length&&<p className="quiet">No prices have been recorded for this matchup.</p>}</details></article>)}{feed?.quoteLimitReached&&<p className="notice">The current read reached its quote limit. Some prices may not be shown.</p>}<Details title="Explain odds and market chance in plain English"><p><strong>Odds describe the payout.</strong> +120 means a winning $100 stake earns $120 profit. −150 means risking $150 to earn $100 profit.</p><p><strong>Market chance</strong> removes the sportsbook’s margin from a complete set of prices. It is a market estimate, not our model’s prediction. Soccer also includes the draw.</p><p><strong>A high win rate alone does not prove profit.</strong> The price paid and the losses matter too. Our paper ledger tracks actual simulated outcomes when final scores are available.</p></Details></>;
 }
-

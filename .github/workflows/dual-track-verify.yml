@@ -22,7 +22,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Test provider normalization and atomic snapshot preparation
-        run: node --test src/lib/ingestion/*.test.mjs src/lib/research-math.test.mjs src/lib/result-validation.test.mjs
+        run: node --test src/lib/ingestion/*.test.mjs src/lib/research-math.test.mjs src/lib/result-validation.test.mjs src/lib/stocks/*.test.mjs
       - name: Lint
         run: npm run lint
       - name: Production build (generates Next route types)
