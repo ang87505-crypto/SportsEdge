@@ -89,7 +89,7 @@ class StockPaperStudyTests(unittest.TestCase):
             {"quote_source_url":"http://example.test/q"},
             {"quote_source_url":"https://user:secret@example.test/q"},
             {"quote_id":""}, {"strategy_version":""},
-            {"symbol":"fake symbol"}, {"shares":1.25},
+            {"symbol":"fake symbol"}, {"symbol":"TE\\\\ST"}, {"shares":1.25},
             {"reference_price_cents":2.25}, {"side":"short"}
         ]
         for update in cases:
