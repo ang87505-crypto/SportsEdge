@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {EMPTY,cents,openTrade,closeTrade,totals,parseJournal} from './journal.ts';
+const t={id:'1',symbol:'AAPL',shares:10,entryCents:10000,openedAt:'2026-10-09T00:00:00Z',note:'Manual practice'};
+test('Cash and realized profit follow a completed manual trade',()=>{let j=openTrade(EMPTY,t);assert.equal(totals(j).cash,900000);j=closeTrade(j,'1',11000,'2026-10-09T01:00:00Z');assert.equal(totals(j).cash,1010000);assert.equal(totals(j).realized,10000);assert.equal(totals(j).open,0);assert.throws(()=>closeTrade(j,'1',12000,'2026-10-09T02:00:00Z'));});
+test('Overspending and malformed prices are rejected',()=>{assert.throws(()=>openTrade(EMPTY,{...t,shares:101}));for(const p of ['NaN','0','-4','1.234'])assert.throws(()=>cents(p));assert.equal(cents('10.29'),1029);});
+test('Saved records validate and retain loss history',()=>{const j=closeTrade(openTrade(EMPTY,t),'1',9000,'2026-10-09T01:00:00Z');assert.deepEqual(parseJournal(JSON.stringify(j)),j);assert.equal(totals(j).realized,-10000);assert.throws(()=>parseJournal(JSON.stringify({...j,trades:[...j.trades,...j.trades]})));});
