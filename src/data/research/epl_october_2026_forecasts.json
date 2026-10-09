@@ -1,0 +1,139 @@
+{
+  "model_version": "epl-elo-k20-h65-draw-pre20260408-v1",
+  "pinned_source_commit": "e6744429ee395bc86f247348c6184bb08d4eb361",
+  "source_latest_result_date": "2026-09-20",
+  "historical_coverage": {
+    "2024-25": {
+      "source_fixtures": 380,
+      "completed_in_snapshot": 380
+    },
+    "2025-26": {
+      "source_fixtures": 380,
+      "completed_in_snapshot": 353
+    },
+    "2026-27": {
+      "source_fixtures": 380,
+      "completed_in_snapshot": 45
+    }
+  },
+  "fit_counts": {
+    "rated_games": 778,
+    "baseline_games": 665,
+    "baseline_draws": 153
+  },
+  "experimental": true,
+  "validated_betting_roi": false,
+  "fixture_source": "https://www.premierleague.com/en/news/4688862/fixture-amendments-for-premier-league-matches-in-october-and-november",
+  "forecasts": [
+    {
+      "game_id": 47,
+      "home": "Arsenal",
+      "away": "Leeds United",
+      "starts_at": "2026-10-10T11:30:00Z",
+      "probabilities": {
+        "home": 0.6066945976271908,
+        "draw": 0.23007518796992482,
+        "away": 0.16323021440288438
+      }
+    },
+    {
+      "game_id": 48,
+      "home": "Aston Villa",
+      "away": "Brentford",
+      "starts_at": "2026-10-10T14:00:00Z",
+      "probabilities": {
+        "home": 0.46473222123489066,
+        "draw": 0.23007518796992482,
+        "away": 0.30519259079518457
+      }
+    },
+    {
+      "game_id": 49,
+      "home": "Chelsea",
+      "away": "Bournemouth",
+      "starts_at": "2026-10-10T14:00:00Z",
+      "probabilities": {
+        "home": 0.4296042464429797,
+        "draw": 0.23007518796992482,
+        "away": 0.34032056558709556
+      }
+    },
+    {
+      "game_id": 50,
+      "home": "Sunderland",
+      "away": "Brighton and Hove Albion",
+      "starts_at": "2026-10-10T14:00:00Z",
+      "probabilities": {
+        "home": 0.40247048648175227,
+        "draw": 0.23007518796992482,
+        "away": 0.36745432554832297
+      }
+    },
+    {
+      "game_id": 51,
+      "home": "Ipswich Town",
+      "away": "Fulham",
+      "starts_at": "2026-10-10T14:00:00Z",
+      "probabilities": {
+        "home": 0.34968733746324004,
+        "draw": 0.23007518796992482,
+        "away": 0.42023747456683525
+      }
+    },
+    {
+      "game_id": 52,
+      "home": "Manchester United",
+      "away": "Tottenham Hotspur",
+      "starts_at": "2026-10-10T16:30:00Z",
+      "probabilities": {
+        "home": 0.6088385167339838,
+        "draw": 0.23007518796992482,
+        "away": 0.16108629529609145
+      }
+    },
+    {
+      "game_id": 53,
+      "home": "Crystal Palace",
+      "away": "Nottingham Forest",
+      "starts_at": "2026-10-11T13:00:00Z",
+      "probabilities": {
+        "home": 0.4264766424794422,
+        "draw": 0.23007518796992482,
+        "away": 0.343448169550633
+      }
+    },
+    {
+      "game_id": 54,
+      "home": "Hull City",
+      "away": "Everton",
+      "starts_at": "2026-10-11T13:00:00Z",
+      "probabilities": {
+        "home": 0.45729842601627907,
+        "draw": 0.23007518796992482,
+        "away": 0.31262638601379616
+      }
+    },
+    {
+      "game_id": 55,
+      "home": "Liverpool",
+      "away": "Manchester City",
+      "starts_at": "2026-10-11T15:30:00Z",
+      "probabilities": {
+        "home": 0.3543722719068341,
+        "draw": 0.23007518796992482,
+        "away": 0.41555254012324117
+      }
+    },
+    {
+      "game_id": 56,
+      "home": "Coventry City",
+      "away": "Newcastle United",
+      "starts_at": "2026-10-12T19:00:00Z",
+      "probabilities": {
+        "home": 0.41781331406804123,
+        "draw": 0.23007518796992482,
+        "away": 0.352111497962034
+      }
+    }
+  ]
+}
