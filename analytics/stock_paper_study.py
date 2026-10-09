@@ -20,7 +20,7 @@ STARTING_CASH_CENTS = 100_000
 SLIPPAGE_BPS = 10
 MAX_QUOTE_AGE_SECONDS = 60
 MAX_EVENTS = 500
-SYMBOL_RE = re.compile(r"^[A-Z][A-Z0-9.\\-]{0,9}$")
+SYMBOL_RE = re.compile(r"^[A-Z][A-Z0-9.-]{0,9}$")
 
 
 class InvalidStudy(ValueError):
