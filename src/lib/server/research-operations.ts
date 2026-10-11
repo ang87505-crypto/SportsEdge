@@ -7,7 +7,9 @@ export async function publishResearch(){
  const ids=[];for(const c of fixtures)ids.push(await researchDb<number>('rpc/research_publish',{p_game:c.game_id,p_version:'nba-elo-k20-h65-2026-04-v1'}));
  return {forecastIds:ids};
 }
-export async function placeResearch(){
+export async function placeResearch(limit=100){
+ if(!Number.isInteger(limit)||limit<1||limit>100)throw new Error('Invalid run limit');
+ let checked=0;const failedGames:number[]=[];
  const accounts=await researchDb<{id:number}[]>('research_accounts?select=id&slug=eq.nba-elo-research-v1');
  if(accounts.length!==1)throw new Error('Research account unavailable');
  // An already recorded position must never be represented as a newly placed bet.
@@ -20,11 +22,13 @@ export async function placeResearch(){
  const skippedReasons:{gameId:number;reason:'game_not_upcoming'|'no_fresh_quotes'|'no_qualifying_price'}[]=[];
  type Q={id:number;sportsbook:string;provider:string;selection:string;observed_at:string;ingested_at:string;american_odds:number};
  for(const f of all){
-  if(Date.parse(f.starts_at)<=Date.now()){
+  if(checked>=limit)break;
+  if(!Number.isFinite(Date.parse(f.starts_at))||Date.parse(f.starts_at)<=Date.now()){
    skippedGames.push(f.game_id);skippedReasons.push({gameId:f.game_id,reason:'game_not_upcoming'});continue;
   }
   const recorded=existingByForecast.get(f.id);
   if(recorded!==undefined){alreadyRecordedPositionIds.push(recorded);continue;}
+  checked++;
   const cutoff=encodeURIComponent(new Date(Date.now()-3600000).toISOString());
   const quotes=await researchDb<Q[]>(`odds_snapshots?select=id,sportsbook,provider,selection,observed_at,ingested_at,american_odds&game_id=eq.${f.game_id}&market=eq.h2h&line=is.null&observed_at=gte.${cutoff}&ingested_at=gte.${cutoff}&order=observed_at.desc,id.desc&limit=200`);
   if(!quotes.length){
@@ -47,10 +51,12 @@ export async function placeResearch(){
   }
   // The database RPC is the authoritative, locked gate for freshness,
   // value threshold, idempotency and actual integer-cent position sizing.
-  positionIds.push(await researchDb<number>('rpc/research_place',{p_account:accounts[0].id,p_forecast:f.id,p_quote:candidates[0].id}));
+  try{positionIds.push(await researchDb<number>('rpc/research_place',{p_account:accounts[0].id,p_forecast:f.id,p_quote:candidates[0].id}));}
+  catch{failedGames.push(f.game_id);break;} // A write may have committed: stop, never retry automatically.
  }
  return {
   positionIds,
+  failedGames,
   alreadyRecordedPositionIds,
   skippedGames,
   skippedReasons,
@@ -75,3 +81,4 @@ export async function settleResearch(){
  const settled=await researchDb<number>('rpc/research_settle',{});
  return {recordedGames:recorded,unavailableGames:unavailable,settledPositions:settled};
 }
+
