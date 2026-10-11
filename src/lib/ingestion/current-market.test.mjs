@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {currentMarkets,freshQuote,quoteAgeLimit} from './current-market.ts';
+const now=Date.parse('2026-10-11T18:00:00Z');
+const q=(selection,age=10,extra={})=>({id:selection==='Home'?1:2,sportsbook:'book',provider:'source',selection,american_odds:100,observed_at:new Date(now-age*1000).toISOString(),ingested_at:new Date(now-1000).toISOString(),...extra});
+test('latest complete market replaces favorable old price',()=>{const rows=[q('Home',30,{american_odds:200}),q('Away',30),q('Home',10,{american_odds:-300}),q('Away',10)];assert.equal(currentMarkets(rows,['Home','Away'])[0][0].american_odds,-300);});
+test('latest incomplete market blocks old complete market',()=>{assert.deepEqual(currentMarkets([q('Home',30),q('Away',30),q('Home',10)],['Home','Away']),[]);});
+test('conflicting prices at identical timestamp fail closed',()=>{assert.deepEqual(currentMarkets([q('Home'),q('Away'),q('Home',10,{id:3,american_odds:200})],['Home','Away']),[]);});
+test('providers and bookmakers cannot supply each other’s missing selections',()=>{assert.deepEqual(currentMarkets([q('Home'),q('Away',10,{provider:'other'})],['Home','Away']),[]);});
+test('three-outcome market requires draw',()=>{assert.deepEqual(currentMarkets([q('Home'),q('Away')],['Home','Draw','Away']),[]);assert.equal(currentMarkets([q('Home'),q('Away'),q('Draw')],['Home','Draw','Away']).length,1);});
+test('freshness uses provider time, rejects future, malformed and reversed times',()=>{assert.equal(freshQuote(q('Home'),now),true);for(const row of [q('Home',61),q('Home',-1),q('Home',10,{observed_at:'bad'}),q('Home',10,{ingested_at:new Date(now+1).toISOString()}),q('Home',10,{ingested_at:new Date(now-20000).toISOString()})])assert.equal(freshQuote(row,now),false);});
+test('age limit can tighten but cannot exceed database ceiling',()=>{assert.equal(quoteAgeLimit(),60000);assert.equal(quoteAgeLimit('30'),30000);for(const raw of ['','0','61','NaN','1.1'])assert.throws(()=>quoteAgeLimit(raw));});
+test('invalid odds cannot form actionable market',()=>{assert.deepEqual(currentMarkets([q('Home',10,{american_odds:0}),q('Away')],['Home','Away']),[]);});

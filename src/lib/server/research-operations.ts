@@ -1,6 +1,7 @@
 import 'server-only';
 import {researchDb,forecasts} from './research-db';
 import {decimalOdds,noVig} from '@/lib/research-math';
+import {currentMarkets,freshQuote,quoteAgeLimit,type MarketQuote} from '@/lib/ingestion/current-market';
 import {verifiedFinal} from '@/lib/result-validation';
 export async function publishResearch(){
  const fixtures=await researchDb<{game_id:number}[]>('research_fixture_checks?select=game_id&limit=100');
@@ -9,6 +10,7 @@ export async function publishResearch(){
 }
 export async function placeResearch(limit=100){
  if(!Number.isInteger(limit)||limit<1||limit>100)throw new Error('Invalid run limit');
+ const maxAge=quoteAgeLimit(process.env.SPORTSEDGE_QUOTE_MAX_AGE_SECONDS);
  let checked=0;const failedGames:number[]=[];
  const accounts=await researchDb<{id:number}[]>('research_accounts?select=id&slug=eq.nba-elo-research-v1');
  if(accounts.length!==1)throw new Error('Research account unavailable');
@@ -19,26 +21,29 @@ export async function placeResearch(limit=100){
  if(existing.length===1000)throw new Error('Research position audit needs pagination');
  const existingByForecast=new Map(existing.map(p=>[p.forecast_id,p.id]));
  const all=await forecasts(),positionIds:number[]=[],alreadyRecordedPositionIds:number[]=[],skippedGames:number[]=[];
- const skippedReasons:{gameId:number;reason:'game_not_upcoming'|'no_fresh_quotes'|'no_qualifying_price'}[]=[];
- type Q={id:number;sportsbook:string;provider:string;selection:string;observed_at:string;ingested_at:string;american_odds:number};
+ const skippedReasons:{gameId:number;reason:'game_not_upcoming'|'no_fresh_quotes'|'no_qualifying_price'|'invalid_prediction'|'quote_scan_limit'}[]=[];
+ type Q=MarketQuote;
  for(const f of all){
   if(checked>=limit)break;
   if(!Number.isFinite(Date.parse(f.starts_at))||Date.parse(f.starts_at)<=Date.now()){
    skippedGames.push(f.game_id);skippedReasons.push({gameId:f.game_id,reason:'game_not_upcoming'});continue;
   }
+  if(!Number.isFinite(Number(f.home_probability))||Number(f.home_probability)<=0||Number(f.home_probability)>=1){
+   skippedGames.push(f.game_id);skippedReasons.push({gameId:f.game_id,reason:'invalid_prediction'});continue;
+  }
   const recorded=existingByForecast.get(f.id);
   if(recorded!==undefined){alreadyRecordedPositionIds.push(recorded);continue;}
   checked++;
-  const cutoff=encodeURIComponent(new Date(Date.now()-3600000).toISOString());
-  const quotes=await researchDb<Q[]>(`odds_snapshots?select=id,sportsbook,provider,selection,observed_at,ingested_at,american_odds&game_id=eq.${f.game_id}&market=eq.h2h&line=is.null&observed_at=gte.${cutoff}&ingested_at=gte.${cutoff}&order=observed_at.desc,id.desc&limit=200`);
+  const cutoff=encodeURIComponent(new Date(Date.now()-maxAge).toISOString());
+  const quotes=await researchDb<Q[]>(`odds_snapshots?select=id,sportsbook,provider,selection,observed_at,ingested_at,american_odds&game_id=eq.${f.game_id}&market=eq.h2h&line=is.null&observed_at=gte.${cutoff}&order=observed_at.desc,id.desc&limit=200`);
   if(!quotes.length){
    skippedGames.push(f.game_id);skippedReasons.push({gameId:f.game_id,reason:'no_fresh_quotes'});continue;
   }
-  const groups=new Map<string,Q[]>();for(const q of quotes){const k=`${q.sportsbook}|${q.provider}|${q.observed_at}`;groups.set(k,[...(groups.get(k)??[]),q]);}
+  if(quotes.length===200){skippedGames.push(f.game_id);skippedReasons.push({gameId:f.game_id,reason:'quote_scan_limit'});continue;}
   const candidates:{id:number;ev:number}[]=[];
-  for(const qs of groups.values()){
-   const h=qs.find(q=>q.selection===f.games.home.name),a=qs.find(q=>q.selection===f.games.away.name);
-   if(!h||!a||qs.length!==2)continue;
+  for(const qs of currentMarkets(quotes,[f.games.home.name,f.games.away.name])){
+   if(!qs.every(q=>freshQuote(q,Date.now(),maxAge)))continue;
+   const [h,a]=qs;
    const probs=noVig([h.american_odds,a.american_odds]);
    for(const [index,q] of [h,a].entries()){
     const p=index===0?Number(f.home_probability):1-Number(f.home_probability),ev=p*decimalOdds(q.american_odds)-1;
@@ -51,7 +56,7 @@ export async function placeResearch(limit=100){
   }
   // The database RPC is the authoritative, locked gate for freshness,
   // value threshold, idempotency and actual integer-cent position sizing.
-  try{positionIds.push(await researchDb<number>('rpc/research_place',{p_account:accounts[0].id,p_forecast:f.id,p_quote:candidates[0].id}));}
+  try{positionIds.push(await researchDb<number>('rpc/research_place_current',{p_account:accounts[0].id,p_forecast:f.id,p_quote:candidates[0].id,p_max_age_seconds:maxAge/1000}));}
   catch{failedGames.push(f.game_id);break;} // A write may have committed: stop, never retry automatically.
  }
  return {
@@ -62,7 +67,7 @@ export async function placeResearch(limit=100){
   skippedReasons,
   candidateRpcsReturned:positionIds.length,
   note:'Returned position IDs can include concurrent pre-existing positions. Only an atomic per-run receipt can verify newly created bets.',
-  rule:'Virtual only: 1% available bankroll, model EV >=2%, complete fresh market'
+  rule:`Virtual only: 1% available bankroll, model EV >=2%, latest complete market, quote age <= ${maxAge/1000}s`
  };
 }
 export async function settleResearch(){
@@ -81,4 +86,5 @@ export async function settleResearch(){
  const settled=await researchDb<number>('rpc/research_settle',{});
  return {recordedGames:recorded,unavailableGames:unavailable,settledPositions:settled};
 }
+
 
