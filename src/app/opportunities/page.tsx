@@ -44,7 +44,7 @@ export default function GameAnalysisPage(){
   },[]);
   useEffect(()=>{
     const c=new AbortController();
-    void load(c.signal);
+    queueMicrotask(()=>{if(!c.signal.aborted)void load(c.signal);});
     const tick=setInterval(()=>setNow(Date.now()),5000);
     return ()=>{c.abort();clearInterval(tick);};
   },[load]);
