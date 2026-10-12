@@ -41,3 +41,27 @@
   .paper-curve-visual svg{height:145px}
 }
 @media(max-width:390px){.paper-curve-card{padding:15px}.paper-curve-total strong{font-size:26px}}
+
+/* Dedicated diagnostics intentionally check stored endpoints only; nothing here activates providers. */
+.connection-cta{grid-column:1/-1;justify-self:start}
+.connection-intro{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:27px;margin:20px 0 25px;background:linear-gradient(125deg,#29574150,#0a1d1455)}
+.connection-intro h2{margin-top:14px}
+.connection-intro p{color:var(--muted);font-size:13px;margin-top:10px;max-width:620px}
+.connection-intro>div:last-child{display:grid;justify-items:start;gap:10px;flex-shrink:0}
+.connection-intro small{font-size:11px}
+.connection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.connection-grid>.panel{display:flex;flex-direction:column;align-items:flex-start;min-height:250px}
+.connection-grid .eyebrow{margin-bottom:11px}
+.connection-grid h2{font-size:21px}
+.connection-grid .panel p{font-size:13px;color:var(--muted);margin:9px 0 18px}
+.connection-grid .text-link{margin-top:auto}
+.connection-indicator{display:inline-flex;gap:8px;align-items:center;min-height:33px;border-radius:9px;padding:7px 11px;font-size:11px;font-weight:550;margin-bottom:18px;background:#c3edce09;color:var(--muted);border:1px solid var(--line)}
+.connection-indicator:before{content:"";display:inline-block;width:7px;height:7px;flex-shrink:0;border-radius:100%;background:#9bad9f}
+.connection-indicator.available{color:#b5f5cf;background:#77e4a415;border-color:#77e4a440}
+.connection-indicator.available:before{background:#81f0ad}
+.connection-indicator.unavailable{color:#f6d1b4;background:#f7a56815;border-color:#f7a56840}
+.connection-indicator.unavailable:before{background:#f7bd80}
+.connection-limits,.connection-guide-link{margin:20px 0;display:flex;align-items:center;justify-content:space-between;gap:22px}
+.connection-limits p,.connection-guide-link p{margin-bottom:0;max-width:700px}
+@media(max-width:850px){.connection-intro{flex-direction:column;align-items:flex-start}.connection-grid{grid-template-columns:1fr}.connection-limits,.connection-guide-link{flex-direction:column;align-items:flex-start}}
+@media(max-width:480px){.connection-grid .panel{min-height:0}.connection-intro{padding:20px}.connection-intro>div:last-child{width:100%}.connection-intro button{width:100%}.connection-limits{padding:20px}}
