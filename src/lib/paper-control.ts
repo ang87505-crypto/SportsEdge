@@ -1,4 +1,4 @@
-import {validCommandId,type CommandResult} from './paper-command';
+import {validCommandId,type CommandResult} from './paper-command.ts';
 /** Request policy shared by route handlers and offline integration tests. */
 export type OwnerStatus={configured:boolean;owner:boolean};
 export type ControlDeps={
