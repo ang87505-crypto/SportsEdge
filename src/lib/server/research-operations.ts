@@ -3,6 +3,7 @@ import {researchDb,forecasts} from './research-db';
 import {decimalOdds,noVig} from '@/lib/research-math';
 import {currentMarkets,freshQuote,quoteAgeLimit,type MarketQuote} from '@/lib/ingestion/current-market';
 import {verifiedFinal} from '@/lib/result-validation';
+import {planNbaResultChecks} from '@/lib/settlement-worklist';
 export async function publishResearch(){
  const fixtures=await researchDb<{game_id:number}[]>('research_fixture_checks?select=game_id&limit=100');
  const ids=[];for(const c of fixtures)ids.push(await researchDb<number>('rpc/research_publish',{p_game:c.game_id,p_version:'nba-elo-k20-h65-2026-04-v1'}));
@@ -71,20 +72,54 @@ export async function placeResearch(limit=100){
  };
 }
 export async function settleResearch(){
- const all=await forecasts(),recorded:number[]=[],unavailable:number[]=[];
+ // Only already-recorded NBA positions are settlement candidates.
+ // Historical model forecasts with no wager never trigger provider requests.
+ const positions=await researchDb<{id:number;forecast_id:number}[]>(
+  'research_positions?select=id,forecast_id&order=id.asc&limit=1000');
+ if(positions.length===0)return {
+  recordedGames:[],unavailableGames:[],settledPositions:0,
+  skippedFutureGames:[],reusedRecordedResults:[],openPositions:0,
+  note:'No NBA paper positions exist; no score provider requests were made.'
+ };
+ const [all,settlements,priorResults]=await Promise.all([
+  forecasts(),
+  researchDb<{position_id:number}[]>('research_settlements?select=position_id&order=position_id.asc&limit=1000'),
+  researchDb<{game_id:number}[]>('research_results?select=game_id&order=game_id.asc&limit=1000')
+ ]);
+ const work=planNbaResultChecks({
+  positions,settlements,results:priorResults,forecasts:all,now:Date.now()
+ });
+ const recorded:number[]=[],unavailable:number[]=[];
  const cache=new Map<string,unknown>();
- for(const f of all){
-  if(Date.parse(f.starts_at)>=Date.now())continue;
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(f.starts_at));
+ for(const f of work.toVerify){
+  const parts=new Intl.DateTimeFormat('en-US',{
+   timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(new Date(f.starts_at));
   const day=['year','month','day'].map(k=>parts.find(p=>p.type===k)?.value).join('');
-  const url=`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${day}&limit=100`;
-  if(!cache.has(day)){const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!r.ok)throw new Error('Result provider unavailable');cache.set(day,await r.json());}
-  const result=verifiedFinal(cache.get(day),{startsAt:f.starts_at,home:f.games.home.name,away:f.games.away.name});
+  const url='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates='+day+'&limit=100';
+  if(!cache.has(day)){
+   const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(10000)});
+   if(!response.ok)throw new Error('Result provider unavailable');
+   cache.set(day,await response.json());
+  }
+  const result=verifiedFinal(cache.get(day),{
+   startsAt:f.starts_at,home:f.games.home.name,away:f.games.away.name
+  });
   if(!result){unavailable.push(f.game_id);continue;}
-  await researchDb('rpc/research_record_result',{p_game:f.game_id,p_status:'final',p_home:result.homeScore,p_away:result.awayScore,p_source:url});recorded.push(f.game_id);
+  await researchDb('rpc/research_record_result',{
+   p_game:f.game_id,p_status:'final',p_home:result.homeScore,
+   p_away:result.awayScore,p_source:url
+  });
+  recorded.push(f.game_id);
  }
- const settled=await researchDb<number>('rpc/research_settle',{});
- return {recordedGames:recorded,unavailableGames:unavailable,settledPositions:settled};
+ // The existing immutable, idempotent SQL RPC owns settlement arithmetic.
+ // No RPC call is needed while every remaining position is still in the future.
+ const shouldSettle=recorded.length>0||work.alreadyRecorded.length>0;
+ const settled=shouldSettle?await researchDb<number>('rpc/research_settle',{}):0;
+ return {
+  recordedGames:recorded,unavailableGames:unavailable,settledPositions:settled,
+  skippedFutureGames:work.notStarted,reusedRecordedResults:work.alreadyRecorded,
+  openPositions:work.openCount,
+  note:'Only due unsettled NBA positions were verified; missing or ambiguous results remain pending.'
+ };
 }
-
-
