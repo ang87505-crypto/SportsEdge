@@ -281,3 +281,65 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{border-color:#a7
  .topbar .environment-label{letter-spacing:0}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Sports discovery: analysis-first, saved-data-first hierarchy. */
+.sports-feature{
+ display:flex;align-items:center;justify-content:space-between;gap:28px;
+ padding:29px 33px;margin:14px 0 14px;
+ background:linear-gradient(110deg,#1b3b29,#10291c 65%,#0f2419);
+ border-color:rgba(175,240,194,.2);
+}
+.sports-feature h2{font-size:27px;margin:7px 0 10px}
+.sports-feature p{font-size:12px;line-height:1.7;color:#b7d2bf;max-width:650px;margin-bottom:15px}
+.sports-feature .eyebrow{margin:0}
+.sports-feature .button{flex-shrink:0}
+.sports-resource-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:33px}
+.sports-resource-links>a{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:18px 21px;border:1px solid var(--hairline);border-radius:13px;
+ background:#10231a;color:#b9eeca;
+}
+.sports-resource-links a:hover{border-color:#9de1b755;background:#142e21}
+.sports-resource-links strong{display:block;font-size:12px;font-weight:700;color:#e7f9eb}
+.sports-resource-links small{display:block;font-size:11px;color:#9ebbaa;margin-top:6px}
+.sports-resource-links svg{flex-shrink:0}
+.sports-feed-heading{margin:10px 0 14px}
+.sports-feed-heading .eyebrow{margin:0 0 8px}
+.odds-toolbar{
+ padding:14px 15px;margin:0 0 12px;border-radius:12px;
+ background:#0c1c15;border:1px solid var(--hairline);
+ flex-wrap:wrap;
+}
+.odds-toolbar .tabs{margin:0}
+.odds-toolbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.odds-toolbar-actions .button{white-space:nowrap}
+.sports-source-note{margin:11px 0 19px}
+.games-list{display:grid;gap:12px}
+.games-list .game-card{margin:0;padding:24px 26px}
+.games-list .game-header small{font-size:11px;font-weight:575;color:#a4c3ae;letter-spacing:.1px}
+.games-list .game-header h3{font-size:18px;line-height:1.45}
+.games-list .game-header>.pill{font-size:10px}
+.games-list details{margin-top:17px;padding-top:16px}
+.games-list details summary{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;font-weight:700}
+.games-list details .table-wrap{margin-top:17px}
+.games-list details p{padding-top:13px}
+.sports-empty{text-align:center;padding-bottom:24px}
+@media(max-width:1000px){
+ .sports-feature{flex-direction:column;align-items:flex-start}
+ .sports-feature .button{align-self:flex-start}
+}
+@media(max-width:760px){
+ .sports-feature{padding:23px 21px}
+ .sports-feature h2{font-size:23px}
+ .sports-resource-links{grid-template-columns:1fr;gap:9px}
+ .odds-toolbar{align-items:stretch}
+ .odds-toolbar-actions{width:100%}
+ .odds-toolbar-actions .search-input{min-width:0;flex:1}
+ .games-list .game-card{padding:20px}
+}
+@media(max-width:440px){
+ .odds-toolbar-actions{display:grid;grid-template-columns:1fr}
+ .odds-toolbar-actions .button{width:100%}
+ .odds-toolbar .tabs button{padding:10px}
+ .sports-resource-links>a{padding:15px}
+}
