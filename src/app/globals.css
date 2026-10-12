@@ -17,3 +17,27 @@
 @media(max-width:480px){.status-items>div{flex-direction:column;align-items:flex-start;gap:4px}.status-items span{text-align:left}.platform-status{padding:19px}}
 
 .inline-retry{border:0;background:none;color:var(--mint);padding:0;text-decoration:underline;font-size:inherit;font-weight:600;cursor:pointer}.inline-retry:hover{text-decoration-thickness:2px}
+
+/* Performance visualization: every point represents a database settlement, never a market-price estimate. */
+.paper-curve-card{padding:26px 27px 21px;margin:16px 0 28px;overflow:hidden;background:linear-gradient(140deg,rgba(54,115,79,.24),rgba(10,29,20,.66) 65%)}
+.paper-curve-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.paper-curve-head h2{font-size:25px}
+.paper-curve-head p{font-size:12px;color:var(--muted);max-width:540px;line-height:1.7;margin-top:9px}
+.paper-curve-total{text-align:right;min-width:160px}
+.paper-curve-total span,.paper-curve-total small{display:block;font-size:11px;color:var(--muted)}
+.paper-curve-total strong{display:block;font-size:30px;font-weight:600;letter-spacing:-.045em;margin:7px 0;color:var(--mint);font-variant-numeric:tabular-nums}
+.paper-curve-visual{margin-top:26px;border-radius:13px;padding:20px 20px 12px;background:linear-gradient(180deg,#0a2418aa,#0c2119a8);border:1px solid var(--line)}
+.paper-curve-visual svg{display:block;width:100%;height:200px;overflow:visible}
+.paper-curve-axis{display:flex;justify-content:space-between;gap:12px;margin-top:12px;font-size:11px;color:var(--muted)}
+.paper-curve-empty{padding:34px 18px;margin:24px 0;background:#a8f5cd09;border:1px dashed #a8f5cd3a;border-radius:12px;color:var(--muted);font-size:13px;text-align:center}
+.paper-curve-footnote{font-size:11px;color:var(--muted);margin-top:17px;line-height:1.7}
+@media(max-width:760px){
+  .mobile-nav{display:flex;grid-template-columns:none;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:thin;gap:6px;padding:8px 12px}
+  .mobile-nav a{flex:0 0 auto;min-width:90px;min-height:48px;white-space:nowrap;flex-direction:row;text-align:left;gap:6px;padding:8px 12px;scroll-snap-align:start}
+  .paper-curve-card{padding:20px}
+  .paper-curve-head{flex-direction:column;gap:18px}
+  .paper-curve-total{text-align:left}
+  .paper-curve-visual{padding:14px 10px 10px}
+  .paper-curve-visual svg{height:145px}
+}
+@media(max-width:390px){.paper-curve-card{padding:15px}.paper-curve-total strong{font-size:26px}}
