@@ -55,7 +55,8 @@ try{
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
-     const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':'nav[aria-label="Workspaces"]');
+     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections';
+     const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':(isTool?'nav[aria-label="Research and tools"]':'nav[aria-label="Workspaces"]'));
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
