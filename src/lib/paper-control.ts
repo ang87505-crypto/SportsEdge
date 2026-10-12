@@ -7,6 +7,7 @@ export type ControlDeps={
  identity:(request:Request)=>Promise<OwnerStatus>;
  enabled:()=>boolean;
  runCommand:(id:string)=>Promise<CommandResult>;
+ commandStatus?:(id:string)=>Promise<{state:'not_found'|'running'|'uncertain'|'completed';result?:unknown}>;
  refresh:()=>Promise<unknown>;
 };
 export function trustedMutation(request:Request,origin:string|undefined){
@@ -17,7 +18,19 @@ export function reply(body:unknown,status=200){return Response.json(body,{status
 export function createPaperHandlers(deps:ControlDeps){
  return {
   async GET(request:Request){
-   try{const identity=await deps.identity(request);return reply({...identity,enabled:deps.enabled(),stocksReady:false,stockReason:'The stock data feed and persistent paper ledger are not connected.'});}
+   try{
+    const identity=await deps.identity(request);
+    const id=new URL(request.url).searchParams.get('commandId');
+    if(id!==null){
+     if(!validCommandId(id))return reply({error:'Invalid command ID.'},400);
+     if(!identity.configured)return reply({error:'Owner sign-in setup is incomplete.'},503);
+     if(!identity.owner)return reply({error:'Owner sign-in required.'},401);
+     if(!deps.commandStatus)return reply({error:'Private receipt lookup is unavailable.'},503);
+     const receipt=await deps.commandStatus(id);
+     return reply({commandId:id,...receipt});
+    }
+    return reply({...identity,enabled:deps.enabled(),stocksReady:false,stockReason:'The stock data feed and persistent paper ledger are not connected.'});
+   }
    catch{return reply({error:'Account verification unavailable.'},503);}
   },
   async POST(request:Request){
