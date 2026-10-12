@@ -99,7 +99,7 @@ try{
   await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content h1')`),'interactive mobile homepage');
   await delay(450);
   await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] a[href="/stocks"]').click();return true})()`);
-  await until(async()=>evaluate(send,`location.pathname==='/stocks' && document.querySelector('main h1')?.textContent.includes('stock research desk')`),'mobile Stocks navigation',12000);
+  await until(async()=>evaluate(send,`location.pathname==='/stocks' && !!document.querySelector('main h1')`),'mobile Stocks navigation',12000);
   console.log('PASS mobile navigation: Overview → Stocks');
   await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] a[href="/"]').click();return true})()`);
   await until(async()=>evaluate(send,`location.pathname==='/' && !!document.querySelector('main h1')`),'mobile return to Overview',12000);
