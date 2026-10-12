@@ -1,0 +1,62 @@
+name: Browser UX and responsive QA
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    name: Desktop and mobile browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SPORTSEDGE_PAPER_RUNS_ENABLED: "false"
+      BASE_URL: http://127.0.0.1:3100
+      BROWSER_QA_OUTPUT: artifacts/browser-qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build isolated production website
+        run: npm run build
+      - name: Check headless Chrome availability
+        run: |
+          set -euo pipefail
+          browser="$(command -v google-chrome || command -v chromium || true)"
+          if [ -z "$browser" ]; then
+            echo "Headless Chrome unavailable on runner" >&2
+            exit 1
+          fi
+          printf 'CHROME_BIN=%s\n' "$browser" >> "$GITHUB_ENV"
+      - name: Start local read-only website
+        run: |
+          npm run start -- --port 3100 > /tmp/sportsedge-local-next.log 2>&1 &
+          echo $! > /tmp/sportsedge-local-next.pid
+      - name: Check routes and responsive overflow, capture screenshots
+        run: node scripts/browser-smoke.mjs
+      - name: Upload visual QA screenshots and results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sportsedge-browser-qa
+          path: artifacts/browser-qa/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Show sanitized server startup output on failure
+        if: failure()
+        run: tail -80 /tmp/sportsedge-local-next.log || true
+      - name: Stop local site
+        if: always()
+        run: |
+          if [ -f /tmp/sportsedge-local-next.pid ]; then
+            kill "$(cat /tmp/sportsedge-local-next.pid)" || true
+          fi
