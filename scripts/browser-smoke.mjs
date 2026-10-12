@@ -62,6 +62,7 @@ try{
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
       currentNav:nav?.querySelectorAll('a[aria-current="page"]').length??0,
       appError:document.body.innerText.includes('Application error:'),
+      mobileScrollbar:innerWidth<=760?getComputedStyle(nav).scrollbarWidth:null,
       placeholders:[...main.querySelectorAll('a[href="#"]')].length};
     })()`);
     const issues=[];
@@ -70,12 +71,19 @@ try{
     if(!data.navVisible)issues.push('Primary navigation hidden');
     if(data.currentNav!==1)issues.push('Expected exactly one active navigation link');
     if(data.scrollWidth>width+3)issues.push(`Page overflows viewport by ${data.scrollWidth-width}px`);
+    if(width<=760&&data.mobileScrollbar!=='none')issues.push('Mobile tab scrollbar is visible');
     if(data.appError)issues.push('Next.js application error');
     if(data.placeholders)issues.push('Placeholder links detected');
     if(['/', '/sports','/stocks','/paper-betting','/connections','/guide'].includes(route)&&!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(path.join(output,label+'.png'),Buffer.from(screenshot.data,'base64'));
+     if(['/', '/sports', '/stocks', '/paper-betting'].includes(route)){
+      const metrics=await send('Page.getLayoutMetrics');
+      const pageHeight=Math.min(3500,Math.max(900,Math.ceil(metrics.cssContentSize?.height??metrics.contentSize?.height??900)));
+      const full=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height:pageHeight,scale:1}});
+      await writeFile(path.join(output,label+'-full.png'),Buffer.from(full.data,'base64'));
+     }
     }
     results.push({...data,issues});
     if(issues.length)failures.push(`${label}: ${issues.join('; ')}`);
