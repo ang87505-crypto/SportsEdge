@@ -75,7 +75,7 @@ export default function Home(){
    </section>
   </div>
   <section className="glass overview-bottom" aria-label="What is connected">
-   <div><div className="eyebrow">CURRENT CAPABILITIES</div><h2>Be clear about what is—and isn't—connected.</h2><p>SportsEdge has stored sports observations and a simulated NBA ledger. The stock journal saves to this browser, while real-money execution and broker synchronization are not connected.</p></div>
+   <div><div className="eyebrow">CURRENT CAPABILITIES</div><h2>Be clear about what is—and isn’t—connected.</h2><p>SportsEdge has stored sports observations and a simulated NBA ledger. The stock journal saves to this browser, while real-money execution and broker synchronization are not connected.</p></div>
    <div className="overview-bottom-links"><Link href="/paper-betting">Paper account <NavIcon name="arrow" size={15}/></Link><Link href="/connections">Check connections <NavIcon name="arrow" size={15}/></Link><Link href="/guide#limits">Read platform limits <NavIcon name="arrow" size={15}/></Link></div>
   </section>
   <Details title="What is experimental, and what should I trust?"><p><strong>Historical results:</strong> previously recorded game predictions. They are not prospective betting profits.</p><p><strong>Simulated results:</strong> virtual positions with a separate recorded ledger. Actual betting prices and fills may differ.</p><p><strong>Still being developed:</strong> independently verified automated stock trading, live broker synchronization, and reproducible evidence of profitable strategies. See the <Link href="/guide#limits">platform guide</Link> for important limitations.</p></Details>
