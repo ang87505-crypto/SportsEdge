@@ -5,7 +5,9 @@ export type CommandClaim =
  |{state:'blocked'};
 export type CommandResult =
  |{state:'completed'|'replayed';result:unknown}
- |{state:'blocked'|'unavailable'|'uncertain'};
+ |{state:'blocked'}
+ |{state:'unavailable'}
+ |{state:'uncertain'};
 export interface PaperCommandStore {
  claim(commandId:string):Promise<CommandClaim>;
  finish(commandId:string,state:'completed'|'uncertain',result:unknown):Promise<void>;
