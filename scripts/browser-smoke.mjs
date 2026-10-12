@@ -52,6 +52,7 @@ try{
     const navigation=await send('Page.navigate',{url:base+route});
     if(navigation.errorText)throw Error(navigation.errorText);
     await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content')`),label+' main landmark',25000);
+    if(route==='/paper-betting')await until(async()=>evaluate(send,`!!document.querySelector('main#main-content h1') && !!document.querySelector('main#main-content .paper-ledger-unavailable,main#main-content .paper-curve-card')`),label+' async paper-account content',25000);
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
