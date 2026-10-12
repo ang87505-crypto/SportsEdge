@@ -8,6 +8,7 @@
 #>
 param(
     [switch]$Collect,
+    [ValidateSet("both","nba","soccer")][string]$Track = "both",
     [string]$Site = "https://sports-edge-eta.vercel.app"
 )
 $ErrorActionPreference = "Stop"
@@ -29,11 +30,18 @@ try {
     }
     Write-Host ("Supabase connected. Seeded sports: {0}" -f $probe.sportsCount)
     if ($Collect) {
-        Write-Host "Beginning one authorized NBA and EPL collection (real API quota may be consumed)..."
-        $data = Invoke-RestMethod -Method Get -Uri "$Site/api/internal/collect-markets" -Headers $headers -TimeoutSec 120 -UseBasicParsing
+        Write-Host ("Requested track: {0} (provider credits may be consumed after confirmation)." -f $Track)
+        $preview = Invoke-RestMethod -Method Get -Uri "$Site/api/internal/collect-markets?plan=1&track=$Track" -Headers $headers -TimeoutSec 30 -UseBasicParsing
+        if ($preview.status -ne "planned") { throw "Collection plan could not be verified; no provider request sent." }
+        Write-Host ("Plan: {0} sportsbook provider HTTP request(s). Actual credits are not known from this plan." -f $preview.providerRequestsPlanned)
+        $response = Read-Host "Type YES to authorize this single provider collection"
+        if ($response -cne "YES") { Write-Host "Cancelled: no provider credits used."; return }
+        Write-Host "Beginning the explicitly authorized collection..."
+        $data = Invoke-RestMethod -Method Get -Uri "$Site/api/internal/collect-markets?collect=1&track=$Track" -Headers $headers -TimeoutSec 120 -UseBasicParsing
         if ($data.status -ne "completed") { throw "Ingestion did not report completion." }
-        Write-Host ("NBA: games processed={0}, odds inserted={1}" -f $data.tracks.nba.gamesProcessed, $data.tracks.nba.oddsInserted)
-        Write-Host ("EPL: games processed={0}, odds inserted={1}" -f $data.tracks.soccer.gamesProcessed, $data.tracks.soccer.oddsInserted)
+        if ($data.tracks.nba) { Write-Host ("NBA: games processed={0}, odds inserted={1}" -f $data.tracks.nba.gamesProcessed, $data.tracks.nba.oddsInserted) }
+        if ($data.tracks.soccer) { Write-Host ("EPL: games processed={0}, odds inserted={1}" -f $data.tracks.soccer.gamesProcessed, $data.tracks.soccer.oddsInserted) }
+        Write-Host ("Remaining provider credit count (if supplied): {0}" -f $data.quotaRemaining)
         Write-Host "Use the Supabase dashboard to verify stored records and their timestamps."
     }
 } catch {
