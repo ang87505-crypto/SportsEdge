@@ -355,3 +355,9 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{border-color:#a7
 .stock-advanced input[type="checkbox"]{accent-color:#a9efbd}
 @media(max-width:760px){.stock-section-heading{align-items:flex-start}.stock-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:440px){.stock-section-heading .pill{white-space:normal}}
+
+/* Preserve horizontal swipe navigation without a visible desktop-style scrollbar on phones. */
+@media(max-width:760px){
+ .mobile-nav{scrollbar-width:none;-ms-overflow-style:none}
+ .mobile-nav::-webkit-scrollbar{display:none;width:0;height:0}
+}
