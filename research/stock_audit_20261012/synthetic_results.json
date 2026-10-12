@@ -1,0 +1,70 @@
+{
+  "kind": "SYNTHETIC_CORRECTNESS_ONLY",
+  "historical_prices_used": false,
+  "historical_returns_measured": false,
+  "financial_performance": null,
+  "integrity_probes": {
+    "valid": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": true,
+      "new_guard_reason": null
+    },
+    "wrong_equity": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Model equity differs from actual prior-close account equity"
+    },
+    "wrong_holdings": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Model held_symbols differs from actual prior-close holdings"
+    },
+    "conflicting_close": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Model and ledger prior close disagree"
+    },
+    "wrong_session_date": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Session date disagrees with New York timestamps"
+    },
+    "wrong_security_id": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Market security ID not matched to model universe"
+    },
+    "cash_dividend_without_pay_date": {
+      "inherited_wrapper_accepts": true,
+      "new_guard_accepts": false,
+      "new_guard_reason": "Dividend receivable/pay-date cash not supported by inherited ledger"
+    }
+  },
+  "candidate_example": {
+    "existing_holdings": [
+      "AAA",
+      "BBB",
+      "CCC",
+      "DDD",
+      "FFF"
+    ],
+    "baseline_selected": [
+      "AAA",
+      "BBB",
+      "CCC",
+      "DDD",
+      "EEE"
+    ],
+    "candidate_selected": [
+      "AAA",
+      "BBB",
+      "CCC",
+      "DDD",
+      "FFF"
+    ],
+    "scores_unchanged": true,
+    "explanation": "Rank-six FFF retained instead of replacement by rank-five EEE; this demonstrates membership behavior only, not realized turnover or returns."
+  },
+  "tests_passed": true,
+  "protocol_sha256": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4"
+}
