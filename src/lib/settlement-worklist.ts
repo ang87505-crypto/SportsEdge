@@ -16,7 +16,7 @@ export type ResultWorklist={
   openCount:number;
 };
 function id(value:unknown):value is number {
-  return Number.isSafeInteger(value)&&Number(value)>0;
+  return typeof value==='number'&&Number.isSafeInteger(value)&&value>0;
 }
 export function planNbaResultChecks(input:{
   positions:PendingPosition[];
