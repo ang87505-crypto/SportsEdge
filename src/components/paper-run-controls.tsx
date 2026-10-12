@@ -17,10 +17,11 @@ export function PaperRunControls({market:track}:{market:'sports'|'stocks'}){
  useEffect(()=>{let active=true;fetch('/api/paper-control',{cache:'no-store'}).then(async r=>{if(!r.ok)throw Error();const data=await r.json();if(active){setAccess(data);setMessage('');}}).catch(()=>{if(active)setMessage('Paper controls are temporarily unavailable.');});return()=>{active=false;};},[]);
  const execute=useCallback(async(action:'run'|'refresh')=>{
   if(working.current)return;working.current=true;setBusy(true);
-  try{const r=await fetch('/api/paper-control',{method:'POST',headers:{'Content-Type':'application/json','X-SportsEdge-Control':'1'},body:JSON.stringify({track,action})});const d=await r.json();
-   if(!r.ok){if(r.status===401){setAccess(a=>a?{...a,owner:false}:a);}throw Error(d.error??'The run could not finish.');}
+  const commandId=track==='sports'&&action==='run'?crypto.randomUUID():undefined;
+  try{const r=await fetch('/api/paper-control',{method:'POST',headers:{'Content-Type':'application/json','X-SportsEdge-Control':'1'},body:JSON.stringify({track,action,...(commandId?{commandId}:{})})});const d=await r.json();
+   if(!r.ok){if(r.status===401){setAccess(a=>a?{...a,owner:false}:a);}throw Error((d.error??'The run could not finish.')+(commandId?' Command ID: '+commandId:''));}
    const result=d.result;
-   setMessage(action==='run'?`${result.positionIds.length} position(s) confirmed; ${result.alreadyRecordedPositionIds.length} already recorded; ${result.skippedGames.length} skipped; ${result.failedGames.length} need review. Confirmed positions may already have been recorded by another run. No fresh quote means no new bet.`:`${result.settledPositions} position(s) settled. ${result.unavailableGames.length} game result(s) still unavailable.`);
+   setMessage(action==='run'?`${d.replayed?'Previously completed command (no additional batch): ':''}${result.positionIds.length} position(s) confirmed; ${result.alreadyRecordedPositionIds.length} already recorded; ${result.skippedGames.length} skipped; ${result.failedGames.length} need review. Confirmed positions may already have been recorded by another run. No fresh quote means no new bet.`:`${result.settledPositions} position(s) settled. ${result.unavailableGames.length} game result(s) still unavailable.`);
    setChecked(d.checkedAt);router.refresh();
   }catch(e){setMessage(e instanceof Error?e.message:'The run could not finish.');setAuto(false);router.refresh();}
   finally{working.current=false;setBusy(false);}
@@ -59,7 +60,7 @@ export function PaperRunControls({market:track}:{market:'sports'|'stocks'}){
   }
  return <section className="glass panel" aria-label={`${track} paper trading controls`} style={{marginBottom:24}}>
   <span className="pill">Virtual money only · owner controls</span><h2 style={{marginTop:12}}>{track==='sports'?'Run NBA paper bets':'Automated stock study · $1,000 planned'}</h2>
-  <p>{track==='sports'?'Press Run to record up to 10 qualifying NBA positions using the existing 1% cash rule. The site chooses the side and checks stored prices. The separate 100 × $10 proposal is not active. No prices are refreshed by this page.':'This separate study will use the stock model to choose positions. Your manual $10,000 journal below stays separate.'}</p>
+  <p>{track==='sports'?'Each Run click creates one unique command ID, which must be recorded in the database before the existing NBA runner can start. Replayed requests never launch a second batch. Up to 10 qualifying forecasts are examined using the existing 1% cash rule. If a write is uncertain, stop and reconcile before another run. The separate 100 × $10 proposal is not active; no sportsbook quotes are refreshed here.':'This separate study will use the stock model to choose positions. Your manual $10,000 journal below stays separate.'}</p>
   <button type="button" className="button button-secondary" disabled={busy} onClick={()=>void checkReadiness()}>Check readiness</button>
   {track==='stocks'&&<p className="notice"><strong>Not connected.</strong> Verified stock prices, persistent accounting and the signal adapter are still required. No automated stock balance or return is available.</p>}
   {access&&!access.configured&&<p className="notice">Owner sign-in needs setup before these controls can run.</p>}
