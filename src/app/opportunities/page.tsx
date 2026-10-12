@@ -21,7 +21,8 @@ export default function GameAnalysisPage(){
   const [busy,setBusy]=useState(true);
   const [now,setNow]=useState(0);
   const load=useCallback(async(signal?:AbortSignal)=>{
-    setBusy(true);setError("");
+    // Initial effect uses existing loading state; user-triggered refresh updates it.
+    if(!signal){setBusy(true);setError("");}
     try{
       // Read existing stored forecasts and snapshots only. No sportsbook provider call.
       const [sports,research]=await Promise.all([
@@ -74,7 +75,7 @@ export default function GameAnalysisPage(){
         <div className="rounded-xl border border-white/10 p-4"><span className="text-xs text-[#a5bdb0]">Passing preliminary screen</span><p className="mt-2 text-2xl font-semibold">{result?count:"—"}</p></div>
         <div className="rounded-xl border border-white/10 p-4"><span className="text-xs text-[#a5bdb0]">Stored data retrieved</span><p className="mt-2 text-sm font-semibold">{result?when(new Date(result.readAt).toISOString()):"Not available"}</p></div>
       </div>
-      <p className="mt-4 text-xs text-[#9fb7a9]">Refreshing this screen reads SportsEdge's existing database; it does not purchase new sportsbook quotes. A quote is considered screenable only up to 60 seconds after its recorded source observation. Time checks update while this page is open.</p>
+      <p className="mt-4 text-xs text-[#9fb7a9]">Refreshing this screen reads SportsEdge&apos;s existing database; it does not purchase new sportsbook quotes. A quote is considered screenable only up to 60 seconds after its recorded source observation. Time checks update while this page is open.</p>
       {result?.truncated&&<p className="notice">The stored odds query hit its 1,000-row limit. Treat incomplete markets as unavailable. Do not rely on this screen for execution.</p>}
     </section>
     {error&&<div className="notice" role="alert">{error} No picks or prices have been invented.</div>}
@@ -117,7 +118,7 @@ export default function GameAnalysisPage(){
     </div>
     <section className="glass panel mt-6">
       <h2>What does “research candidate” mean?</h2>
-      <p className="mt-2 text-sm text-[#adbeae]">The model's probability implies at least 2% expected value at a complete, recently recorded moneyline market and exceeds that market's no-vig probability. It does not mean a sportsbook will still honor the price, and it is not a personal betting recommendation.</p>
+      <p className="mt-2 text-sm text-[#adbeae]">The model&apos;s probability implies at least 2% expected value at a complete, recently recorded moneyline market and exceeds that market&apos;s no-vig probability. It does not mean a sportsbook will still honor the price, and it is not a personal betting recommendation.</p>
       <p className="mt-3 text-sm text-[#adbeae]">This page never creates paper bets. The authorized paper-betting service must independently confirm current odds, game eligibility, virtual bankroll and account rules immediately before recording anything. The separate proposed 100 × $10 NBA study is not active.</p>
       <Link className="button button-secondary mt-4" href="/sports">← Back to Sports</Link>
     </section>
