@@ -361,3 +361,11 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{border-color:#a7
  .mobile-nav{scrollbar-width:none;-ms-overflow-style:none}
  .mobile-nav::-webkit-scrollbar{display:none;width:0;height:0}
 }
+
+/* Paper account: results and outages lead; experimental actions follow. */
+.paper-controls-heading{margin-top:36px}
+.paper-controls-heading .eyebrow{margin-bottom:7px}
+.paper-ledger-unavailable{padding:18px 20px 25px}
+.paper-unavailable-actions{display:flex;justify-content:center;gap:10px;padding-bottom:7px}
+.paper-unavailable-actions .button{min-width:170px}
+@media(max-width:760px){.paper-controls-heading{align-items:flex-start;flex-wrap:wrap;gap:9px}.paper-ledger-unavailable{padding:10px 12px 23px}}
