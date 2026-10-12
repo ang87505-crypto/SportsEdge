@@ -1,0 +1,14 @@
+{
+  "base_commit": "1bca2bdb6e3a9c53b15021a63242e26055e285d2",
+  "python": "3.12.14",
+  "test_command": "python -m unittest discover -s analytics -p test_*.py -q",
+  "test_exit_code": 0,
+  "test_output": "----------------------------------------------------------------------\nRan 110 tests in 0.061s\n\nOK\n",
+  "inherited_files_preserved": 35,
+  "materialization_note": "Source text copies may have one terminal newline added by local materialization; all other bytes match the pinned Git blobs. No inherited changes are in the delivery patch.",
+  "new_report_sha256": "4b57ddc7ba9d3d7fa03c4077694bc24576aaaf5cd3cb4fa6ff3d0c012834c5d0",
+  "two_runs_byte_identical": true,
+  "pr17_full_stored_report_equal": true,
+  "remote_mutations": false,
+  "paid_provider_calls": 0
+}
