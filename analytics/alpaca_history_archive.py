@@ -164,7 +164,7 @@ def archive(*, symbols: list[str], start: str, end: str, asof: str,
     raw_pages = []
     corp_pages = []
     observed = set()
-    def request(endpoint: str, query: dict, sink: list, *, expect_bars: bool) -> None:
+    def request(endpoint: str, query: dict, sink: list, *, expect_bars: bool, symbol: str | None = None) -> None:
         nonlocal attempts
         cursor = None
         cursors = set()
@@ -185,8 +185,9 @@ def archive(*, symbols: list[str], start: str, end: str, asof: str,
                     raise HistoricalSourceError("Missing bars array from stock source")
                 for bar in bars:
                     day,ts=_check_bar(bar,start=first,end=last)
-                    symbol=query["symbol"]
-                    key=(symbol,day)
+                    assert symbol is not None
+                    key_symbol = symbol
+                    key=(key_symbol,day)
                     if key in observed:
                         raise HistoricalSourceError("Duplicate daily bar, including cross-page repetition")
                     observed.add(key)
@@ -209,9 +210,9 @@ def archive(*, symbols: list[str], start: str, end: str, asof: str,
     for symbol in symbols:
         encoded=quote(symbol,safe="")
         request(f"/v2/stocks/{encoded}/bars",{
-            "symbol":symbol,"timeframe":"1Day","start":start,"end":end,
+            "timeframe":"1Day","start":start,"end":end,
             "adjustment":"raw","feed":feed,"asof":asof,"limit":10000
-        },raw_pages,expect_bars=True)
+        },raw_pages,expect_bars=True,symbol=symbol)
         request("/v1/corporate-actions",{
             "symbols":symbol,"start":start,"end":end,
             "data_quality":"complete","limit":1000
