@@ -36,3 +36,27 @@ The production flag must stay `SPORTSEDGE_PAPER_RUNS_ENABLED=false` / unset. The
 3. A lost first claim response that committed may result in an unresolved `running` row. This blocks future runs until an operator resolves it; safety is preferred to availability.
 4. A browser refresh can lose its last displayed command ID. It is not permission to submit a replacement after an uncertain result.
 5. Existing per-forecast SQL protection remains authoritative for bet-level idempotency and acceptance. This new layer is solely about owner batch-request replay and overlap.
+
+## Authenticated staging readiness — 2026-10-12 follow-up
+
+The connected Supabase account was inspected **read-only**. The SportsEdge project has no existing development branches, and the only visible project is the original SportsEdge database. A Supabase branch or second project may incur additional charges, so neither was created without an explicit organization and cost confirmation.
+
+### Engineering validation added now
+
+- `src/lib/stocks/paper-auth-integration.test.mjs` exercises the actual `ownerSession` and `ownerIdentity` handlers against an in-process fake Supabase Auth API, and then submits requests through `createPaperHandlers`. It verifies strict HttpOnly/Secure/SameSite owner cookies, verified owner access, expired/anonymous/unverified/wrong-owner refusal, disabled release flag, CSRF denial, provider failure, stock execution blocking and logout behavior. **It does not claim a real Supabase auth test.**
+- Owner-only `GET /api/paper-control?commandId=<uuid>` can read an existing NBA command's state without creating positions or rerunning the strategy. Invalid IDs, non-owner sessions and storage outages fail closed; receipts and results are marked private/no-store.
+- The sports owner UI keeps the original submitted UUID in sessionStorage until its completed receipt is confirmed. A lost network reply or page refresh leaves the new-run button blocked and offers **Check existing command status**. No request retries automatically. The browser can start a genuinely new batch only after a completed result is verified; running, uncertain, missing, and unavailable status retains the warning.
+- Existing command IDs never contain credentials; command status is still owner-authenticated server-side. If browser storage is unavailable, the frontend refuses an untrackable new run.
+- The SQL uniqueness, RLS and grant verification uses a disposable GitHub Actions PostgreSQL instance, not the connected Supabase project.
+
+### Hosted staging activation checklist (not performed)
+
+1. Confirm the intended **Supabase organization** and explicitly accept the cost quote for an isolated branch or second project. Do not use the existing SportsEdge project for DDL experiments.
+2. Ensure isolated project migrations match the audited NBA tables and SQL RPC requirements. Review actual migration history before applying `database/ddl/paper_command_receipts_v1.sql` as a generated timestamped migration.
+3. Configure staging-only secrets and allowlist origin. Never reuse production owner credentials or service-role keys in test fixtures. Leave `SPORTSEDGE_PAPER_RUNS_ENABLED` disabled until tested.
+4. Test real Supabase login/logout, expired JWT, anonymous and non-owner denial, cross-site requests, conflicting command IDs, lost reply cases, command receipt replay, and error scrubbing.
+5. For a controlled paper run, use only seeded virtual fixtures, no paid odds-provider calls, and a separately authorized staging flag; ensure the staging DB cannot write to production.
+6. Reconcile all running/uncertain receipts in the disposable ledger before authorizing any new batch. There is no automatic unlock.
+7. Re-run Next.js build, all Node/Python tests, PostgreSQL concurrency checks, responsive browser checks, and staging HTTPS test. Get explicit release approval before merging or enabling automated execution.
+
+**Not validated:** production-like Supabase Auth, a real owner login, real hosted credential configuration, replay after a database failover, actual wager execution, or automatic background paper operation.
