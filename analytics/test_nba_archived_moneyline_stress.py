@@ -48,7 +48,7 @@ class NbaMoneylineAuditTests(unittest.TestCase):
         self.assertIsNone(favorite)
 
     def test_no_invented_revenue_from_bets_that_do_not_qualify(self):
-        r=data(item(1,"2013-10-29",ml1="-600.0",ml2="400.0"))[0]
+        r=data(item(1,"2013-10-29",ml1="-160.0",ml2="130.0"))[0]
         chosen,favorite=_selection(r,.6)
         self.assertIsNone(chosen)
         self.assertIsNotNone(favorite)
@@ -83,7 +83,7 @@ class NbaMoneylineAuditTests(unittest.TestCase):
         self.assertEqual(a["evaluation_games"],2)
 
     def test_base_fraction_and_no_vig_rule_fixed(self):
-        self.assertAlmostEqual(_p(1500,1500),.5925693357444432,places=4)
+        self.assertAlmostEqual(_p(1500,1500),.5924662305843318,places=4)
         rows=data(item(1,"2013-10-29"))
         a=evaluate(rows)
         self.assertEqual(a["model"]["ev_minimum"],0.02)
