@@ -79,3 +79,15 @@ export async function runNbaBatchWithReceipt(commandId:string){
  try{return await guardedNbaRun(commandId,nbaReceiptStore(),()=>placeResearch(10));}
  catch{return {state:'unavailable' as const};}
 }
+
+/** Read-only owner lookup. The handler authenticates the owner before calling. */
+export async function lookupNbaCommandReceipt(commandId:string){
+ const {owner}=backend();
+ const rows=await commandDb<Receipt[]>(`paper_command_receipts?select=id,owner_id,account_slug,action,state,summary&id=eq.${commandId}&limit=1`);
+ if(rows.length===0)return {state:'not_found' as const};
+ if(rows.length!==1||!receiptMatch(rows[0],commandId,owner))throw Error('Receipt identity mismatch');
+ const receipt=rows[0];
+ return receipt.state==='completed'
+  ?{state:'completed' as const,result:receipt.summary}
+  :{state:receipt.state};
+}
