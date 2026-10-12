@@ -41,3 +41,41 @@ test('unresolved receipt and missing database both refuse a new batch',async()=>
   assert.equal(attempts,1);
  }
 });
+
+test('read-only status checks require owner and do not execute a batch',async()=>{
+ const calls=[];
+ const handlers=createPaperHandlers({
+  origin:()=>origin,
+  identity:async()=>({configured:true,owner:true}),
+  enabled:()=>false,
+  runCommand:async()=>{calls.push('run');return {state:'completed',result:{}};},
+  refresh:async()=>{calls.push('refresh');},
+  commandStatus:async id=>{calls.push('read:'+id);return {state:'completed',result:{positionIds:[17]}};}
+ });
+ const response=await handlers.GET(new Request(origin+'/api/paper-control?commandId='+COMMAND_ID));
+ assert.equal(response.status,200);
+ assert.deepEqual(await response.json(),{commandId:COMMAND_ID,state:'completed',result:{positionIds:[17]}});
+ assert.deepEqual(calls,['read:'+COMMAND_ID]);
+ assert.equal(response.headers.get('cache-control'),'private, no-store');
+});
+test('anonymous and malformed command receipt reads do not access private storage',async()=>{
+ let reads=0;
+ const handlers=createPaperHandlers({
+  origin:()=>origin,identity:async()=>({configured:true,owner:false}),enabled:()=>false,
+  runCommand:async()=>{throw Error('must not run');},refresh:async()=>{throw Error('must not refresh');},
+  commandStatus:async()=>{reads++;return {state:'not_found'};}
+ });
+ assert.equal((await handlers.GET(new Request(origin+'/api/paper-control?commandId='+COMMAND_ID))).status,401);
+ assert.equal((await handlers.GET(new Request(origin+'/api/paper-control?commandId=incorrect'))).status,400);
+ assert.equal(reads,0);
+});
+test('private receipt lookup outage fails closed without a new run',async()=>{
+ const handlers=createPaperHandlers({
+  origin:()=>origin,identity:async()=>({configured:true,owner:true}),enabled:()=>false,
+  runCommand:async()=>{throw Error('must not run');},refresh:async()=>{throw Error('must not refresh');},
+  commandStatus:async()=>{throw Error('database internals are private');}
+ });
+ const result=await handlers.GET(new Request(origin+'/api/paper-control?commandId='+COMMAND_ID));
+ assert.equal(result.status,503);
+ assert.doesNotMatch(await result.text(),/database internals are private/);
+});
