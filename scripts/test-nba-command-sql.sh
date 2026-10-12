@@ -23,7 +23,7 @@ begin
     or has_table_privilege('authenticated','public.paper_command_receipts','INSERT') then
   raise exception 'Receipt table leaked direct browser grants';
  end if;
- if not has_table_privilege('service_role','public.paper_command_receipts','SELECT,INSERT,UPDATE') then raise exception 'Server role missing receipt privileges'; end if;
+ if not (has_table_privilege('service_role','public.paper_command_receipts','SELECT') and has_table_privilege('service_role','public.paper_command_receipts','INSERT') and has_table_privilege('service_role','public.paper_command_receipts','UPDATE')) then raise exception 'Server role missing receipt privileges'; end if;
  insert into public.paper_command_receipts(id,owner_id,account_slug,action,state)
  values('00000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','nba-elo-research-v1','run','running');
  blocked:=false;
