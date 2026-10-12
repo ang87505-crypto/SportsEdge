@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-10-12",
+  "repository": "ang87505-crypto/SportsEdge",
+  "main_commit": "261b03ccc78e0fb3f62fdfa85effcb1e4e9f2f72",
+  "status": "review_only_not_release_authorization",
+  "pull_requests": [
+    {
+      "number": 11,
+      "head": "feature/alpaca-paper-access",
+      "base": "main",
+      "scope": "Alpaca stock page navigation"
+    },
+    {
+      "number": 12,
+      "head": "audit/stock-journal-regression-20261009",
+      "base": "main",
+      "scope": "Stock journal regression tests"
+    },
+    {
+      "number": 13,
+      "head": "audit/ui-ux-accessibility-20261009",
+      "base": "main",
+      "scope": "UI accessibility audit"
+    },
+    {
+      "number": 14,
+      "head": "research/nba-100x10-paper-study-20261009",
+      "base": "main",
+      "scope": "NBA forward study definition"
+    },
+    {
+      "number": 15,
+      "head": "research/stocks-1000-paper-study-20261009",
+      "base": "main",
+      "scope": "Stock forward study definition"
+    },
+    {
+      "number": 16,
+      "head": "research/stock-asof-data-contract-20261009",
+      "base": "main",
+      "scope": "Historical stock as-of contract"
+    },
+    {
+      "number": 17,
+      "head": "research/nba-quant-audit-20261009",
+      "base": "main",
+      "scope": "NBA Elo accuracy audit"
+    },
+    {
+      "number": 18,
+      "head": "research/stock-momentum-baseline-20261009",
+      "base": "research/stock-asof-data-contract-20261009",
+      "scope": "Stock momentum rules"
+    },
+    {
+      "number": 19,
+      "head": "research/paper-execution-planner-20261009",
+      "base": "research/stock-momentum-baseline-20261009",
+      "scope": "Stock virtual execution planner"
+    },
+    {
+      "number": 20,
+      "head": "feature/owner-paper-run-controls-20261009",
+      "base": "research/paper-execution-planner-20261009",
+      "scope": "Paper UI controls"
+    },
+    {
+      "number": 21,
+      "head": "feature/owner-paper-controls-20261009",
+      "base": "feature/owner-paper-run-controls-20261009",
+      "scope": "Owner-authenticated paper controls"
+    },
+    {
+      "number": 22,
+      "head": "feature/sports-completion-20261011",
+      "base": "feature/owner-paper-controls-20261009",
+      "scope": "Quote-safety database RPC migration and runner"
+    },
+    {
+      "number": 23,
+      "head": "feature/nba-game-analysis-20261011",
+      "base": "feature/sports-completion-20261011",
+      "scope": "Read-only NBA analysis UI"
+    },
+    {
+      "number": 24,
+      "head": "feature/paper-results-readiness-20261011",
+      "base": "feature/nba-game-analysis-20261011",
+      "scope": "NBA paper result reconciliation"
+    },
+    {
+      "number": 25,
+      "head": "feature/selective-odds-refresh-20261011",
+      "base": "feature/paper-results-readiness-20261011",
+      "scope": "Token-protected selective provider collection"
+    },
+    {
+      "number": 26,
+      "head": "feature/sports-odds-freshness-ui-20261011",
+      "base": "feature/selective-odds-refresh-20261011",
+      "scope": "Stored sports quote freshness UI"
+    },
+    {
+      "number": 27,
+      "head": "research/stock-historical-ledger-20261011",
+      "base": "research/paper-execution-planner-20261009",
+      "scope": "Historical stock portfolio ledger"
+    },
+    {
+      "number": 28,
+      "head": "research/nba-archived-price-stress-test-20261011",
+      "base": "research/nba-quant-audit-20261009",
+      "scope": "NBA archived-moneyline stress test"
+    },
+    {
+      "number": 29,
+      "head": "feature/stock-alpaca-archive-20261011",
+      "base": "research/stock-historical-ledger-20261011",
+      "scope": "Read-only Alpaca source archive"
+    },
+    {
+      "number": 30,
+      "head": "research/stock-end-to-end-parity-20261012",
+      "base": "feature/stock-alpaca-archive-20261011",
+      "scope": "Stock cross-module parity checks"
+    },
+    {
+      "number": 31,
+      "head": "audit/nba-astra-package-gate-20261012",
+      "base": "research/nba-archived-price-stress-test-20261011",
+      "scope": "NBA Astra package verification gate"
+    }
+  ],
+  "release_targets": {
+    "sports_read_only_preview": 26,
+    "stock_research_audit": 30,
+    "nba_research_integrity": 31
+  },
+  "known_changes": {
+    "database_migration_pr": 22,
+    "database_migration_path": "database/migrations/20261011193330_quote_current_market_guard.sql",
+    "owner_auth_pr": 21,
+    "odds_collection_pr": 25,
+    "stock_ui_overlap": [
+      11,
+      20
+    ],
+    "astra_original_eight_file_patch_imported": false
+  },
+  "gates": {
+    "owner_approved_merge": false,
+    "owner_approved_deploy": false,
+    "owner_approved_migration": false,
+    "staging_database_compatibility_verified": false,
+    "staging_owner_auth_verified": false,
+    "real_browser_qa_verified": false,
+    "provider_cost_budget_approved": false,
+    "provider_collection_schedule_approved": false,
+    "paper_run_activation_approved": false,
+    "durable_batch_receipts_verified": false,
+    "stock_historical_source_verified": false,
+    "nba_executable_roi_verified": false
+  },
+  "must_remain_off": {
+    "SPORTSEDGE_PAPER_RUNS_ENABLED": "false_or_unset",
+    "automatic_stock_orders": "disabled",
+    "automatic_sportsbook_wagers": "disabled"
+  },
+  "notes": [
+    "All 21 listed PRs were open on 2026-10-12. A green per-PR CI job is not a complete integration test.",
+    "PR #26 website stack contains #16 #18 #19 #20 #21 #22 #23 #24 #25 via bases.",
+    "PR #30 and #26 share ancestors but diverge at #19; do not merge their tips as if independent.",
+    "PR #31 checks the original Astra NBA ZIP integrity but does NOT contain the eight-file audit patch.",
+    "PR #11 and #20 both edit src/app/stocks/page.tsx: inspect content and resolve before promoting either.",
+    "Applying SQL PR #22 must precede enabling any new runner requiring research_place_current; SQL requires explicit owner approval.",
+    "Old NBA archived moneylines lack observation timestamps. Current model has no proven edge.",
+    "Real market data, corporate action completeness, and historical stock returns remain unverified."
+  ]
+}
