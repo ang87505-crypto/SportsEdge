@@ -58,10 +58,13 @@ try{
      const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections';
      const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':(isTool?'nav[aria-label="Research and tools"]':'nav[aria-label="Workspaces"]'));
      const heading=main?.querySelector('h1');
+     const paperResults=main?.querySelector('.paper-ledger-unavailable,.paper-curve-card');
+     const paperControls=main?.querySelector('[aria-label="sports paper trading controls"]');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
       currentNav:nav?.querySelectorAll('a[aria-current="page"]').length??0,
       appError:document.body.innerText.includes('Application error:'),
+      paperResultsFirst:paperResults&&paperControls?!!(paperResults.compareDocumentPosition(paperControls)&Node.DOCUMENT_POSITION_FOLLOWING):null,
       mobileScrollbar:innerWidth<=760?getComputedStyle(nav).scrollbarWidth:null,
       placeholders:[...main.querySelectorAll('a[href="#"]')].length};
     })()`);
@@ -73,6 +76,7 @@ try{
     if(data.scrollWidth>width+3)issues.push(`Page overflows viewport by ${data.scrollWidth-width}px`);
     if(width<=760&&data.mobileScrollbar!=='none')issues.push('Mobile tab scrollbar is visible');
     if(data.appError)issues.push('Next.js application error');
+    if(route==='/paper-betting'&&data.paperResultsFirst!==true)issues.push('Paper account results must appear before owner controls');
     if(data.placeholders)issues.push('Placeholder links detected');
     if(['/', '/sports','/stocks','/paper-betting','/connections','/guide'].includes(route)&&!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
