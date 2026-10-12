@@ -46,7 +46,7 @@ test('future and reversed timestamps cannot create a screened candidate',()=>{
 });
 test('superceded favorable historical snapshot never becomes an actionable price',()=>{
   const old=quotes([150,-165],45);
-  const current=quotes([-220,180],10);
+  const current=quotes([-220,120],10);
   // The public odds API normally returns only newest rows. If mixed records leak
   // through, fail closed rather than select an old favorable price.
   const mixed=evaluate([...old,...current]);
