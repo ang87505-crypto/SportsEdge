@@ -36,3 +36,17 @@ Date: October 12, 2026. Scope: **review-only**, stacked on PR #26 via PR #35. No
 - Broker OAuth/paper-account sync, durable account/order storage and transactional stock ledger are not connected.
 - Staging browser/deployment/DB authorization and durable paper command receipts are outstanding.
 - Real-money trading remains unsupported. Profitability claims remain unverified.
+
+## Follow-up UI milestone: settled-equity graph and read-only Connections
+
+- Added `src/lib/paper-curve.ts` deterministic SVG geometry plus adversarial Node tests. The chart starts at the actual account's initial virtual bankroll, then uses **only** `performance().curve` settlement observations from `paperPerformance()`. It does not interpolate market prices, assert future results, or count pending stakes as losses. If there are no settlements, an explicit empty state is shown.
+- Added a `Connections` page linked from the shell, home, and guide. It reads **existing** `/api/research`, `/api/sports?sport=nba`, and `/api/paper-control` only on an explicit Check action and checks browser-local storage availability. Tests check malformed and unavailable data fail closed.
+- The Connections page reports *saved odds API availability* rather than sportsbook/exchange live connectivity. An HTTP 200 with stored observations is **not** an executable quote, fresh market, or an indication of return.
+- Refined research breadcrumbs and mobile navigation to avoid duplicate/misleading Back links and give small-screen users a swipeable route strip.
+- No research-algorithm, accounting, owner-run route, paid-provider, brokerage, DB mutation, live deployment or production flag changes.
+
+### New acceptance checks
+- Verify the paper chart against zero, one, and multiple settled outcomes; validate initial equity, endpoint, and pending stake messaging.
+- Test /connections before and after a read-only check, with HTTP 503, malformed JSON, invalid response shape and restrictive browser storage settings. Confirm **no provider refresh and no mutation POST** is sent.
+- Test keyboard navigation and mobile scroll affordance at 320, 390, 768, 1024 and 1440 CSS pixels.
+- Complete fresh GitHub Actions and Vercel preview build on the exact final head. Browser E2E checks remain a separate acceptance requirement due to deployment protection.
