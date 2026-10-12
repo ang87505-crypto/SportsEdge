@@ -91,6 +91,19 @@ try{
    }catch(error){const reason=`${label}: ${error instanceof Error?error.message:String(error)}`;failures.push(reason);console.error('FAIL '+reason);}
   }
  }
+ // Exercise actual navigation, not only anchor presence. No forms or mutations are submitted.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content h1')`),'interactive mobile homepage');
+  await delay(450);
+  await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] a[href="/stocks"]').click();return true})()`);
+  await until(async()=>evaluate(send,`location.pathname==='/stocks' && document.querySelector('main h1')?.textContent.includes('stock research desk')`),'mobile Stocks navigation',12000);
+  console.log('PASS mobile navigation: Overview → Stocks');
+  await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] a[href="/"]').click();return true})()`);
+  await until(async()=>evaluate(send,`location.pathname==='/' && !!document.querySelector('main h1')`),'mobile return to Overview',12000);
+  console.log('PASS mobile navigation: Stocks → Overview');
+ }catch(error){const message='Mobile navigation interaction: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}
