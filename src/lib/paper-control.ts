@@ -1,4 +1,5 @@
-import {validCommandId,type CommandResult} from './paper-command.ts';
+import type {CommandResult} from './paper-command';
+function validCommandId(value:unknown):value is string{return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);}
 /** Request policy shared by route handlers and offline integration tests. */
 export type OwnerStatus={configured:boolean;owner:boolean};
 export type ControlDeps={
