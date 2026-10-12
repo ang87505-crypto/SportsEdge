@@ -12,3 +12,32 @@ test('GET never places or settles',async()=>{const {handlers,calls}=setup();cons
 test('stocks fail closed even if client asks to run',async()=>{const {handlers,calls}=setup();const r=await handlers.POST(request({track:'stocks',action:'run'}));assert.equal(r.status,409);assert.deepEqual(calls,[]);assert.match((await r.json()).error,/No trade was placed/);});
 test('invalid actions and oversized body do not execute',async()=>{const {handlers,calls}=setup();for(const body of [null,{track:'epl',action:'run'},{track:'sports',action:'real-money'}])assert.equal((await handlers.POST(request(body))).status,400);assert.equal((await handlers.POST(request({padding:'x'.repeat(2000)}))).status,413);assert.deepEqual(calls,[]);});
 test('uncertain failure is explicit and never retried',async()=>{let attempts=0;const {handlers}=setup({runCommand:async()=>{attempts++;return {state:'uncertain'};}});const r=await handlers.POST(request());assert.equal(r.status,503);const body=await r.text();assert.match(body,/uncertain/);assert.doesNotMatch(body,/private provider secret/);assert.equal(attempts,1);});
+
+test('NBA run requires a client-generated UUID receipt key before runner is touched',async()=>{
+ const {handlers,calls}=setup();
+ for(const id of [undefined,null,42,'invalid']){
+  const reply=await handlers.POST(request({track:'sports',action:'run',commandId:id}));
+  assert.equal(reply.status,400);
+ }
+ assert.deepEqual(calls,[]);
+});
+test('duplicate completed receipt returns cached result and reports replay',async()=>{
+ const {handlers,calls}=setup({runCommand:async()=>({state:'replayed',result:{positionIds:[55],failedGames:[],skippedGames:[],alreadyRecordedPositionIds:[]}})});
+ const res=await handlers.POST(request());
+ assert.equal(res.status,200);
+ const body=await res.json();
+ assert.equal(body.replayed,true);
+ assert.equal(body.commandId,COMMAND_ID);
+ assert.deepEqual(body.result.positionIds,[55]);
+ assert.deepEqual(calls,[]);
+});
+test('unresolved receipt and missing database both refuse a new batch',async()=>{
+ for(const [state,expected] of [['blocked',409],['unavailable',503],['uncertain',503]]){
+  let attempts=0;
+  const {handlers}=setup({runCommand:async()=>{attempts++;return {state};}});
+  const response=await handlers.POST(request());
+  assert.equal(response.status,expected);
+  assert.match(await response.text(),/No new|No new batch|locked for review/);
+  assert.equal(attempts,1);
+ }
+});
