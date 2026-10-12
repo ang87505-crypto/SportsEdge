@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import type {ReactNode} from 'react';
-const links=[['/','Home','⌂'],['/sports','Sports','◎'],['/stocks','Stocks','↗'],['/paper-betting','Paper bets','▤'],['/research/nba','Research','◈'],['/guide','How it works','?']] as const;
+const links=[['/','Home','⌂'],['/sports','Sports','◎'],['/stocks','Stocks','↗'],['/paper-betting','Paper bets','▤'],['/research/nba','Research','◈'],['/guide','How it works','?'],['/connections','Connections','◉']] as const;
 export default function WorkspaceShell({children}:{children:ReactNode}){
  const path=usePathname();
  const current=links.find(([url])=>url==='/'?path==='/':path.startsWith(url==='/research/nba'?'/research':url))?.[1]??'Research';
