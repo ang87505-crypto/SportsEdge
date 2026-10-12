@@ -1,0 +1,53 @@
+name: NBA command receipt database safety
+
+on:
+  pull_request:
+    paths:
+      - database/ddl/paper_command_receipts_v1.sql
+      - scripts/test-nba-command-sql.sh
+      - src/lib/paper-command.ts
+      - src/lib/server/paper-command-receipts.ts
+      - src/lib/paper-control.ts
+      - src/lib/stocks/paper-command.test.mjs
+      - src/lib/stocks/paper-controls.test.mjs
+      - .github/workflows/nba-command-db-qa.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-postgres:
+    name: Unique receipt and role-grant checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_USER: postgres
+          POSTGRES_DB: sportsedge_receipts_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sportsedge_receipts_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGUSER: postgres
+      PGDATABASE: sportsedge_receipts_ci
+      PGPASSWORD: ci_only
+      PGPORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PostgreSQL client availability
+        run: |
+          if ! command -v psql; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+      - name: Verify SQL constraints and concurrent claims without Supabase
+        run: bash scripts/test-nba-command-sql.sh
