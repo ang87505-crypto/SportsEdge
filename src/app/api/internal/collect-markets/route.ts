@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { collectDualTracks } from "@/lib/server/collect/odds-collector";
+import { collectSelectedTracks } from "@/lib/server/collect/odds-collector";
+import {parseCollectionChoice,collectionTracks,describeCollection} from "@/lib/ingestion/collection-policy";
 import { checkIngestionDatabase } from "@/lib/server/collect/readiness";
 
 /**
@@ -18,20 +19,40 @@ export async function GET(request: Request) {
       status: 404, headers: { "Cache-Control": "private, no-store" },
     });
   }
-  if (!process.env.ODDS_API_KEY || !process.env.SUPABASE_URL ||
-      !(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
-    return NextResponse.json({ status: "not_configured" }, {
-      status: 503, headers: { "Cache-Control": "private, no-store" },
+  const options=new URL(request.url).searchParams;
+  let choice:ReturnType<typeof parseCollectionChoice>;
+  try{choice=parseCollectionChoice(options.get('track'));}
+  catch{return NextResponse.json({error:'Choose track=nba, track=soccer, or track=both'},{
+   status:400,headers:{'Cache-Control':'private, no-store'}
+  });}
+  // Provider-free dry run: requires the same private token, but uses zero API credits.
+  if(options.get('plan')==='1')return NextResponse.json({
+   status:'planned',...describeCollection(choice)
+  },{headers:{'Cache-Control':'private, no-store'}});
+  if(!process.env.SUPABASE_URL ||
+     !(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)){
+    return NextResponse.json({status:'not_configured'},{
+     status:503,headers:{'Cache-Control':'private, no-store'}
     });
   }
   try {
-    // Authenticated, read-only probe. No Odds API usage or DB writes.
-    if (new URL(request.url).searchParams.get("probe") === "1") {
-      const result = await checkIngestionDatabase();
-      return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
+    if(options.get('probe')==='1'){
+      // Database verification ONLY: no source API calls and no rows written.
+      const result=await checkIngestionDatabase();
+      return NextResponse.json(result,{headers:{'Cache-Control':'private, no-store'}});
     }
-    const report = await collectDualTracks();
-    return NextResponse.json(report, { headers: { "Cache-Control": "private, no-store" } });
+    // Never turn a link prefetch, accidental URL visit or stale script into
+    // an unapproved billable sportsbook-data request.
+    if(options.get('collect')!=='1')
+      return NextResponse.json({
+       error:'No collection performed. First use plan=1, then collect=1 explicitly.'
+      },{status:400,headers:{'Cache-Control':'private, no-store'}});
+    if(!process.env.ODDS_API_KEY)
+      return NextResponse.json({status:'not_configured'},{
+       status:503,headers:{'Cache-Control':'private, no-store'}
+      });
+    const report=await collectSelectedTracks(collectionTracks(choice));
+    return NextResponse.json(report,{headers:{'Cache-Control':'private, no-store'}});
   } catch (error) {
     // Never leak provider request URLs (which contain API keys) or DB credentials.
     console.error("[SportsEdge] private dual-track ingest failure:", error instanceof Error ? error.message : "unknown");
