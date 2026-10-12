@@ -1,6 +1,7 @@
 import "server-only";
 import { TRACKS, normalizeOdds, type Track, type NormalizedGame } from "@/lib/ingestion/normalize";
 import { buildSnapshotRows, ODDS_CONFLICT_COLUMNS } from "@/lib/ingestion/snapshot-rows";
+import {validateCollectionTracks} from "@/lib/ingestion/collection-policy";
 
 const PROVIDER = "the_odds_api";
 const MAX_GAMES_PER_TRACK = 80;
@@ -192,32 +193,50 @@ async function storeTrack(
 }
 
 /**
- * Fetch both feeds successfully BEFORE any DB writes, so an API outage will
- * not leave one newly collected track written while the other was not fetched.
+ * Fetch ALL selected provider feeds successfully BEFORE any writes. This
+ * minimizes partial ingestion after a provider outage. It does not lock out
+ * two separate authorized commands or guarantee provider quota costs.
  *
- * A DB failure during writes may leave a partial run; a retry reconciles it.
- * Database-level uniqueness prevents duplicate odds rows even under concurrent
- * invocations. It does not limit duplicate external API calls or provider quota.
+ * The protected caller chooses NBA, soccer or both explicitly. In particular
+ * a single-track refresh never calls the other track's provider endpoint.
  */
-export async function collectDualTracks(fetcher: Fetcher = fetch) {
-  const config = configuredDb();
-  const oddsKey = process.env.ODDS_API_KEY;
-  if (!oddsKey) throw new Error("ODDS_API_KEY is missing");
-  const at = new Date();
-  const nba = await fetchMarket("nba", oddsKey, fetcher, at);
-  if (nba.remaining !== null && nba.remaining < 1) throw new Error("Odds API quota too low for soccer request");
-  const soccer = await fetchMarket("soccer", oddsKey, fetcher, at);
-  const nbaResult = await storeTrack(config, "nba", nba.report.games, fetcher);
-  const soccerResult = await storeTrack(config, "soccer", soccer.report.games, fetcher);
-  return {
-    status: "completed",
-    capturedAt: at.toISOString(),
-    tracks: {
-      nba: { ...nbaResult, rejectedEvents: nba.report.invalidEvents, skippedLive: nba.report.skippedLiveOrPast,
-        skippedMarkets: nba.report.skippedMarkets },
-      soccer: { ...soccerResult, rejectedEvents: soccer.report.invalidEvents, skippedLive: soccer.report.skippedLiveOrPast,
-        skippedMarkets: soccer.report.skippedMarkets },
-    },
-    quotaRemaining: soccer.remaining,
-  };
+export async function collectSelectedTracks(
+ tracks:readonly Track[],fetcher:Fetcher=fetch
+) {
+ const selected=validateCollectionTracks(tracks);
+ const config=configuredDb();
+ const oddsKey=process.env.ODDS_API_KEY;
+ if(!oddsKey)throw new Error('ODDS_API_KEY is missing');
+ const at=new Date();
+ const captured=new Map<Track,Awaited<ReturnType<typeof fetchMarket>>>();
+ let remaining:number|null=null;
+ for(const track of selected){
+  if(remaining!==null&&remaining<1)
+   throw new Error('Odds API quota too low to request another sport');
+  const fetched=await fetchMarket(track,oddsKey,fetcher,at);
+  captured.set(track,fetched);
+  remaining=fetched.remaining;
+ }
+ const output:Partial<Record<Track,{
+  gamesProcessed:number;oddsInserted:number;rejectedEvents:number;
+  skippedLive:number;skippedMarkets:number;
+ }>>={};
+ for(const track of selected){
+  const feed=captured.get(track)!;
+  const stored=await storeTrack(config,track,feed.report.games,fetcher);
+  output[track]={...stored,rejectedEvents:feed.report.invalidEvents,
+   skippedLive:feed.report.skippedLiveOrPast,skippedMarkets:feed.report.skippedMarkets};
+ }
+ return {
+  status:'completed' as const,
+  capturedAt:at.toISOString(),selectedTracks:selected,tracks:output,
+  providerRequestsMade:selected.length,
+  quotaRemaining:remaining,
+  warning:'Provider call count is not equal to billed credits; check your provider quota and plan.'
+ };
+}
+
+/** Keep the existing two-track API for older authorized callers. */
+export async function collectDualTracks(fetcher:Fetcher=fetch){
+ return collectSelectedTracks(['nba','soccer'],fetcher);
 }
