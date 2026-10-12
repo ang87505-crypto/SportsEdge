@@ -76,5 +76,6 @@ export function nbaReceiptStore():PaperCommandStore{
 export async function runNbaBatchWithReceipt(commandId:string){
  // The HTTP route has already verified the Supabase-authenticated owner and opt-in flag.
  // A missing table, incorrect secret or unauthorized DB request fails CLOSED before run().
- return guardedNbaRun(commandId,nbaReceiptStore(),()=>placeResearch(10));
+ try{return await guardedNbaRun(commandId,nbaReceiptStore(),()=>placeResearch(10));}
+ catch{return {state:'unavailable' as const};}
 }
