@@ -343,3 +343,15 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{border-color:#a7
  .odds-toolbar .tabs button{padding:10px}
  .sports-resource-links>a{padding:15px}
 }
+
+/* Stocks: journal before unready engine controls. */
+.stock-section-heading{margin:29px 0 15px}
+.stock-section-heading .eyebrow{margin-bottom:7px}
+.stock-stats{margin:0 0 25px}
+.stock-advanced-intro{margin:0 0 17px}
+.stock-advanced{display:grid;grid-template-columns:1fr;gap:14px}
+.stock-advanced>.panel,.stock-advanced>section{margin-bottom:0!important}
+.stock-advanced .module-top{flex-wrap:wrap;gap:10px}
+.stock-advanced input[type="checkbox"]{accent-color:#a9efbd}
+@media(max-width:760px){.stock-section-heading{align-items:flex-start}.stock-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.stock-section-heading .pill{white-space:normal}}
