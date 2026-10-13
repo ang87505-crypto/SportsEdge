@@ -1,0 +1,23 @@
+name: Alpaca paper-only connection verification
+on:
+  push:
+    branches: ['feature/alpaca-paper-readonly-readiness-20261013']
+  pull_request:
+    paths:
+      - 'src/lib/server/alpaca-paper-reader.ts'
+      - 'src/lib/server/alpaca-paper-reader.test.mjs'
+      - 'src/app/api/internal/alpaca-paper/route.ts'
+      - '.github/workflows/alpaca-paper-readonly.yml'
+permissions:
+  contents: read
+jobs:
+  alpaca-paper-only-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify paper endpoint fixed host, read-only and schema fails closed
+        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reader.test.mjs
