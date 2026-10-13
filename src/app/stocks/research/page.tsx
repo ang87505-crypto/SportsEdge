@@ -93,7 +93,7 @@ export default function StockResearchPage() {
     </Details>
     <Details title="What is connected to this page?">
       <p>This page reads the committed <code>research/stock_audit_20261012/protocol.json</code> and the separate <code>stock_1000_forward_study.json</code>. It intentionally does not fetch licensed market data, place orders, or display synthetic test fixtures as returns.</p>
-      <p style={{marginTop: 12}}>Your manual stock journal on <Link href="/stocks">the stock workspace</Link> is an independent, browser-local practice tool. It is not the algorithm account or the broker's paper ledger.</p>
+      <p style={{marginTop: 12}}>Your manual stock journal on <Link href="/stocks">the stock workspace</Link> is an independent, browser-local practice tool. It is not the algorithm account or the broker&apos;s paper ledger.</p>
       <p style={{marginTop: 12}}><a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/research/stock_audit_20261012/protocol.json" target="_blank" rel="noopener noreferrer">View registered source protocol ↗</a></p>
     </Details>
     <div className="button-row" style={{marginTop: 20}}>
