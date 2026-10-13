@@ -103,17 +103,9 @@ class SportsEdgeUniverseReadiness(QCAlgorithm):
             return []
         report = audit_fundamentals(fundamentals)
         self._audits[key] = report
-        self.debug(
-            f'QC SOURCE AUDIT {key[0]}-{key[1]:02d} '
-            f'rows={report["observed"]} metadata={report["metadata_present"]} '
-            f'missing_id={report["missing_identity"]} '
-            f'duplicate_id={report["duplicate_identity"]} '
-            f'no_fundamentals={report["missing_fundamental_data"]} '
-            f'missing_sector={report["missing_sector"]} '
-            f'invalid_price={report["invalid_price"]} '
-            f'invalid_dollar_volume={report["invalid_dollar_volume"]} '
-            'SOURCE_NOT_ADMITTED'
-        )
+        # Vendor-derived counts remain internal to QuantConnect Cloud.
+        # Do not export even aggregate fundamentals via logs or API.
+        self.debug('SPORTSEDGE QC internal audit step completed; no market data exported')
         # Never subscribe to a partial/full universe just to make a backtest
         # run on the free node; no buy/sell orders exist in this diagnostic.
         return []
@@ -122,15 +114,17 @@ class SportsEdgeUniverseReadiness(QCAlgorithm):
         pass
 
     def on_end_of_algorithm(self):
+        # These checks are in-cloud only. A downstream source admission
+        # decision must be performed inside an authorized research process.
         missing = EXPECTED_MONTHS - set(self._audits)
         bad = sum(1 for r in self._audits.values()
                   if r['structural_gaps'] or r['observed'] == 0)
+        self._internal_source_ready = not missing and bad == 0
+        # IMPORTANT: even zero gaps does not prove the full registered
+        # stock-market source, so no strategy backtest can be admitted.
+        self._historical_source_admitted = False
         self.debug(
-            'SPORTSEDGE QC COVERAGE: '
-            f'months_seen={len(self._audits)}/{len(EXPECTED_MONTHS)} '
-            f'missing_months={len(missing)} months_with_metadata_gaps={bad} '
-            'STATUS=BLOCKED_SOURCE_NOT_ADMITTED; PERFORMANCE=NOT_MEASURED; '
-            'NO ORDERS. Remaining: full PIT exchange/type/first-listing IDs, '
-            'raw consolidated bars and availability, sector history, corporate '
-            'events/settlement, execution and benchmark reconciliation.'
+            'SPORTSEDGE QC: INTERNAL DIAGNOSTIC COMPLETED; '
+            'SOURCE_NOT_ADMITTED; PERFORMANCE_NOT_MEASURED; NO_ORDERS; '
+            'DATA_EXPORT_DISABLED'
         )
