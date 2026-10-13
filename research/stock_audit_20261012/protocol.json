@@ -1,0 +1,56 @@
+{
+  "version": "stock-independent-audit-20261012-v1",
+  "base_commit": "d62e509421a0929fe5c4bcf8456eb1dcc3e7a952",
+  "status": "frozen before any genuine stock-return evaluation; all present fixtures synthetic",
+  "baseline": "stock-mom252-skip21-trend200-v1",
+  "candidate": "stock-mom252-skip21-trend200-holdrank10-v1",
+  "candidate_count": 1,
+  "candidate_rules": {
+    "unchanged": "momentum, positive trend and eligibility filters, monthly timing, 5 names, 2 per sector, 10% per name, 50% gross, whole shares",
+    "retain": "retain existing holdings still passing every filter and within the top 10 qualifying ranks, in rank order subject to sector/count caps; fill remaining slots by baseline rank",
+    "hold_rank_max": 10,
+    "parameter_search": false,
+    "limits": "rank buffer does not prevent resizing trades, gap losses or excessive concentration within equity sleeve; not a claim of lower realized turnover or improved returns"
+  },
+  "data_gates": [
+    "licensed point-in-time membership and permanent security identifiers including delisted securities",
+    "historical sector/security-type/exchange membership known at each decision",
+    "full exchange calendar and documented price availability/correction semantics",
+    "consolidated volume for the frozen 20-million-dollar liquidity threshold",
+    "raw prices reconciled to split/dividend total returns without double adjustment",
+    "ex-date entitlement, payable-date cash, delisting/merger recoveries, symbol changes and cash-in-lieu reconciled",
+    "settled cash, fees, fractional precision and shared execution policy audited",
+    "all omitted securities and halted/rejected sessions logged; no deletion of inconvenient histories"
+  ],
+  "universe": "PIT NYSE/NASDAQ/AMEX common stocks, permanent IDs; IPOs with fewer than 253 prior sessions ineligible as of decision, not silently removed from universe; unknown gaps fail study",
+  "periods": {
+    "warmup": "1999 (plus earlier sessions if needed)",
+    "training_development": "2000-01-01 to 2011-12-31",
+    "validation": "2012-01-01 to 2016-12-31",
+    "sealed_test": "2017-01-01 to 2025-12-31",
+    "test_status": "not acquired or evaluated here; independently attest prior project exposure before calling untouched",
+    "insufficient_coverage": "stop and register amended protocol before inspecting outcomes; do not choose new dates based on results",
+    "prospective_reserve": "2027-01-01 to 2027-12-31 after approved pre-start version/data freeze; no collection activated"
+  },
+  "execution": {
+    "decision": "08:00 America/New_York on first next exchange session after month end, using data available strictly before cutoff",
+    "historical_fill": "next regular-session open plus explicit costs; price-contingent whole-share sizing is a proxy, not a known pre-open MOO share order",
+    "capital_cents": 100000,
+    "leverage": false,
+    "fractional_shares": false,
+    "shorts": false,
+    "primary_costs": {"half_spread_bps": 5, "additional_slippage_bps": 10, "fee_cents_per_order": 0},
+    "sensitivity_total_one_way_bps": [25, 50],
+    "sensitivity_fee_cents_per_order": 100,
+    "cost_status": "frozen assumptions only; quotes if later available replace half-spread, not add a second spread",
+    "cash_interest_primary": 0,
+    "cash_interest_sensitivity": "dated investable cash-rate proxy with documented access; apply same convention to all strategies",
+    "liquidity": "<= 1% prior 20-session consolidated mean share volume per order; no filling halted or missing-open names",
+    "gate": "repair shared risk-cap/gap/settlement/precision rules before any full historical replay; an unresolved rejection invalidates study, not an omitted bad day"
+  },
+  "benchmarks": ["licensed US broad-market total-return index", "50% same index plus 50% cash rebalanced monthly with consistent cash convention", "unchanged baseline under identical execution/cost rules"],
+  "primary_comparison": "candidate minus baseline mean monthly net return; paired nonoverlapping calendar-year block bootstrap 10000 replicates seed 20261012, 95% interval; limitations from few blocks stated",
+  "secondary_metrics": ["net ending wealth", "CAGR", "annualized monthly volatility", "Sharpe with dated risk-free rate or null if unavailable", "maximum drawdown and recovery duration", "gross bought and sold notional / pretrade NAV", "one-way turnover = (buy + sell notional) / (2 * pretrade NAV)", "fees/spread/slippage cents", "exposure and cash drag", "trade/rejection counts", "benchmark-relative returns", "rolling 12-month returns"],
+  "decision_rule": "single candidate proceeds from validation only if net return and turnover improve with no worse maximum drawdown; freeze before opening test. Economic improvement requires same directional gates on sealed test and lower endpoint of primary paired 95% interval >0. Otherwise retain baseline research status or conclude inconclusive; no retuning.",
+  "release": {"promote": false, "historical_performance_measured": false, "real_trades": false, "automatic_paper_trades": false}
+}
