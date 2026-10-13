@@ -24,7 +24,7 @@
 - No signed owner UI/authentication, scheduler, broker webhook/event persistence, idempotent order receipts, persisted reconciled NAV, or alerts.
 - The read-only API may return status warnings but **does not block third-party trading**: blocking new orders only works after a separately gated execution service is built.
 - Historical stock model still not validated against real full-market point-in-time data and corporate actions. PRs #43 and #45 address offline research. Keep QuantConnect Free for cloud backtesting.
-- **Alpaca Basic stock market data is IEX-only for real-time equity prices**. SportsEdge's frozen full-market $20M/20-session dollar-volume criterion requires separately verified consolidated volume and source comparability. Do not treat IEX as SIP and do not silently change the algorithm.
+- **Alpaca Basic provides IEX-only real-time stock data, but Alpaca documents access to historical SIP consolidated bars when the requested end time is at least 15 minutes old.** This may be useful for the frozen monthly strategy's previous-session volume and price signals at 08:00 New York without paying for real-time SIP; verify entitlement, publication timing, session boundaries and source parity before relying on it. Explicitly use `feed=sip` for *authorized historical* requests; never treat live IEX as consolidated volume. This does not provide the 2000–2011 study history (Alpaca starts in 2016) or a complete point-in-time universe with terminal events. Source: https://docs.alpaca.markets/us/docs/market-data-faq
 - Sports betting paper experiments are **separate** from Alpaca (an equities brokerage). They require their own odds/results infrastructure.
 
 ## Before paper-order automation could be approved
