@@ -1,0 +1,24 @@
+{
+  "version": "stock-universe-transport-amendment-20261013-v1",
+  "base_commit": "ab97d6dcfb439418a64a145a1261d91bce7ac50a",
+  "dependency": "SportsEdge_Stock_Candidate_Adapter_2026-10-13.zip",
+  "original_protocol_unchanged": true,
+  "selection_candidates": 1,
+  "new_alpha_hypotheses": 0,
+  "change": "Bounded per-permanent-ID scoring, globally applied unchanged rank/sector/count rules, and declared known-IPO age eligibility. Execution adapter is newly versioned and accounting v2 unchanged. This is an input/transport amendment requiring source review before historical use.",
+  "versions": [
+    "stock-pit-universe-scoring-v1",
+    "stock-fulluniverse-account-adapter-v1",
+    "stock-source-sample-preflight-v1"
+  ],
+  "historical_backtest_ready": false,
+  "historical_outcomes_inspected": false,
+  "protected_sha256": {
+    "analytics/stock_momentum_v1.py": "fbf765447add9934bf856a35620b9218524bf18827f51493994ebd3a0af8a840",
+    "analytics/stock_rank_buffer_candidate.py": "d7ffadcc9a514685cc499491df6c15e0aa3f8111d15a92f213ddc095cf03dd38",
+    "analytics/stock_accounting_v2.py": "eabc13d1a27d20cb45dc16353dbbef9303cf4d2634921e1f8bc7eeb192d72384",
+    "analytics/stock_baseline_replay_v2.py": "3fa9b8d10e8ea1f692cd4a6373fe2fb765d0d56727854a60664cb2da6788670d",
+    "analytics/stock_buffer_replay_v1.py": "bdce9c5840698c37a45929ac29dd96d8c869e3cc8c10e941d156a2b48dc76eec",
+    "research/stock_audit_20261012/protocol.json": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4"
+  }
+}

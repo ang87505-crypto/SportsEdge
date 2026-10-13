@@ -1,0 +1,26 @@
+{
+  "version": "stock-buffer-adapter-freeze-20261013-v1",
+  "base_commit": "ab97d6dcfb439418a64a145a1261d91bce7ac50a",
+  "accounting_patch_base": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82",
+  "baseline": "stock-mom252-skip21-trend200-v1",
+  "candidate": "stock-mom252-skip21-trend200-holdrank10-v1",
+  "candidate_count": 1,
+  "new_selection_hypotheses": 0,
+  "adapter_version": "stock-holdrank10-account-adapter-v1",
+  "comparison_version": "stock-baseline-buffer-synthetic-comparison-v1",
+  "rules": "Existing candidate byte-for-byte: retain eligible positive-momentum positive-trend incumbents in top ten qualifying ranks, rank order with five-name/two-per-sector caps, then fill by original rank; unchanged 10% budgets and monthly timing. No parameter search.",
+  "evaluation": "Original periods, costs, benchmarks, validation gates and 10000-replicate seed-20261012 paired calendar-year bootstrap unchanged. No historical evaluation permitted by this milestone runner.",
+  "data_status": "No legally verified PIT dataset available in inspected repository or attachments; historical performance not testable.",
+  "deferred": [
+    "volatility-adjusted ranking: no verified stock-level return inputs and no direct justification for an extra trial",
+    "market trend or breadth filter: no verified PIT market series/full-universe breadth inputs; no threshold chosen"
+  ],
+  "protected_sha256": {
+    "analytics/stock_momentum_v1.py": "fbf765447add9934bf856a35620b9218524bf18827f51493994ebd3a0af8a840",
+    "analytics/stock_rank_buffer_candidate.py": "d7ffadcc9a514685cc499491df6c15e0aa3f8111d15a92f213ddc095cf03dd38",
+    "analytics/stock_accounting_v2.py": "eabc13d1a27d20cb45dc16353dbbef9303cf4d2634921e1f8bc7eeb192d72384",
+    "analytics/stock_baseline_replay_v2.py": "3fa9b8d10e8ea1f692cd4a6373fe2fb765d0d56727854a60664cb2da6788670d",
+    "research/stock_audit_20261012/protocol.json": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4",
+    "research/stock_accounting_v2_20261012/protocol_amendment.json": "ce6189969559d7fbcf3951dc1992f0e340493d32be7e72360f36fd1f7835222b"
+  }
+}

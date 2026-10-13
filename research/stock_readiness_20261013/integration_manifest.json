@@ -1,0 +1,56 @@
+{
+  "main_commit": "1be3dd989e4ca321ff4e99e3a18658a3935d47a2",
+  "main_tree": "9200857459100716ed30bd87e33d3cf4a6a2db35",
+  "outer_archive_sha256": "9fbef45a6e735fc278d3d07c89827494e0229c726334972cc2e689a194a14de2",
+  "packages": [
+    {
+      "archive": "SportsEdge_Stock_Candidate_Adapter_2026-10-13.zip",
+      "sha256": "a431708167f3179acba9d2b40d3c7bb7ed55932f2555d60ed6160d180e7a1a2c",
+      "files": {
+        "analytics/stock_accounting_v2.py": "eabc13d1a27d20cb45dc16353dbbef9303cf4d2634921e1f8bc7eeb192d72384",
+        "analytics/stock_baseline_replay_v2.py": "3fa9b8d10e8ea1f692cd4a6373fe2fb765d0d56727854a60664cb2da6788670d",
+        "analytics/stock_buffer_replay_v1.py": "bdce9c5840698c37a45929ac29dd96d8c869e3cc8c10e941d156a2b48dc76eec",
+        "analytics/stock_candidate_comparison_v1.py": "51c47f9e62b310ea91e0d33a8a15227f67cce497141018e290eacb20f5b2bfde",
+        "analytics/test_stock_accounting_v2.py": "1b6c10febe1a81664b7b5253678691ac6cadc82e9974fd24fe1b43906361494b",
+        "analytics/test_stock_candidate_adapter_v1.py": "8dca5415803a121b712328ce637f400b34f4372e3c54f7fcece957428ab0401b",
+        "docs/STOCK_ACCOUNTING_EXECUTION_V2_2026_10_12.md": "7a1e765824cbe4263e59483574b3cbe2adebcf4817cc4ffce596badb2f273a67",
+        "docs/STOCK_CANDIDATE_ADAPTER_2026_10_13.md": "d90a5f517ed4ce658a049f1130a45288a4d10ff557197047d9e8c9847810faf1",
+        "research/stock_accounting_v2_20261012/protocol_amendment.json": "ce6189969559d7fbcf3951dc1992f0e340493d32be7e72360f36fd1f7835222b",
+        "research/stock_accounting_v2_20261012/reproduce.py": "253306f8f26f8812aa508f42418219872f1f0016d9ccbf55edc1c8e8eb7008d6",
+        "research/stock_accounting_v2_20261012/synthetic_results.json": "964044b23e5beaca1130aad67e8c9d83029a12869736c4c4cfd54eaf1d0bf07e",
+        "research/stock_accounting_v2_20261012/verification.json": "6f7c62d876b7f396aec6687b6fbf8c330d7a18cdec32d28ae8a9c36f692ff715",
+        "research/stock_candidate_adapter_20261013/freeze.json": "e4acfedc49cb706c0fc0fea07c739f8a0346197c390c5dea4c0c7da51104c8c7",
+        "research/stock_candidate_adapter_20261013/reproduce.py": "94a2dc9e2ef2f1573c718a7a084c5f1cc4deec7480b489afaed69b7fb3eef45d",
+        "research/stock_candidate_adapter_20261013/synthetic_checks.json": "38f45ab1ee7f2fd45ff6c43b547884b5f5b71395782b66261cd4842ebcd5b1f3",
+        "research/stock_candidate_adapter_20261013/verification.json": "23fa256a152af2d91ce65fc4caef704696281936f74e04a9f07b145203b26597"
+      }
+    },
+    {
+      "archive": "SportsEdge_Stock_Universe_Readiness_2026-10-13.zip",
+      "sha256": "bb28d05638afd653f05414aa8c1c90b7f7f27dafb149bccd0135c9026f74058d",
+      "files": {
+        "analytics/stock_source_sample_v1.py": "e7787457476360cbf4462e0004ea87a54906d73f80469ebac72ac6bd073d1966",
+        "analytics/stock_universe_account_v1.py": "db517ee6d7ccf08a657bff027de7ea650bf06f6fd897400db205c9d1e646e713",
+        "analytics/stock_universe_scoring_v1.py": "8c210f7ac66b1b128eda5176aa5d4be11960539e1c6cd1a0dc69af99c68bf8e0",
+        "analytics/test_stock_source_sample_v1.py": "9547a22b19d5f4a3cea96c4af46fd34437797a5dae815d217c933815360a1dba",
+        "analytics/test_stock_universe_readiness_v1.py": "638c1e32be6a87f4c5c6b7236f23601a44d06c1df8a1e058a1e0a5b5b1e12cb3",
+        "docs/STOCK_UNIVERSE_READINESS_2026_10_13.md": "7ad7281db162e4615a174eabbc1c9a3dcfc64426a15a7b61cb6ee848e3be8f11",
+        "research/stock_universe_readiness_20261013/amendment.json": "3f56281d3b6af3cf2b097a9f75759428dd1993d998e035f44fa0e21f43d1332c",
+        "research/stock_universe_readiness_20261013/reproduce.py": "129c3bdaf1297661549ee04a956ceb1c4b22764fa9c48e28cc4fe7d386f6928d",
+        "research/stock_universe_readiness_20261013/sample_manifest_TEMPLATE.json": "990c299ebd9272e1ffd64b656b3812405df84dd1fdff4b5ba743a31623b23a76",
+        "research/stock_universe_readiness_20261013/synthetic_checks.json": "9ad908f54f4ab43ac0d26d4cac401c8e1dbae1ba20bb38385a40238f088c4689",
+        "research/stock_universe_readiness_20261013/verification.json": "09164035d7162d0d581ea64a30e5be221c42edf76e8fabe24c6d5e315ea945d4"
+      }
+    }
+  ],
+  "all_27_imported_files_byte_identical": true,
+  "source_snapshot": "169 text files verified against Git blob SHA1; binary favicon remains unchanged in remote base tree. Local snapshot commit is not represented as GitHub main.",
+  "pr15_preserved": {
+    "head": "eff4274825a92efee698f1ae62966927f7ba56fa",
+    "merge": "8ea22382149952dd5d40f4d5c85963c77163381f"
+  },
+  "pr40": {
+    "head": "24e2a356abea2cfff7c6ec4554a81774f7450c65",
+    "merge": "b729ad6343326ef968461bed7c53a1cd572bcc5d"
+  }
+}

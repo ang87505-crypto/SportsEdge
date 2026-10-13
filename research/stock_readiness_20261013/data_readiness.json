@@ -1,0 +1,18 @@
+{
+  "version": "stock-readiness-pipeline-v1",
+  "status": "BLOCKED",
+  "performance": null,
+  "historical_backtest_ready": false,
+  "authorized_source_dataset_supplied": false,
+  "blockers": [
+    "licensed_full_PIT_universe_and_inactive_security_history_missing",
+    "1999_or_earlier_warmup_and_full_2000_2011_development_prices_missing",
+    "source_raw_prices_consolidated_volume_and_availability_unreconciled",
+    "delisting_merger_spinoff_and_fractional_entitlement_support_incomplete",
+    "historical_execution_proxy_and_calendar_review_pending",
+    "licensed_total_return_benchmark_missing",
+    "independent_rights_and_sealed_test_exposure_attestation_missing"
+  ],
+  "alpaca": "Existing collector/gate code is available; no authorized archive bytes supplied to this run. 2026 checks cannot admit historical performance.",
+  "next_action": "Confirm WRDS/CRSP access and permitted use; supply an authorized development-only source sample and dictionary. Reconcile events before full development data."
+}

@@ -1,0 +1,58 @@
+name: Frozen stock readiness
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  stock-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: All inherited and new analytics regressions
+        run: python -m unittest discover -s analytics -p 'test_*.py' -v
+      - name: Reproduce all frozen synthetic packages
+        run: |
+          mkdir -p artifacts
+          python research/stock_accounting_v2_20261012/reproduce.py --output artifacts/accounting.json
+          python research/stock_candidate_adapter_20261013/reproduce.py --output artifacts/candidate.json
+          python research/stock_universe_readiness_20261013/reproduce.py --output artifacts/universe.json
+          python -m analytics.stock_readiness_pipeline_v1 --mode synthetic --output artifacts/dry-run.json
+          python -m analytics.stock_readiness_pipeline_v1 --mode readiness --output artifacts/readiness.json
+          cmp artifacts/dry-run.json research/stock_readiness_20261013/synthetic_dry_run.json
+          cmp artifacts/readiness.json research/stock_readiness_20261013/data_readiness.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-synthetic-readiness-not-performance
+          path: artifacts/
+
+  stock-report-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE_URL: http://127.0.0.1:3100
+      BROWSER_QA_OUTPUT: artifacts/stock-browser
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start read-only site and test five responsive widths
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3100 > /tmp/stock-site.log 2>&1 &
+          site_pid=$!
+          trap 'kill "$site_pid" || true' EXIT
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium)"
+          node scripts/stock-research-browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-research-browser-evidence
+          path: artifacts/stock-browser/

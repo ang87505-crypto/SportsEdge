@@ -1,0 +1,90 @@
+{
+  "version": "stock-readiness-pipeline-v1",
+  "kind": "SYNTHETIC_ENGINEERING_ONLY",
+  "performance": null,
+  "historical_backtest_ready": false,
+  "protocol_sha256": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4",
+  "protected_sha256": {
+    "analytics/stock_momentum_v1.py": "fbf765447add9934bf856a35620b9218524bf18827f51493994ebd3a0af8a840",
+    "analytics/stock_rank_buffer_candidate.py": "d7ffadcc9a514685cc499491df6c15e0aa3f8111d15a92f213ddc095cf03dd38",
+    "analytics/stock_accounting_v2.py": "eabc13d1a27d20cb45dc16353dbbef9303cf4d2634921e1f8bc7eeb192d72384",
+    "analytics/stock_baseline_replay_v2.py": "3fa9b8d10e8ea1f692cd4a6373fe2fb765d0d56727854a60664cb2da6788670d",
+    "research/stock_audit_20261012/protocol.json": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4",
+    "research/stock_accounting_v2_20261012/protocol_amendment.json": "ce6189969559d7fbcf3951dc1992f0e340493d32be7e72360f36fd1f7835222b",
+    "analytics/stock_buffer_replay_v1.py": "bdce9c5840698c37a45929ac29dd96d8c869e3cc8c10e941d156a2b48dc76eec"
+  },
+  "scenarios": [
+    {
+      "nominal_one_way_bps": 15,
+      "fee_cents_per_order": 0,
+      "input_sha256": "c18e02b806d9823bebf848c020de5ee922412d1e295357429d745305ce9a8c6e",
+      "output_sha256": "6112e215c02e394abacbd370b60c5e2e0914b58ffd35895a17d785f083869c05",
+      "repeated_outputs_identical": true,
+      "reconciliation": {
+        "baseline": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "0.670000000",
+          "ending_nav_dollars": "999.33",
+          "all_receipts_reconciled": true
+        },
+        "candidate": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "0.670000000",
+          "ending_nav_dollars": "999.33",
+          "all_receipts_reconciled": true
+        }
+      }
+    },
+    {
+      "nominal_one_way_bps": 25,
+      "fee_cents_per_order": 100,
+      "input_sha256": "b611f0a890944239251565a428f6ce0eb4d47d83d9403145838651a5fc39b174",
+      "output_sha256": "3562e4928794b3f0c51f23e1f5d9921bfc41d0f070ff647e146257f1d8507096",
+      "repeated_outputs_identical": true,
+      "reconciliation": {
+        "baseline": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "6.090000000",
+          "ending_nav_dollars": "993.91",
+          "all_receipts_reconciled": true
+        },
+        "candidate": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "6.090000000",
+          "ending_nav_dollars": "993.91",
+          "all_receipts_reconciled": true
+        }
+      }
+    },
+    {
+      "nominal_one_way_bps": 50,
+      "fee_cents_per_order": 100,
+      "input_sha256": "892fceb6328f5a2a00d8bb7caa7ad5e28f489530ae8b388857d56cc2735bc0f6",
+      "output_sha256": "f41196203ffdbb30344c98fc028ab2f597492e9dafd70b4eb1d44b0b5a9605e4",
+      "repeated_outputs_identical": true,
+      "reconciliation": {
+        "baseline": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "7.1600000000",
+          "ending_nav_dollars": "992.84",
+          "all_receipts_reconciled": true
+        },
+        "candidate": {
+          "sessions": 23,
+          "trades": 5,
+          "costs_dollars": "7.1600000000",
+          "ending_nav_dollars": "992.84",
+          "all_receipts_reconciled": true
+        }
+      }
+    }
+  ],
+  "cost_convention": "5bp half-spread; remaining slippage applied to bid/ask; cents rounded per order",
+  "real_trades": false,
+  "automatic_paper_trades": false
+}

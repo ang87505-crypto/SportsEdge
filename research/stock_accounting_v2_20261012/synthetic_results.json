@@ -1,0 +1,153 @@
+{
+  "kind": "SYNTHETIC_CORRECTNESS_ONLY",
+  "genuine_prices_used": false,
+  "historical_performance_measured": false,
+  "tests_passed": true,
+  "examples": {
+    "spread_fee_slippage": {
+      "trades": [
+        {
+          "trade_id": "6878cb315b60baac4b9d93cb2f889f0ee01f4bce0f8e0a7b57a25b649c596fc3",
+          "security_id": "id-AAA",
+          "symbol": "AAA",
+          "side": "buy",
+          "shares": 3,
+          "unit_price": "30.04001",
+          "amount_cents": 9038,
+          "fee_cents": 25,
+          "settlement_date": "2026-10-02",
+          "reference_price": "30.01",
+          "spread_cost_dollars": "0.03",
+          "slippage_cost_dollars": "0.09003",
+          "rounding_cost_dollars": "0.00997",
+          "settled_cash_delta_cents": -9038,
+          "unsettled_delta_cents": 0,
+          "status": "SIMULATED_NOT_EXECUTED"
+        },
+        {
+          "trade_id": "87cf6630f6837dbcfd22dce067c734438b2d5a6c51507b20435989b9c68da0d1",
+          "security_id": "id-BBB",
+          "symbol": "BBB",
+          "side": "buy",
+          "shares": 3,
+          "unit_price": "30.04001",
+          "amount_cents": 9038,
+          "fee_cents": 25,
+          "settlement_date": "2026-10-02",
+          "reference_price": "30.01",
+          "spread_cost_dollars": "0.03",
+          "slippage_cost_dollars": "0.09003",
+          "rounding_cost_dollars": "0.00997",
+          "settled_cash_delta_cents": -9038,
+          "unsettled_delta_cents": 0,
+          "status": "SIMULATED_NOT_EXECUTED"
+        }
+      ],
+      "settled_cash_cents": 81924,
+      "unsettled": [],
+      "positions": {
+        "id-AAA": 3,
+        "id-BBB": 3
+      }
+    },
+    "existing_holdings": {
+      "trades": [
+        {
+          "trade_id": "fcae52665cc8eb2c0e45557bbd045e923d5449a5aa1b050a3ec71e716f844119",
+          "security_id": "id-AAA",
+          "symbol": "AAA",
+          "side": "sell",
+          "shares": 8,
+          "unit_price": "29.96001",
+          "amount_cents": 23943,
+          "fee_cents": 25,
+          "settlement_date": "2026-10-02",
+          "reference_price": "29.99",
+          "spread_cost_dollars": "0.08",
+          "slippage_cost_dollars": "0.23992",
+          "rounding_cost_dollars": "0.00008",
+          "settled_cash_delta_cents": 0,
+          "unsettled_delta_cents": 23943,
+          "status": "SIMULATED_NOT_EXECUTED"
+        },
+        {
+          "trade_id": "d6b43858964b8f0fc82332d3852f8a8b098612f001f35a57716bca563017ee42",
+          "security_id": "id-BBB",
+          "symbol": "BBB",
+          "side": "buy",
+          "shares": 2,
+          "unit_price": "30.04001",
+          "amount_cents": 6034,
+          "fee_cents": 25,
+          "settlement_date": "2026-10-02",
+          "reference_price": "30.01",
+          "spread_cost_dollars": "0.02",
+          "slippage_cost_dollars": "0.06002",
+          "rounding_cost_dollars": "0.00998",
+          "settled_cash_delta_cents": -6034,
+          "unsettled_delta_cents": 0,
+          "status": "SIMULATED_NOT_EXECUTED"
+        }
+      ],
+      "settled_cash_cents": 48766,
+      "unsettled": [
+        {
+          "id": "fcae52665cc8eb2c0e45557bbd045e923d5449a5aa1b050a3ec71e716f844119",
+          "amount_cents": 23943,
+          "due_date": "2026-10-02"
+        }
+      ],
+      "positions": {
+        "id-AAA": 2,
+        "id-BBB": 2
+      }
+    },
+    "subcent": {
+      "trades": [
+        {
+          "trade_id": "6878cb315b60baac4b9d93cb2f889f0ee01f4bce0f8e0a7b57a25b649c596fc3",
+          "security_id": "id-AAA",
+          "symbol": "AAA",
+          "side": "buy",
+          "shares": 9,
+          "unit_price": "10.000001",
+          "amount_cents": 9001,
+          "fee_cents": 0,
+          "settlement_date": "2026-10-02",
+          "reference_price": "10.000001",
+          "spread_cost_dollars": "0.000000",
+          "slippage_cost_dollars": "0.000000",
+          "rounding_cost_dollars": "0.009991",
+          "settled_cash_delta_cents": -9001,
+          "unsettled_delta_cents": 0,
+          "status": "SIMULATED_NOT_EXECUTED"
+        },
+        {
+          "trade_id": "87cf6630f6837dbcfd22dce067c734438b2d5a6c51507b20435989b9c68da0d1",
+          "security_id": "id-BBB",
+          "symbol": "BBB",
+          "side": "buy",
+          "shares": 9,
+          "unit_price": "10.000001",
+          "amount_cents": 9001,
+          "fee_cents": 0,
+          "settlement_date": "2026-10-02",
+          "reference_price": "10.000001",
+          "spread_cost_dollars": "0.000000",
+          "slippage_cost_dollars": "0.000000",
+          "rounding_cost_dollars": "0.009991",
+          "settled_cash_delta_cents": -9001,
+          "unsettled_delta_cents": 0,
+          "status": "SIMULATED_NOT_EXECUTED"
+        }
+      ],
+      "settled_cash_cents": 81998,
+      "unsettled": [],
+      "positions": {
+        "id-AAA": 9,
+        "id-BBB": 9
+      }
+    }
+  },
+  "protocol_amendment_sha256": "ce6189969559d7fbcf3951dc1992f0e340493d32be7e72360f36fd1f7835222b"
+}
