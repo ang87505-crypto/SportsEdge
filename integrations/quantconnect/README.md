@@ -19,9 +19,12 @@ automated paper bet, or live trade.
 - Offline test_parity_repo.py checks the original frozen SportsEdge
   functions directly using existing SYNTHETIC fixtures.
 - main.py is an optional read-only QuantConnect fundamental-universe
-  diagnostic (2000–2011) that places **zero orders** and deliberately
-  returns zero selected subscriptions to avoid free-node memory overflow.
-  No selection results are connected to it yet.
+  diagnostic (2000–2011, 144 expected months) that places **zero orders**,
+  checks for missing identities, missing sectors, gaps and malformed fields
+  internally, and returns zero selected subscriptions to avoid free-node
+  memory overflow. **Dataset-derived audit counts remain inside QuantConnect
+  Cloud and are not written to logs.** No selection results are connected yet.
+  See docs/QUANTCONNECT_DATA_READINESS_2026_10_13.md.
 - safety.py is a deterministic *example contract* for future alerts.
   It cannot monitor a real account, deliver notifications, or halt
   any currently enabled orders. Thresholds in tests are examples only.
@@ -90,3 +93,13 @@ orders without new owner authorization and demonstrated independent testing.
 - Pending accounting/readiness PR #43
 - https://www.quantconnect.com/docs/v2/writing-algorithms/universes/equity/fundamental-universes
 - https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions
+
+## Hosted source-data restriction (October 2026)
+
+QuantConnect prohibits exporting its market/fundamental dataset values via
+logs, screenshots, network/API calls or indirect reconstruction. The source
+coverage diagnostic keeps its vendor-derived details inside the running
+QuantConnect process; only non-data messages appear in the log. Ordinary
+strategy backtest summary statistics may later be shared under the official
+terms, provided they are not designed to reveal underlying market data.
+See https://www.quantconnect.com/terms/ .
