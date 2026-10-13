@@ -1,0 +1,27 @@
+{
+  "version": "nba-audit-20261012-v1",
+  "status": "frozen before new candidate evaluation; existing archive already exposed",
+  "base_commit": "1bca2bdb6e3a9c53b15021a63242e26055e285d2",
+  "source_blob": "ed143d6e608b21f791b7ff9f2e35577c9aa5997a",
+  "warmup": ["2007-08"],
+  "calibration_training": ["2008-09", "2009-10", "2010-11", "2011-12", "2012-13"],
+  "validation": ["2013-14", "2014-15", "2015-16"],
+  "exposed_temporal_test": ["2016-17", "2017-18", "2018-19", "2019-20"],
+  "untouched_historical_test_available": false,
+  "candidates": ["identity", "identity_carry75", "identity_calibrated", "identity_carry75_calibrated"],
+  "identity_map": {"SEA": "OKC", "NJN": "BKN", "NOH": "NOP"},
+  "calibration": "sigmoid(a + b * logit(Elo)); train-only penalized logistic likelihood; penalty 0.5*(a^2+(b-1)^2); no refit on validation/test",
+  "elo": {"k": 20, "home": 65, "initial": 1500, "same_day_batch": true},
+  "selection": "maximum EV >= 0.02 at archived raw prices; positive proportional no-vig gap; home-first ties; flat 1000 cents; no threshold tuning",
+  "validation_selection": "minimum mean log loss among legacy baseline and four fixed candidates; ties prefer listed baseline-first order",
+  "uncertainty": "paired ISO-week cluster bootstrap, 2000 resamples, seed 20261012; season-cluster ROI sensitivity; no confirmatory significance claim after exposure/selection",
+  "promotion": false,
+  "prospective_holdout": {
+    "period": "2026-27 NBA regular season",
+    "status": "reserved; no forward collection or betting activation in this milestone",
+    "prerequisites": "separate reviewed freeze of model artifact, team IDs, neutral-site policy, decision cutoff, final-score availability and book-specific quote capture; otherwise no eligible test",
+    "primary_endpoint": "paired mean log-loss difference against proportional no-vig market on identical timestamp-eligible games at season end",
+    "secondary": "Brier, reliability bins, fixed-rule ROI, day-end dollar drawdown; clustered uncertainty; no interim retuning",
+    "restart_rule": "any change to model, selection, price rule or eligibility requires a new version and future holdout; preserve original failures"
+  }
+}
