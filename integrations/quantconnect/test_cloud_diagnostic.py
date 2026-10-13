@@ -85,8 +85,9 @@ class CloudDiagnosticTests(unittest.TestCase):
         self.assertEqual(instance._inspect_universe([entry('B')]), [])
         self.assertEqual(len(instance._audits), 1)
         self.assertEqual(instance._audits[(2000,1)]['observed'], 1)
-        self.assertIn('SOURCE_NOT_ADMITTED', messages[0])
+        self.assertIn('internal audit step completed', messages[0])
         self.assertNotIn('ID-1', messages[0])
+        self.assertNotIn('rows=', messages[0])
 
     def test_end_report_catches_skipped_months_without_fake_returns(self):
         instance = qc.SportsEdgeUniverseReadiness()
@@ -94,9 +95,11 @@ class CloudDiagnosticTests(unittest.TestCase):
         messages = []
         instance.debug = messages.append
         instance.on_end_of_algorithm()
-        self.assertIn('months_seen=1/144', messages[0])
-        self.assertIn('missing_months=143', messages[0])
-        self.assertIn('PERFORMANCE=NOT_MEASURED', messages[0])
+        self.assertFalse(instance._internal_source_ready)
+        self.assertFalse(instance._historical_source_admitted)
+        self.assertIn('DATA_EXPORT_DISABLED', messages[0])
+        self.assertNotIn('months_seen', messages[0])
+        self.assertNotIn('missing_months', messages[0])
 
     def test_script_forbids_orders_and_export_code(self):
         source = Path(__file__).with_name('main.py').read_text()
