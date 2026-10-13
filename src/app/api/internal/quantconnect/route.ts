@@ -1,8 +1,6 @@
 import {timingSafeEqual} from 'node:crypto';
 import {listQuantConnect,verifyQuantConnect} from '@/lib/server/quantconnect-client';
 
-export const dynamic='force-dynamic';
-
 function authorized(request:Request) {
   const token=process.env.SPORTSEDGE_QC_READ_TOKEN;
   if(!token||token.length<32)return false;
