@@ -1,0 +1,29 @@
+name: Stock source bridge and event shadow
+on:
+  push:
+    branches: ['research/stock-source-bridge-20261013']
+  pull_request:
+    paths:
+      - 'integrations/quantconnect/**'
+      - 'analytics/stock_event_shadow.py'
+      - 'analytics/test_stock_event_shadow.py'
+      - '.github/workflows/stock-source-shadow.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m compileall -q integrations/quantconnect analytics/stock_event_shadow.py
+          python -m unittest discover -s integrations/quantconnect -p 'test_*.py' -v
+          python -m unittest discover -s analytics -p 'test_stock*.py' -v
