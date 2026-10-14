@@ -42,11 +42,14 @@ export type PaperOrderInventory={
  safeForExecution:false;
 };
 export class PaperReconciliationError extends Error {
- constructor(readonly reason:'AUTH'|'ACCESS'|'THROTTLED'|'NETWORK'|'UPSTREAM'|
-  'BAD_PAYLOAD'|'UNVERIFIABLE_HISTORY'|'HISTORY_TOO_LARGE'|'NOT_FOUND',
-  readonly stage:'history'|'lookup') {
+ readonly reason:'AUTH'|'ACCESS'|'THROTTLED'|'NETWORK'|'UPSTREAM'|
+  'BAD_PAYLOAD'|'UNVERIFIABLE_HISTORY'|'HISTORY_TOO_LARGE'|'NOT_FOUND';
+ readonly stage:'history'|'lookup';
+ constructor(reason:PaperReconciliationError['reason'],stage:PaperReconciliationError['stage']) {
   super('Alpaca paper read-only reconciliation unavailable');
   this.name='PaperReconciliationError';
+  this.reason=reason;
+  this.stage=stage;
  }
 }
 function isObject(v:unknown):v is Record<string,unknown>{
