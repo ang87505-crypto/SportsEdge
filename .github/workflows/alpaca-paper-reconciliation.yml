@@ -1,0 +1,67 @@
+name: Alpaca PAPER reconciliation and isolated outbox CAS
+on:
+  push:
+    branches: ['feature/alpaca-paper-reconciliation-outbox-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/server/alpaca-paper-reconciliation*'
+      - 'src/app/api/internal/alpaca-paper/reconciliation/route.ts'
+      - 'src/components/alpaca-paper-reconciliation-panel.tsx'
+      - 'src/components/alpaca-paper-dashboard.tsx'
+      - 'src/lib/stocks/paper-reconciliation-decisions*'
+      - 'database/tests/alpaca_paper_outbox*'
+      - 'database/ddl/alpaca_paper_outbox*'
+      - '.github/workflows/alpaca-paper-reconciliation.yml'
+permissions:
+  contents: read
+jobs:
+  paper-orders-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Adversarial paginated paper-order reader and uncertainty tests
+        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs src/lib/server/alpaca-paper-reconciliation-guard.test.mjs
+      - name: No broker write, schedule or order-placing API in reconciliation code
+        run: |
+          node -e "const fs=require('node:fs');let s=fs.readFileSync('src/lib/server/alpaca-paper-reconciliation.ts','utf8');s=s.replace(/\/\*[\s\S]*?\*\//g,'');if(/method\s*:\s*['\"\x60](POST|DELETE|PUT|PATCH)|scheduleOrdersEnabled:\s*true|paper-api\.alpaca\.markets\/v2\/orders'\s*,\s*\{method:\s*['\"]POST/.test(s))process.exit(1);"
+  paper-outbox-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sportsedge_paper_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sportsedge_paper_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: sportsedge_paper_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client when missing
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
+      - name: Create disposable unprivileged roles and proposed schemas
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;"
+          psql -X -v ON_ERROR_STOP=1 -f database/ddl/alpaca_paper_outbox_PROPOSAL_20261014.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/ddl/alpaca_paper_outbox_CAS_PROPOSAL_20261014.sql
+      - name: Audit RLS, fail-closed transitions, immutable source and receipt events
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/alpaca_paper_outbox_cas.sql
+      - name: Race independent PostgreSQL connections with stale CAS version
+        run: bash database/tests/alpaca_paper_outbox_race.sh

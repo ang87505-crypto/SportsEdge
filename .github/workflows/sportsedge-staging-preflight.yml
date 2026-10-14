@@ -1,0 +1,65 @@
+name: SportsEdge owner test center and staging-only outbox preflight
+on:
+  push:
+    branches: ['feature/alpaca-staging-test-center-20261014']
+  pull_request:
+    paths:
+      - 'database/staging/alpaca_paper_outbox_staging_v1.sql'
+      - 'src/app/testing/**'
+      - 'src/components/testing-walkthrough.tsx'
+      - 'src/components/workspace-shell.tsx'
+      - '.github/workflows/sportsedge-staging-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  paper-staging-schema-disposable:
+    name: Staging schema denied-by-default and receipt races
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sportsedge_staging_schema_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sportsedge_staging_schema_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: sportsedge_staging_schema_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
+      - name: Apply exact versioned staging migration in disposable DB
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;"
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_outbox_staging_v1.sql
+      - name: RLS, HALT-on-missing-gate, optimistic locks and immutable receipts
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/alpaca_paper_outbox_cas.sql
+      - name: Two-connection duplicate-claim race
+        run: bash database/tests/alpaca_paper_outbox_race.sh
+  integration-boundary:
+    name: Owner journey and hard-off broker automation boundaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Assert no real-money release or hidden trader
+        run: |
+          node -e "const fs=require('fs');const s=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const x of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false','emergencyStopOperational:false'])if(!s.includes(x))process.exit(1);const p=fs.readFileSync('src/app/testing/page.tsx','utf8');for(const x of ['Not released yet','Production','Staging'])if(!p.includes(x))process.exit(1);const walk=fs.readFileSync('src/components/testing-walkthrough.tsx','utf8');for(const x of ['Private preview','Blocked','Inspectable'])if(!walk.includes(x))process.exit(1);"
+      - name: Run offline paper model/receipt/broker consistency tests
+        run: node --experimental-strip-types --test src/lib/stocks/paper-automation-plan.test.mjs src/lib/stocks/paper-automation-receipts.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/server/alpaca-paper-reconciliation-guard.test.mjs

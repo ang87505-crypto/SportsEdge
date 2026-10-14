@@ -1,0 +1,66 @@
+name: Alpaca PAPER staged STOP and non-executable schedule rehearsal
+on:
+  push:
+    branches: ['feature/alpaca-paper-release-gates-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/stocks/paper-scheduled-rehearsal*'
+      - 'src/lib/stocks/paper-broker-order-contract*'
+      - 'database/staging/alpaca_paper_staging_halt_v2.sql'
+      - 'database/tests/alpaca_paper_staging_halt_v2.sql'
+      - 'src/components/alpaca-paper-automation-readiness.tsx'
+      - '.github/workflows/alpaca-paper-release-gates.yml'
+permissions:
+  contents: read
+jobs:
+  offline-broker-execution-contract:
+    name: Strictly offline scheduling and fixed PAPER order drafts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Exercise calendar, no orders, fixed PAPER envelopes, bad account, ambiguous receipts
+        run: |
+          node --experimental-strip-types --test src/lib/stocks/paper-scheduled-rehearsal.test.mjs src/lib/stocks/paper-broker-order-contract.test.mjs
+      - name: Reject any enabled release flag or production broker URL
+        run: |
+          node -e "const fs=require('node:fs');const r=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const x of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!r.includes(x))process.exit(1);const p=fs.readFileSync('src/lib/stocks/paper-broker-order-contract.ts','utf8');if(!p.includes('https://paper-api.alpaca.markets/v2/orders')||p.includes('https://api.alpaca.markets/v2/orders')||p.includes('fetch('))process.exit(1);"
+  postgres-staging-stop:
+    name: Staging stop persisted, no-resume gate, forbidden order approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sportsedge_paper_halt_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sportsedge_paper_halt_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: sportsedge_paper_halt_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Ensure PostgreSQL client available
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
+      - name: Apply same staged migrations in disposable DB only
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;"
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_outbox_staging_v1.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_staging_halt_v2.sql
+      - name: Validate immutable halted gate and audit
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/alpaca_paper_staging_halt_v2.sql

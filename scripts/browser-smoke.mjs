@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/sports','/stocks','/paper-betting','/progress','/guide','/research/nba','/research/epl'];
+const routes=['/','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/research/nba','/research/epl'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -52,10 +52,16 @@ try{
     const navigation=await send('Page.navigate',{url:base+route});
     if(navigation.errorText)throw Error(navigation.errorText);
     await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content')`),label+' main landmark',25000);
+    // App Router streams page content after the document/main landmark; a blank
+    // heading during hydration is not a usability failure. Wait for user-visible
+    // content before capturing the screenshot or checking route assertions.
+    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca'].includes(route)){
+      await until(async()=>evaluate(send,`!!document.querySelector('main#main-content h1')`),label+' visible page heading',25000);
+    }
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
-     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections'||location.pathname==='/progress';
+     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections'||location.pathname==='/progress'||location.pathname==='/testing';
      const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':(isTool?'nav[aria-label="Research and tools"]':'nav[aria-label="Workspaces"]'));
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
@@ -125,6 +131,7 @@ try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/progress'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.progress-filters button').length===4`),'progress board');
+  await delay(550); // Wait for React hydration before dispatching an interaction.
   await evaluate(send,`(()=>{document.querySelectorAll('.progress-filters button')[1].click();return true})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.progress-card-grid article').length===3 && document.querySelectorAll('.progress-filters button')[1].getAttribute('aria-pressed')==='true'`),'filtered stock research cards');
   console.log('PASS progress: stocks filter shows registered and blocked evidence');
@@ -134,6 +141,32 @@ try{
   if(!honest)throw Error('Empty manual stock journal must not display fabricated performance curve');
   console.log('PASS stocks: empty manual journal shows no fabricated chart');
  }catch(error){const message='Progress and performance interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+  // Test center: route discovery, mobile tour filters, and owner-only preview disclosure.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/testing'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('nav[aria-label="Testing checkpoints"] button').length===6`),'testing tour mounted');
+  const defaultState=await evaluate(send,`({
+    disabled:document.querySelector('.test-release-banner')?.innerText?.includes('Not released yet'),
+    hasUnverified:document.querySelector('.test-status-grid')?.innerText?.includes('Not established'),
+    menuEntry:!!document.querySelector('nav[aria-label="Mobile navigation"] a[href="/testing"]')
+  })`);
+  if(!defaultState.disabled||!defaultState.hasUnverified||!defaultState.menuEntry)
+   throw Error('Testing hub must disclose unreleased state, private Preview route, and primary navigation');
+  await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='Blocked');if(!v)throw Error('missing blocked filter');v.click();return true;})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===1 && document.querySelector('.test-tour-detail')?.innerText?.includes('No paper or live orders')`),'blocked research gate');
+  await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='All');v.click();return true;})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===6`),'all testing checkpoints restored');
+  await evaluate(send,`(()=>{document.querySelectorAll('.test-tour-steps button')[4].click();return true;})()`);
+  await until(async()=>evaluate(send,`document.querySelector('.test-tour-detail')?.innerText?.includes('Private preview') && !!document.querySelector('.test-tour-detail a[href="/stocks/alpaca"]')`),'owner-paper tour link and note');
+  console.log('PASS testing center: accessible filters, private broker path and blocked execution state');
+  await send('Page.navigate',{url:base+'/stocks/alpaca'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main h1')`),'protected paper viewer page');
+  await until(async()=>evaluate(send,`document.querySelector('section[aria-label="Private Alpaca paper account"]')?.textContent?.includes('Owner sign-in not set up yet')`),'fail-closed broker viewer with no secrets');
+  const isLocked=await evaluate(send,`!document.querySelector('main button')?.textContent?.includes('Submit order') && !document.querySelector('.stats-grid')?.textContent?.includes('Paper account equity')`);
+  if(!isLocked)throw Error('Unconfigured broker viewer must not expose private balances or order controls');
+  console.log('PASS private paper: no owner key, no account data or order submission controls');
+ }catch(error){const message='Testing center / private paper smoke: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  // Exercise backup preview and safe cancellation in the isolated CI browser. No write/restore.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});

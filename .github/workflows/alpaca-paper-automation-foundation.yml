@@ -1,0 +1,32 @@
+name: Alpaca paper automation foundation (offline only)
+on:
+  pull_request:
+    paths:
+      - 'src/lib/stocks/paper-automation-*.ts'
+      - 'src/lib/stocks/paper-automation-*.mjs'
+      - 'src/components/alpaca-paper-automation-readiness.tsx'
+      - 'src/components/alpaca-paper-dashboard.tsx'
+      - 'docs/ALPACA_PAPER_AUTOMATION_FOUNDATION_2026_10_14.md'
+      - 'database/ddl/alpaca_paper_outbox_PROPOSAL_20261014.sql'
+      - '.github/workflows/alpaca-paper-automation-foundation.yml'
+  push:
+    branches: ['feature/alpaca-paper-automation-foundation-20261014']
+permissions:
+  contents: read
+jobs:
+  paper-dry-run-safety:
+    name: Paper previews and uncertain-order safeguards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test paper risk limits and receipt transitions without provider calls
+        run: node --experimental-strip-types --test src/lib/stocks/paper-automation-plan.test.mjs src/lib/stocks/paper-automation-receipts.test.mjs
+      - name: Check security boundary and source-only planning code
+        run: |
+          node -e "const fs=require('node:fs');const p=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const k of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!p.includes(k))process.exit(1);const f=fs.readFileSync('src/lib/stocks/paper-automation-plan.ts','utf8');if(/fetch\\s*\\(|alpaca\\.markets|POST\\b|new WebSocket\\(/.test(f.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'')))process.exit(1);"

@@ -14,6 +14,7 @@ const destinations:Destination[]=[
  {title:'Stock algorithm research',description:'Registered strategy and backtest readiness',href:'/stocks/research',group:'Research & tools',icon:'stocks'},
  {title:'NBA model research',description:'Historical model evaluation',href:'/research/nba',group:'Research & tools',icon:'research'},
  {title:'EPL model research',description:'Soccer research and limitations',href:'/research/epl',group:'Research & tools',icon:'research'},
+ {title:'Testing center',description:'One walkthrough for the platform and private Alpaca readiness',href:'/testing',group:'Research & tools',icon:'shield'},
  {title:'Guide & limitations',description:'Learn the platform and its data boundaries',href:'/guide',group:'Research & tools',icon:'guide'}
 ];
 
