@@ -1,7 +1,7 @@
 name: Alpaca owner one-order staging SQL safety
 on:
   push:
-    branches: ['feature/alpaca-paper-owner-one-order-20261014']
+    branches: ['feature/alpaca-paper-owner-one-order-20261014', 'acceptance/alpaca-paper-first-order']
   pull_request:
     paths:
       - 'database/staging/alpaca_paper_first_order_v6.sql'

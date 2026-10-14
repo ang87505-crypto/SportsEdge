@@ -1,7 +1,7 @@
 name: One owner-approved Alpaca PAPER order
 on:
   push:
-    branches: ['feature/alpaca-paper-owner-one-order-20261014']
+    branches: ['feature/alpaca-paper-owner-one-order-20261014', 'acceptance/alpaca-paper-first-order']
   pull_request:
     paths:
       - 'src/lib/server/alpaca-owner-first-order*'
