@@ -103,7 +103,7 @@ export default function Home(){
   <section className="glass overview-bottom experience-bottom" aria-label="What is connected">
    <div><div className="eyebrow">TRUST THE PROVENANCE</div><h2>Know what’s measured.<br/>Know what’s still a hypothesis.</h2><p>SportsEdge contains saved sports observations and a shared virtual NBA ledger. Stock journal entries are saved in your browser. A real after-cost stock backtest and automatic stock execution are not validated on this version.</p></div>
    <div className="overview-bottom-links">
-    <Link href="/stocks/research">Stock backtest readiness <NavIcon name="arrow" size={15}/></Link>
+    <Link href="/progress">All project milestones <NavIcon name="arrow" size={15}/></Link>
     <Link href="/research/nba">Historical model research <NavIcon name="arrow" size={15}/></Link>
     <Link href="/guide#limits">Platform limits and sources <NavIcon name="arrow" size={15}/></Link>
    </div>

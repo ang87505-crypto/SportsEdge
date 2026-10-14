@@ -13,6 +13,7 @@ const workspaces:Destination[]=[
  {href:'/paper-betting',label:'Paper bets',icon:'paper'},
 ];
 const resources:Destination[]=[
+ {href:'/progress',label:'Progress',icon:'spark'},
  {href:'/research/nba',label:'Research',icon:'research'},
  {href:'/guide',label:'Guide',icon:'guide'},
 ];

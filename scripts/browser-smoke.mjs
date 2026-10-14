@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/sports','/stocks','/paper-betting','/guide','/research/nba','/research/epl'];
+const routes=['/','/sports','/stocks','/paper-betting','/progress','/guide','/research/nba','/research/epl'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -55,7 +55,7 @@ try{
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
-     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections';
+     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections'||location.pathname==='/progress';
      const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':(isTool?'nav[aria-label="Research and tools"]':'nav[aria-label="Workspaces"]'));
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
@@ -75,7 +75,7 @@ try{
     if(data.appError)issues.push('Next.js application error');
 
     if(data.placeholders)issues.push('Placeholder links detected');
-    if(['/', '/sports','/stocks','/paper-betting','/connections','/guide'].includes(route)&&!data.heading)issues.push('Missing page heading');
+    if(['/', '/sports','/stocks','/paper-betting','/progress','/connections','/guide'].includes(route)&&!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(path.join(output,label+'.png'),Buffer.from(screenshot.data,'base64'));
@@ -120,6 +120,20 @@ try{
   await until(async()=>evaluate(send,`location.pathname==='/stocks' && !document.querySelector('.command-dialog')?.open`),'command palette Stocks navigation',12000);
   console.log('PASS command palette: opens, focuses search, navigates, closes');
  }catch(error){const message='Experience v3 interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Progress hub filters and honest empty-state charts: read-only interaction checks.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/progress'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.progress-filters button').length===4`),'progress board');
+  await evaluate(send,`(()=>{document.querySelectorAll('.progress-filters button')[1].click();return true})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.progress-card-grid article').length===3 && document.querySelectorAll('.progress-filters button')[1].getAttribute('aria-pressed')==='true'`),'filtered stock research cards');
+  console.log('PASS progress: stocks filter shows registered and blocked evidence');
+  await send('Page.navigate',{url:base+'/stocks'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.stock-insights')`),'stock realized insights');
+  const honest=await evaluate(send,`!!document.querySelector('.chart-empty') && !document.querySelector('.chart-graphic svg')`);
+  if(!honest)throw Error('Empty manual stock journal must not display fabricated performance curve');
+  console.log('PASS stocks: empty manual journal shows no fabricated chart');
+ }catch(error){const message='Progress and performance interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}
