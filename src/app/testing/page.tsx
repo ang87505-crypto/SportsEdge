@@ -9,7 +9,7 @@ export const metadata={
 const tracks=[
  {title:'Navigation and usability',status:'Inspectable',text:'Home, Stocks, Sports, paper ledger, Progress and Guide can be reviewed. Mobile and desktop browser smoke runs in CI.'},
  {title:'Private Alpaca PAPER account',status:'Preview review',text:'Owner key and read-only broker viewer belong to protected Preview; available only after owner authentication. Never paste account credentials into a public page.'},
- {title:'Paper-order infrastructure',status:'Staging only',text:'The private outbox schema exists only in the separate SportsEdge Staging database. Isolated concurrency tests and fail-closed logic are not proof of a released order executor.'},
+ {title:'Paper-order infrastructure',status:'Staging only',text:'The private outbox schema exists only in the separate SportsEdge Staging database, not Production. Isolated concurrency tests and fail-closed logic are not proof of a released order executor.'},
  {title:'Stock strategy performance',status:'Not established',text:'No genuine after-cost historical returns or profitable algorithm have been demonstrated. Astra\'s research is separate and still under review.'},
  {title:'Scheduled or real-money orders',status:'Off',text:'No stock paper orders, sportsbook wagers, recurring broker worker, or live-money execution are authorized through SportsEdge.'}
 ];
