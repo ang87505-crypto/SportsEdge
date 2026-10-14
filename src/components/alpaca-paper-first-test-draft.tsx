@@ -157,7 +157,7 @@ export function AlpacaPaperFirstTestDraft(){
   <p style={{fontSize:11,marginTop:12}}>This form does not check real-time prices or whether a ticker is tradeable. Invalid ticker or price details are rejected. The staging emergency STOP stays active.</p>
   <div style={{margin:'16px 0',padding:16,border:'1px solid rgba(165,233,185,.22)',borderRadius:12}}>
    <h3>Read-only Alpaca PAPER order preflight</h3>
-   <p>Inspect Alpaca's current market clock, IEX quote, equity eligibility, virtual account and complete order history. This checks a proposed one-share test; it does not approve or send an order. A market-data or staging connection failure blocks the test.</p>
+   <p>Inspect Alpaca market clock, IEX quote, equity eligibility, virtual account and complete order history. This checks a proposed one-share test; it does not approve or send an order. A market-data or staging connection failure blocks the test.</p>
    <button type="button" className="button button-secondary" disabled={!valid||preflightBusy}
     onClick={()=>void runPreflight()}>{preflightBusy?'Checking paper account…':'Check Alpaca PAPER preflight'}</button>
    {preflightMessage&&<p className="notice" role="status">{preflightMessage}</p>}
