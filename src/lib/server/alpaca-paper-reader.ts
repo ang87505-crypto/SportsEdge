@@ -178,12 +178,13 @@ export async function getAlpacaPaperSnapshot(
 ) {
   try { requirePaperSettings(config); }
   catch { throw new PaperConnectionError('PAPER_CREDENTIAL_FORMAT_INVALID','config'); }
-  // All endpoints are READ-ONLY. Failure of any request rejects the entire snapshot.
-  const [account,positions,orders]=await Promise.all([
-    readPaper('account',config,fetcher),
-    readPaper('positions',config,fetcher),
-    readPaper('recentOrders',config,fetcher)
-  ]);
+  // Diagnostic reads must be sequential: validate paper-account authentication
+  // before requesting positions or orders. With parallel requests, the "stage"
+  // would be whichever failed first, not proof the account request succeeded.
+  // All endpoints are strictly READ-ONLY. Any failure rejects the snapshot.
+  const account=await readPaper('account',config,fetcher);
+  const positions=await readPaper('positions',config,fetcher);
+  const orders=await readPaper('recentOrders',config,fetcher);
   try { return normalizePaperSnapshot(account,positions,orders,now()); }
   catch { throw new PaperConnectionError('PAPER_PAYLOAD_INVALID','normalize'); }
 }
