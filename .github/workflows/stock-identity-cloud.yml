@@ -1,0 +1,28 @@
+name: Stock identity and cloud handoff
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  identity-cloud:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Identity, atomic stream and cloud boundary adversaries
+        run: python -m unittest analytics.test_stock_identity_bridge_v1 analytics.test_stock_identity_stream_v1 integrations.quantconnect.test_cloud_identity -v
+      - name: Existing QuantConnect selector and raw-source parity
+        run: python -m unittest discover -s integrations/quantconnect -p 'test_*.py' -v
+      - name: Reproduce source-only Free package
+        run: python scripts/package_stock_identity_cloud.py --output artifacts/stock-identity-cloud
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stock-identity-cloud-python-${{ matrix.python-version }}
+          path: artifacts/stock-identity-cloud
