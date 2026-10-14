@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const route=readFileSync(new URL('../../app/api/internal/alpaca-paper/reconciliation/route.ts',import.meta.url),'utf8');
+const client=readFileSync(new URL('../../components/alpaca-paper-reconciliation-panel.tsx',import.meta.url),'utf8');
+const view=readFileSync(new URL('../../components/alpaca-paper-dashboard.tsx',import.meta.url),'utf8');
+test('Manual audit route is owner-cookie protected and fixed to PAPER only',()=>{
+ assert.ok(route.includes('validOwnerSession('));
+ assert.ok(route.includes('OWNER_COOKIE'));
+ assert.ok(route.includes('ownerSecret()'));
+ assert.ok(route.includes('getAlpacaPaperSnapshot(config)'));
+ assert.ok(route.includes("account.accountType!=='paper'"));
+ assert.ok(route.includes('readCompletePaperOrderInventory(config)'));
+ assert.ok(route.includes('private, no-store'));
+});
+test('No execution, scheduling or credential exposure paths exist in the audit interface',()=>{
+ assert.ok(route.includes('safeForExecution:false'));
+ assert.ok(route.includes('automaticPaperOrdersEnabled:false'));
+ assert.ok(route.includes('receiptDatabaseLinked:false'));
+ assert.ok(!route.includes('export async function POST'));
+ assert.ok(!route.includes('export async function DELETE'));
+ assert.ok(!route.includes('export async function PATCH'));
+ assert.ok(!route.includes('export async function PUT'));
+ assert.ok(!route.includes('NEXT_PUBLIC_'));
+ assert.ok(!route.includes('console.log'));
+ assert.ok(!client.includes('localStorage'));
+ assert.ok(!client.includes('ALPACA_PAPER_SECRET_KEY'));
+ assert.ok(client.includes("method:'GET'"));
+ assert.ok(view.includes('<AlpacaPaperReconciliationPanel/>'));
+});
