@@ -4,6 +4,7 @@ import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Empty,Stat} from '@/components/ui';
 import {AlpacaPaperAutomationReadiness} from '@/components/alpaca-paper-automation-readiness';
 import {AlpacaPaperReconciliationPanel} from '@/components/alpaca-paper-reconciliation-panel';
+import {AlpacaStagingStopPanel} from '@/components/alpaca-staging-stop-panel';
 
 type PaperSnapshot={
   state:'READ_ONLY_DIAGNOSTIC_NOT_EXECUTION_AUTHORIZATION';
@@ -134,6 +135,11 @@ export function AlpacaPaperDashboard() {
         </div>
         <p style={{fontSize:11,marginTop:14}}>Snapshot captured {date(snapshot.capturedAt)}. Refresh manually for current broker values. This is not a live price feed or performance claim.</p>
         {snapshot.warnings.length>0&&<div className="notice" role="status"><strong>Broker reconciliation warnings:</strong> {snapshot.warnings.join(' · ')}</div>}
+        <nav aria-label="Paper account sections" className="button-row" style={{margin:'18px 0'}}>
+          <a className="button button-secondary" href="#alpaca-automation-heading">Automation readiness ↓</a>
+          <a className="button button-secondary" href="#alpaca-staging-stop-title">Staging emergency stop ↓</a>
+          <a className="button button-secondary" href="#paper-order-reconciliation-heading">Broker order history ↓</a>
+        </nav>
         <AlpacaPaperAutomationReadiness account={{
           status:snapshot.account.status,
           tradingBlocked:snapshot.account.tradingBlocked,
@@ -143,6 +149,7 @@ export function AlpacaPaperDashboard() {
           positionsCount:snapshot.positions.length,
           orderCount:snapshot.recentOrders.length
         }}/>
+        <AlpacaStagingStopPanel/>
         <AlpacaPaperReconciliationPanel/>
         <div className="section-title"><h2>Current paper positions</h2><span className="pill">{snapshot.positions.length} reported</span></div>
         {snapshot.positions.length===0?<Empty title="No paper positions">Alpaca reports no open stock positions in this snapshot.</Empty>:<div className="table-wrap"><table className="data-table"><thead><tr><th>Symbol</th><th>Side</th><th>Quantity</th><th>Market value</th></tr></thead><tbody>{snapshot.positions.map(p=><tr key={p.symbol}><td>{p.symbol}</td><td>{p.side}</td><td>{p.qty}</td><td>{money(p.marketValueUsd)}</td></tr>)}</tbody></table></div>}
