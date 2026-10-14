@@ -27,7 +27,7 @@ export function PerformanceChart({points,heading,description,initialCents,source
  const path=points.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(2)} ${y(p[field]).toFixed(2)}`).join(' ');
  const selected=Math.min(index??points.length-1,points.length-1);
  const current=points[selected];
- const positive=values.at(-1)!>=values[0];
+ const positive=(values.at(-1)??0)>=values[0];
  const finalValue=values.at(-1)??0;
  const ticks=[0,.5,1].map(f=>({value:min+(max-min)*f,y:y(min+(max-min)*f)}));
  const color=positive?'#a7f5c1':'#edb5a0';
