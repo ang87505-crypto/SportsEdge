@@ -120,3 +120,40 @@ test('too-short or incompatible paper credentials return a safe configuration co
   await assert.rejects(getAlpacaPaperSnapshot({...auth,keyId:'x'},async()=>{throw Error('should not call provider');}),
     e=>e instanceof PaperConnectionError&&e.reason==='PAPER_CREDENTIAL_FORMAT_INVALID'&&e.stage==='config');
 });
+
+test('paper account authentication happens before positions and orders',async()=>{
+  const calls=[];
+  const response={account,positions,orders};
+  const fetcher=async(url)=>{
+    const stage=url.includes('/positions')?'positions':url.includes('/orders')?'orders':'account';
+    calls.push(stage);
+    return new Response(JSON.stringify(response[stage]),{status:200});
+  };
+  await getAlpacaPaperSnapshot(auth,fetcher,()=> '2026-10-13T15:00:00Z');
+  assert.deepEqual(calls,['account','positions','orders']);
+});
+test('invalid paper credentials fail at account without any subsequent API reads',async()=>{
+  const calls=[];
+  const fetcher=async(url)=>{
+    calls.push(url);
+    return new Response('Not authorized',{status:401});
+  };
+  await assert.rejects(getAlpacaPaperSnapshot(auth,fetcher),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_AUTH_REJECTED'&&e.stage==='account');
+  assert.deepEqual(calls,['https://paper-api.alpaca.markets/v2/account']);
+});
+test('position-specific rejection only after account read succeeds',async()=>{
+  const calls=[];
+  const fetcher=async(url)=>{
+    calls.push(url);
+    return url.endsWith('/v2/account')
+      ?new Response(JSON.stringify(account),{status:200})
+      :new Response('Not authorized',{status:401});
+  };
+  await assert.rejects(getAlpacaPaperSnapshot(auth,fetcher),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_AUTH_REJECTED'&&e.stage==='positions');
+  assert.deepEqual(calls,[
+    'https://paper-api.alpaca.markets/v2/account',
+    'https://paper-api.alpaca.markets/v2/positions'
+  ]);
+});
