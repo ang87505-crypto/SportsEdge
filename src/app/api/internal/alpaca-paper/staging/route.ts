@@ -3,7 +3,6 @@ import {OWNER_COOKIE,ownerSecret,validOwnerSession} from '@/lib/server/alpaca-ow
 import {getStagingPaperStatus,haltStagingPaperExecution,StagingPaperError}
  from '@/lib/server/alpaca-staging-operator';
 
-export const runtime='nodejs';
 export const maxDuration=30;
 const NO_STORE={
  'Cache-Control':'private, no-store, max-age=0','Pragma':'no-cache',
