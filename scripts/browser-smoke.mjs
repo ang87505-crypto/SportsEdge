@@ -52,6 +52,12 @@ try{
     const navigation=await send('Page.navigate',{url:base+route});
     if(navigation.errorText)throw Error(navigation.errorText);
     await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content')`),label+' main landmark',25000);
+    // App Router streams page content after the document/main landmark; a blank
+    // heading during hydration is not a usability failure. Wait for user-visible
+    // content before capturing the screenshot or checking route assertions.
+    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca'].includes(route)){
+      await until(async()=>evaluate(send,`!!document.querySelector('main#main-content h1')`),label+' visible page heading',25000);
+    }
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
