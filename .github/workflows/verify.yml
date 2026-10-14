@@ -32,6 +32,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify realized-only chart arithmetic
+        run: node --experimental-strip-types --test src/lib/performance-series.test.mjs
       - name: Lint code
         run: npm run lint
       - name: Production build
