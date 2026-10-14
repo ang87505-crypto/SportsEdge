@@ -6,6 +6,20 @@ const PAPER_API = 'https://paper-api.alpaca.markets';
 const MAX_REPLY_BYTES = 500_000;
 type FetchLike = typeof fetch;
 
+// Fixed, non-sensitive diagnostic codes. Never include an upstream response,
+// account identifier, credentials, HTTP headers or raw exception text.
+export class PaperConnectionError extends Error {
+  constructor(public readonly reason:
+    'PAPER_AUTH_REJECTED'|'PAPER_ACCESS_FORBIDDEN'|'PAPER_RATE_LIMITED'|
+    'PAPER_UPSTREAM_ERROR'|'PAPER_TRANSPORT_ERROR'|'PAPER_REPLY_TOO_LARGE'|
+    'PAPER_INVALID_JSON'|'PAPER_PAYLOAD_INVALID'|'PAPER_CREDENTIAL_FORMAT_INVALID',
+    public readonly stage:'config'|'account'|'positions'|'recentOrders'|'normalize'
+  ) {
+    super('Paper broker diagnostic failed');
+    this.name='PaperConnectionError';
+  }
+}
+
 type AlpacaPaperSettings = { keyId:string; secretKey:string };
 type PlainObject = Record<string,unknown>;
 function isObject(v:unknown):v is PlainObject {
@@ -59,15 +73,28 @@ const ALLOWED = {
 async function readPaper(
   kind:keyof typeof ALLOWED, config:AlpacaPaperSettings, fetcher:FetchLike
 ):Promise<unknown> {
-  const response=await fetcher(PAPER_API+ALLOWED[kind],{
-    method:'GET',headers:alpacaPaperHeaders(config),cache:'no-store',
-    redirect:'error',signal:AbortSignal.timeout(12000)
-  });
-  if(!response.ok)throw new Error('Alpaca paper account request failed');
-  const raw=await response.text();
-  if(raw.length>MAX_REPLY_BYTES)throw new Error('Alpaca paper response unexpectedly large');
+  let response:Response;
+  try {
+    response=await fetcher(PAPER_API+ALLOWED[kind],{
+      method:'GET',headers:alpacaPaperHeaders(config),cache:'no-store',
+      redirect:'error',signal:AbortSignal.timeout(12000)
+    });
+  } catch {
+    throw new PaperConnectionError('PAPER_TRANSPORT_ERROR',kind);
+  }
+  if(!response.ok) {
+    // Deliberately ignore the provider response body and diagnostic headers.
+    const reason=response.status===401?'PAPER_AUTH_REJECTED'
+      :response.status===403?'PAPER_ACCESS_FORBIDDEN'
+      :response.status===429?'PAPER_RATE_LIMITED':'PAPER_UPSTREAM_ERROR';
+    throw new PaperConnectionError(reason,kind);
+  }
+  let raw:string;
+  try { raw=await response.text(); }
+  catch { throw new PaperConnectionError('PAPER_TRANSPORT_ERROR',kind); }
+  if(raw.length>MAX_REPLY_BYTES)throw new PaperConnectionError('PAPER_REPLY_TOO_LARGE',kind);
   try{return JSON.parse(raw) as unknown;}
-  catch{throw new Error('Malformed Alpaca paper response');}
+  catch{throw new PaperConnectionError('PAPER_INVALID_JSON',kind);}
 }
 const OPEN_ORDER_STATES=new Set([
   'new','accepted','pending_new','accepted_for_bidding','partially_filled',
@@ -145,12 +172,14 @@ export function normalizePaperSnapshot(
 export async function getAlpacaPaperSnapshot(
   config:AlpacaPaperSettings, fetcher:FetchLike=fetch, now:()=>string=()=>new Date().toISOString()
 ) {
-  requirePaperSettings(config);
+  try { requirePaperSettings(config); }
+  catch { throw new PaperConnectionError('PAPER_CREDENTIAL_FORMAT_INVALID','config'); }
   // All endpoints are READ-ONLY. Failure of any request rejects the entire snapshot.
   const [account,positions,orders]=await Promise.all([
     readPaper('account',config,fetcher),
     readPaper('positions',config,fetcher),
     readPaper('recentOrders',config,fetcher)
   ]);
-  return normalizePaperSnapshot(account,positions,orders,now());
+  try { return normalizePaperSnapshot(account,positions,orders,now()); }
+  catch { throw new PaperConnectionError('PAPER_PAYLOAD_INVALID','normalize'); }
 }
