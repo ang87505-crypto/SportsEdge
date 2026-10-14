@@ -2,6 +2,7 @@
 
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Empty,Stat} from '@/components/ui';
+import {AlpacaPaperAutomationReadiness} from '@/components/alpaca-paper-automation-readiness';
 
 type PaperSnapshot={
   state:'READ_ONLY_DIAGNOSTIC_NOT_EXECUTION_AUTHORIZATION';
@@ -132,6 +133,15 @@ export function AlpacaPaperDashboard() {
         </div>
         <p style={{fontSize:11,marginTop:14}}>Snapshot captured {date(snapshot.capturedAt)}. Refresh manually for current broker values. This is not a live price feed or performance claim.</p>
         {snapshot.warnings.length>0&&<div className="notice" role="status"><strong>Broker reconciliation warnings:</strong> {snapshot.warnings.join(' · ')}</div>}
+        <AlpacaPaperAutomationReadiness account={{
+          status:snapshot.account.status,
+          tradingBlocked:snapshot.account.tradingBlocked,
+          accountBlocked:snapshot.account.accountBlocked,
+          warnings:snapshot.warnings,
+          capturedAt:snapshot.capturedAt,
+          positionsCount:snapshot.positions.length,
+          orderCount:snapshot.recentOrders.length
+        }}/>
         <div className="section-title"><h2>Current paper positions</h2><span className="pill">{snapshot.positions.length} reported</span></div>
         {snapshot.positions.length===0?<Empty title="No paper positions">Alpaca reports no open stock positions in this snapshot.</Empty>:<div className="table-wrap"><table className="data-table"><thead><tr><th>Symbol</th><th>Side</th><th>Quantity</th><th>Market value</th></tr></thead><tbody>{snapshot.positions.map(p=><tr key={p.symbol}><td>{p.symbol}</td><td>{p.side}</td><td>{p.qty}</td><td>{money(p.marketValueUsd)}</td></tr>)}</tbody></table></div>}
         <div className="section-title"><h2>Recent paper orders</h2><span className="pill">Latest {snapshot.recentOrders.length}, not complete history</span></div>
