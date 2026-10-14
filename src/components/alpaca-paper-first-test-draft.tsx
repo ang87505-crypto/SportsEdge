@@ -135,7 +135,6 @@ export function AlpacaPaperFirstTestDraft(){
      <thead><tr><th>Draft ID</th><th>Ticker</th><th>Quantity</th><th>Limit</th><th>Saved</th></tr></thead>
      <tbody>{drafts.map(d=><tr key={d.intentId}>
       <td><code>{d.intentId}</code></td><td>{d.symbol}</td><td>1 virtual share</td>
-      <td>{'
       <td>USD {(d.limitCents/100).toFixed(2)}</td><td>{new Date(d.createdAt).toLocaleString()}</td>
      </tr>)}</tbody>
     </table></div>}
