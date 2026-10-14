@@ -149,7 +149,9 @@ try{
    throw Error('Testing hub must disclose unreleased state, private Preview route, and primary navigation');
   await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='Blocked');if(!v)throw Error('missing blocked filter');v.click();return true;})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===1 && document.querySelector('.test-tour-detail')?.innerText?.includes('No paper or live orders')`),'blocked research gate');
-  await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='All');v.click();document.querySelectorAll('.test-tour-steps button')[4].click();return true;})()`);
+  await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='All');v.click();return true;})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===6`),'all testing checkpoints restored');
+  await evaluate(send,`(()=>{document.querySelectorAll('.test-tour-steps button')[4].click();return true;})()`);
   await until(async()=>evaluate(send,`document.querySelector('.test-tour-detail')?.innerText?.includes('Private preview') && !!document.querySelector('.test-tour-detail a[href="/stocks/alpaca"]')`),'owner-paper tour link and note');
   console.log('PASS testing center: accessible filters, private broker path and blocked execution state');
   await send('Page.navigate',{url:base+'/stocks/alpaca'});
