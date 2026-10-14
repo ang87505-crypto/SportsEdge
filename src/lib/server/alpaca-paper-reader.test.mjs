@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  alpacaPaperHeaders,requirePaperSettings,normalizePaperSnapshot,getAlpacaPaperSnapshot
+  alpacaPaperHeaders,requirePaperSettings,normalizePaperSnapshot,getAlpacaPaperSnapshot,PaperConnectionError
 } from './alpaca-paper-reader.ts';
 
 const auth={keyId:'SYNTHETIC-API-KEY',secretKey:'SYNTHETIC-SECRET-ONLY-NOT-A-KEY'};
@@ -83,4 +83,40 @@ test('no order-write, live API or unsafe dynamic upstream URL path exists',()=>{
  assert.ok(!route.includes('NEXT_PUBLIC_ALPACA'));
  assert.ok(!route.includes("export const dynamic="));
  assert.ok(!route.includes("export async function POST"));
+});
+
+test('diagnostics distinguish rejected paper keys and provider outages without leaking credentials',async()=>{
+  for (const [http,reason] of [[401,'PAPER_AUTH_REJECTED'],[403,'PAPER_ACCESS_FORBIDDEN'],
+    [429,'PAPER_RATE_LIMITED'],[502,'PAPER_UPSTREAM_ERROR']]) {
+    const message='UPSTREAM-SECRET-MUST-NOT-BE-ECHOED';
+    const fetcher=async()=>new Response(message,{status:http});
+    await assert.rejects(getAlpacaPaperSnapshot(auth,fetcher),error=>{
+      assert.ok(error instanceof PaperConnectionError);
+      assert.equal(error.reason,reason);
+      assert.ok(['account','positions','recentOrders'].includes(error.stage));
+      assert.ok(!JSON.stringify({reason:error.reason,stage:error.stage}).includes(message));
+      assert.ok(!error.message.includes(message));
+      return true;
+    });
+  }
+});
+test('diagnostics identify transport, invalid JSON and malformed upstream account data',async()=>{
+  await assert.rejects(getAlpacaPaperSnapshot(auth,async()=>{throw new Error('sensitive network URL');}),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_TRANSPORT_ERROR');
+  await assert.rejects(getAlpacaPaperSnapshot(auth,async()=>new Response('<html>oops</html>',{status:200})),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_INVALID_JSON');
+  let i=0;
+  const fetcher=async()=>new Response(JSON.stringify([{},positions,orders][i++]),{status:200});
+  await assert.rejects(getAlpacaPaperSnapshot(auth,fetcher),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_PAYLOAD_INVALID'&&e.stage==='normalize');
+});
+test('empty paper positions and empty recent orders are valid',()=>{
+  const result=normalizePaperSnapshot(account,[],[],'2026-10-13T15:00:00Z');
+  assert.equal(result.positions.length,0);
+  assert.equal(result.recentOrders.length,0);
+  assert.deepEqual(result.warnings,[]);
+});
+test('too-short or incompatible paper credentials return a safe configuration code',async()=>{
+  await assert.rejects(getAlpacaPaperSnapshot({...auth,keyId:'x'},async()=>{throw Error('should not call provider');}),
+    e=>e instanceof PaperConnectionError&&e.reason==='PAPER_CREDENTIAL_FORMAT_INVALID'&&e.stage==='config');
 });
