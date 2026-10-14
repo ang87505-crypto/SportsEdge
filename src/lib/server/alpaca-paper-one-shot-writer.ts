@@ -11,7 +11,6 @@ import {PAPER_AUTOMATION_RELEASE} from '../stocks/paper-automation-release.ts';
 import {alpacaPaperHeaders} from './alpaca-paper-reader.ts';
 
 const PAPER_URL='https://paper-api.alpaca.markets/v2/orders';
-const HEX32=/^[a-f0-9]{32}$/;
 const HEX64=/^[a-f0-9]{64}$/;
 const SYMBOL=/^[A-Z]{1,5}$/;
 const ACK_STATUSES=new Set([
