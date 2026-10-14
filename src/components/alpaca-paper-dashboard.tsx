@@ -5,6 +5,7 @@ import {Empty,Stat} from '@/components/ui';
 import {AlpacaPaperAutomationReadiness} from '@/components/alpaca-paper-automation-readiness';
 import {AlpacaPaperReconciliationPanel} from '@/components/alpaca-paper-reconciliation-panel';
 import {AlpacaStagingStopPanel} from '@/components/alpaca-staging-stop-panel';
+import {AlpacaPaperFirstTestDraft} from '@/components/alpaca-paper-first-test-draft';
 
 type PaperSnapshot={
   state:'READ_ONLY_DIAGNOSTIC_NOT_EXECUTION_AUTHORIZATION';
@@ -137,6 +138,7 @@ export function AlpacaPaperDashboard() {
         {snapshot.warnings.length>0&&<div className="notice" role="status"><strong>Broker reconciliation warnings:</strong> {snapshot.warnings.join(' · ')}</div>}
         <nav aria-label="Paper account sections" className="button-row" style={{margin:'18px 0'}}>
           <a className="button button-secondary" href="#alpaca-automation-heading">Automation readiness ↓</a>
+          <a className="button button-secondary" href="#alpaca-first-trade-draft">Draft first virtual test ↓</a>
           <a className="button button-secondary" href="#alpaca-staging-stop-title">Staging emergency stop ↓</a>
           <a className="button button-secondary" href="#paper-order-reconciliation-heading">Broker order history ↓</a>
         </nav>
@@ -149,6 +151,7 @@ export function AlpacaPaperDashboard() {
           positionsCount:snapshot.positions.length,
           orderCount:snapshot.recentOrders.length
         }}/>
+        <AlpacaPaperFirstTestDraft/>
         <AlpacaStagingStopPanel/>
         <AlpacaPaperReconciliationPanel/>
         <div className="section-title"><h2>Current paper positions</h2><span className="pill">{snapshot.positions.length} reported</span></div>

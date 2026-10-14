@@ -1,0 +1,69 @@
+name: Alpaca one-share PAPER test draft — no broker execution
+on:
+  push:
+    branches: ['feature/alpaca-one-shot-paper-approval-20261014']
+  pull_request:
+    paths:
+      - 'database/staging/alpaca_paper_manual_preview_v4.sql'
+      - 'database/tests/alpaca_paper_manual_preview_v4.sql'
+      - 'src/lib/server/alpaca-staging-manual-preview*'
+      - 'src/lib/server/alpaca-paper-draft-guard.test.mjs'
+      - 'src/app/api/internal/alpaca-paper/draft/**'
+      - 'src/components/alpaca-paper-first-test-draft.tsx'
+      - '.github/workflows/alpaca-paper-one-shot-draft.yml'
+permissions:
+  contents: read
+jobs:
+  manual-paper-preview-offline:
+    name: Owner-only virtual trade draft never calls Alpaca
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test exact stock/price approval constraints and mocked responses
+        run: |
+          node --experimental-strip-types --test src/lib/server/alpaca-staging-manual-preview.test.mjs src/lib/server/alpaca-paper-draft-guard.test.mjs
+      - name: Enforce no broker execution and release flags off
+        run: |
+          node -e "const fs=require('fs');const r=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const x of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!r.includes(x))process.exit(1);const x=fs.readFileSync('src/lib/server/alpaca-staging-manual-preview.ts','utf8');if(x.includes('paper-api.alpaca.markets')||x.includes('api.alpaca.markets')||x.includes('orders/v2'))process.exit(1);"
+  staging-manual-preview-postgres:
+    name: Disposable Postgres durable draft uniqueness and forced HALT
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sportsedge_paper_testdraft_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sportsedge_paper_testdraft_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: sportsedge_paper_testdraft_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client if needed
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
+      - name: Apply all four staging migrations to disposable PG only
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;"
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_outbox_staging_v1.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_staging_halt_v2.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_staging_owner_rpc_v3.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/staging/alpaca_paper_manual_preview_v4.sql
+      - name: Verify one-share draft, duplicate ID and hard stop
+        run: psql -X -v ON_ERROR_STOP=1 -f database/tests/alpaca_paper_manual_preview_v4.sql
