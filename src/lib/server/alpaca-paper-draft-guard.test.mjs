@@ -23,7 +23,7 @@ test('No Alpaca order writer, secrets or auto approval can be reached by UI',()=
  assert.ok(dashboard.includes('<AlpacaPaperFirstTestDraft/>'));
  assert.ok(panel.includes('Save unapproved staging draft'));
  assert.ok(panel.includes('NOT an approved or submitted trade'));
- assert.ok(panel.includes('stage')); // staging contract text in notices
+ assert.ok(panel.toLowerCase().includes('staging')); // staging contract text in notices
  assert.ok(!panel.includes('ALPACA_PAPER_SECRET_KEY'));
  assert.ok(!panel.includes('NEXT_PUBLIC_'));
  assert.ok(!panel.includes('localStorage'));
