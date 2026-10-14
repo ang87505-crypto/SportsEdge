@@ -6,6 +6,7 @@ import {AlpacaPaperAutomationReadiness} from '@/components/alpaca-paper-automati
 import {AlpacaPaperReconciliationPanel} from '@/components/alpaca-paper-reconciliation-panel';
 import {AlpacaStagingStopPanel} from '@/components/alpaca-staging-stop-panel';
 import {AlpacaPaperFirstTestDraft} from '@/components/alpaca-paper-first-test-draft';
+import {AlpacaPaperOneOrder} from '@/components/alpaca-paper-one-order';
 
 type PaperSnapshot={
   state:'READ_ONLY_DIAGNOSTIC_NOT_EXECUTION_AUTHORIZATION';
@@ -108,7 +109,7 @@ export function AlpacaPaperDashboard() {
     <div className="glass panel">
       <div className="module-top">
         <span className="pill">Alpaca · Paper account</span>
-        <span className="pill pill-amber">Read-only · No trading</span>
+        <span className="pill pill-amber">Read-only overview · one-order test gated</span>
       </div>
       <h2>Private paper trading overview</h2>
       <p>Broker-reported virtual balances and recent activity. Not the same as your manual practice journal or a historical backtest.</p>
@@ -152,6 +153,7 @@ export function AlpacaPaperDashboard() {
           orderCount:snapshot.recentOrders.length
         }}/>
         <AlpacaPaperFirstTestDraft/>
+        <AlpacaPaperOneOrder/>
         <AlpacaStagingStopPanel/>
         <AlpacaPaperReconciliationPanel/>
         <div className="section-title"><h2>Current paper positions</h2><span className="pill">{snapshot.positions.length} reported</span></div>
@@ -162,7 +164,7 @@ export function AlpacaPaperDashboard() {
       <div className="button-row" style={{marginTop:24}}>
         <a href="https://app.alpaca.markets/paper/dashboard/overview" className="button button-secondary" target="_blank" rel="noopener noreferrer">Open official Alpaca paper dashboard ↗</a>
       </div>
-      <p style={{fontSize:12,marginBottom:0}}>This page can only read your paper account. SportsEdge cannot submit, modify, or cancel Alpaca orders here. No live trading. P&amp;L and strategy performance are deliberately not inferred from an account snapshot.</p>
+      <p style={{fontSize:12,marginBottom:0}}>This page can only read your paper account. Only the dedicated owner-confirmed one-order test can submit a PAPER order after independent release gates. No live trading. P&amp;L and strategy performance are deliberately not inferred from an account snapshot.</p>
     </div>
   </section>;
 }
