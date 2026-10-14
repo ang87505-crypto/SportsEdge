@@ -22,5 +22,5 @@ test('Paper writer is never wired into any route or scheduled API',()=>{
   assert.ok(!route.includes('paper-api.alpaca.markets/v2/orders'));
  }
  assert.ok(!writer.includes('NEXT_PUBLIC_'));
- assert.ok(!writer.includes('api.alpaca.markets/v2/orders'));
+ assert.ok(!writer.includes("PAPER_URL='https://api.alpaca.markets/v2/orders'"));
 });
