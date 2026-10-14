@@ -38,7 +38,7 @@ export function TestingWalkthrough(){
  const [selected,setSelected]=useState(0);
  const [filter,setFilter]=useState<'All'|'Inspectable'|'Private preview'|'Blocked'>('All');
  const active=steps[selected];
- const visible=steps.map((s,i)=>({...s,i})).filter(({s})=>filter==='All'||s.state===filter);
+ const visible=steps.map((s,i)=>({s,i})).filter(({s})=>filter==='All'||s.state===filter);
  return <section aria-label="SportsEdge guided owner acceptance tour" className="test-tour">
   <div className="test-tour-top">
    <div><span className="eyebrow">OWNER ACCEPTANCE TOUR</span><h2>One route through every major feature.</h2><p>Use this when we reach the full-testing milestone. Visiting a step does not certify it as passed.</p></div>
