@@ -24,10 +24,12 @@ export function AlpacaPaperAutomationReadiness({account}:{account:State}){
    explanation:openWarnings?'Existing warnings require attention; only 25 recent orders are displayed.':'A 25-order view cannot establish full order-history completeness.'},
   {label:'Dated, independently reviewed stock signals',state:'Not verified',
    explanation:'A real strategy signal, price feed, availability evidence and source review are missing.'},
-  {label:'Durable duplicate protection and uncertain-order receipts',state:'Not deployed',
-   explanation:'The receipt state machine is tested offline. A database-backed transactional outbox is required before execution.'},
-  {label:'Emergency stop and paper-only authorization',state:'Not activated',
-   explanation:'No scheduler or broker-order writer is installed; your new owner login is view-only.'}
+  {label:'Staging duplicate protection and receipt storage',state:'Staging only',
+   explanation:'A real, private and access-denied staging receipt schema exists. The website does not yet operate a connected receipt service.'},
+  {label:'Staging emergency stop',state:'Halted',
+   explanation:'The separate staging database contains an auditable HALTED gate. It cannot be re-enabled through the application; this is not yet a production operational kill switch.'},
+  {label:'Scheduled paper-order execution',state:'Offline rehearsal only',
+   explanation:'Source-checked market hours and limit-order request drafts can be simulated. No deployed scheduler or paper-order submission service exists.'}
  ];
  return <section className="glass panel" aria-labelledby="alpaca-automation-heading" style={{margin:'24px 0'}}>
    <div className="module-top" style={{marginBottom:14}}>
