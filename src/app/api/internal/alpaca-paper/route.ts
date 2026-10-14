@@ -1,5 +1,5 @@
 import {timingSafeEqual} from 'node:crypto';
-import {getAlpacaPaperSnapshot} from '@/lib/server/alpaca-paper-reader';
+import {getAlpacaPaperSnapshot,PaperConnectionError} from '@/lib/server/alpaca-paper-reader';
 
 // Admin-only bearer, not an owner browser login. Do not import this endpoint into
 // client components or put the bearer in NEXT_PUBLIC_* / browser localStorage.
@@ -26,10 +26,14 @@ export async function GET(request:Request) {
   try{
     const snapshot=await getAlpacaPaperSnapshot({keyId,secretKey});
     return Response.json(snapshot,{headers:NO_STORE});
-  } catch {
-    // Never echo upstream errors, tokens, raw account IDs or provider headers.
-    return Response.json({status:'paper_broker_unavailable_or_unverified'},{
-      status:503,headers:NO_STORE
-    });
+  } catch(error) {
+    // Only fixed, bounded diagnostic codes leave the server. Never echo
+    // upstream error bodies, credentials, request headers or account IDs.
+    const diagnostic=error instanceof PaperConnectionError
+      ? {reason:error.reason,stage:error.stage}
+      : {reason:'PAPER_UNEXPECTED_ERROR',stage:'unknown'};
+    return Response.json({
+      status:'paper_broker_unavailable_or_unverified',...diagnostic
+    },{status:503,headers:NO_STORE});
   }
 }
