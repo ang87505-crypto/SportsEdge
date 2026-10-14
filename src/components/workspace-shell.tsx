@@ -14,6 +14,7 @@ const workspaces:Destination[]=[
 ];
 const resources:Destination[]=[
  {href:'/progress',label:'Progress',icon:'spark'},
+ {href:'/testing',label:'Test center',icon:'shield'},
  {href:'/research/nba',label:'Research',icon:'research'},
  {href:'/guide',label:'Guide',icon:'guide'},
 ];
