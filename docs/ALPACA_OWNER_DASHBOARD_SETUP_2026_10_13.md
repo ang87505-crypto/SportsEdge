@@ -30,14 +30,32 @@ Consequently, this feature **fails closed** without an independent dashboard own
    Don't paste it into ChatGPT, GitHub, source code or a support screenshot.
    If the key is lost, replace the Vercel value and redeploy; previous sessions
    will be invalidated.
-3. Let Vercel build a **new Preview** from
-   `feature/alpaca-paper-readonly-readiness-20261013`.
-   Wait for `Ready`; code and newly added env vars are loaded only by that deployment.
-4. Open the branch's protected Preview site, navigate to Stocks > **View private paper
-   account**, and enter the **dashboard owner key**. It is sent via HTTPS and cleared
-   from the input; it is not saved in localStorage. Server issues a signed 30-minute
-   HttpOnly, Secure, SameSite=Strict cookie. Hit Refresh to load a new snapshot;
-   use Lock dashboard to clear the cookie.
+3. Let Vercel build a **fresh Preview** from
+   `feature/alpaca-private-dashboard-current-main-20261014` ([draft PR #54](https://github.com/ang87505-crypto/SportsEdge/pull/54)).
+   If Preview variables are branch-scoped, ensure this exact branch is included;
+   an owner key restricted to the previous PR #47 branch will not be available.
+   A new deployment after adding the environment variable is essential:
+   earlier deployments retain their older environment.
+4. Open the **new deployment's** protected Preview site (from PR #54's Vercel
+   Preview check or the Vercel project's Deployments page), navigate to Stocks >
+   **View private paper account**, and enter the **64-character dashboard owner
+   key**, not the environment-variable *name*. It is sent via HTTPS and cleared
+   from the input; it is not saved in localStorage. The server issues a signed
+   30-minute HttpOnly, Secure, SameSite=Strict cookie. Hit Refresh to load a new
+   snapshot; use Lock dashboard to clear the cookie.
+
+   Interpreting the result:
+   - Login prompt: owner key is present and a fresh session is required.
+   - "Owner sign-in not set up yet": the owner key is absent, malformed, scoped
+     to another Git branch/environment, or the deployment predates the env change.
+   - "Owner key was not accepted": check the saved owner's 64 random hex characters,
+     without pasting it into tickets or chat.
+   - Signed in but broker snapshot unavailable: check that the same Preview has
+     `ALPACA_PAPER_KEY_ID` and `ALPACA_PAPER_SECRET_KEY` from the same PAPER pair.
+     Do not paste these secrets into the website or chat.
+
+   **Do not test against Production** until owner authentication, data
+   confidentiality and the release are reviewed.
 
 No Alpaca, SportsEdge diagnostic bearer or Vercel bypass credentials should be
 entered into the dashboard login.
