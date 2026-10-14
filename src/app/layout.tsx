@@ -5,6 +5,7 @@ import "./polish.css";
 import "./experience.css";
 import "./performance.css";
 import "./journal-ledger.css";
+import "./testing-center.css";
 import {Suspense} from "react";
 import WorkspaceShell from "@/components/workspace-shell";
 
