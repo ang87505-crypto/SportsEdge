@@ -60,6 +60,6 @@ jobs:
           node-version: '24'
       - name: Assert no real-money release or hidden trader
         run: |
-          node -e "const fs=require('fs');const s=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const x of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false','emergencyStopOperational:false'])if(!s.includes(x))process.exit(1);const p=fs.readFileSync('src/app/testing/page.tsx','utf8');for(const x of ['Not released yet','Production','Staging','Private preview'])if(!p.includes(x))process.exit(1);"
+          node -e "const fs=require('fs');const s=fs.readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const x of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false','emergencyStopOperational:false'])if(!s.includes(x))process.exit(1);const p=fs.readFileSync('src/app/testing/page.tsx','utf8');for(const x of ['Not released yet','Production','Staging'])if(!p.includes(x))process.exit(1);const walk=fs.readFileSync('src/components/testing-walkthrough.tsx','utf8');for(const x of ['Private preview','Blocked','Inspectable'])if(!walk.includes(x))process.exit(1);"
       - name: Run offline paper model/receipt/broker consistency tests
         run: node --experimental-strip-types --test src/lib/stocks/paper-automation-plan.test.mjs src/lib/stocks/paper-automation-receipts.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/server/alpaca-paper-reconciliation-guard.test.mjs
