@@ -28,7 +28,7 @@ function stamp(s:unknown):number {
  return Number.isFinite(n)?n:NaN;
 }
 function validId(n:unknown):n is number {
- return Number.isSafeInteger(n)&&n>0;
+ return typeof n==='number'&&Number.isSafeInteger(n)&&n>0;
 }
 export function selectOneNbaPaperCandidate(input:{
  forecasts:NbaForecast[];quotes:NbaQuote[];recordedForecastIds:number[];
