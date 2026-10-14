@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {Details} from '@/components/ui';
 
 export function AlpacaAccess() {
@@ -5,21 +6,20 @@ export function AlpacaAccess() {
     <div className="glass panel">
       <div className="module-top" style={{marginBottom:18}}>
         <span className="pill">Alpaca · paper trading</span>
-        <span className="pill pill-amber">Account not connected</span>
+        <span className="pill">Owner-only viewer</span>
       </div>
-      <h2 id="alpaca-title">Practice with market-based prices.</h2>
-      <p>Alpaca lets you place simulated stock trades using virtual money. Open its dashboard in a new tab, sign in, and select your <strong>Paper</strong> account.</p>
+      <h2 id="alpaca-title">Your Alpaca paper account, in SportsEdge.</h2>
+      <p>See broker-reported virtual equity, cash, positions and recent orders using a private, read-only viewer. This is separate from the manual journal below; no orders are sent by this dashboard.</p>
       <div className="button-row">
-        <a className="button" href="https://app.alpaca.markets/paper/dashboard/overview" target="_blank" rel="noopener noreferrer">Open Alpaca paper trading ↗</a>
-        <a className="button button-secondary" href="https://docs.alpaca.markets/us/docs/paper-trading" target="_blank" rel="noopener noreferrer">How Alpaca paper trading works ↗</a>
+        <Link className="button" href="/stocks/alpaca">View private paper account →</Link>
+        <a className="button button-secondary" href="https://app.alpaca.markets/paper/dashboard/overview" target="_blank" rel="noopener noreferrer">Open Alpaca paper trading ↗</a>
       </div>
-      <p style={{marginBottom:0,fontSize:12}}>This shortcut opens Alpaca. Your Alpaca balances, orders and positions do not sync to SportsEdge yet. SportsEdge is an independent app.</p>
+      <p style={{marginBottom:0,fontSize:12}}>The API connection has been validated in Preview. The private viewer requires a separate owner key in Vercel before account data can appear. Production is not connected until the code is reviewed and merged.</p>
     </div>
-    <Details title="Can I connect Alpaca here—and use real money later?">
-      <p><strong>Next: connect your paper account.</strong> We need to register SportsEdge with Alpaca and add a secure sign-in and authorization flow. Then we can show your paper balance, positions and order history here, followed by tested paper-order controls.</p>
-      <p><strong>Later: live trading.</strong> Alpaca also offers real-money brokerage accounts, subject to eligibility and account approval. Live trading through SportsEdge is not enabled and would require a separate, explicit setup.</p>
-      <p>Paper fills are simulations and can differ from live execution. Paper-only accounts receive IEX data, which covers one exchange. This manual journal remains separate from your Alpaca account.</p>
-      <p><a href="https://docs.alpaca.markets/us/docs/about-connect-api" target="_blank" rel="noopener noreferrer">Read about Alpaca account connections ↗</a></p>
+    <Details title="What is and is not connected?">
+      <p><strong>Connected on Preview:</strong> Alpaca's paper-account read-only API. The private viewer can display an owner-authorized snapshot once the owner key is configured.</p>
+      <p><strong>Not connected:</strong> Automatic stock signals to broker orders, order execution, live account trading, and a validated performance report. Research and paper-order safeguards remain separate work.</p>
+      <p>Paper fills are simulations and can differ from live execution. Paper-only accounts may receive limited market data. This browser's manual practice journal is not synced with Alpaca.</p>
     </Details>
   </section>;
 }
