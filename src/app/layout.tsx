@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./polish.css";
+import "./experience.css";
 import {Suspense} from "react";
 import WorkspaceShell from "@/components/workspace-shell";
 
