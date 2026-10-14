@@ -24,7 +24,7 @@ export function AlpacaPaperOneOrder(){
  const valid=!!check&&check.quote!==null&&check.marketOpen&&
   check.staging==='HALTED'&&check.blockers.every(b=>ignore.has(b))&&
   check.symbol===ticker&&check.limitCents===limit&&
-  Date.now()-Date.parse(check.checkedAt)<30000&&released&&!used;
+  released&&!used;
  function edit(){setCheck(null);setApproved(false);}
  async function refreshStatus(){
   setBusy(true);
@@ -60,6 +60,7 @@ export function AlpacaPaperOneOrder(){
  }
  async function submit(){
   if(!valid||!approved||busy||limit===null)return;
+  if(!check||Date.now()-Date.parse(check.checkedAt)>=30000){setInfo('Preview expired. Please check the broker quote again.');edit();return;}
   setUsed(true);setBusy(true);setCheck(null);setApproved(false);setInfo('');
   try{
    const r=await fetch('/api/internal/alpaca-paper/one-order',{
