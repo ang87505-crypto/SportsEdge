@@ -23,7 +23,7 @@ export default function TestingCenter(){
     <p>Navigation and offline simulations are ready to inspect. Live paper-broker reconciliation, owner-authenticated staging, persistent receipt service, and an approved paper-order test still require separate verification.</p></div>
    <span className="pill pill-amber">Execution disabled</span>
   </section>
-  <div className="section-title"><h2>What you can test—and what you can't</h2><span className="pill">Committed capabilities, not live telemetry</span></div>
+  <div className="section-title"><h2>What you can test—and what is blocked</h2><span className="pill">Committed capabilities, not live telemetry</span></div>
   <div className="test-status-grid">{tracks.map(x=><article key={x.title} className="glass test-status-card">
     <div className="module-top"><strong>{x.title}</strong><span className={x.status==='Inspectable'?'pill':'pill pill-amber'}>{x.status}</span></div>
     <p>{x.text}</p>
