@@ -105,6 +105,21 @@ try{
   await until(async()=>evaluate(send,`location.pathname==='/' && !!document.querySelector('main h1')`),'mobile return to Overview',12000);
   console.log('PASS mobile navigation: Stocks → Overview');
  }catch(error){const message='Mobile navigation interaction: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Experience v3: exercise real mode switching and keyboard-accessible quick navigation.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.pathways-tabs button')`),'interactive research pathways');
+  await delay(320);
+  await evaluate(send,`(()=>{document.querySelectorAll('.pathways-tabs button')[1].click();return true})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.pathways-tabs button')[1].getAttribute('aria-pressed')==='true' && document.querySelector('.pathways-copy h3')?.textContent?.includes('frozen algorithm')`),'Stock research pathway');
+  console.log('PASS research pathway: Sports → Stocks with truthful next steps');
+  await evaluate(send,`(()=>{document.querySelector('.command-trigger').click();return true})()`);
+  await until(async()=>evaluate(send,`document.querySelector('.command-dialog')?.open===true && document.activeElement?.matches('.command-search-field input')`),'accessible command menu');
+  await evaluate(send,`(()=>{document.querySelectorAll('.command-result')[2].click();return true})()`);
+  await until(async()=>evaluate(send,`location.pathname==='/stocks' && !document.querySelector('.command-dialog')?.open`),'command palette Stocks navigation',12000);
+  console.log('PASS command palette: opens, focuses search, navigates, closes');
+ }catch(error){const message='Experience v3 interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}
