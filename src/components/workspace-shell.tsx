@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import type {ReactNode} from 'react';
 import {NavIcon,type NavIconName} from '@/components/nav-icon';
+import {CommandMenu} from '@/components/command-menu';
 
 type Destination={href:string;label:string;icon:NavIconName};
 const workspaces:Destination[]=[
@@ -29,8 +30,8 @@ export default function WorkspaceShell({children}:{children:ReactNode}){
  const path=usePathname();
  const match=destinations.find(item=>active(item.href,path));
  const section=match?.label??'Research';
- const detail=path.startsWith('/research/nba')?'NBA analysis':path.startsWith('/research/epl')?'EPL analysis':path.startsWith('/opportunities')?'Game analysis':null;
- const back=path.startsWith('/research')||path.startsWith('/opportunities')?'/sports':'/';
+ const detail=path.startsWith('/stocks/research')?'Stock research':path.startsWith('/stocks/alpaca')?'Alpaca paper account':path.startsWith('/research/nba')?'NBA analysis':path.startsWith('/research/epl')?'EPL analysis':path.startsWith('/opportunities')?'Game analysis':null;
+ const back=path.startsWith('/stocks/')?'/stocks':path.startsWith('/research')||path.startsWith('/opportunities')?'/sports':'/';
  return <div className="workspace">
   <a className="skip-link" href="#main-content">Skip to content</a>
   <aside className="sidebar" aria-label="Workspace sidebar">
@@ -53,11 +54,11 @@ export default function WorkspaceShell({children}:{children:ReactNode}){
   <div className="workspace-body">
    <header className="topbar">
     <div className="topbar-context"><span className="topbar-kicker">SPORTSEDGE / WORKSPACE</span><div className="breadcrumbs"><Link href="/">Overview</Link>{path!=='/'&&<><span className="crumb-divider">/</span><span aria-current="page">{section}</span>{detail&&<><span className="crumb-divider">/</span><span>{detail}</span></>}</>}</div></div>
-    <div className="top-actions"><span className="environment-label"><span className="status-dot"/> SIMULATION ONLY</span><Link href="/guide" className="help-link"><NavIcon name="guide" size={16}/> Help center</Link></div>
+    <div className="top-actions"><CommandMenu/><span className="environment-label"><span className="status-dot"/> SIMULATION ONLY</span><Link href="/guide" className="help-link"><NavIcon name="guide" size={16}/> Help center</Link></div>
    </header>
    <nav className="mobile-nav" aria-label="Mobile navigation"><MenuLinks items={destinations} path={path}/></nav>
    <main id="main-content" className="workspace-content">
-    {path!=='/'&&<div className="return-row"><Link href={back}>← {back==='/sports'?'Sports workspace':'Overview'}</Link>{back!=='/'&&<Link href="/">Overview</Link>}</div>}
+    {path!=='/'&&<div className="return-row"><Link href={back}>← {back==='/sports'?'Sports workspace':back==='/stocks'?'Stock workspace':'Overview'}</Link>{back!=='/'&&<Link href="/">Overview</Link>}</div>}
     {children}
    </main>
    <footer className="workspace-footer"><span>SPORTSEDGE <span aria-hidden="true">/</span> Research and simulation platform</span><Link href="/guide#limits">Methodology & limitations ↗</Link></footer>
