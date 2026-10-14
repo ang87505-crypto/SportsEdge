@@ -1,0 +1,29 @@
+name: One owner-approved Alpaca PAPER order
+on:
+  push:
+    branches: ['feature/alpaca-paper-owner-one-order-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/server/alpaca-owner-first-order*'
+      - 'src/lib/server/alpaca-owner-one-order-guard.test.mjs'
+      - 'src/app/api/internal/alpaca-paper/one-order/**'
+      - 'src/components/alpaca-paper-one-order.tsx'
+      - 'database/staging/alpaca_paper_first_order_v6.sql'
+      - 'src/lib/stocks/paper-automation-release.ts'
+      - '.github/workflows/alpaca-paper-owner-one-order.yml'
+permissions:
+  contents: read
+jobs:
+  one-order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/server/alpaca-owner-first-order.test.mjs src/lib/server/alpaca-owner-one-order-guard.test.mjs
+      - name: Block generic broker or live-money automation
+        run: node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const v of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"

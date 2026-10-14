@@ -16,6 +16,7 @@ export type FirstOrderPreflight={
  symbol:string;shares:1;limitCents:number;
  checkedAt:string;
  marketOpen:boolean;
+ sessionCloseAt:string|null;
  quote: null|{feed:'iex';bidCents:number;askCents:number;observedAt:string};
  completedBrokerOrderPages:number;
  blockers:string[];
@@ -159,6 +160,7 @@ export async function inspectFirstPaperOrder(
  return {
   status:'READ_ONLY_PREFLIGHT',environment:'Alpaca PAPER',symbol,shares:1,
   limitCents:notional,checkedAt:evaluated,marketOpen,quote,
+  sessionCloseAt:Number.isFinite(close)?new Date(close).toISOString():null,
   completedBrokerOrderPages:history.pageCount,blockers:[...new Set(blockers)],
   staging,brokerOrderSubmitted:false,ownerApproved:false,executionPermitted:false
  };

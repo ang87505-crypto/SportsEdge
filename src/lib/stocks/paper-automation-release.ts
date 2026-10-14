@@ -2,6 +2,7 @@
 export const PAPER_AUTOMATION_RELEASE={
   paperOnly:true,
   placeOrdersEnabled:false,
+  manualOwnerOneShotEnabled:false,
   scheduledOrdersEnabled:false,
   realMoneyEnabled:false,
   durableReceiptStoreReady:false,
