@@ -1,0 +1,28 @@
+name: Alpaca one-shot PAPER writer unreleased
+on:
+  push:
+    branches: ['feature/alpaca-paper-writer-contract-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/server/alpaca-paper-one-shot-writer*'
+      - 'src/lib/server/alpaca-paper-writer-guard.test.mjs'
+      - 'src/lib/stocks/paper-automation-release.ts'
+      - '.github/workflows/alpaca-paper-writer-contract.yml'
+permissions:
+  contents: read
+jobs:
+  writer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Offline paper-only transport response and disabled-broker tests
+        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-one-shot-writer.test.mjs src/lib/server/alpaca-paper-writer-guard.test.mjs
+      - name: Verify no production order release
+        run: |
+          node -e "const f=require('fs').readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const k of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false','emergencyStopOperational:false'])if(!f.includes(k))process.exit(1)"
