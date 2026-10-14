@@ -1,0 +1,22 @@
+name: Stock development replay engineering
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  development-replay:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Frozen source, execution, reporting and source-access tests
+        run: python -m unittest analytics.test_stock_development_runner_v1 -v
+      - name: Reproduce twice without historical data or credentials
+        run: python research/stock_development_20261014/reproduce.py
