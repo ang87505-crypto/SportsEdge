@@ -84,11 +84,11 @@ test('Transport, 401 and oversized reply fail closed with only fixed codes',asyn
  }
 });
 test('Lookup by client id is exact, GET-only; 404 never authorizes retry',async()=>{
- const m=mockPages([[order(0)]]);
+ const m=mockPages([order(0)]);
  const found=await inspectPaperOrderByClientId(credentials,'se_paper_0',m.fetcher);
  assert.equal(found.status,'found');
  assert.equal(found.order.clientOrderId,'se_paper_0');
- assert.ok(m.urls[0].includes('orders%3Aby_client_order_id'));
+ assert.ok(m.urls[0].includes('orders:by_client_order_id'));
  const missing=await inspectPaperOrderByClientId(credentials,'se_paper_missing',
   async()=>new Response('not found',{status:404}));
  assert.deepEqual(missing,{status:'not_observed_retry_forbidden'});
