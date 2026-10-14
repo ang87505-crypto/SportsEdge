@@ -6,17 +6,9 @@
  * Inputs must eventually come from independently reviewed dated source data.
  */
 import {createHash} from 'node:crypto';
+export {PAPER_AUTOMATION_RELEASE} from './paper-automation-release.ts';
 
-export const PAPER_AUTOMATION_RELEASE={
-  paperOnly:true,
-  placeOrdersEnabled:false,
-  scheduledOrdersEnabled:false,
-  realMoneyEnabled:false,
-  durableReceiptStoreReady:false,
-  emergencyStopOperational:false,
-  verifiedLiveSignalSource:false,
-  brokerReconciliationComplete:false
-} as const;
+
 
 export type PaperBlocker=
  | 'PAPER_EXECUTION_DISABLED'|'EMERGENCY_STOP_NOT_OPERATIONAL'
