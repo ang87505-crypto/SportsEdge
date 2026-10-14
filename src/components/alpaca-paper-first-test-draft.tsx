@@ -18,6 +18,9 @@ export function AlpacaPaperFirstTestDraft(){
  const [working,setWorking]=useState(false);
  const [result,setResult]=useState<Saved|null>(null);
  const [message,setMessage]=useState('');
+ const [drafts,setDrafts]=useState<Array<{intentId:string;symbol:string;shares:1;limitCents:number;status:'planned';createdAt:string}>|null>(null);
+ const [reviewMessage,setReviewMessage]=useState('');
+ const [reviewing,setReviewing]=useState(false);
  const priceCents=parseCents(price);
  const valid=/^[A-Z]{1,5}$/.test(symbol)&&priceCents!==null;
  async function save(){
@@ -54,6 +57,38 @@ export function AlpacaPaperFirstTestDraft(){
    setMessage('Staging response was unavailable; the result is uncertain. Do not blindly retry. No broker order is authorized.');
   }finally{setWorking(false);}
  }
+ async function inspectSaved(){
+  if(reviewing)return;
+  setReviewing(true);setReviewMessage('');
+  try{
+   const res=await fetch('/api/internal/alpaca-paper/drafts',{
+    method:'GET',credentials:'same-origin',cache:'no-store'});
+   const raw:unknown=await res.json();
+   if(!res.ok){
+    setDrafts(null);
+    setReviewMessage(res.status===401?'Owner session expired. Unlock the dashboard again.':
+     'Cannot verify saved drafts from staging. Do not assume a timed-out save failed or retry it blindly.');
+    return;
+   }
+   if(!raw||typeof raw!=='object'||!('data'in raw)){
+    setDrafts(null);setReviewMessage('Unable to verify staging inventory.');return;
+   }
+   const d=(raw as {data:unknown}).data;
+   if(!d||typeof d!=='object'||Array.isArray(d)){
+    setDrafts(null);setReviewMessage('Invalid staging inventory.');return;
+   }
+   const x=d as Record<string,unknown>;
+   if(x.environment!=='SportsEdge Staging'||x.accountKind!=='paper'||
+      x.gateHalted!==true||x.executionPermitted!==false||
+      x.brokerCalls!==0||!Array.isArray(x.drafts)||x.drafts.length>20){
+    setDrafts(null);setReviewMessage('Staging is not verifiably halted.');return;
+   }
+   setDrafts(x.drafts as Array<{intentId:string;symbol:string;shares:1;limitCents:number;status:'planned';createdAt:string}>);
+   setReviewMessage('Read-only staging records verified. No broker order was submitted.');
+  }catch{
+   setDrafts(null);setReviewMessage('Could not inspect staging drafts. The storage result remains unknown.');
+  }finally{setReviewing(false);}
+ }
  return <section className="glass panel" id="alpaca-first-trade-draft" aria-labelledby="alpaca-first-trade-heading" style={{margin:'24px 0'}}>
   <div className="module-top" style={{marginBottom:14}}>
    <span className="pill">ONE-TRADE TEST / STAGING ONLY</span>
@@ -88,5 +123,23 @@ export function AlpacaPaperFirstTestDraft(){
     <strong>Staging draft saved:</strong> {result.symbol}, 1 share, limit ${(result.limitCents/100).toFixed(2)}.
     No Alpaca order exists because of this action. No approval was recorded.
    </div>}
+  <div style={{marginTop:16}}>
+   <button type="button" className="button button-secondary" disabled={reviewing} onClick={()=>void inspectSaved()}>
+    {reviewing?'Checking…':'Review saved staging drafts'}
+   </button>
+   <p style={{fontSize:11,marginTop:8}}>Use this to inspect stored draft IDs after an uncertain save. This checks the staging database only; it does not query Alpaca or approve a trade.</p>
+   {reviewMessage&&<p className="notice" role="status">{reviewMessage}</p>}
+   {drafts&&<div>
+    <p>{drafts.length} unapproved staging draft{drafts.length===1?'':'s'} recorded (maximum 20). Execution is HALTED.</p>
+    {drafts.length>0&&<div className="table-wrap"><table className="data-table">
+     <thead><tr><th>Draft ID</th><th>Ticker</th><th>Quantity</th><th>Limit</th><th>Saved</th></tr></thead>
+     <tbody>{drafts.map(d=><tr key={d.intentId}>
+      <td><code>{d.intentId}</code></td><td>{d.symbol}</td><td>1 virtual share</td>
+      <td>{'
++(d.limitCents/100).toFixed(2)}</td><td>{new Date(d.createdAt).toLocaleString()}</td>
+     </tr>)}</tbody>
+    </table></div>}
+   </div>}
+  </div>
  </section>;
 }
