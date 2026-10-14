@@ -1,5 +1,5 @@
 'use client';
-import {PAPER_AUTOMATION_RELEASE} from '@/lib/stocks/paper-automation-plan';
+import {PAPER_AUTOMATION_RELEASE} from '@/lib/stocks/paper-automation-release';
 
 type State={
  status:string;
