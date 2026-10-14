@@ -80,7 +80,7 @@ export function AlpacaPaperFirstTestDraft(){
     <span className="eyebrow">QUANTITY</span><strong style={{fontSize:20,padding:'10px 0'}}>1 virtual share</strong>
    </div>
   </div>
-  <p style={{fontSize:11,marginTop:12}}>This form does not check real-time prices or whether a ticker is tradeable. Invalid ticker or price details are rejected. The staging database's STOP stays active.</p>
+  <p style={{fontSize:11,marginTop:12}}>This form does not check real-time prices or whether a ticker is tradeable. Invalid ticker or price details are rejected. The staging emergency STOP stays active.</p>
   <button type="button" className="button button-secondary" disabled={!valid||working}
    onClick={()=>void save()}>{working?'Saving…':'Save unapproved staging draft'}</button>
   {message&&<p className="notice" role="status" style={{marginTop:15}}>{message}</p>}
