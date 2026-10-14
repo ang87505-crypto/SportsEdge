@@ -82,8 +82,13 @@ export function AlpacaPaperDashboard() {
         cache:'no-store',credentials:'same-origin',body:JSON.stringify({ownerKey})
       });
       if(!res.ok){
-        setMessage(res.status===401?'Owner key was not accepted. Please try again.':
-          'Owner access is unavailable. Confirm the Vercel owner key is configured.');
+        setMessage(res.status===401
+          ? 'This key does not match the owner key in this Preview deployment. If you edited the Vercel Preview variable, deploy again and paste that exact 64-character key. Do not use your Alpaca or diagnostic keys.'
+          : res.status===503
+            ? 'Owner access is not configured in this Preview build. Check the variable name, 64-character hex value and Preview/branch scope, then deploy again.'
+            : res.status===403
+              ? 'Preview sign-in was blocked by an origin check. Open the exact Vercel Preview site rather than another domain.'
+              : 'Owner access is temporarily unavailable. Check the protected Preview deployment.');
         return;
       }
       await refresh();
