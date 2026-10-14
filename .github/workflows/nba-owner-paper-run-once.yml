@@ -1,0 +1,27 @@
+name: NBA owner virtual paper bet one-shot
+on:
+  push:
+    branches: ['feature/nba-owner-paper-run-once-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/nba-paper-run-contract*'
+      - 'src/lib/server/nba-paper-once.ts'
+      - 'src/lib/server/nba-paper-route-guard.test.mjs'
+      - 'src/app/api/internal/nba-paper/run/**'
+      - 'src/components/nba-paper-run-panel.tsx'
+      - 'src/app/paper-betting/page.tsx'
+      - '.github/workflows/nba-owner-paper-run-once.yml'
+permissions:
+  contents: read
+jobs:
+  once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/nba-paper-run-contract.test.mjs src/lib/server/nba-paper-route-guard.test.mjs
