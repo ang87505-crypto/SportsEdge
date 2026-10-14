@@ -15,7 +15,7 @@ function owner(req:NextRequest){
 /** This is the only explicitly approved one-order release. Never Production. */
 function ownerOneOrderReleased(){
  return PAPER_AUTOMATION_RELEASE.paperOnly===true &&
-   PAPER_AUTOMATION_RELEASE.manualOwnerOneShotEnabled===true &&
+   Boolean(PAPER_AUTOMATION_RELEASE.manualOwnerOneShotEnabled) &&
    PAPER_AUTOMATION_RELEASE.placeOrdersEnabled===false &&
    PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled===false &&
    PAPER_AUTOMATION_RELEASE.realMoneyEnabled===false &&
