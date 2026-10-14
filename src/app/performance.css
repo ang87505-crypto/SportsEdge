@@ -1,0 +1,89 @@
+/* Real source-linked visualizations and evidence tracking. */
+.realized-chart-panel{margin:17px 0 30px;min-width:0;overflow:hidden;border-color:rgba(172,236,193,.2)}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;gap:22px;flex-wrap:wrap}
+.chart-header h2{font-size:clamp(20px,2.3vw,26px);margin-bottom:7px}
+.chart-header p{font-size:12px;color:#9fbba7;max-width:590px;line-height:1.7}
+.chart-header .eyebrow{display:block;margin-bottom:10px}
+.chart-switch{display:flex;gap:4px;padding:4px;border-radius:10px;background:#081a10;border:1px solid rgba(185,242,201,.17)}
+.chart-switch button{font-size:11px;font-weight:690;padding:10px 11px;border-radius:7px;border:1px solid transparent;background:transparent;color:#99bda6}
+.chart-switch button[aria-pressed=true]{background:#295338;color:#e5fff0;border-color:rgba(170,240,196,.23)}
+.chart-switch button:hover:not([aria-pressed=true]){color:#effbef;background:rgba(186,248,203,.07)}
+.chart-stat-row{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:flex-end;gap:16px;padding:26px 0 12px}
+.chart-stat-row>div{display:grid;gap:5px}
+.chart-stat-row small,.chart-stat-row span{font-size:11px;color:#9bb6a3;line-height:1.5}
+.chart-stat-row strong{font-size:clamp(26px,3vw,35px);letter-spacing:-.05em;font-weight:730;font-variant-numeric:tabular-nums}
+.chart-selected-readout{text-align:right}
+.chart-selected-readout strong{font-size:22px}
+.chart-graphic{margin:5px 0 0;min-width:0}
+.chart-graphic svg{display:block;width:100%;height:auto;max-height:300px;overflow:visible}
+.chart-gridline{stroke:rgba(180,241,199,.14);stroke-width:1;stroke-dasharray:3 5}
+.chart-axis-label{fill:#86a994;font-size:11px;font-weight:600;letter-spacing:.3px}
+.chart-marker-line{stroke:rgba(206,255,220,.25);stroke-width:1;stroke-dasharray:5 4}
+.chart-scrubber{font-size:11px;display:grid;gap:9px;margin:0 0 14px;color:#b4d4be}
+.chart-scrubber input{width:100%;accent-color:#b4f7ca;cursor:ew-resize;padding:0;min-height:25px}
+.chart-source{font-size:11px;color:#86a391;line-height:1.65;margin-top:11px;border-top:1px solid rgba(171,236,189,.1);padding-top:14px}
+.chart-empty{text-align:center;border:1px dashed rgba(171,232,189,.23);border-radius:12px;padding:32px 22px;margin:25px 0 4px;background:rgba(181,246,198,.025)}
+.chart-empty strong{font-size:13px}
+.chart-empty p{font-size:12px;color:#99baa5;max-width:520px;margin:9px auto 0}
+.journal-insight-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.journal-insight-kpis>div{border:1px solid rgba(176,237,192,.15);background:linear-gradient(150deg,#112b1c,#0d2016);border-radius:13px;padding:19px 18px;display:grid;gap:8px;min-width:0}
+.journal-insight-kpis span{font-size:11px;color:#a3c7ad}
+.journal-insight-kpis strong{font-size:clamp(18px,2vw,25px);letter-spacing:-.035em;font-weight:720;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.journal-insight-kpis small{font-size:10px;line-height:1.5;color:#89a894}
+.journal-insight-footer{font-size:12px;color:#a7c1ae;margin:-8px 0 20px;line-height:1.65}
+.journal-insight-footer a{color:#bdf8ce;text-decoration:underline;text-underline-offset:4px}
+.progress-stats .stat{min-width:0}
+.progress-stats .stat strong{font-size:clamp(19px,2.2vw,28px)}
+.progress-workflow-board{margin:35px 0}
+.progress-board-top{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:19px}
+.progress-board-top h2{font-size:clamp(21px,2.3vw,28px);max-width:740px}
+.progress-filters{display:flex;gap:6px;flex-wrap:wrap;padding:5px;border:1px solid rgba(192,242,206,.18);border-radius:12px;width:max-content;max-width:100%;background:#0a1d12;margin-bottom:19px}
+.progress-filters button{display:flex;align-items:center;gap:9px;padding:10px 15px;border-radius:9px;background:transparent;border:1px solid transparent;color:#9fbaa5;font-weight:650;font-size:11px;transition:background .18s,color .18s}
+.progress-filters button[aria-pressed=true]{background:#244b32;border-color:rgba(181,247,203,.24);color:#edffef}
+.progress-filters button:hover:not([aria-pressed=true]){background:rgba(182,241,198,.07);color:#e1f9e7}
+.progress-filters button span{font-size:10px;display:inline-grid;place-items:center;background:rgba(178,241,197,.1);padding:3px 6px;border-radius:7px;min-width:22px}
+.progress-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.progress-record{display:flex;flex-direction:column;min-height:250px;padding:24px 25px;gap:12px;transition:transform .2s,border-color .2s}
+.progress-record:hover{transform:translateY(-2px);border-color:rgba(190,246,209,.34)}
+.progress-record-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.progress-record-top>span:first-child{font-size:10px;font-weight:780;letter-spacing:1.3px;color:#8ebda0}
+.progress-record-state{border-radius:7px;padding:6px 9px;font-size:10px;font-weight:700;white-space:nowrap}
+.progress-record-state.is-ready{background:rgba(165,232,182,.09);border:1px solid rgba(162,238,181,.25);color:#bef9d0}
+.progress-record-state.is-review{background:rgba(239,204,128,.08);border:1px solid rgba(239,204,128,.21);color:#efdfac}
+.progress-record-state.is-blocked{background:rgba(243,175,133,.08);border:1px solid rgba(243,175,133,.19);color:#e9bfa6}
+.progress-record h3{font-size:20px;font-weight:710;letter-spacing:-.038em;line-height:1.25}
+.progress-record>p{font-size:12px;color:#a5bfae;line-height:1.7}
+.progress-next{border-left:2px solid rgba(166,239,190,.3);padding-left:12px;margin-top:auto}
+.progress-next>span{font-size:9px;font-weight:780;letter-spacing:1.1px;color:#81bb92}
+.progress-next p{font-size:11px;color:#b1ceba;line-height:1.65;margin-top:6px}
+.progress-record-foot{display:flex;justify-content:space-between;align-items:center;gap:13px;border-top:1px solid rgba(173,238,191,.11);padding-top:14px;margin-top:6px}
+.progress-record-foot>span{font-size:10px;color:#8da994;line-height:1.5}
+.progress-record-foot a{display:inline-flex;align-items:center;white-space:nowrap;gap:5px;color:#c6f6d2;font-size:11px;font-weight:730}
+.progress-record-foot a:hover{text-decoration:underline}
+.progress-links{margin:28px 0}
+.progress-links .panel{display:flex;flex-direction:column;gap:12px}
+.progress-links .panel .eyebrow{margin:0}
+.progress-links .panel h2{font-size:21px}
+.progress-links .panel p{font-size:12px;color:#a5bfae;line-height:1.65;margin:0}
+.progress-links .panel .button{align-self:flex-start;margin-top:auto}
+.progress-source-links{display:grid;gap:10px;margin-top:6px}
+.progress-source-links a{border:1px solid rgba(164,235,187,.18);padding:12px 14px;border-radius:10px;color:#b8f3ca;font-size:12px}
+.progress-source-links a:hover{background:rgba(162,233,186,.08)}
+@media(max-width:1100px){.journal-insight-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:780px){.progress-card-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.chart-selected-readout{text-align:left}.chart-header{gap:15px}.chart-stat-row{gap:15px}.progress-board-top{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:480px){
+ .journal-insight-kpis{gap:9px}
+ .journal-insight-kpis>div{padding:16px 14px}
+ .journal-insight-kpis strong{font-size:20px}
+ .chart-header .chart-switch{width:100%}
+ .chart-switch button{flex:1;padding:10px 7px}
+ .realized-chart-panel{padding:18px}
+ .chart-stat-row strong{font-size:25px}
+ .chart-selected-readout strong{font-size:20px}
+ .progress-filters{width:100%;justify-content:space-between}
+ .progress-filters button{padding:9px 8px;gap:5px}
+ .progress-record{padding:22px 19px}
+ .progress-record-foot{align-items:flex-start;flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){.progress-record{transition:none!important;transform:none!important}}
