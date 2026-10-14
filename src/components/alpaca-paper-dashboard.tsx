@@ -109,7 +109,7 @@ export function AlpacaPaperDashboard() {
     <div className="glass panel">
       <div className="module-top">
         <span className="pill">Alpaca · Paper account</span>
-        <span className="pill pill-amber">Read-only overview · one-order test gated</span>
+        <span className="pill pill-amber">One-order test · gated</span>
       </div>
       <h2>Private paper trading overview</h2>
       <p>Broker-reported virtual balances and recent activity. Not the same as your manual practice journal or a historical backtest.</p>
