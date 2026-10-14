@@ -19,6 +19,25 @@
 5. Configure only the intended Vercel environment(s), and redeploy. A trusted admin program can query the internal route with \`Authorization: Bearer <SPORTSEDGE_ALPACA_PAPER_READ_TOKEN>\`. This is *not* an approved browser-login flow.
 6. Do not install an Alpaca live key in any SportsEdge stock project. The code pins \`https://paper-api.alpaca.markets\` and forbids mutation methods.
 
+## Troubleshooting existing 503 without credential rotation
+
+The owner has already confirmed the Vercel bypass and SportsEdge read token work; the read-only endpoint returned `{"status":"paper_broker_unavailable_or_unverified"}`. Earlier deployments caused redirects/HTML 404, so always use the **branch Preview domain** shown on the latest Ready deployment (include `https://`).
+
+This version adds fixed, non-sensitive diagnostics to the authenticated 503 JSON: `reason` and `stage`. The response still contains **no provider response body, credentials, headers or identifiers**.
+
+- `PAPER_AUTH_REJECTED` / `PAPER_ACCESS_FORBIDDEN`: verify that the *same paper account's* key ID and secret are paired correctly in the Preview environment; Alpaca live keys cannot authenticate to the paper host. Do not guess which credential is wrong or request secrets in chat.
+- `PAPER_CREDENTIAL_FORMAT_INVALID`: Vercel's saved values are blank, truncated or wrong type. Verify non-empty original paper values without displaying them in logs.
+- `PAPER_TRANSPORT_ERROR` / `PAPER_UPSTREAM_ERROR` / `PAPER_RATE_LIMITED`: provider/network issue. Do not rotate keys or mutate the broker account.
+- `PAPER_INVALID_JSON` / `PAPER_PAYLOAD_INVALID`: the server received unexpected data, requiring a **code/schema review**; do not repeatedly regenerate user credentials.
+- `stage` is one of `config`, `account`, `positions`, `recentOrders` or `normalize`. If the stage is `normalize`, input was fetched but cannot yet be safely represented.
+
+A sample Windows PowerShell status-only check (in a window where `$bypass` and `$readToken` have been privately loaded):
+
+    $base = "https://BRANCH-PREVIEW-URL.vercel.app"
+    curl.exe -sS -H "x-vercel-protection-bypass: $bypass" -H "Authorization: Bearer $readToken" "$base/api/internal/alpaca-paper" | ConvertFrom-Json | Select-Object status,reason,stage | Format-List
+
+**Do not print a successful full snapshot** in a shared transcript; it contains account equity and recent orders. The codes alone are sufficient for troubleshooting.
+
 ## Not yet shipped
 - No automatic paper-trade placements or broker-side emergency-stop endpoints.
 - No signed owner UI/authentication, scheduler, broker webhook/event persistence, idempotent order receipts, persisted reconciled NAV, or alerts.
