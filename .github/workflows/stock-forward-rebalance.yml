@@ -1,0 +1,27 @@
+name: Stock forward rebalance planning
+on:
+  pull_request:
+    paths:
+      - 'src/lib/stocks/paper-strategy-rebalance*'
+      - 'analytics/stock_forward_signal_v1.py'
+      - 'analytics/test_stock_forward_signal_v1.py'
+      - '.github/workflows/stock-forward-rebalance.yml'
+      - 'docs/STOCK_FORWARD_REBALANCE_2026_10_14.md'
+permissions:
+  contents: read
+jobs:
+  rebalance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/stocks/paper-strategy-rebalance.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest analytics.test_stock_forward_signal_v1 analytics.test_stock_momentum_v1
