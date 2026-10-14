@@ -11,16 +11,15 @@ type State={
  orderCount:number;
 };
 export function AlpacaPaperAutomationReadiness({account}:{account:State}){
- const age=Date.now()-Date.parse(account.capturedAt);
  const brokerOk=account.status==='ACTIVE'&&!account.tradingBlocked&&!account.accountBlocked;
- const fresh=Number.isFinite(age)&&age>=0&&age<=60000;
+ const timestampPresent=Number.isFinite(Date.parse(account.capturedAt));
  const openWarnings=account.warnings.some(x=>
   ['OPEN_ORDER_REQUIRES_RECONCILIATION','ORDER_HISTORY_LIMIT_REACHED','UNKNOWN_ORDER_STATUS','SHORT_POSITION_PRESENT'].includes(x));
  const checks=[
   {label:'Alpaca paper account responds',state:brokerOk?'Observed':'Needs review',
    explanation:'Read-only account status; never constitutes order authorization.'},
-  {label:'Broker snapshot recent',state:fresh?'Observed':'Needs refresh',
-   explanation:'The current screen updates only when you request a new snapshot.'},
+  {label:'Broker snapshot timestamp available',state:timestampPresent?'Observed':'Needs review',
+   explanation:'Timestamp recorded; actual freshness must be verified again before every proposed order. This page refreshes manually.'},
   {label:'Complete broker order reconciliation',state:'Not implemented',
    explanation:openWarnings?'Existing warnings require attention; only 25 recent orders are displayed.':'A 25-order view cannot establish full order-history completeness.'},
   {label:'Dated, independently reviewed stock signals',state:'Not verified',
