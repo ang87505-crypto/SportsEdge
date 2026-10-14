@@ -69,7 +69,7 @@ export function AlpacaPaperDashboard() {
       setSnapshot(null);setStatus('error');setMessage('Could not reach the SportsEdge account viewer.');
     } finally {setWorking(false);}
   },[]);
-  useEffect(()=>{void refresh();},[refresh]);
+  useEffect(()=>{const timer=window.setTimeout(()=>{void refresh();},0);return()=>window.clearTimeout(timer);},[refresh]);
   async function signIn(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if(working)return;
