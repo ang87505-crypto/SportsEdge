@@ -125,6 +125,7 @@ try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/progress'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.progress-filters button').length===4`),'progress board');
+  await delay(550); // Wait for React hydration before dispatching an interaction.
   await evaluate(send,`(()=>{document.querySelectorAll('.progress-filters button')[1].click();return true})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.progress-card-grid article').length===3 && document.querySelectorAll('.progress-filters button')[1].getAttribute('aria-pressed')==='true'`),'filtered stock research cards');
   console.log('PASS progress: stocks filter shows registered and blocked evidence');
@@ -141,16 +142,15 @@ try{
   await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('nav[aria-label="Testing checkpoints"] button').length===6`),'testing tour mounted');
   const defaultState=await evaluate(send,`({
     disabled:document.querySelector('.test-release-banner')?.innerText?.includes('Not released yet'),
-    hasBrokerLink:!!document.querySelector('a[href="/stocks/alpaca"]'),
     hasUnverified:document.querySelector('.test-status-grid')?.innerText?.includes('Not established'),
     menuEntry:!!document.querySelector('nav[aria-label="Mobile navigation"] a[href="/testing"]')
   })`);
-  if(!defaultState.disabled||!defaultState.hasBrokerLink||!defaultState.hasUnverified||!defaultState.menuEntry)
+  if(!defaultState.disabled||!defaultState.hasUnverified||!defaultState.menuEntry)
    throw Error('Testing hub must disclose unreleased state, private Preview route, and primary navigation');
   await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='Blocked');if(!v)throw Error('missing blocked filter');v.click();return true;})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===1 && document.querySelector('.test-tour-detail')?.innerText?.includes('No paper or live orders')`),'blocked research gate');
   await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='All');v.click();document.querySelectorAll('.test-tour-steps button')[4].click();return true;})()`);
-  await until(async()=>evaluate(send,`document.querySelector('.test-tour-detail')?.innerText?.includes('Private preview')`),'owner-paper tour note');
+  await until(async()=>evaluate(send,`document.querySelector('.test-tour-detail')?.innerText?.includes('Private preview') && !!document.querySelector('.test-tour-detail a[href="/stocks/alpaca"]')`),'owner-paper tour link and note');
   console.log('PASS testing center: accessible filters, private broker path and blocked execution state');
   await send('Page.navigate',{url:base+'/stocks/alpaca'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main h1')`),'protected paper viewer page');
