@@ -5,6 +5,13 @@ type Saved={
  symbol:string;shares:1;limitCents:number;approved:false;
  executionPermitted:false;brokerCalls:0;gateHalted:true;
 };
+type PaperPreflight={
+ status:'READ_ONLY_PREFLIGHT';environment:'Alpaca PAPER';symbol:string;shares:1;
+ limitCents:number;checkedAt:string;marketOpen:boolean;
+ quote:null|{feed:'iex';bidCents:number;askCents:number;observedAt:string};
+ blockers:string[];staging:'HALTED'|'UNAVAILABLE';completedBrokerOrderPages:number;
+ brokerOrderSubmitted:false;ownerApproved:false;executionPermitted:false;
+};
 function parseCents(input:string):number|null{
  const s=input.trim();
  if(!/^(?:0?\.[0-9]{1,2}|[1-9][0-9]?(?:\.[0-9]{1,2})?)$/.test(s))return null;
@@ -21,8 +28,40 @@ export function AlpacaPaperFirstTestDraft(){
  const [drafts,setDrafts]=useState<Array<{intentId:string;symbol:string;shares:1;limitCents:number;status:'planned';createdAt:string}>|null>(null);
  const [reviewMessage,setReviewMessage]=useState('');
  const [reviewing,setReviewing]=useState(false);
+ const [preflightBusy,setPreflightBusy]=useState(false);
+ const [preflight,setPreflight]=useState<PaperPreflight|null>(null);
+ const [preflightMessage,setPreflightMessage]=useState('');
  const priceCents=parseCents(price);
  const valid=/^[A-Z]{1,5}$/.test(symbol)&&priceCents!==null;
+ async function runPreflight(){
+  if(!valid||priceCents===null||preflightBusy)return;
+  setPreflightBusy(true);setPreflight(null);setPreflightMessage('');
+  try{
+   const params=new URLSearchParams({symbol,limitCents:String(priceCents)});
+   const res=await fetch('/api/internal/alpaca-paper/preflight?'+params,{
+    method:'GET',cache:'no-store',credentials:'same-origin'});
+   const data:unknown=await res.json();
+   if(!res.ok){
+    setPreflightMessage(res.status===401?'Owner session expired. Unlock your private dashboard.':
+     'Read-only Alpaca preflight is unavailable or market evidence could not be verified. No order has been placed.');
+    return;
+   }
+   if(!data||typeof data!=='object'||Array.isArray(data)){
+    setPreflightMessage('Invalid read-only preflight report.');return;
+   }
+   const x=data as Record<string,unknown>;
+   if(x.status!=='READ_ONLY_PREFLIGHT'||x.environment!=='Alpaca PAPER'||
+     x.symbol!==symbol||x.shares!==1||x.limitCents!==priceCents||
+     x.brokerOrderSubmitted!==false||x.ownerApproved!==false||
+     x.executionPermitted!==false||!Array.isArray(x.blockers)||
+     !x.blockers.every(v=>typeof v==='string'&&v.length<=100)){
+    setPreflightMessage('Preflight could not be verified. No order is authorized.');return;
+   }
+   setPreflight(x as PaperPreflight);
+  }catch{
+   setPreflightMessage('Preflight response unavailable. Nothing was submitted to Alpaca.');
+  }finally{setPreflightBusy(false);}
+ }
  async function save(){
   if(!valid||priceCents===null||working)return;
   setWorking(true);setResult(null);setMessage('');
@@ -100,14 +139,14 @@ export function AlpacaPaperFirstTestDraft(){
    <label style={{display:'grid',gap:7,minWidth:130}}>
     <span className="eyebrow">STOCK TICKER</span>
     <input aria-label="Ticker symbol for test draft" value={symbol} maxLength={5}
-     onChange={e=>setSymbol(e.target.value.trim().toUpperCase())} placeholder="F"
+     onChange={e=>{setSymbol(e.target.value.trim().toUpperCase());setPreflight(null);}} placeholder="F"
      autoComplete="off" style={{padding:12,borderRadius:9,color:'inherit',
       background:'rgba(15,34,21,.9)',border:'1px solid rgba(165,233,185,.26)'}}/>
    </label>
    <label style={{display:'grid',gap:7,minWidth:130}}>
     <span className="eyebrow">LIMIT PRICE IN USD</span>
     <input aria-label="Maximum share price for test draft" value={price} maxLength={6}
-     onChange={e=>setPrice(e.target.value)} placeholder="12.50"
+     onChange={e=>{setPrice(e.target.value);setPreflight(null);}} placeholder="12.50"
      inputMode="decimal" autoComplete="off" style={{padding:12,borderRadius:9,color:'inherit',
       background:'rgba(15,34,21,.9)',border:'1px solid rgba(165,233,185,.26)'}}/>
    </label>
@@ -116,6 +155,21 @@ export function AlpacaPaperFirstTestDraft(){
    </div>
   </div>
   <p style={{fontSize:11,marginTop:12}}>This form does not check real-time prices or whether a ticker is tradeable. Invalid ticker or price details are rejected. The staging emergency STOP stays active.</p>
+  <div style={{margin:'16px 0',padding:16,border:'1px solid rgba(165,233,185,.22)',borderRadius:12}}>
+   <h3>Read-only Alpaca PAPER order preflight</h3>
+   <p>Inspect Alpaca market clock, IEX quote, equity eligibility, virtual account and complete order history. This checks a proposed one-share test; it does not approve or send an order. A market-data or staging connection failure blocks the test.</p>
+   <button type="button" className="button button-secondary" disabled={!valid||preflightBusy}
+    onClick={()=>void runPreflight()}>{preflightBusy?'Checking paper account…':'Check Alpaca PAPER preflight'}</button>
+   {preflightMessage&&<p className="notice" role="status">{preflightMessage}</p>}
+   {preflight&&preflight.symbol===symbol&&preflight.limitCents===priceCents&&
+    <div className="notice" role="status" style={{marginTop:12}}>
+     <strong>{preflight.marketOpen?'Market clock verified open':'Market currently closed or unverified'}</strong>
+     <p>Checked: {new Date(preflight.checkedAt).toLocaleString()}. Broker order submissions: 0. Owner approval: not granted.</p>
+     {preflight.quote&&<p>IEX-only bid: USD {(preflight.quote.bidCents/100).toFixed(2)}; ask: USD {(preflight.quote.askCents/100).toFixed(2)}. Quote time: {new Date(preflight.quote.observedAt).toLocaleString()}.</p>}
+     <p><strong>Execution blocked:</strong> {preflight.blockers.join(' · ')}</p>
+     <p style={{fontSize:11}}>IEX quotes may not reflect the best price across all exchanges. This result expires quickly and is not a persistent approval.</p>
+    </div>}
+  </div>
   <button type="button" className="button button-secondary" disabled={!valid||working}
    onClick={()=>void save()}>{working?'Saving…':'Save unapproved staging draft'}</button>
   {message&&<p className="notice" role="status" style={{marginTop:15}}>{message}</p>}

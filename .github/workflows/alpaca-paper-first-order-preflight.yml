@@ -1,0 +1,27 @@
+name: First Alpaca PAPER order read-only preflight
+on:
+  push:
+    branches: ['feature/alpaca-owner-preflight-20261014']
+  pull_request:
+    paths:
+      - 'src/lib/server/alpaca-first-order-preflight*'
+      - 'src/lib/server/alpaca-first-order-preflight-guard.test.mjs'
+      - 'src/app/api/internal/alpaca-paper/preflight/**'
+      - 'src/components/alpaca-paper-first-test-draft.tsx'
+      - '.github/workflows/alpaca-paper-first-order-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/server/alpaca-first-order-preflight.test.mjs src/lib/server/alpaca-first-order-preflight-guard.test.mjs
+      - name: Confirm broker release is disabled
+        run: node -e "const x=require('fs').readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const k of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!x.includes(k))process.exit(1)"
