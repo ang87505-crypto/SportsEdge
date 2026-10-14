@@ -1,4 +1,4 @@
-import {parseJournal,totals,type Journal} from './journal';
+import {parseJournal,totals,type Journal} from './journal.ts';
 
 export const MAX_BACKUP_BYTES=1024*1024;
 export type BackupReview={
