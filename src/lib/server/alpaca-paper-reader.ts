@@ -8,15 +8,19 @@ type FetchLike = typeof fetch;
 
 // Fixed, non-sensitive diagnostic codes. Never include an upstream response,
 // account identifier, credentials, HTTP headers or raw exception text.
+export type PaperFailureReason =
+  'PAPER_AUTH_REJECTED'|'PAPER_ACCESS_FORBIDDEN'|'PAPER_RATE_LIMITED'|
+  'PAPER_UPSTREAM_ERROR'|'PAPER_TRANSPORT_ERROR'|'PAPER_REPLY_TOO_LARGE'|
+  'PAPER_INVALID_JSON'|'PAPER_PAYLOAD_INVALID'|'PAPER_CREDENTIAL_FORMAT_INVALID';
+export type PaperFailureStage = 'config'|'account'|'positions'|'recentOrders'|'normalize';
 export class PaperConnectionError extends Error {
-  constructor(public readonly reason:
-    'PAPER_AUTH_REJECTED'|'PAPER_ACCESS_FORBIDDEN'|'PAPER_RATE_LIMITED'|
-    'PAPER_UPSTREAM_ERROR'|'PAPER_TRANSPORT_ERROR'|'PAPER_REPLY_TOO_LARGE'|
-    'PAPER_INVALID_JSON'|'PAPER_PAYLOAD_INVALID'|'PAPER_CREDENTIAL_FORMAT_INVALID',
-    public readonly stage:'config'|'account'|'positions'|'recentOrders'|'normalize'
-  ) {
+  readonly reason:PaperFailureReason;
+  readonly stage:PaperFailureStage;
+  constructor(reason:PaperFailureReason,stage:PaperFailureStage) {
     super('Paper broker diagnostic failed');
     this.name='PaperConnectionError';
+    this.reason=reason;
+    this.stage=stage;
   }
 }
 
