@@ -17,8 +17,8 @@ export function StockJournalInsights({journal,invalid}:{journal:Journal;invalid:
   try{return realizedSeries(INITIAL_CENTS,events);}catch{return [];}
  },[events,invalid]);
  const closed=journal.trades.filter(t=>t.exitCents!==undefined);
- const winners=closed.filter(t=>t.exitCents!>t.entryCents).length;
- const losers=closed.filter(t=>t.exitCents!<t.entryCents).length;
+ const winners=closed.filter(t=>(t.exitCents??0)>t.entryCents).length;
+ const losers=closed.filter(t=>(t.exitCents??0)<t.entryCents).length;
  const volume=closed.reduce((sum,t)=>sum+t.shares*t.entryCents,0);
  const realized=closed.reduce((sum,t)=>sum+(t.exitCents!-t.entryCents)*t.shares,0);
  return <section className="stock-insights" aria-labelledby="journal-insights-heading">
