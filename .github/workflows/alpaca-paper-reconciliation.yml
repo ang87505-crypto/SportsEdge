@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - 'src/lib/server/alpaca-paper-reconciliation*'
+      - 'src/app/api/internal/alpaca-paper/reconciliation/route.ts'
+      - 'src/components/alpaca-paper-reconciliation-panel.tsx'
+      - 'src/components/alpaca-paper-dashboard.tsx'
       - 'src/lib/stocks/paper-reconciliation-decisions*'
       - 'database/tests/alpaca_paper_outbox*'
       - 'database/ddl/alpaca_paper_outbox*'
@@ -23,7 +26,7 @@ jobs:
         with:
           node-version: '24'
       - name: Adversarial paginated paper-order reader and uncertainty tests
-        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs
+        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs src/lib/server/alpaca-paper-reconciliation-guard.test.mjs
       - name: No broker write, schedule or order-placing API in reconciliation code
         run: |
           node -e "const fs=require('node:fs');let s=fs.readFileSync('src/lib/server/alpaca-paper-reconciliation.ts','utf8');s=s.replace(/\/\*[\s\S]*?\*\//g,'');if(/method\s*:\s*['\"\x60](POST|DELETE|PUT|PATCH)|scheduleOrdersEnabled:\s*true|paper-api\.alpaca\.markets\/v2\/orders'\s*,\s*\{method:\s*['\"]POST/.test(s))process.exit(1);"
