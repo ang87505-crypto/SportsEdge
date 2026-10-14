@@ -10,6 +10,7 @@ const destinations:Destination[]=[
  {title:'Sports intelligence',description:'NBA and EPL games, recorded odds and models',href:'/sports',group:'Workspaces',icon:'sports'},
  {title:'Stocks',description:'Watchlists and virtual stock journal',href:'/stocks',group:'Workspaces',icon:'stocks'},
  {title:'Paper betting',description:'Shared NBA virtual-money ledger',href:'/paper-betting',group:'Workspaces',icon:'paper'},
+ {title:'Project research progress',description:'All evidence gates and milestones in one place',href:'/progress',group:'Research & tools',icon:'spark'},
  {title:'Stock algorithm research',description:'Registered strategy and backtest readiness',href:'/stocks/research',group:'Research & tools',icon:'stocks'},
  {title:'NBA model research',description:'Historical model evaluation',href:'/research/nba',group:'Research & tools',icon:'research'},
  {title:'EPL model research',description:'Soccer research and limitations',href:'/research/epl',group:'Research & tools',icon:'research'},
