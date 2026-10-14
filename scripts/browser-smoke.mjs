@@ -134,6 +134,28 @@ try{
   if(!honest)throw Error('Empty manual stock journal must not display fabricated performance curve');
   console.log('PASS stocks: empty manual journal shows no fabricated chart');
  }catch(error){const message='Progress and performance interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Exercise backup preview and safe cancellation in the isolated CI browser. No write/restore.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/stocks'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('input[aria-label="Choose journal backup JSON"]')`),'journal import control');
+  await delay(400);
+  const selected=await evaluate(send,`(()=>{
+   const input=document.querySelector('input[aria-label="Choose journal backup JSON"]');
+   const backup=new File([JSON.stringify({version:1,watchlist:['AAPL'],trades:[]})],'ci-manual-journal.json',{type:'application/json'});
+   const transfer=new DataTransfer();transfer.items.add(backup);input.files=transfer.files;
+   input.dispatchEvent(new Event('change',{bubbles:true}));return true;
+  })()`);
+  if(!selected)throw Error('Could not select safe local backup');
+  await until(async()=>evaluate(send,`!!document.querySelector('.journal-backup-review') && document.querySelector('.journal-backup-review')?.innerText?.includes('1 watched symbols')`),'journal backup preview');
+  const initiallyDisabled=await evaluate(send,`document.querySelector('.journal-backup-review .button-row .button')?.disabled===true`);
+  if(!initiallyDisabled)throw Error('Restore must require explicit acknowledgement');
+  await evaluate(send,`(()=>{document.querySelectorAll('.journal-backup-review button')[1].click();return true})()`);
+  await until(async()=>evaluate(send,`!document.querySelector('.journal-backup-review')`),'backup cancel');
+  const noWrite=await evaluate(send,`localStorage.getItem('sportsedge-stock-journal-v1')===null`);
+  if(!noWrite)throw Error('Preview/cancel must never modify local journal');
+  console.log('PASS manual journal: validates local JSON, requires confirmation, cancel does not write');
+ }catch(error){const message='Journal backup browser interaction: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}
