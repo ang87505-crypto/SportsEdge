@@ -11,11 +11,13 @@
 5. `database/tests/alpaca_paper_outbox_cas.sql` plus `database/tests/alpaca_paper_outbox_race.sh`: execute on an **isolated disposable PostgreSQL 17 container only**. Verify missing execution gate blocks owner approval, anonymous/authenticated access denied, state transition guards, cannot rewrite immutable source data, receipt/audit consistency, active-account uniqueness and exactly one successful compare-and-swap across two concurrent connections.
 6. `.github/workflows/alpaca-paper-reconciliation.yml` builds/testing the above plus security-focused mocked Alpaca pagination/uncertain-order tests. It cannot contact the real broker and gets no credentials.
 
+7. `src/app/api/internal/alpaca-paper/reconciliation/route.ts` provides an **owner-cookie protected, manually requested, no-store GET-only** read-only inventory check. It first validates the PAPER account, then runs bounded broker-history pagination, returning only counts, a timestamp and non-executable status; no raw IDs, credentials, orders, or account numbers are exposed. `src/components/alpaca-paper-reconciliation-panel.tsx` adds a button in the **already unlocked private Alpaca dashboard** for this expensive on-demand audit. The button cannot place, amend, or cancel orders. It is not automatically refreshed. A complete bounded history read is **not a point-in-time atomic snapshot** and not evidence of an approved outbox.
+
 ## Intentionally missing — do not enable trading
 
 - **No persistent Supabase outbox.** The SQL proposals are not migrations and have not been installed in your actual project. They are tested on ephemeral PostgreSQL and expire after CI.
 - **No operational kill switch or durable scheduler.** The proposed gate in SQL is not connected to an authenticated operational interface. Default paper-execution switch remains OFF.
-- **No authorization to write broker orders.** There is **no order creation or cancellation endpoint** in the code added here. The existing Alpaca dashboard remains owner-authenticated and **read-only**.
+- **No authorization to write broker orders.** There is **no order creation or cancellation endpoint** in the code added here. The private dashboard's new on-demand history check is owner-authenticated and **read-only**. It can make several Alpaca GET requests, so do not trigger repeatedly.
 - **No verified point-in-time live signals, no approved model, no auto-strategy selection, no owner-defined budgets.** Synthetic/fixture tests cannot establish profitable research.
 - **No proof of account-level history completeness for more than 6000 orders.** Enumeration limit fails closed, never marks a truncated page as complete. Real provider pagination and order behavior must be tested with an authenticated Preview, without credentials entering logs.
 - **No automatic reconciliation after a lost HTTP response.** Lookup is implemented; a human-reviewed immutable receipt transition/transactional reconciler and durable watchdog must be built before trading.
@@ -34,7 +36,7 @@ Then: establish a **separate approved staging database** and apply a generated m
 ## Reproduction in disposable CI
 
 ```sh
-node --experimental-strip-types --test src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs
+node --experimental-strip-types --test src/lib/server/alpaca-paper-reconciliation.test.mjs src/lib/stocks/paper-reconciliation-decisions.test.mjs src/lib/server/alpaca-paper-reconciliation-guard.test.mjs
 # GitHub workflow: setup disposable postgres:17; create anon/authenticated test roles
 psql -X -v ON_ERROR_STOP=1 -f database/ddl/alpaca_paper_outbox_PROPOSAL_20261014.sql
 psql -X -v ON_ERROR_STOP=1 -f database/ddl/alpaca_paper_outbox_CAS_PROPOSAL_20261014.sql
