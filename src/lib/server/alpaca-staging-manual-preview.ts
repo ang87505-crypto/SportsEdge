@@ -22,7 +22,7 @@ export function validateManualPaperDraft(input:unknown):ManualPaperDraftRequest 
   throw new StagingPaperError('BAD_RESPONSE');
  const d=input as Record<string,unknown>;
  if(Object.keys(d).length!==3||typeof d.symbol!=='string'||
-   !/^[A-Z][A-Z0-9.-]{0,9}$/.test(d.symbol)||
+   !/^[A-Z]{1,5}$/.test(d.symbol)||
    d.shares!==1||!Number.isSafeInteger(d.limitCents)||
    (d.limitCents as number)<1||(d.limitCents as number)>LIMIT_CENTS)
   throw new StagingPaperError('BAD_RESPONSE');
