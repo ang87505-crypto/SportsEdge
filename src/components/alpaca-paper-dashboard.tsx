@@ -7,6 +7,7 @@ import {AlpacaPaperReconciliationPanel} from '@/components/alpaca-paper-reconcil
 import {AlpacaStagingStopPanel} from '@/components/alpaca-staging-stop-panel';
 import {AlpacaPaperFirstTestDraft} from '@/components/alpaca-paper-first-test-draft';
 import {AlpacaPaperOneOrder} from '@/components/alpaca-paper-one-order';
+import {AlpacaPaperPerformanceEvidence} from '@/components/alpaca-paper-performance-evidence';
 
 type PaperSnapshot={
   state:'READ_ONLY_DIAGNOSTIC_NOT_EXECUTION_AUTHORIZATION';
@@ -125,7 +126,7 @@ export function AlpacaPaperDashboard() {
       {message&&<p role="alert" className="error">{message}</p>}
       {status==='ready'&&snapshot&&<>
         <div className="button-row" style={{margin:'16px 0 19px'}}>
-          <span className="pill">Paper connection verified</span>
+          <span className="pill">Read-only broker connection verified at last refresh</span>
           <button className="button button-secondary" disabled={working} onClick={()=>void refresh()}>{working?'Refreshing…':'Refresh snapshot ↻'}</button>
           <button className="button button-secondary" onClick={()=>void signOut()}>Lock dashboard</button>
         </div>
@@ -139,6 +140,8 @@ export function AlpacaPaperDashboard() {
         {snapshot.warnings.length>0&&<div className="notice" role="status"><strong>Broker reconciliation warnings:</strong> {snapshot.warnings.join(' · ')}</div>}
         <nav aria-label="Paper account sections" className="button-row" style={{margin:'18px 0'}}>
           <a className="button button-secondary" href="#alpaca-automation-heading">Automation readiness ↓</a>
+          <a className="button button-secondary" href="#alpaca-one-order">One-order check ↓</a>
+          <a className="button button-secondary" href="#alpaca-performance-evidence">Performance evidence ↓</a>
           <a className="button button-secondary" href="#alpaca-first-trade-draft">Draft first virtual test ↓</a>
           <a className="button button-secondary" href="#alpaca-staging-stop-title">Staging emergency stop ↓</a>
           <a className="button button-secondary" href="#paper-order-reconciliation-heading">Broker order history ↓</a>
@@ -156,6 +159,8 @@ export function AlpacaPaperDashboard() {
         <AlpacaPaperOneOrder/>
         <AlpacaStagingStopPanel/>
         <AlpacaPaperReconciliationPanel/>
+        <AlpacaPaperPerformanceEvidence capturedAt={snapshot.capturedAt}
+          positionsCount={snapshot.positions.length} recentOrdersCount={snapshot.recentOrders.length}/>
         <div className="section-title"><h2>Current paper positions</h2><span className="pill">{snapshot.positions.length} reported</span></div>
         {snapshot.positions.length===0?<Empty title="No paper positions">Alpaca reports no open stock positions in this snapshot.</Empty>:<div className="table-wrap"><table className="data-table"><thead><tr><th>Symbol</th><th>Side</th><th>Quantity</th><th>Market value</th></tr></thead><tbody>{snapshot.positions.map(p=><tr key={p.symbol}><td>{p.symbol}</td><td>{p.side}</td><td>{p.qty}</td><td>{money(p.marketValueUsd)}</td></tr>)}</tbody></table></div>}
         <div className="section-title"><h2>Recent paper orders</h2><span className="pill">Latest {snapshot.recentOrders.length}, not complete history</span></div>

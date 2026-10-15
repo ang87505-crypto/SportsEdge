@@ -9,9 +9,9 @@ export const metadata={
 const tracks=[
  {title:'Navigation and usability',status:'Inspectable',text:'Home, Stocks, Sports, paper ledger, Progress and Guide can be reviewed. Mobile and desktop browser smoke runs in CI.'},
  {title:'Private Alpaca PAPER account',status:'Preview review',text:'Owner key and read-only broker viewer belong to protected Preview; available only after owner authentication. Never paste account credentials into a public page.'},
- {title:'Paper-order infrastructure',status:'Staging only',text:'The private outbox is installed only in SportsEdge Staging, not Production. An owner-only staging status/STOP interface exists, but requires a securely configured server connection. It cannot submit broker orders.'},
+ {title:'Paper-order infrastructure',status:'Staging only',text:'The private outbox is installed only in SportsEdge Staging, not Production. An owner-only staging status/STOP interface exists. The separate acceptance Preview can attempt one explicitly authorized PAPER order only after fresh preflight and release checks; this panel cannot place orders.'},
  {title:'Stock strategy performance',status:'Not established',text:'No genuine after-cost historical returns or profitable algorithm have been demonstrated. Astra\'s research is separate and still under review.'},
- {title:'Scheduled or real-money orders',status:'Off',text:'No stock paper orders, sportsbook wagers, recurring broker worker, or live-money execution are authorized through SportsEdge.'}
+ {title:'Scheduled or real-money orders',status:'Off',text:'General recurring stock trading and real-money execution remain disabled. A single explicitly confirmed Alpaca PAPER acceptance order may be released on its isolated Preview; it is not automated stock trading.'}
 ];
 export default function TestingCenter(){
  return <>
