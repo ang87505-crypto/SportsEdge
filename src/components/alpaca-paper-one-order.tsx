@@ -90,7 +90,11 @@ export function AlpacaPaperOneOrder(){
     'PAPER order accepted by Alpaca. Review its status; acknowledgment does not mean filled.':
     'Submission blocked or uncertain. DO NOT retry. Check staging and Alpaca broker history.');
   }catch{setInfo('Unknown outcome. NEVER retry without reconciling Alpaca history.');}
-  finally{setBusy(false);void refreshStatus();}
+  finally{
+   // Preserve the broker acknowledgment/uncertain-outcome warning for the owner.
+   // Invalidate release evidence; require an explicit fresh status reconciliation.
+   setBusy(false);setReleased(false);setState(null);setStatusCheckedAt(null);
+  }
  }
  return <section className="glass panel" id="alpaca-one-order" style={{margin:'24px 0'}}>
   <div className="module-top"><span className="pill">ALPACA PAPER · ONE ORDER</span>
