@@ -32,7 +32,7 @@ export function AlpacaPaperPerformanceEvidence({
    They must not be represented as stock-algorithm profit, backtest results or live-money performance.
   </div>
   <p style={{fontSize:12,marginTop:14}}>
-   To activate audited performance tracking, Astra's execution worker must produce a verified
+   To activate audited performance tracking, Astra&apos;s execution worker must produce a verified
    experiment/account identity, pre-start capital and cash flows, broker-linked order/fill and
    cost receipts, daily equity snapshots, and a dated benchmark. Until then, return and
    risk metrics intentionally remain unavailable.
