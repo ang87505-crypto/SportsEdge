@@ -14,6 +14,10 @@ test('failed status checks invalidate the old release, old stage and approval',(
   "state?.gateHalted===true&&state.status==='not_authorized'"])
   assert.ok(order.includes(expected),expected);
 });
+test('order outcomes stay visible and cannot silently inherit an earlier release',()=>{
+ assert.ok(order.includes('setBusy(false);setReleased(false);setState(null);setStatusCheckedAt(null);'));
+ assert.ok(!order.includes('void refreshStatus();'));
+});
 test('frontend reports safety blockers and rejects unverified broker responses',()=>{
  for(const expected of ['parsePaperPreflight(body,ticker,limit)',
  'explainPaperRequestFailure(response.status,body','explainPaperBlocker(b)'])
