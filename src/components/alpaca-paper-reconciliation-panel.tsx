@@ -60,7 +60,7 @@ export function AlpacaPaperReconciliationPanel(){
     <div className="glass panel"><span className="eyebrow">EXECUTION</span><h3>Locked</h3></div>
    </div>
    <p style={{fontSize:11}}>Checked {new Date(outcome.checkedAt).toLocaleString()}. Pagination was exhausted within the safety cap; this is not an atomic broker snapshot.</p>
-   <div className="notice"><strong>No trading authorization:</strong> Durable receipts, verified signals, broker updates and the kill switch remain disconnected. Order history alone does not prove the system is ready to trade.</div>
+   <div className="notice"><strong>No trading authorization:</strong> This checks broker inventory only. It does not reconcile staging receipts, verify the algorithm's signals, or release any order; use the separate owner and STOP checks.</div>
   </div>}
  </section>;
 }
