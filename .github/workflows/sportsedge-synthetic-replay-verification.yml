@@ -1,0 +1,85 @@
+name: SportsEdge synthetic stock replay - independently rerun
+on:
+  push:
+    branches:
+      - research/synthetic-replay-verification-20261017
+permissions:
+  contents: read
+jobs:
+  verify-six-path-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Confirm frozen PR 53 research revision is an ancestor
+        run: git merge-base --is-ancestor 4628b46f51501518f91d54c918c85509107cc247 HEAD
+      - name: Rerun original synthetic source and execution tests
+        run: |
+          python -m unittest analytics.test_stock_development_runner_v1 -v
+          python -m unittest analytics.test_stock_identity_bridge_v1 analytics.test_stock_identity_stream_v1 -v
+      - name: Reproduce frozen study twice without credentials
+        run: python research/stock_development_20261014/reproduce.py
+      - name: Independently summarize six synthetic accounts
+        run: |
+          python - <<'PY'
+          import json
+          from decimal import Decimal
+          from pathlib import Path
+          from analytics.stock_development_runner_v1 import run_bundle
+          from analytics.stock_readiness_pipeline_v1 import synthetic_input
+          from analytics.stock_momentum_v1 import digest
+          data=synthetic_input()
+          data.pop('costs')
+          data.update(benchmarks={}, risk_free=None)
+          result=run_bundle(data, synthetic=True)
+          repeat=run_bundle(data, synthetic=True)
+          assert result == repeat, 'Two runs disagree'
+          assert result['performance'] is None and result['kind']=='SYNTHETIC_ENGINEERING_ONLY'
+          assert result['historical_study_approved'] is False
+          assert result['source_independently_verified'] is False
+          scenarios=[]
+          for case in result['engineering_scenarios']:
+              entry={'nominal_one_way_bps':case['nominal_one_way_bps'],
+                     'fee_cents_per_order':case['fee_cents_per_order']}
+              for strategy in ('baseline','candidate'):
+                  check=case[strategy]['reconciliation']
+                  assert check['all_receipts_reconciled'] is True
+                  assert check['sessions']>0
+                  nav=Decimal(check['ending_nav_dollars'])
+                  entry[strategy]={
+                      'sessions':check['sessions'],
+                      'trades':check['trades'],
+                      'costs_dollars':check['costs_dollars'],
+                      'ending_nav_dollars':check['ending_nav_dollars'],
+                      'fictional_net_return_pct':str((nav/Decimal('1000')-1)*100),
+                      'reconciled':True}
+              scenarios.append(entry)
+          summary={
+              'classification':'SYNTHETIC_ENGINEERING_ONLY',
+              'genuine_historical_prices_used':False,
+              'observed_profitability':None,
+              'real_alpaca_orders':False,
+              'original_protocol_sha256':result['protocol_sha256'],
+              'result_sha256':digest(result),
+              'rerun_identical':True,
+              'scenarios':scenarios,
+              'notes':[
+                  'Fictional price data; percentage figures are synthetic account arithmetic, not historical performance',
+                  'Frozen baseline and hold-rank-ten candidate use the identical synthetic source',
+                  'The full 2000-2011 research protocol needs authenticated licensed point-in-time data and corporate actions'
+              ]}
+          Path('synthetic_verify_summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print(json.dumps(summary,indent=2))
+          PY
+      - name: Upload non-secret engineering evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sportsedge-synthetic-stock-replay
+          path: synthetic_verify_summary.json
+          retention-days: 14
+          if-no-files-found: error
