@@ -125,6 +125,12 @@ def bridge_archive(archive: Any) -> dict:
             "Unexpected or unrequested stock endpoint")
     require(all(p["endpoint"] == "/v1/corporate-actions" for p in action_pages),
             "Unexpected corporate action endpoint")
+    expected_action_queries = [
+        {"symbols": s, "start": query["start"], "end": query["end"],
+         "data_quality": "complete", "limit": 1000} for s in symbols
+    ]
+    require(all(p["query_without_page_token"] in expected_action_queries
+                for p in action_pages), "Unexpected corporate action source query")
     normalized = []
     seen = set()
     per_symbol = {}
