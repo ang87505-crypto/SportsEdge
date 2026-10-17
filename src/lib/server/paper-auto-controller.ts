@@ -566,11 +566,12 @@ export async function runReconcileSlot(deps:ControllerDeps,experimentId:string,s
 
 /** Monitor slot: final order states, attributed activities and the after-close daily mark. */
 export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,session:string):Promise<SlotResult>{
- // A delivery before the close must not consume the session's monitor slot.
- const nowMs=deps.now();
- if(!(nyDate(nowMs)>session||(nyDate(nowMs)===session&&nyMinutes(nowMs)>=16*60+15)))
-  return {experimentId,kind:'monitor',slot:session,outcome:'SKIPPED',reason:'BEFORE_CLOSE',runId:null,
-   posts:0,cancels:0,detail:{}};
+ // A session is marked only on its own evening: an early delivery must not consume the
+ // slot, and a later one must never record today's equity under an earlier session.
+ const nowMs=deps.now(),skip=(reason:string):SlotResult=>({experimentId,kind:'monitor',slot:session,
+  outcome:'SKIPPED',reason,runId:null,posts:0,cancels:0,detail:{}});
+ if(nyDate(nowMs)>session)return skip('MARK_WINDOW_PASSED');
+ if(nyDate(nowMs)<session||nyMinutes(nowMs)<16*60+15)return skip('BEFORE_CLOSE');
  const started=await begin(deps,experimentId,'monitor',session);
  if('skipped' in started)return started.skipped;
  const ctx=started.ctx;
@@ -588,6 +589,12 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
     benchmark_source:benchmark?.source??'unavailable:alpaca:sip:1Day',contaminated:seen.external.length>0});
   }
   requireClean(seen);
+  if(daily&&daily.cashReconciled===false){
+   // Fills of an unresolved submission cannot be attributed yet; otherwise cash moved
+   // without any broker activity explaining it, which is never strategy return.
+   if(seen.state.intents.some(i=>UNRESOLVED.has(i.status)))throw new RunBlocked('MARK_PENDING_ATTRIBUTION');
+   throw new ControllerStop('UNEXPLAINED_CASH_CHANGE',{session,cashUnexplainedCents:String(daily.cashUnexplainedCents)});
+  }
   return finish(ctx,'monitor',session,'SUCCEEDED',daily?'DAILY_RECORDED':'NOT_A_SESSION',daily?{daily}:{},OK);
  });
 }

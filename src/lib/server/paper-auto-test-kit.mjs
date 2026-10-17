@@ -70,7 +70,7 @@ export class FakeBroker{
  constructor(clock,{accountId,accountNumber,cashCents,writesEnabled=true}){
   Object.assign(this,{time:clock,writesEnabled,accountId,accountNumber,cashCents,
    positionsBySymbol:new Map(),orders:[],activities:[],quotes:new Map(),behaviors:[],
-   posts:[],cancels:[],hidden:[],quoteAgeMs:1000,status:'ACTIVE',reportedAccountId:accountId});
+   posts:[],cancels:[],hidden:[],quoteAgeMs:1000,status:'ACTIVE',reportedAccountId:accountId,lookupBlind:false});
  }
  setQuote(symbol,askCents,bidCents=askCents-1){this.quotes.set(symbol,{askCents,bidCents});}
  mark(symbol){return this.quotes.get(symbol)?.askCents??0;}
@@ -90,6 +90,7 @@ export class FakeBroker{
   return this.orders.filter(o=>['new','accepted','partially_filled'].includes(o.status)).map(o=>this.view(o));
  }
  async orderByClientId(clientOrderId){
+  if(this.lookupBlind)return null; // an order the broker accepted but cannot show yet
   const o=this.orders.find(x=>x.clientOrderId===clientOrderId);
   if(o&&o.fillAfterLookups!==undefined&&--o.fillAfterLookups===0)this.fill(o,Number(o.qty),o.fillCents);
   return o?this.view(o):null;

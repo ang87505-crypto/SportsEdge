@@ -45,7 +45,9 @@ Everything below that changes a system needs separate, explicit owner authorizat
   7. Polls for fills, records its own fills, and re-plans the BUY phase after the sells are final.
   8. Cancels working orders that have been resting for more than 5 minutes, and re-plans the residual as a new attempt.
 - **reconcile** produces the clean evidence that `resume` requires. While the gate is `STOPPED` it also acts as the kill switch: every working strategy order is canceled.
-- **monitor** records final order states, activities and the after-close daily mark. When external state is present, it still records the mark as contaminated, then stops.
+- **monitor** records final order states, activities and the after-close daily mark, only on the session's own evening (an earlier session's slot is skipped as `MARK_WINDOW_PASSED`, never relabeled).
+  - When external state is present, it still records the mark as contaminated, then stops.
+  - The database reconciles cash against every recorded activity. Cash that no activity explains (an account reset, an unreported credit) stops the experiment as `UNEXPLAINED_CASH_CHANGE`. While a submission is unresolved, the mark is recorded unreconciled and the run is blocked as `MARK_PENDING_ATTRIBUTION`; the next mark reconciles once the order is found.
 - **decision** records the frozen strategy's decision for the session, including HOLD and MISSED.
 
 ### When the experiment stops
@@ -54,6 +56,7 @@ The experiment STOPs, with a critical alert, on any of the following:
 - an external open order;
 - a position the fill ledger does not explain (fills still in flight are tolerated);
 - an external or unsupported activity, such as a deposit, a journal or a corporate action;
+- after-close cash that no recorded activity explains;
 - a different broker account;
 - a broker rejection;
 - a broker order that mismatches its intent or disappears;
@@ -97,17 +100,17 @@ A browser tab, a laptop or a long-lived serverless function is never relied on.
 
 - **Limit prices:** the free market-data plan provides real-time **IEX** quotes only, so execution limit prices are IEX-based. Signal liquidity (`prior_adv20_shares`) comes from the bridge's consolidated SIP history, not IEX.
 - **Paper fills:** Alpaca PAPER fills are simulated. There is no market impact, no queue position, and no regulatory fees or dividends. They are **not** achievable real-money returns.
-- **Daily marks:** account equity read after 16:15 New York. The SPY benchmark is the raw SIP daily close, a price return, consistent with an account that receives no paper dividends.
+- **Daily marks:** account equity read after 16:15 New York on the session's own evening. Any external flow contaminates every later mark, and unexplained cash leaves a mark unreconciled (see the schema document). The SPY benchmark is the raw SIP daily close, a price return, consistent with an account that receives no paper dividends.
 - **Settled cash:** cash minus the current session's sale proceeds, which settle T+1. It is enforced by both the planner and the database.
 
 ## Verification evidence (local, disposable PostgreSQL 16; CI runs on 17)
 
 | Suite | Result |
 | --- | --- |
-| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 120 refusal and 80 equality assertions. 14 of 14 schema guard mutations caught. |
+| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 125 refusal and 90 equality assertions. 21 of 21 schema guard mutations caught. |
 | `database/tests/paper_auto_v1_race.sh` (independent connections) | PASS, three repeated runs. |
 | `paper-auto-broker.test.mjs` (adapters, no network) | 12 of 12 pass. |
-| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 14 of 14 scenarios pass. 8 of 8 controller guard mutations caught. |
+| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 16 of 16 scenarios pass. 11 of 11 controller guard mutations caught. |
 
 The controller scenarios cover:
 - the happy path, idempotent slots, HOLD and the daily mark;
@@ -116,13 +119,15 @@ The controller scenarios cover:
 - a duplicate client id resolved by lookup;
 - a rejection that STOPs, with no retry after resume;
 - an external order, an external position and a wrong account;
-- drawdown;
 - stale quotes and late slots;
 - a partial fill, canceled when stale, with the residual re-planned;
 - the STOP kill switch;
 - duplicate and overlapping deliveries;
 - a SELL-then-BUY rotation across the DST change, with a slow SELL fill and T+1 settled cash;
 - a deposit that contaminates the mark and STOPs;
+- a late delivery that cannot relabel an earlier session, and unexplained cash that STOPs;
+- a mark during an unresolved submission that blocks, then reconciles the next session;
+- drawdown from a real after-close high-water mark;
 - a MISSED session.
 
 Passing CI does **not** show that any real broker order was executed.

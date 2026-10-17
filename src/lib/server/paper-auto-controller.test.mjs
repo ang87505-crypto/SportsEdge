@@ -203,17 +203,55 @@ e2e('external open orders, external positions and a different account each stop 
 });
 
 e2e('drawdown from the after-close high-water mark stops the experiment before any order',async()=>{
- const w=world();
- await register(w,{drawdownStopBps:1000});
- w.broker.cashCents=120000;
- const m=await monitor(w,'2026-10-19T11:30:00.000Z','2026-10-16');
+ const w=await armedWithDecision({},{drawdownStopBps:1000});
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ // The holdings close higher, so the after-close mark sets a 109000 high-water mark.
+ w.broker.setQuote('AAA',6001);
+ const m=await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19');
  assert.equal(m.reason,'DAILY_RECORDED',JSON.stringify(m));
- w.broker.cashCents=100000;
- await decide(w);
- await arm(w,'2026-10-19T13:40:00.000Z');
- const r=await execute(w,'2026-10-19T13:45:00.000Z');
- assert.equal(r.reason,'DRAWDOWN_LIMIT',JSON.stringify(r));
- assert.equal(w.broker.posts.length,0);
+ // Next session, 91000 is within 10% of the starting equity but more than 10% below the high-water mark.
+ w.broker.setQuote('AAA',1);
+ const r=await execute(w,'2026-10-20T13:45:00.000Z');
+ assert.equal(r.outcome,'STOPPED',JSON.stringify(r));
+ assert.equal(r.reason,'DRAWDOWN_LIMIT');
+ assert.equal(w.broker.posts.length,3);
+});
+
+e2e('a session is marked only on its own evening, and cash no activity explains stops the experiment',async()=>{
+ const w=await armedWithDecision();
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ // A late or manual delivery can never record today's equity as an earlier session's mark.
+ const late=await monitor(w,'2026-10-20T20:30:00.000Z','2026-10-19');
+ assert.equal(late.outcome,'SKIPPED',JSON.stringify(late));
+ assert.equal(late.reason,'MARK_WINDOW_PASSED');assert.equal(late.runId,null);
+ // A balance change no broker activity reports (an account reset, say) is never strategy return.
+ w.broker.cashCents+=5000;
+ const m=await monitor(w,'2026-10-20T20:31:00.000Z','2026-10-20');
+ assert.equal(m.outcome,'STOPPED',JSON.stringify(m));
+ assert.equal(m.reason,'UNEXPLAINED_CASH_CHANGE');
+ assert.equal(sqlValue(DB,`SELECT session_date||':'||cash_reconciled||':'||trim_scale(cash_unexplained_cents)
+  FROM sportsedge_paper_auto.daily_equity WHERE experiment_id='${w.experimentId}'`),'2026-10-20:false:5000');
+ assert.equal((await status(w)).state,'STOPPED');
+});
+
+e2e('a mark taken while a submission is unresolved is unreconciled and blocks; the next mark reconciles',async()=>{
+ const w=await armedWithDecision();
+ // The POST times out but reached the broker and filled; lookups cannot see the order yet.
+ w.broker.behaviors.push('timeout_exists');
+ w.broker.lookupBlind=true;
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'SUBMISSIONS_PAUSED');
+ const m=await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19');
+ assert.equal(m.outcome,'BLOCKED',JSON.stringify(m));
+ assert.equal(m.reason,'MARK_PENDING_ATTRIBUTION');
+ assert.equal((await status(w)).gateMode,'ARMED');
+ w.broker.lookupBlind=false;
+ w.clock.set('2026-10-20T13:40:00.000Z');
+ const rec=await runReconcileSlot(w.deps,w.experimentId,'2026-10-20T13:40Z');
+ assert.equal(rec.detail.clean,true,JSON.stringify(rec));
+ const m2=await monitor(w,'2026-10-20T20:30:00.000Z','2026-10-20');
+ assert.equal(m2.reason,'DAILY_RECORDED',JSON.stringify(m2));
+ assert.equal(sqlValue(DB,`SELECT string_agg(session_date||':'||cash_reconciled,',' ORDER BY session_date)
+  FROM sportsedge_paper_auto.daily_equity WHERE experiment_id='${w.experimentId}'`),'2026-10-19:false,2026-10-20:true');
 });
 
 e2e('stale quotes and late slots never place orders',async()=>{
@@ -298,8 +336,9 @@ e2e('an external deposit contaminates the daily mark, is netted as a flow and st
  const m=await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19');
  assert.equal(m.outcome,'STOPPED',JSON.stringify(m));
  assert.equal(m.reason,'EXTERNAL_OR_UNSUPPORTED_ACTIVITY');
- assert.equal(sqlValue(DB,`SELECT external_flow_cents||':'||contaminated FROM sportsedge_paper_auto.daily_equity
-  WHERE experiment_id='${w.experimentId}'`),'50000:true');
+ // The reported deposit explains the cash, so the mark reconciles, and it is contaminated for good.
+ assert.equal(sqlValue(DB,`SELECT external_flow_cents||':'||contaminated||':'||cash_reconciled
+  FROM sportsedge_paper_auto.daily_equity WHERE experiment_id='${w.experimentId}'`),'50000:true:true');
 });
 
 e2e('HOLD and MISSED sessions are recorded and execute nothing',async()=>{
