@@ -44,7 +44,8 @@ Everything below that changes a system needs separate, explicit owner authorizat
   6. Calls the planner, reserves the plan's phase, and claims and POSTs one leg at a time.
   7. Polls for fills, records its own fills, and re-plans the BUY phase after the sells are final.
   8. Cancels working orders that have been resting for more than 5 minutes, and re-plans the residual as a new attempt.
-- **reconcile** produces the clean evidence that `resume` requires. While the gate is `STOPPED` it also acts as the kill switch: every working strategy order is canceled.
+- **reconcile** produces the clean evidence that `resume` requires.
+- **Kill switch.** While the gate is `STOPPED`, the execute and reconcile slots cancel every working strategy order before any external-state check, so a manual order left in the account cannot keep strategy orders working. A run that stops the experiment itself cancels working strategy orders in the same run, best effort. It never cancels the owner's own orders, and never cancels anything when the broker reports a different account.
 - **monitor** records final order states, activities and the after-close daily mark, only on the session's own evening (an earlier session's slot is skipped as `MARK_WINDOW_PASSED`, never relabeled).
   - When external state is present, it still records the mark as contaminated, then stops.
   - The database reconciles cash against every recorded activity. Cash that no activity explains (an account reset, an unreported credit) stops the experiment as `UNEXPLAINED_CASH_CHANGE`. While a submission is unresolved, the mark is recorded unreconciled and the run is blocked as `MARK_PENDING_ATTRIBUTION`; the next mark reconciles once the order is found.
@@ -58,10 +59,12 @@ The experiment STOPs, with a critical alert, on any of the following:
 - an external or unsupported activity, such as a deposit, a journal or a corporate action;
 - after-close cash that no recorded activity explains;
 - a different broker account;
-- a broker rejection;
+- a broker rejection, whether the POST is refused or a working order is rejected later;
 - a broker order that mismatches its intent or disappears;
 - the drawdown or capital limit;
 - an unreconciled position identity.
+
+The database itself stops the experiment, in the same transaction, when it records a broker rejection, an external or unsupported activity, or (while no submission is unresolved) a daily mark whose cash no activity explains. The worker's own stop call afterwards adds no second alert, and losing that call cannot leave the experiment ARMED. Every other STOP-worthy state (an open order, a position, the account, a limit) persists at the broker and is detected again by every run.
 
 Planner refusals, clock skew and refused reservations block only the run, with a warning. A rejected or exhausted leg is never retried. Because the plan is all-or-nothing, it then stays blocked for that decision rather than being silently trimmed.
 
@@ -107,10 +110,10 @@ A browser tab, a laptop or a long-lived serverless function is never relied on.
 
 | Suite | Result |
 | --- | --- |
-| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 125 refusal and 90 equality assertions. 21 of 21 schema guard mutations caught. |
+| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 127 refusal and 100 equality assertions. 29 of 29 schema guard mutations caught. |
 | `database/tests/paper_auto_v1_race.sh` (independent connections) | PASS, three repeated runs. |
 | `paper-auto-broker.test.mjs` (adapters, no network) | 12 of 12 pass. |
-| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 16 of 16 scenarios pass. 11 of 11 controller guard mutations caught. |
+| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 21 of 21 scenarios pass. 15 of 15 controller guard mutations caught. |
 
 The controller scenarios cover:
 - the happy path, idempotent slots, HOLD and the daily mark;
@@ -118,10 +121,13 @@ The controller scenarios cover:
 - an unknown POST outcome, never retried, found later and then completed;
 - a duplicate client id resolved by lookup;
 - a rejection that STOPs, with no retry after resume;
+- a working order the broker rejects later, which STOPs and cancels the other working legs in the same run;
 - an external order, an external position and a wrong account;
 - stale quotes and late slots;
 - a partial fill, canceled when stale, with the residual re-planned;
-- the STOP kill switch;
+- the STOP kill switch, including with a manual order left in the account: after an owner STOP, while armed, and with the worker's own stop call lost. The owner's order is never touched;
+- a different account behind the credentials, which stops without canceling anything in it;
+- the database's atomic stops: a benchmark read that fails after a deposit is recorded, a lost stop call after unexplained cash, and a lost stop call after a rejection, after which the next session's decision is never executed;
 - duplicate and overlapping deliveries;
 - a SELL-then-BUY rotation across the DST change, with a slow SELL fill and T+1 settled cash;
 - a deposit that contaminates the mark and STOPs;
@@ -178,8 +184,8 @@ Any `uncertain` intent is resolved only by:
 
 ### Rollback, at any time
 
-- **STOP** from the owner path. It is immediate for new orders. Working DAY orders are canceled by the next worker run, or expire at the close.
-- Disable the workflow in the GitHub UI, or revert the release PR.
+- **STOP** from the owner path. It is immediate for new orders. Working DAY orders are canceled by the next execute or reconcile run, even while external state persists, or expire at the close.
+- Disable the workflow in the GitHub UI, or revert the release PR. Cancels use the same broker-writes switch as orders, so reverting the writes release also stops the kill switch from canceling. STOP first and let one execute or reconcile run cancel working orders, or cancel them in the Alpaca dashboard. DAY orders expire at the close either way.
 - STOP never needs a deployment.
 
 ## Not done and why

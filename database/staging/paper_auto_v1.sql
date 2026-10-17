@@ -416,6 +416,29 @@ BEGIN
   RAISE EXCEPTION 'PAPER_AUTO_CRITICAL_ALERT_OPEN';
  END IF;
 END $$;
+-- Stops the experiment inside the caller's transaction, voids unsent reserved work and
+-- raises one open critical alert per code. Used where the database itself records the
+-- event that requires a STOP, so the STOP commits with the event and cannot be lost.
+CREATE FUNCTION sportsedge_paper_auto._halt(e text,why text,who text,detail jsonb) RETURNS void
+LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE g sportsedge_paper_auto.gates%ROWTYPE; i sportsedge_paper_auto.intents%ROWTYPE;
+BEGIN
+ SELECT * INTO STRICT g FROM sportsedge_paper_auto.gates WHERE experiment_id=e FOR UPDATE;
+ IF g.mode<>'STOPPED' THEN
+  PERFORM set_config('sportsedge.paper_auto_evidence',detail::text,true);
+  UPDATE sportsedge_paper_auto.gates SET mode='STOPPED',reason=why,changed_by=who WHERE experiment_id=e;
+ END IF;
+ FOR i IN SELECT * FROM sportsedge_paper_auto.intents
+  WHERE experiment_id=e AND status='reserved' FOR UPDATE LOOP
+  UPDATE sportsedge_paper_auto.intents SET status='not_submitted',lock_version=lock_version+1,
+   updated_at=sportsedge_paper_auto._now() WHERE intent_id=i.intent_id RETURNING * INTO i;
+  PERFORM sportsedge_paper_auto._event(i,'reserved',who,jsonb_build_object('reason',why));
+ END LOOP;
+ IF NOT EXISTS(SELECT 1 FROM sportsedge_paper_auto.alerts WHERE experiment_id=e AND severity='critical'
+  AND acknowledged_at IS NULL AND code=why) THEN
+  INSERT INTO sportsedge_paper_auto.alerts(experiment_id,severity,code,detail) VALUES(e,'critical',why,detail);
+ END IF;
+END $$;
 CREATE FUNCTION sportsedge_paper_auto._status(e text) RETURNS jsonb
 LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
 DECLARE g sportsedge_paper_auto.gates%ROWTYPE; l sportsedge_paper_auto.leases%ROWTYPE;
@@ -537,7 +560,9 @@ BEGIN
    updated_at=sportsedge_paper_auto._now() WHERE intent_id=i.intent_id RETURNING * INTO i;
   PERFORM sportsedge_paper_auto._event(i,'reserved',who,jsonb_build_object('reason',why));
  END LOOP;
- IF p ? 'alert' THEN
+ IF p ? 'alert' AND NOT EXISTS(SELECT 1 FROM sportsedge_paper_auto.alerts WHERE experiment_id=e
+  AND severity='critical' AND acknowledged_at IS NULL
+  AND code=sportsedge_paper_auto._text(p->'alert','code','^[A-Z0-9_]{3,64}$')) THEN
   INSERT INTO sportsedge_paper_auto.alerts(experiment_id,severity,code,detail)
   VALUES(e,'critical',sportsedge_paper_auto._text(p->'alert','code','^[A-Z0-9_]{3,64}$'),
    coalesce(p->'alert'->'detail','{}'::jsonb));
@@ -952,7 +977,7 @@ DECLARE r sportsedge_paper_auto.runs%ROWTYPE; who text; detail jsonb:=coalesce(p
 DECLARE i sportsedge_paper_auto.intents%ROWTYPE; old text; t timestamptz:=sportsedge_paper_auto._now();
 DECLARE bid text; bst text; fq numeric; fp numeric; hs bigint; legal boolean;
 BEGIN
- r:=sportsedge_paper_auto._running(run,NULL);
+ r:=sportsedge_paper_auto._lock_run(run,NULL);
  IF r.kind NOT IN ('execute','reconcile','monitor') THEN RAISE EXCEPTION 'PAPER_AUTO_RUN_KIND'; END IF;
  IF jsonb_typeof(detail)<>'object' THEN RAISE EXCEPTION 'PAPER_AUTO_INVALID_DETAIL'; END IF;
  who:='run:'||run;
@@ -1007,6 +1032,12 @@ BEGIN
   broker_order_id=bid,broker_status=bst,filled_qty=fq,filled_avg_price=fp,updated_at=t
  WHERE intent_id=iid RETURNING * INTO i;
  PERFORM sportsedge_paper_auto._event(i,old,who,detail);
+ -- A broker rejection stops the experiment in this transaction, so a lost stop call
+ -- can never leave it ARMED for the next decision.
+ IF nxt='rejected' THEN
+  PERFORM sportsedge_paper_auto._halt(r.experiment_id,'ORDER_REJECTED','worker:'||r.worker,
+   jsonb_build_object('runId',run,'intentId',iid,'symbol',i.symbol));
+ END IF;
  RETURN jsonb_build_object('intentId',iid,'status',i.status,'lockVersion',i.lock_version,'changed',true);
 END $$;
 
@@ -1046,7 +1077,7 @@ DECLARE r sportsedge_paper_auto.runs%ROWTYPE; a jsonb; inserted integer:=0; ext 
 DECLARE k text; typ text; aid text; oid text; ours boolean; dig text;
 DECLARE old sportsedge_paper_auto.activities%ROWTYPE;
 BEGIN
- r:=sportsedge_paper_auto._running(run,NULL);
+ r:=sportsedge_paper_auto._lock_run(run,NULL);
  IF jsonb_typeof(p->'activities')<>'array' OR jsonb_array_length(p->'activities')>1000 THEN
   RAISE EXCEPTION 'PAPER_AUTO_INVALID_ACTIVITIES';
  END IF;
@@ -1086,7 +1117,11 @@ BEGIN
    END IF;
   END IF;
  END LOOP;
- RETURN jsonb_build_object('inserted',inserted,'newExternalOrUnsupported',ext);
+ IF ext>0 THEN
+  PERFORM sportsedge_paper_auto._halt(r.experiment_id,'EXTERNAL_OR_UNSUPPORTED_ACTIVITY','worker:'||r.worker,
+   jsonb_build_object('runId',run,'newExternalOrUnsupported',ext));
+ END IF;
+ RETURN jsonb_build_object('inserted',inserted,'newExternalOrUnsupported',ext,'stopped',ext>0);
 END $$;
 
 -- One immutable after-close mark per session, observed that evening and recorded at
@@ -1103,7 +1138,7 @@ DECLARE r sportsedge_paper_auto.runs%ROWTYPE; x sportsedge_paper_auto.experiment
 DECLARE old sportsedge_paper_auto.daily_equity%ROWTYPE; row_in sportsedge_paper_auto.daily_equity%ROWTYPE;
 DECLARE t timestamptz:=sportsedge_paper_auto._now(); since timestamptz; expected numeric; rounding bigint;
 BEGIN
- r:=sportsedge_paper_auto._running(run,'monitor');
+ r:=sportsedge_paper_auto._lock_run(run,'monitor');
  SELECT * INTO STRICT x FROM sportsedge_paper_auto.experiments WHERE experiment_id=r.experiment_id;
  d:=sportsedge_paper_auto._text(p,'session_date','^[0-9]{4}-[0-9]{2}-[0-9]{2}$')::date;
  row_in.captured_at:=sportsedge_paper_auto._ts(p,'captured_at');
@@ -1150,7 +1185,9 @@ BEGIN
    AND old.long_market_value_cents=row_in.long_market_value_cents
    AND old.external_flow_cents=row_in.external_flow_cents AND old.contaminated=row_in.contaminated
    AND old.cash_unexplained_cents=row_in.cash_unexplained_cents AND old.cash_reconciled=row_in.cash_reconciled THEN
-   RETURN jsonb_build_object('recorded',false,'duplicate',true,'sessionDate',d);
+   RETURN jsonb_build_object('recorded',false,'duplicate',true,'sessionDate',d,
+    'contaminated',old.contaminated,'cashUnexplainedCents',trim_scale(old.cash_unexplained_cents)::text,
+    'cashReconciled',old.cash_reconciled);
   END IF;
   RAISE EXCEPTION 'PAPER_AUTO_DAILY_CONFLICT';
  END IF;
@@ -1164,6 +1201,13 @@ BEGIN
    ELSE sportsedge_paper_auto._text(p,'benchmark_close','^[0-9]{1,10}(\.[0-9]{1,6})?$')::numeric END,
   sportsedge_paper_auto._text(p,'benchmark_source','^[A-Za-z0-9 :/._=-]{3,160}$'),
   row_in.contaminated,row_in.cash_unexplained_cents,row_in.cash_reconciled,run);
+ -- Cash that no recorded activity explains, while no submission is unresolved, is an
+ -- external balance change: stop in this transaction rather than trusting a later call.
+ IF NOT row_in.cash_reconciled AND NOT EXISTS(SELECT 1 FROM sportsedge_paper_auto.intents
+  WHERE experiment_id=x.experiment_id AND status IN ('submitting','uncertain')) THEN
+  PERFORM sportsedge_paper_auto._halt(x.experiment_id,'UNEXPLAINED_CASH_CHANGE','worker:'||r.worker,
+   jsonb_build_object('runId',run,'session',d,'cashUnexplainedCents',trim_scale(row_in.cash_unexplained_cents)::text));
+ END IF;
  RETURN jsonb_build_object('recorded',true,'duplicate',false,'sessionDate',d,
   'externalFlowCents',row_in.external_flow_cents,'feesCents',row_in.fees_cents,
   'dividendsCents',row_in.dividends_cents,'contaminated',row_in.contaminated,

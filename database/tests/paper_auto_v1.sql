@@ -164,6 +164,11 @@ BEGIN
  PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',m,'status','succeeded'));
  RETURN r;
 END $$;
+CREATE FUNCTION paper_auto_test.open_alerts(e text, c text) RETURNS text
+LANGUAGE sql AS $$
+ SELECT count(*)::text FROM sportsedge_paper_auto.alerts
+ WHERE experiment_id=e AND severity='critical' AND acknowledged_at IS NULL AND code=c
+$$;
 CREATE TABLE paper_auto_test.ctx(k text PRIMARY KEY, v text NOT NULL);
 CREATE FUNCTION paper_auto_test.put(key text, val text) RETURNS void
 LANGUAGE sql AS $$ INSERT INTO paper_auto_test.ctx VALUES(key,val) ON CONFLICT(k) DO UPDATE SET v=EXCLUDED.v $$;
@@ -593,6 +598,16 @@ BEGIN
   jsonb_build_object('http_status',403,'code',40310000,'message','insufficient buying power')));
  PERFORM paper_auto_test.eq((SELECT broker_status||':'||coalesce(broker_order_id,'none') FROM sportsedge_paper_auto.intents
   WHERE intent_id=i),'api_rejected:none','API rejection recorded');
+ -- The rejection stops the experiment in the same transaction, whatever the worker does next.
+ PERFORM paper_auto_test.eq(concat_ws(':',(SELECT mode FROM sportsedge_paper_auto.gates WHERE experiment_id=e),
+  paper_auto_test.open_alerts(e,'ORDER_REJECTED')),'STOPPED:1','rejection stops atomically');
+ PERFORM paper_auto_test.rpc('stop',jsonb_build_object('experiment_id',e,'reason','ORDER_REJECTED','actor','worker:test',
+  'alert',jsonb_build_object('code','ORDER_REJECTED','detail','{}'::jsonb)));
+ PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'ORDER_REJECTED'),'1','worker stop adds no second alert');
+ PERFORM paper_auto_test.at('2026-10-19T13:55:01Z');
+ PERFORM paper_auto_test.rpc('ack_alert',jsonb_build_object('experiment_id',e,'owner_ref',paper_auto_test.owner(),
+  'alert_id',(SELECT alert_id FROM sportsedge_paper_auto.alerts WHERE experiment_id=e AND acknowledged_at IS NULL)));
+ PERFORM paper_auto_test.arm(e,'2026-10-19T13:56Z');
  PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(bx,d,s,jsonb_build_array(
   paper_auto_test.leg('EEE','buy',2,4000))),'LEG_REJECTED');
  -- FFF: an uncertain POST later observed by client order id, then retried and filled.
@@ -660,8 +675,17 @@ END $$;
 SELECT paper_auto_test.at('2026-10-19T20:20:00Z');
 DO $$
 DECLARE e text:='fwd-2026-baseline'; b text:=paper_auto_test.get('bbb'); r jsonb; rec text; alert bigint;
-DECLARE args jsonb;
+DECLARE args jsonb; m text;
 BEGIN
+ -- While a submission is unresolved, unexplained cash may be unattributed fills: no stop.
+ m:=paper_auto_test.begin(e,'monitor','2026-10-19');
+ r:=paper_auto_test.rpc('record_daily',jsonb_build_object('run_id',m,'session_date','2026-10-19',
+  'captured_at','2026-10-19T20:19:00Z','equity_cents',99000,'cash_cents',99000,'long_market_value_cents',0,
+  'positions','[]'::jsonb,'benchmark_symbol','SPY','benchmark_close','581.25','benchmark_source','test:sip',
+  'contaminated',false));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE')),
+  'false:0','pending attribution never stops');
+ PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',m,'status','blocked'));
  args:=jsonb_build_object('intent_id',b,'owner_ref',paper_auto_test.owner(),
   'client_id_lookup_not_found_at','2026-10-19T20:16:00Z','complete_history_checked_at','2026-10-19T20:18:00Z',
   'history_complete',true);
@@ -770,8 +794,18 @@ BEGIN
  r:=paper_auto_test.rpc('record_activities',jsonb_build_object('run_id',m2,'activities',a));
  PERFORM paper_auto_test.eq(r->>'inserted','4','activities inserted');
  PERFORM paper_auto_test.eq(r->>'newExternalOrUnsupported','2','external activity counted');
+ -- Recording external activity stops the experiment in the same transaction, so the STOP
+ -- cannot be lost if the worker fails before its own STOP call.
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'stopped',paper_auto_test.state(e),
+  (SELECT reason FROM sportsedge_paper_auto.gates WHERE experiment_id=e),
+  paper_auto_test.open_alerts(e,'EXTERNAL_OR_UNSUPPORTED_ACTIVITY')),
+  'true:STOPPED:EXTERNAL_OR_UNSUPPORTED_ACTIVITY:1','external activity stops atomically');
  r:=paper_auto_test.rpc('record_activities',jsonb_build_object('run_id',m2,'activities',a));
  PERFORM paper_auto_test.eq(r->>'inserted','0','activities idempotent');
+ PERFORM paper_auto_test.rpc('stop',jsonb_build_object('experiment_id',e,'reason','EXTERNAL_OR_UNSUPPORTED_ACTIVITY',
+  'actor','worker:gha:41:1','alert',jsonb_build_object('code','EXTERNAL_OR_UNSUPPORTED_ACTIVITY')));
+ PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'EXTERNAL_OR_UNSUPPORTED_ACTIVITY'),'1',
+  'an identical open critical alert is not stacked');
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_activities',jsonb_build_object('run_id',m2,'activities',
   jsonb_build_array(a->2||jsonb_build_object('raw_digest',repeat('9',64))))),'ACTIVITY_CONFLICT');
  daily:=jsonb_build_object('run_id',m2,'session_date','2026-10-19','captured_at','2026-10-19T20:14:59Z',
@@ -795,10 +829,14 @@ BEGIN
  -- Cash is reconciled against every recorded activity: 100000 - 7998 - 7998 + 50000 - 12 = 133992.
  PERFORM paper_auto_test.eq(r->>'cashReconciled'||':'||(r->>'cashUnexplainedCents'),'false:7007',
   'cash not explained by recorded activities');
+ PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE'),'1',
+  'unexplained cash with nothing unresolved raises a stop alert atomically');
  PERFORM paper_auto_test.eq((SELECT fees_cents::text FROM sportsedge_paper_auto.daily_equity
   WHERE experiment_id=e AND session_date='2026-10-19'),'12','fees derived');
  r:=paper_auto_test.rpc('record_daily',daily);
  PERFORM paper_auto_test.eq(r->>'duplicate','true','daily idempotent');
+ PERFORM paper_auto_test.eq(r->>'cashReconciled','false','a duplicate reply still reports the reconciliation');
+ PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE'),'1','a retry adds no alert');
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object('equity_cents',1)),
   'DAILY_CONFLICT');
  PERFORM paper_auto_test.raises($q$UPDATE sportsedge_paper_auto.daily_equity SET equity_cents=1$q$,
@@ -845,8 +883,8 @@ BEGIN
   'true:false:500','a recorded dividend explains the cash');
  -- Unexplained cash leaves the mark unreconciled without contaminating later marks.
  r:=paper_auto_test.mark(e,'2026-10-22',100600);
- PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'cashUnexplainedCents',r->>'contaminated'),
-  'false:100:false','unexplained cash');
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'cashUnexplainedCents',r->>'contaminated',
+  paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE')),'false:100:false:1','unexplained cash');
  r:=paper_auto_test.mark(e,'2026-10-23',100600,jsonb_build_array(paper_auto_test.activity(
   '20261022040000000::div-2','DIV','2026-10-22T04:00:00Z',100,'dividend')));
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'dividendsCents'),'true:0',
@@ -878,8 +916,21 @@ BEGIN
 END $$;
 SELECT paper_auto_test.at('2026-10-28T14:00:00Z');
 DO $$
-DECLARE e text:='fwd-2026-ledger'; ex text;
+DECLARE e text:='fwd-2026-ledger'; ex text; r jsonb; i text;
 BEGIN
+ -- The atomic stop alerts (unexplained cash, the Saturday deposit) block resume until acknowledged.
+ PERFORM paper_auto_test.raises(paper_auto_test.call('resume',paper_auto_test.resume_args(e,
+  paper_auto_test.reconcile(e,'2026-10-28T13:59Z'))),'RESUME_CRITICAL_ALERT_OPEN');
+ -- Another external activity while already stopped keeps a single open alert for its code.
+ ex:=paper_auto_test.begin(e,'reconcile','2026-10-28T13:58Z');
+ r:=paper_auto_test.rpc('record_activities',jsonb_build_object('run_id',ex,'activities',jsonb_build_array(
+  paper_auto_test.activity('20261028130000000::csd-2','CSD','2026-10-28T13:00:00Z',100,'external_cashflow'))));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'stopped',paper_auto_test.open_alerts(e,'EXTERNAL_OR_UNSUPPORTED_ACTIVITY')),
+  'true:1','repeated external activity does not stack alerts');
+ PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',ex,'status','succeeded',
+  'result',jsonb_build_object('clean',false,'accountId',paper_auto_test.account(ex))));
+ PERFORM paper_auto_test.rpc('ack_alert',jsonb_build_object('experiment_id',e,'owner_ref',paper_auto_test.owner(),
+  'alert_id',a.alert_id)) FROM sportsedge_paper_auto.alerts a WHERE a.experiment_id=e AND a.acknowledged_at IS NULL;
  PERFORM paper_auto_test.arm(e,'2026-10-28T14:00Z');
  ex:=paper_auto_test.begin(e,'execute','2026-10-28T14:00Z');
  PERFORM paper_auto_test.rpc('acquire_lease',jsonb_build_object('run_id',ex));
@@ -887,6 +938,15 @@ BEGIN
  PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(ex,repeat('9',64),
   paper_auto_test.snapshot(ex,90449,90449,90449),jsonb_build_array(paper_auto_test.leg('AAA','sell',1,2000))),
   'DRAWDOWN_LIMIT');
+ -- An atomic stop also voids unsent reservations, so none can be claimed afterwards.
+ r:=paper_auto_test.reserve(ex,repeat('9',64),paper_auto_test.snapshot(ex,100000,100000,100000,
+  jsonb_build_array(paper_auto_test.position('AAA',1))),jsonb_build_array(paper_auto_test.leg('AAA','sell',1,2000)));
+ i:=r->'reserved'->0->>'intentId';
+ r:=paper_auto_test.rpc('record_activities',jsonb_build_object('run_id',ex,'activities',jsonb_build_array(
+  paper_auto_test.activity('20261028135900000::csd-3','CSD','2026-10-28T13:59:00Z',100,'external_cashflow'))));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'stopped',(SELECT status FROM sportsedge_paper_auto.intents
+  WHERE intent_id=i)),'true:not_submitted','an atomic stop voids unsent reservations');
+ PERFORM paper_auto_test.raises(paper_auto_test.claim_call(ex,i),'NOT_ARMED');
  PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',ex,'status','blocked'));
 END $$;
 DROP SCHEMA paper_auto_test CASCADE;

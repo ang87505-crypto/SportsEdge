@@ -25,7 +25,7 @@ and the one-order acceptance route stays independent of it.
 
 | Gate mode | How it is entered |
 | --- | --- |
-| `STOPPED` | At registration (default). `stop` is always allowed, idempotent and audited, and voids every unsent `reserved` intent. |
+| `STOPPED` | At registration (default). `stop` is always allowed, idempotent and audited, and voids every unsent `reserved` intent. It never stacks a second open critical alert with the same code. The database also stops the experiment itself when it records a STOP-worthy event: a broker rejection, an external or unsupported activity, or unexplained cash. |
 | `PAUSED` | `pause`, by the owner, from `ARMED` only. |
 | `ARMED` | `resume` only. A transaction-local flag is set inside that RPC, so a direct update is refused. |
 
@@ -111,6 +111,7 @@ different is `DECISION_CONFLICT`.
 - Every change takes a compare-and-swap version and appends an intent event.
 - Re-observing the same state is a no-op.
 - An explicit HTTP 400, 401, 403 or 422 refusal of the POST may end a leg as `rejected` without a broker order. A 422 duplicate-client-id refusal (`40010001`) is never a rejection; the worker must look the order up by client id.
+- **Recording a rejection stops the experiment in the same transaction** with one critical alert, `ORDER_REJECTED`, and voids the other reserved legs. A lost or failed worker STOP call therefore cannot leave the experiment ARMED for the next decision. `record_order` locks the gate row before the intent, like every other call that can stop the experiment.
 
 ## Unknown POST outcomes
 
@@ -128,11 +129,14 @@ A missing lookup on its own changes nothing.
 
 - Activities are attributed by broker order id. A FILL of a recorded intent must be a `strategy_fill`, and any other FILL must be an `external_fill`. While any submission outcome is unknown, unattributable fills are refused (`FILL_ATTRIBUTION_PENDING`) rather than guessed.
 - Re-recording an activity is idempotent; changed content is a conflict.
+- **Recording a new external fill, external cash flow, corporate action or unsupported activity stops the experiment in the same transaction.** It voids reserved intents, so none can be claimed afterwards, and raises one critical alert, `EXTERNAL_OR_UNSUPPORTED_ACTIVITY`. A STOP can therefore never be lost after the activity commits, for example if the worker fails before its own STOP call. Later runs do not see the activity as new.
 - `record_daily` writes one immutable mark per session.
   - The mark must be captured on that session's own New York evening, at or after 16:15, and recorded within 15 minutes of the capture (`DAILY_CAPTURE_NOT_FRESH` otherwise). A later run can never relabel today's equity as an earlier session's mark, and no mark can predate registration.
   - External flows, fees and dividends come from the recorded activities, not from the caller. They are summed over the period since the previous mark, or since registration, so a flow dated on a weekend or holiday still lands in a period.
   - Any external fill, **external cash flow**, corporate action or unsupported activity on or before the session sets `contaminated`, on top of the caller's own flag. Because the rule covers every earlier session, contamination is permanent: a deposit can never be presented as strategy return.
   - **Cash reconciliation.** Registration requires a flat account, so cash starts at the starting equity. The database recomputes the expected cash from every recorded activity up to the capture: a fill moves cash by quantity × price, and anything else moves it by its net amount. `cash_unexplained_cents` stores the difference. `cash_reconciled` is true only when the difference is zero; each fill whose notional has a fractional cent may add one cent of rounding.
+  - If cash is unreconciled while no submission is unresolved, `record_daily` stops the experiment in the same transaction with `UNEXPLAINED_CASH_CHANGE`. While a submission is unresolved, the difference may be unattributed fills, so the mark is recorded without a stop.
+  - A duplicate `record_daily` reply reports the stored contamination and reconciliation, so a retried run sees the same outcome.
   - An unreconciled mark is unverified, but it does not contaminate later marks. A late-recorded activity can explain the next mark, because the comparison is absolute. A balance change that no activity explains, such as an account reset or an unreported deposit, never reconciles again.
 
 ## Clock
@@ -150,8 +154,8 @@ psql -f database/tests/paper_auto_v1.sql          # PAPER_AUTO_V1_POSTGRES_PASS
 bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PASS
 ```
 
-- The contract suite makes 125 refusal assertions and 90 equality assertions.
-- Twenty-one hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
+- The contract suite makes 127 refusal assertions and 100 equality assertions.
+- Twenty-nine hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
   - claim without ARMED; claim without the unknown-outcome barrier;
   - retrying rejected legs; buying a non-target; uncertain to not_submitted;
   - STOP keeping reserved intents; drawdown disabled; confirming absence before the close;
@@ -160,7 +164,9 @@ bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PA
   - misclassified fills; ignored contamination;
   - relabeled or stale daily marks; deposits not contaminating; flows attributed by date only;
   - cash reconciliation disabled; a loose reconciliation tolerance; a reversed fill cash sign;
-  - drawdown measured from the starting equity only.
+  - drawdown measured from the starting equity only;
+  - no atomic stop on recorded external activity; no atomic stop on unexplained cash; stopping on unexplained cash while a submission is unresolved; stacked alerts in `stop`; stacked alerts in the internal halt; a duplicate mark reply without its reconciliation;
+  - no atomic stop on a recorded rejection; an atomic stop that keeps reserved intents.
 - The race script uses independent connections. It shows:
   - one run from 8 duplicate deliveries;
   - one lease holder;
