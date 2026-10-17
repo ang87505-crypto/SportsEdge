@@ -1223,9 +1223,18 @@ BEGIN
    'maxOrdersPerDay',x.max_orders_per_day,'maxOpenOrders',x.max_open_orders,
    'maxAttemptsPerLeg',x.max_attempts_per_leg,'drawdownStopBps',x.drawdown_stop_bps,
    'feeReserveCents',x.fee_reserve_cents,'configDigest',x.config_digest),
+  -- Compact signal: full universe members and prior inputs stay in the stored row
+  -- (reserve_intents reads them there); the worker needs only targets and holdings.
   'latestDecision',CASE WHEN d.decision_id IS NULL THEN NULL ELSE jsonb_build_object(
    'decisionId',d.decision_id,'session',d.decision_session,'decisionAt',d.decision_at,
-   'outcome',d.outcome,'signal',d.signal) END,
+   'outcome',d.outcome,'signal',CASE WHEN d.signal IS NULL THEN NULL ELSE
+    (d.signal-'members'-'priorInputs')||jsonb_build_object('priorInputs',coalesce((
+     SELECT jsonb_object_agg(pi.key,pi.value) FROM jsonb_each(d.signal->'priorInputs') pi
+     WHERE pi.key IN (SELECT t->>'securityId' FROM jsonb_array_elements(d.signal->'targets') t)
+      OR pi.key IN (SELECT jsonb_array_elements_text(coalesce(d.signal->'heldSecurityIds','[]'::jsonb)))
+      OR pi.key IN (SELECT security_id FROM sportsedge_paper_auto.intents WHERE experiment_id=e
+       GROUP BY security_id HAVING sum(CASE side WHEN 'buy' THEN filled_qty ELSE -filled_qty END)<>0)),
+     '{}'::jsonb)) END) END,
   'intents',coalesce((SELECT jsonb_agg(jsonb_build_object('intentId',intent_id,'decisionId',decision_id,
     'securityId',security_id,'symbol',symbol,'side',side,'phase',phase,'attempt',attempt,
     'shares',shares,'limitCents',limit_cents,'clientOrderId',client_order_id,'status',status,

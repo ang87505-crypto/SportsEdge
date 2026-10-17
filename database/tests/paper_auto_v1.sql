@@ -298,7 +298,8 @@ BEGIN
   '2026-10-19T12:00:00Z','2026-10-19T12:00:09.5Z',jsonb_build_array(paper_auto_test.target('EEE','Tech'),
   paper_auto_test.target('FFF','Health'),paper_auto_test.target('GGG','Energy'),paper_auto_test.target('HHH','Retail')),
   paper_auto_test.prior('EEE',100000)||paper_auto_test.prior('FFF',100000)||paper_auto_test.prior('GGG',100000)
-  ||paper_auto_test.prior('HHH',100000));
+  ||paper_auto_test.prior('HHH',100000)||paper_auto_test.prior('ZZZ',100000))
+  ||jsonb_build_object('members',jsonb_build_object('id-ZZZ',jsonb_build_object('symbol','ZZZ','status','SCORED')));
  PERFORM paper_auto_test.rpc('record_decision',jsonb_build_object('run_id',run,'decision_id',repeat('b',64),
   'outcome','TARGETS','decision_at','2026-10-19T08:00:00-04:00','input_digest',repeat('e',64),'signal',sig));
  PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',run,'status','succeeded'));
@@ -779,6 +780,10 @@ BEGIN
  PERFORM paper_auto_test.eq((r->'experiment'->>'registeredAt')::timestamptz::text,
   '2026-10-19T11:00:00Z'::timestamptz::text,'activity window anchor');
  PERFORM paper_auto_test.eq(r->'latestDecision'->>'outcome','TARGETS','worker decision');
+ -- The worker's signal copy keeps prior inputs only for targets and held or filled securities.
+ PERFORM paper_auto_test.eq((SELECT string_agg(pk,',' ORDER BY pk) FROM jsonb_object_keys(
+  r->'latestDecision'->'signal'->'priorInputs') pk),'id-EEE,id-FFF,id-GGG,id-HHH','compact prior inputs');
+ PERFORM paper_auto_test.eq(((r->'latestDecision'->'signal') ? 'members')::text,'false','members omitted');
  PERFORM paper_auto_test.eq(r->>'filledBySecurity',
   '[{"symbol": "FFF", "netShares": "2.000000000", "securityId": "id-FFF"}, '
   ||'{"symbol": "GGG", "netShares": "1.000000000", "securityId": "id-GGG"}]','expected positions from fills');
