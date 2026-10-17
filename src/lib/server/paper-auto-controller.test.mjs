@@ -9,6 +9,8 @@ import {createDatabase,dropDatabase,psqlStore,fakeClock,FakeBroker,e2eDatabaseAv
 import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,proceedsCents}
  from './paper-auto-controller.ts';
 import {quarterHourSlot} from './paper-auto-time.ts';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
 const enabled=e2eDatabaseAvailable();
 if(!enabled&&process.env.PAPER_AUTO_REQUIRE_E2E==='1')throw Error('PAPER_AUTO_E2E_PG=1 is required in this job');
@@ -351,4 +353,33 @@ e2e('HOLD and MISSED sessions are recorded and execute nothing',async()=>{
  assert.equal(w.broker.posts.length,0);
  assert.equal(sqlValue(DB,`SELECT outcome FROM sportsedge_paper_auto.decisions WHERE experiment_id='${w.experimentId}'`),
   'MISSED');
+});
+
+e2e('cross-language chain: the Python bridge decision is accepted by the database and traded by the controller',async()=>{
+ const w=world({start:'2026-11-02T11:00:00Z'});
+ await register(w);
+ const registeredAt=sqlValue(DB,`SELECT to_char(registered_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  FROM sportsedge_paper_auto.experiments WHERE experiment_id='${w.experimentId}'`);
+ const script=`import json,sys
+from analytics.test_stock_forward_bridge_v1 import synthetic_capture,master,ATTESTATION
+from analytics.stock_forward_bridge_v1 import decide
+print(json.dumps(decide(synthetic_capture(),master(),ATTESTATION,json.loads(sys.argv[1]),[])))`;
+ const py=spawnSync('python3',['-c',script,JSON.stringify({experimentId:w.experimentId,registeredAt,
+  modelVersion:BASELINE})],{cwd:fileURLToPath(new URL('../../..',import.meta.url)),encoding:'utf8'});
+ assert.equal(py.status,0,py.stderr);
+ const record=JSON.parse(py.stdout);
+ assert.equal(record.outcome,'TARGETS');
+ w.clock.set('2026-11-02T13:01:00.000Z');
+ const recorded=await recordDecisionSlot(w.deps,record);
+ assert.equal(recorded.reason,'RECORDED',JSON.stringify(recorded));
+ // Quotes at the synthetic series' last closes; the planner sizes from the bridge's prior inputs.
+ w.broker.setQuote('AAA',4680);w.broker.setQuote('BBB',5144);w.broker.setQuote('CCC',3840);
+ await arm(w,'2026-11-02T14:40:00.000Z');
+ const r=await execute(w,'2026-11-02T14:45:00.000Z');
+ assert.equal(r.reason,'ORDERS_COMPLETE',JSON.stringify(r));
+ assert.deepEqual(w.broker.posts.map(p=>p.symbol+':'+p.shares+':'+p.limitCents),
+  ['AAA:2:4680','BBB:1:5144','CCC:2:3840']);
+ assert.equal(sqlValue(DB,`SELECT count(*) FROM sportsedge_paper_auto.intents i JOIN sportsedge_paper_auto.decisions d
+  USING (decision_id) WHERE i.experiment_id='${w.experimentId}' AND i.security_id LIKE 'alpaca:%'
+  AND d.decision_id='${record.decisionId}'`),'3');
 });

@@ -1,0 +1,76 @@
+# Monthly decision for one registered recurring PAPER experiment. Manual dispatch
+# only (no schedule). Dispatch before 07:55 New York on the first exchange session
+# of a month: the reference capture runs at once, the decision capture starts at
+# 08:00:00 and must seal within 60 seconds, otherwise the session is recorded MISSED.
+name: Recurring PAPER decision (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      experiment:
+        description: Registered experiment id
+        required: true
+        type: string
+      session:
+        description: First exchange session of the month (YYYY-MM-DD, New York)
+        required: true
+        type: string
+      security_master:
+        description: Repository path of the registered security-master snapshot (JSON)
+        required: true
+        type: string
+      actions_attestation:
+        description: Repository path of the registered corporate-action coverage attestation (JSON)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: paper-auto-decision-${{ inputs.experiment }}
+  cancel-in-progress: false
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPERIMENT: ${{ inputs.experiment }}
+      SESSION: ${{ inputs.session }}
+      MASTER: ${{ inputs.security_master }}
+      ATTESTATION: ${{ inputs.actions_attestation }}
+      SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
+      SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Registration and reconciled holdings (read-only)
+        run: node --experimental-strip-types scripts/paper-auto-worker.ts context --experiment "$EXPERIMENT" --output "$RUNNER_TEMP/registration.json"
+      - name: Reference capture now, decision capture from 08:00:00 New York (read-only market data)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_forward_bridge_v1 capture --session "$SESSION" --security-master "$MASTER" --output "$RUNNER_TEMP/capture.json" --execute-network
+      - name: Frozen signal from the sealed capture (no network)
+        run: python -m analytics.stock_forward_bridge_v1 decide --capture "$RUNNER_TEMP/capture.json" --security-master "$MASTER" --actions-attestation "$ATTESTATION" --registration "$RUNNER_TEMP/registration.json" --output "$RUNNER_TEMP/decision.json"
+      - name: Record TARGETS, HOLD, MISSED or INPUT_REJECTED
+        run: |
+          if [ -f "$RUNNER_TEMP/decision.json" ]; then
+            node --experimental-strip-types scripts/paper-auto-worker.ts decision --experiment "$EXPERIMENT" --decision-file "$RUNNER_TEMP/decision.json"
+          fi
+      - name: Compress the sealed capture for audit
+        if: always()
+        run: if [ -f "$RUNNER_TEMP/capture.json" ]; then gzip -9 "$RUNNER_TEMP/capture.json"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paper-auto-decision-${{ inputs.experiment }}-${{ inputs.session }}
+          path: |
+            ${{ runner.temp }}/capture.json.gz
+            ${{ runner.temp }}/decision.json
+          if-no-files-found: ignore
+          retention-days: 30

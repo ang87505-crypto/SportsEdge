@@ -7,8 +7,12 @@ on:
       - 'src/lib/stocks/paper-strategy-rebalance.ts'
       - 'scripts/paper-auto-worker.ts'
       - 'database/staging/paper_auto_v1.sql'
+      - 'analytics/stock_forward_bridge_v1.py'
+      - 'analytics/test_stock_forward_bridge_v1.py'
+      - 'analytics/stock_forward_signal_v1.py'
       - '.github/workflows/paper-auto-controller.yml'
       - '.github/workflows/paper-auto-worker.yml'
+      - '.github/workflows/paper-auto-decision.yml'
 permissions:
   contents: read
 jobs:
@@ -42,9 +46,14 @@ jobs:
       - run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
       - name: Broker, store and clock adapters (no network)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs
-      - name: Controller end to end against a fake broker and the real schema
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Signal bridge (synthetic captures, no network)
+        run: python -m unittest analytics.test_stock_forward_bridge_v1 -v
+      - name: Controller end to end against a fake broker and the real schema (includes the Python bridge chain)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-controller.test.mjs
       - name: Broker writes and scheduled runs stay released OFF
         run: |
           node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['brokerWritesEnabled:false','scheduledRunsEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
-          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml
+          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml .github/workflows/paper-auto-decision.yml
