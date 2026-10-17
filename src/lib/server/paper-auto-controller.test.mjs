@@ -201,6 +201,20 @@ e2e('a broker rejection stops in the database even when the worker\'s stop call 
  assert.equal(w.broker.posts.length,1);
 });
 
+e2e('a working order the broker rejects later stops the experiment, and the other legs are canceled',async()=>{
+ const w=await armedWithDecision();
+ w.broker.behaviors.push('rest','rest','rest');
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_WORKING');
+ w.broker.orders.find(o=>o.symbol==='AAA').status='rejected';
+ const r=await execute(w,'2026-10-19T14:00:00.000Z');
+ assert.equal(r.reason,'GATE_STOPPED',JSON.stringify(r));
+ assert.equal(r.cancels,2);
+ assert.deepEqual(intents(w).map(i=>i.symbol+':'+i.status),['AAA:rejected','BBB:canceled','CCC:canceled']);
+ const s=await status(w);
+ assert.equal(s.state,'STOPPED');assert.equal(s.unacknowledgedCriticalAlerts,1);
+ assert.equal(w.broker.posts.length,3);
+});
+
 e2e('external open orders, external positions and a different account each stop the experiment',async()=>{
  for(const tamper of ['order','position','account']){
   const w=await armedWithDecision();
