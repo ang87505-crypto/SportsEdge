@@ -860,9 +860,10 @@ BEGIN
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'contaminated',r->>'externalFlowCents'),
   'true:true:20000','weekend deposit');
  r:=paper_auto_test.mark(e,'2026-10-27',120600,'[]',jsonb_build_array(jsonb_build_object('symbol','ZZZ','qty','1',
-  'marketValueCents',0)));
+  'marketValueCents',0),jsonb_build_object('symbol','YYY','qty','1','marketValueCents',500,'costBasisCents',400)));
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'contaminated',r->>'externalFlowCents',
-  coalesce(r->>'unrealizedPlCents','unknown')),'true:0:unknown','a deposit contaminates later marks; no cost basis, no unrealized P&L');
+  coalesce(r->>'unrealizedPlCents','unknown')),'true:0:unknown',
+  'a deposit contaminates later marks; one position without a cost basis makes unrealized P&L unknown');
  r:=paper_auto_test.rpc('ledger',jsonb_build_object('experiment_id',e));
  PERFORM paper_auto_test.eq((SELECT string_agg(concat_ws('/',x->>'session',x->>'cashReconciled',x->>'contaminated'),
   ',' ORDER BY x->>'session') FROM jsonb_array_elements(r->'daily') x),

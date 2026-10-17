@@ -1147,7 +1147,8 @@ BEGIN
  row_in.cash_reconciled:=abs(row_in.cash_unexplained_cents)<=rounding;
  -- Unrealized P&L from the broker's per-position cost basis; unknown if any position lacks it.
  SELECT CASE WHEN count(*)=0 THEN 0
-  WHEN bool_and(jsonb_typeof(ps->'marketValueCents')='number' AND jsonb_typeof(ps->'costBasisCents')='number')
+  -- A missing key is SQL NULL, which bool_and would skip: count it as a missing cost basis.
+  WHEN bool_and(coalesce(jsonb_typeof(ps->'marketValueCents')='number' AND jsonb_typeof(ps->'costBasisCents')='number',false))
   THEN round(sum(CASE WHEN jsonb_typeof(ps->'marketValueCents')='number' AND jsonb_typeof(ps->'costBasisCents')='number'
    THEN (ps->>'marketValueCents')::numeric-(ps->>'costBasisCents')::numeric END))::bigint END
  INTO row_in.unrealized_pl_cents FROM jsonb_array_elements(p->'positions') ps;
