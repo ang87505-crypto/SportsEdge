@@ -9,6 +9,8 @@ import {createDatabase,dropDatabase,psqlStore,fakeClock,FakeBroker,e2eDatabaseAv
 import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,proceedsCents}
  from './paper-auto-controller.ts';
 import {quarterHourSlot} from './paper-auto-time.ts';
+import {parseLedger,resumeCandidate} from '../stocks/paper-auto-ledger.ts';
+import {forwardPerformance} from '../stocks/paper-auto-performance.ts';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
@@ -382,4 +384,28 @@ print(json.dumps(decide(synthetic_capture(),master(),ATTESTATION,json.loads(sys.
  assert.equal(sqlValue(DB,`SELECT count(*) FROM sportsedge_paper_auto.intents i JOIN sportsedge_paper_auto.decisions d
   USING (decision_id) WHERE i.experiment_id='${w.experimentId}' AND i.security_id LIKE 'alpaca:%'
   AND d.decision_id='${record.decisionId}'`),'3');
+});
+
+e2e('the dashboard reads the real ledger: only reconciled, uncontaminated marks count as strategy return',async()=>{
+ const w=await armedWithDecision();
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ assert.equal((await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19')).reason,'DAILY_RECORDED');
+ w.broker.setQuote('AAA',3101);
+ assert.equal((await monitor(w,'2026-10-20T20:30:00.000Z','2026-10-20')).reason,'DAILY_RECORDED');
+ w.clock.set('2026-10-21T15:00:00.000Z');
+ w.broker.addDeposit(50000);
+ assert.equal((await monitor(w,'2026-10-21T20:30:00.000Z','2026-10-21')).outcome,'STOPPED');
+ const l=parseLedger(await w.store.call('ledger',{experiment_id:w.experimentId}));
+ assert.ok(l&&l.registered,'the real read model parses');
+ assert.equal(l.status.state,'STOPPED');
+ assert.deepEqual(l.daily.map(d=>d.session+':'+d.cashReconciled+':'+d.contaminated),
+  ['2026-10-19:true:false','2026-10-20:true:false','2026-10-21:true:true']);
+ assert.equal(l.intents.length,3);assert.equal(l.decisions[0].outcome,'TARGETS');
+ assert.ok(l.alerts.some(a=>a.severity==='critical'&&!a.acknowledgedAt));
+ assert.equal(resumeCandidate(l,Date.parse(l.status.checkedAt)),null,'no clean reconcile since the STOP');
+ const p=forwardPerformance(l.experiment.startingEquityCents,l.experiment.registeredAt,l.daily);
+ assert.equal(p.verified.state,'ENDED');assert.equal(p.verified.endedAtSession,'2026-10-21');
+ assert.equal(p.verified.throughSession,'2026-10-20');
+ assert.equal(p.verified.pnlCents,300,'AAA +$1.00 on 3 shares; the $500 deposit is never return');
+ assert.equal(p.benchmark.state,'MEASURED');assert.equal(p.benchmark.benchmarkReturn,0);
 });

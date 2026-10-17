@@ -3,7 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/lib/server/paper-auto-*'
-      - 'src/lib/stocks/paper-auto-release.ts'
+      - 'src/lib/stocks/paper-auto-*'
+      - 'src/app/api/internal/paper-auto/**'
+      - 'src/app/stocks/paper-auto/**'
+      - 'src/components/paper-auto-*'
       - 'src/lib/stocks/paper-strategy-rebalance.ts'
       - 'scripts/paper-auto-worker.ts'
       - 'database/staging/paper_auto_v1.sql'
@@ -46,6 +49,8 @@ jobs:
       - run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
       - name: Broker, store and clock adapters (no network)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs
+      - name: Owner dashboard API and forward performance (no network)
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-owner.test.mjs src/lib/stocks/paper-auto-performance.test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
