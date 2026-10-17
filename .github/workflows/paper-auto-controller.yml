@@ -1,0 +1,50 @@
+name: Recurring PAPER controller (fake broker, isolated database)
+on:
+  pull_request:
+    paths:
+      - 'src/lib/server/paper-auto-*'
+      - 'src/lib/stocks/paper-auto-release.ts'
+      - 'src/lib/stocks/paper-strategy-rebalance.ts'
+      - 'scripts/paper-auto-worker.ts'
+      - 'database/staging/paper_auto_v1.sql'
+      - '.github/workflows/paper-auto-controller.yml'
+      - '.github/workflows/paper-auto-worker.yml'
+permissions:
+  contents: read
+jobs:
+  controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PAPER_AUTO_E2E_PG: '1'
+      PAPER_AUTO_REQUIRE_E2E: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
+      - name: Broker, store and clock adapters (no network)
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs
+      - name: Controller end to end against a fake broker and the real schema
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-controller.test.mjs
+      - name: Broker writes and scheduled runs stay released OFF
+        run: |
+          node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['brokerWritesEnabled:false','scheduledRunsEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
+          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml
