@@ -783,6 +783,8 @@ BEGIN
   '[{"symbol": "FFF", "netShares": "2.000000000", "securityId": "id-FFF"}, '
   ||'{"symbol": "GGG", "netShares": "1.000000000", "securityId": "id-GGG"}]','expected positions from fills');
  PERFORM paper_auto_test.eq(r->>'equityHighWaterCents','149120','high-water mark');
+ PERFORM paper_auto_test.eq(r->>'brokerOrderIds','["b-e1", "b-f1", "b-f2", "b-g1", "b-g2"]',
+  'every recorded broker order id is attributable');
  PERFORM paper_auto_test.eq(jsonb_array_length(r->'knownActivityIds')::text,'4','known activities');
  r:=paper_auto_test.rpc('ledger',jsonb_build_object('experiment_id',e));
  PERFORM paper_auto_test.eq(jsonb_array_length(r->'daily')::text,'2','daily series');

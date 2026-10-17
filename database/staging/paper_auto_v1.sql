@@ -1240,6 +1240,8 @@ BEGIN
    FROM (SELECT security_id,symbol,sum(CASE side WHEN 'buy' THEN filled_qty ELSE -filled_qty END) net
     FROM sportsedge_paper_auto.intents WHERE experiment_id=e GROUP BY security_id,symbol) f
    WHERE net<>0),'[]'::jsonb),
+  'brokerOrderIds',coalesce((SELECT jsonb_agg(broker_order_id ORDER BY broker_order_id)
+   FROM sportsedge_paper_auto.intents WHERE experiment_id=e AND broker_order_id IS NOT NULL),'[]'::jsonb),
   'equityHighWaterCents',(SELECT greatest(x.starting_equity_cents,max(equity_cents))
    FROM sportsedge_paper_auto.daily_equity WHERE experiment_id=e),
   'lastDaily',(SELECT jsonb_build_object('session',session_date,'equityCents',equity_cents,'capturedAt',captured_at)
