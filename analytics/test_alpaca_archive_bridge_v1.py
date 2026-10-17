@@ -112,6 +112,13 @@ class ArchiveBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ArchiveBridgeError, "Source query"):
             bridge_archive(source)
 
+    def test_unknown_corporate_action_source_query_rejected(self):
+        source = fixture()
+        source["corporate_action_source_pages"][0]["query_without_page_token"]["symbols"] = "CCC"
+        resign(source)
+        with self.assertRaisesRegex(ArchiveBridgeError, "Unexpected corporate action source query"):
+            bridge_archive(source)
+
     def test_rehashed_duplicate_daily_bar_is_still_rejected(self):
         source = fixture()
         source["stock_bar_source_pages"][0]["payload"]["bars"].append(
