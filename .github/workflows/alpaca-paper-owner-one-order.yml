@@ -24,6 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/server/alpaca-owner-first-order.test.mjs src/lib/server/alpaca-owner-one-order-guard.test.mjs
+      - run: node --experimental-strip-types --test src/lib/server/alpaca-owner-first-order.test.mjs src/lib/server/alpaca-owner-first-order-adversarial.test.mjs src/lib/server/alpaca-owner-one-order-guard.test.mjs
       - name: Block generic broker or live-money automation
         run: node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-automation-release.ts','utf8');for(const v of ['placeOrdersEnabled:false','scheduledOrdersEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
