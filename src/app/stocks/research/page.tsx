@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import {StockBacktestReport} from '@/components/stock-backtest-report';
+import {loadBacktestReport} from '@/lib/stocks/load-backtest-report';
 import {Action, Details, PageHeading, Stat} from '@/components/ui';
 import study from '@/data/research/stock_1000_forward_study.json';
 import protocol from '../../../../research/stock_audit_20261012/protocol.json';
@@ -6,14 +8,13 @@ import protocol from '../../../../research/stock_audit_20261012/protocol.json';
 const usd = (cents: number) =>
   new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(cents / 100);
 
-const historicalMeasured = protocol.release.historical_performance_measured;
 const paperActivated = protocol.release.automatic_paper_trades;
 const evidence = [
   ['Frozen strategy rules', 'Registered', 'Baseline and one candidate are specified in the committed research protocol.'],
-  ['Accounting and candidate adapters', 'Engineering review', 'Astra delivered additive packages. They require integration and full repository CI before use.'],
+  ['Accounting and candidate adapters', 'Engineering review', 'Accounting v2, candidate and full-universe adapters are integrated on the research branch; historical source and event gates remain.'],
   ['Point-in-time market data', 'Not verified', 'Complete dated security membership, delistings and licensed price histories have not been attested.'],
   ['Corporate-event reconciliation', 'Blocked', 'Delistings, mergers and fractional entitlements require documented, independently tested handling.'],
-  ['Historical strategy comparison', historicalMeasured ? 'Measured' : 'Not measured', 'Do not interpret synthetic parity checks as backtested returns.'],
+  ['Historical strategy comparison', 'Report gated', 'Do not interpret synthetic parity checks as backtested returns.'],
   ['Automated stock paper orders', paperActivated ? 'Enabled' : 'Disabled', 'No model-driven broker automation or live trading is activated.'],
 ] as const;
 
@@ -22,7 +23,9 @@ export const metadata = {
   description: 'Frozen stock selection rules, evidence readiness, and honest historical-backtest status.',
 };
 
-export default function StockResearchPage() {
+export default async function StockResearchPage() {
+  const reportView = await loadBacktestReport();
+  const historicalMeasured = reportView.status === 'validated';
   const recordedEvents = study.events.length;
   const costs = protocol.execution.primary_costs;
   const oneWayBps = costs.half_spread_bps + costs.additional_slippage_bps;
@@ -34,20 +37,21 @@ export default function StockResearchPage() {
       action={<Action href="/stocks" secondary>Back to stock workspace</Action>}
     />
     <div className="notice" role="status">
-      <strong>Not yet backtested on verified historical data.</strong>{' '}
+      <strong>{historicalMeasured ? 'Reviewed historical research report available.' : 'Not yet backtested on verified historical data.'}</strong>{' '}
       The algorithm, candidate adapter and synthetic accounting tests are research work—not an investable return record.
       This screen is based on committed study configuration. It is not a live brokerage or CI-monitoring feed.
     </div>
     <div className="stats-grid">
       <Stat label="Registered starting capital" value={usd(protocol.execution.capital_cents)}
         detail="Independent frozen historical comparison account" />
-      <Stat label="Historical net ROI" value={historicalMeasured ? 'See approved report' : 'Not measured'}
+      <Stat label="Historical net ROI" value={historicalMeasured ? 'See report below' : 'Not measured'}
         detail="No historical profit can be inferred from synthetic fixtures" />
       <Stat label="Model-driven paper trades" value={paperActivated ? 'Enabled' : 'Off'}
         detail={`${recordedEvents} recorded event(s) in the separate $1,000 stock study`} />
       <Stat label="Primary execution assumption" value={`${oneWayBps} bps`}
         detail="One way, half-spread plus slippage; sensitivities are also required" />
     </div>
+    <StockBacktestReport view={reportView} />
     <div className="section-title">
       <div><div className="eyebrow">FROZEN EVALUATION</div><h2>Two versions. One registered comparison.</h2></div>
       <span className="pill">No parameter search</span>
@@ -92,7 +96,7 @@ export default function StockResearchPage() {
       <p style={{marginTop: 12}}>The study must report uncertainty, costs, turnover and drawdown, including failed securities and rejected sessions. A positive return alone is not evidence of an advantage.</p>
     </Details>
     <Details title="What is connected to this page?">
-      <p>This page reads the committed <code>research/stock_audit_20261012/protocol.json</code> and the separate <code>stock_1000_forward_study.json</code>. It intentionally does not fetch licensed market data, place orders, or display synthetic test fixtures as returns.</p>
+      <p>This page validates a fixed, read-only report artifact against a reviewed SHA-256 allowlist. Missing, synthetic, unapproved or invalid reports show Not measured. It also reads the committed <code>research/stock_audit_20261012/protocol.json</code> and the separate <code>stock_1000_forward_study.json</code>. It intentionally does not fetch licensed market data, place orders, or display synthetic test fixtures as returns.</p>
       <p style={{marginTop: 12}}>Your manual stock journal on <Link href="/stocks">the stock workspace</Link> is an independent, browser-local practice tool. It is not the algorithm account or the broker&apos;s paper ledger.</p>
       <p style={{marginTop: 12}}><a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/research/stock_audit_20261012/protocol.json" target="_blank" rel="noopener noreferrer">View registered source protocol ↗</a></p>
     </Details>

@@ -1,0 +1,32 @@
+{
+  "kind": "SYNTHETIC_ENGINEERING_CHECK_NOT_BACKTEST",
+  "performance": null,
+  "historical_backtest_ready": false,
+  "processed_members": 11,
+  "source_report_id": "00a9798d247b911c077be2a296bf542ade360320a01d27856a2dd17616ba8ac9",
+  "checks": {
+    "stock-mom252-skip21-trend200-v1": {
+      "original_economic_receipts_match": true,
+      "repeated_output_identical": true,
+      "selected_permanent_ids": [
+        "id-AAA",
+        "id-BBB",
+        "id-CCC",
+        "id-DDD",
+        "id-EEE"
+      ]
+    },
+    "stock-mom252-skip21-trend200-holdrank10-v1": {
+      "original_economic_receipts_match": true,
+      "repeated_output_identical": true,
+      "selected_permanent_ids": [
+        "id-AAA",
+        "id-BBB",
+        "id-CCC",
+        "id-DDD",
+        "id-FFF"
+      ]
+    }
+  },
+  "amendment_sha256": "3f56281d3b6af3cf2b097a9f75759428dd1993d998e035f44fa0e21f43d1332c"
+}

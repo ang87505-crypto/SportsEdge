@@ -1,0 +1,302 @@
+{
+  "branches": [
+    {
+      "name": "audit/nba-astra-package-gate-20261012",
+      "sha": "cce3177ff06838db1dc3e38535e95ca4c6c7709b"
+    },
+    {
+      "name": "audit/release-dependency-gates-20261012",
+      "sha": "5c5c8cc30d19e560272b182ead227e786a5e528c"
+    },
+    {
+      "name": "audit/release-train-readiness-20261012",
+      "sha": "14f2d3fb6f110af0dbd79d1a0250887b1eba5d94"
+    },
+    {
+      "name": "audit/stock-journal-regression-20261009",
+      "sha": "703829c3579429dd9e4ec2582457f8d43e338d55"
+    },
+    {
+      "name": "audit/ui-ux-accessibility-20261009",
+      "sha": "7aa1a9fc9b382fe80da76aaf1e4c6348fdfd6191"
+    },
+    {
+      "name": "audit-six-month-backtest",
+      "sha": "1c0a34e4f66031f5e3173c180d943b30711ca337"
+    },
+    {
+      "name": "feature/alpaca-paper-access",
+      "sha": "7935d679abfab143b5e7b0c3f95dec6b30ccdbbe"
+    },
+    {
+      "name": "feature/atomic-odds-writes",
+      "sha": "c272ceb1575907de7ac4242c2ff4d4f3ec353618"
+    },
+    {
+      "name": "feature/binary-calibration-diagnostics",
+      "sha": "7e162838e041be4837845f482c0e49d87bad1d22"
+    },
+    {
+      "name": "feature/dual-track-data-foundation",
+      "sha": "8ad49a70a0435e078fc5f171c96fcac3a9664ddf"
+    },
+    {
+      "name": "feature/green-workspace-ui",
+      "sha": "a083b4df492867cc5a27019ef14c57a74ea20f9b"
+    },
+    {
+      "name": "feature/nba-elo-walkforward-foundation",
+      "sha": "517612901c5e0f6e96daff48071c79f60cc2f1e7"
+    },
+    {
+      "name": "feature/nba-game-analysis-20261011",
+      "sha": "a32b8a0a5d2977bf46cdb366b7f6a19749787a26"
+    },
+    {
+      "name": "feature/nba-owner-command-receipts-20261012",
+      "sha": "fee6926b6b864bea21ee8a53581c43be63258344"
+    },
+    {
+      "name": "feature/odds-snapshot-uniqueness",
+      "sha": "162d2d8bb278d171bec895572b9e6dcb5e79cbbd"
+    },
+    {
+      "name": "feature/owner-paper-controls-20261009",
+      "sha": "8ee62e3d2e74709bc0f1cefc9fa4b0a06b8c26ae"
+    },
+    {
+      "name": "feature/owner-paper-run-controls-20261009",
+      "sha": "c2f4427d74411c6c4e70f08ec02be26f2512c887"
+    },
+    {
+      "name": "feature/paper-results-readiness-20261011",
+      "sha": "ea7781b90fbb6702104a0bdec95121844100d001"
+    },
+    {
+      "name": "feature/secure-ingestion-readiness",
+      "sha": "fd0c8727513b6bf320739c6863a43e720526b62f"
+    },
+    {
+      "name": "feature/selective-odds-refresh-20261011",
+      "sha": "b557685db9ba5daacdf3ae478cb7a288e45e0783"
+    },
+    {
+      "name": "feature/sports-completion-20261011",
+      "sha": "82a208186e20720875b2a975a74b34c44d3d3378"
+    },
+    {
+      "name": "feature/sports-odds-freshness-ui-20261011",
+      "sha": "f689d4a4e1a5d2bf28557b2faf0d5fc1a2900470"
+    },
+    {
+      "name": "feature/stock-alpaca-archive-20261011",
+      "sha": "f3d79edabbb275925f3718ed794211f82c139170"
+    },
+    {
+      "name": "feature/ux-paper-clarity-20261012",
+      "sha": "c123db52281af2571f9987e9d6d3a2a5d089625c"
+    },
+    {
+      "name": "main",
+      "sha": "1be3dd989e4ca321ff4e99e3a18658a3935d47a2"
+    },
+    {
+      "name": "nba-historical-source-audit",
+      "sha": "e7ac91ca8404f096e4a2ec19f4ce30ebdc1e19a9"
+    },
+    {
+      "name": "recent-nba-forward-research",
+      "sha": "d747cc6bb44abd22994ba4e5945be5a959190929"
+    },
+    {
+      "name": "release/sportsedge-ui-merged-20261012",
+      "sha": "4251572b67b11aa66d2eb36186433f15f34157f3"
+    },
+    {
+      "name": "release/ui-only-main-20261012",
+      "sha": "94b73c8dc2d71d5cd7d769bf522dc22995326eb2"
+    },
+    {
+      "name": "research/alpaca-2026-engineering-gate-20261013",
+      "sha": "50207ef4c436e471fd756b39c42f746bc8a37a7e"
+    },
+    {
+      "name": "research/nba-100x10-paper-study-20261009",
+      "sha": "dc7899b380096b348823692817c54990443a47ea"
+    },
+    {
+      "name": "research/nba-archived-price-stress-test-20261011",
+      "sha": "1bca2bdb6e3a9c53b15021a63242e26055e285d2"
+    },
+    {
+      "name": "research/nba-astra-verified-import-20261012",
+      "sha": "5d35ae4d0efc5b51a119d02d650e22bcc7c151d2"
+    },
+    {
+      "name": "research/nba-quant-audit-20261009",
+      "sha": "68e1ce1b7a944d21a5c266ef87e10eb923fe9747"
+    },
+    {
+      "name": "research/paper-execution-planner-20261009",
+      "sha": "267c59a21e673dc875be044a110589942167dcb1"
+    },
+    {
+      "name": "research/stock-asof-data-contract-20261009",
+      "sha": "46d7de25827fef0618a8287405d3af5611f96f0a"
+    },
+    {
+      "name": "research/stock-astra-verified-import-20261012",
+      "sha": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82"
+    },
+    {
+      "name": "research/stock-end-to-end-parity-20261012",
+      "sha": "d62e509421a0929fe5c4bcf8456eb1dcc3e7a952"
+    },
+    {
+      "name": "research/stock-historical-ledger-20261011",
+      "sha": "df24e4edac92ba7c9b3eca425da72cfb5954bf8d"
+    },
+    {
+      "name": "research/stock-momentum-baseline-20261009",
+      "sha": "1db25c4dbce44c065bc67e69e1a354ebc1bd962c"
+    },
+    {
+      "name": "research/stock-study-site-20261013",
+      "sha": "24e2a356abea2cfff7c6ec4554a81774f7450c65"
+    },
+    {
+      "name": "research/stocks-1000-paper-study-20261009",
+      "sha": "eff4274825a92efee698f1ae62966927f7ba56fa"
+    }
+  ],
+  "open_prs": [
+    {
+      "number": 37,
+      "title": "Ship SportsEdge UI polish to main (no trading or model changes)",
+      "head": "94b73c8dc2d71d5cd7d769bf522dc22995326eb2",
+      "base": "261b03ccc78e0fb3f62fdfa85effcb1e4e9f2f72"
+    },
+    {
+      "number": 36,
+      "title": "NBA paper controls: durable command receipts, replay safety and PR dependency map",
+      "head": "fee6926b6b864bea21ee8a53581c43be63258344",
+      "base": "c123db52281af2571f9987e9d6d3a2a5d089625c"
+    },
+    {
+      "number": 35,
+      "title": "Professional SportsEdge UX: clean dashboard, responsive workspaces and honest performance reporting",
+      "head": "c123db52281af2571f9987e9d6d3a2a5d089625c",
+      "base": "f689d4a4e1a5d2bf28557b2faf0d5fc1a2900470"
+    },
+    {
+      "number": 32,
+      "title": "Release readiness: pin PR dependency graph and block unsafe production promotion",
+      "head": "5c5c8cc30d19e560272b182ead227e786a5e528c",
+      "base": "261b03ccc78e0fb3f62fdfa85effcb1e4e9f2f72"
+    },
+    {
+      "number": 26,
+      "title": "Sports UX: show live-aging sportsbook quote status beside saved odds",
+      "head": "f689d4a4e1a5d2bf28557b2faf0d5fc1a2900470",
+      "base": "b557685db9ba5daacdf3ae478cb7a288e45e0783"
+    },
+    {
+      "number": 25,
+      "title": "Sports: select NBA/EPL odds refresh safely and preview provider request counts",
+      "head": "b557685db9ba5daacdf3ae478cb7a288e45e0783",
+      "base": "ea7781b90fbb6702104a0bdec95121844100d001"
+    },
+    {
+      "number": 24,
+      "title": "Paper betting: reconcile only pending NBA results and reduce score requests",
+      "head": "ea7781b90fbb6702104a0bdec95121844100d001",
+      "base": "a32b8a0a5d2977bf46cdb366b7f6a19749787a26"
+    },
+    {
+      "number": 23,
+      "title": "Sports: add read-only NBA Game Analysis and stale-line screening",
+      "head": "a32b8a0a5d2977bf46cdb366b7f6a19749787a26",
+      "base": "82a208186e20720875b2a975a74b34c44d3d3378"
+    },
+    {
+      "number": 22,
+      "title": "Sports completion: reject stale and superseded markets",
+      "head": "82a208186e20720875b2a975a74b34c44d3d3378",
+      "base": "8ee62e3d2e74709bc0f1cefc9fa4b0a06b8c26ae"
+    },
+    {
+      "number": 21,
+      "title": "Owner-authenticated paper controls: bounded NBA runs, release disabled",
+      "head": "8ee62e3d2e74709bc0f1cefc9fa4b0a06b8c26ae",
+      "base": "c2f4427d74411c6c4e70f08ec02be26f2512c887"
+    },
+    {
+      "number": 20,
+      "title": "Paper trading UI: safe readiness controls and truthful NBA run reporting",
+      "head": "c2f4427d74411c6c4e70f08ec02be26f2512c887",
+      "base": "267c59a21e673dc875be044a110589942167dcb1"
+    }
+  ],
+  "stock_branch_file_checks": [
+    {
+      "name": "audit/stock-journal-regression-20261009",
+      "sha": "703829c3579429dd9e4ec2582457f8d43e338d55",
+      "matching_additions": []
+    },
+    {
+      "name": "feature/alpaca-paper-access",
+      "sha": "7935d679abfab143b5e7b0c3f95dec6b30ccdbbe",
+      "matching_additions": []
+    },
+    {
+      "name": "feature/stock-alpaca-archive-20261011",
+      "sha": "f3d79edabbb275925f3718ed794211f82c139170",
+      "matching_additions": []
+    },
+    {
+      "name": "research/alpaca-2026-engineering-gate-20261013",
+      "sha": "50207ef4c436e471fd756b39c42f746bc8a37a7e",
+      "matching_additions": []
+    },
+    {
+      "name": "research/paper-execution-planner-20261009",
+      "sha": "267c59a21e673dc875be044a110589942167dcb1",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-asof-data-contract-20261009",
+      "sha": "46d7de25827fef0618a8287405d3af5611f96f0a",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-astra-verified-import-20261012",
+      "sha": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-end-to-end-parity-20261012",
+      "sha": "d62e509421a0929fe5c4bcf8456eb1dcc3e7a952",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-historical-ledger-20261011",
+      "sha": "df24e4edac92ba7c9b3eca425da72cfb5954bf8d",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-momentum-baseline-20261009",
+      "sha": "1db25c4dbce44c065bc67e69e1a354ebc1bd962c",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stock-study-site-20261013",
+      "sha": "24e2a356abea2cfff7c6ec4554a81774f7450c65",
+      "matching_additions": []
+    },
+    {
+      "name": "research/stocks-1000-paper-study-20261009",
+      "sha": "eff4274825a92efee698f1ae62966927f7ba56fa",
+      "matching_additions": []
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "milestone": "stock-universe-readiness-20261013",
+  "base_commit": "ab97d6dcfb439418a64a145a1261d91bce7ac50a",
+  "base_tree": "501c6fef993af18527bfcf2dca38567d4f2dec90",
+  "dependency_zip": "SportsEdge_Stock_Candidate_Adapter_2026-10-13.zip",
+  "local_branch": "research/stock-universe-readiness-20261013",
+  "source_checkout": "partial authenticated Git-blob-verified stock snapshot; not a full clone",
+  "remote_result_commit": null,
+  "python": "3.12.14",
+  "tests": [
+    {
+      "command": "python -m unittest discover -s analytics -p 'test_stock*.py' -v",
+      "passed": 175,
+      "failed": 0
+    },
+    {
+      "command": "python -m unittest analytics.test_alpaca_history_archive -v",
+      "passed": 11,
+      "failed": 0
+    }
+  ],
+  "total_passed": 186,
+  "new_tests": 24,
+  "new_universe_tests": 19,
+  "new_source_preflight_tests": 5,
+  "large_universe_case": {
+    "kind": "synthetic",
+    "securities": 400,
+    "rows": 101600,
+    "truncation": false,
+    "both_account_paths_exercised": true
+  },
+  "original_account_receipt_parity": true,
+  "deterministic_reproduction": true,
+  "inherited_files_unchanged": 30,
+  "previous_additions_unchanged": 16,
+  "code_test_failures": [],
+  "source_retrieval_limitations": [
+    "Current CRSP CIZ guide payload exceeded web retrieval size limit; current format field mapping is not claimed."
+  ],
+  "data_acquired": false,
+  "source_rights_verified": false,
+  "corporate_event_repairs_completed": false,
+  "historical_backtest_ready": false,
+  "historical_performance": null,
+  "sealed_test_inspected": false,
+  "provider_data_requests": 0,
+  "paid_requests": 0,
+  "trading_enabled": false,
+  "remote_push": false,
+  "merge": false,
+  "deploy": false
+}

@@ -1,0 +1,295 @@
+{
+  "inspection_date": "2026-10-13 UTC / 2026-10-12 America/Denver",
+  "repository": "ang87505-crypto/SportsEdge",
+  "main_commit": "ab97d6dcfb439418a64a145a1261d91bce7ac50a",
+  "main_tree": "501c6fef993af18527bfcf2dca38567d4f2dec90",
+  "accounting_patch_base": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82",
+  "accounting_base_tree": "d400b79cdfb57fcad2b014119f14d556b4030d35",
+  "pr34": {
+    "state": "closed",
+    "merged": true,
+    "merge_commit": "d22b40165d65ca7849bf806513a389484ed3f45a"
+  },
+  "branches": [
+    {
+      "name": "audit/nba-astra-package-gate-20261012",
+      "sha": "cce3177ff06838db1dc3e38535e95ca4c6c7709b"
+    },
+    {
+      "name": "audit/release-dependency-gates-20261012",
+      "sha": "5c5c8cc30d19e560272b182ead227e786a5e528c"
+    },
+    {
+      "name": "audit/release-train-readiness-20261012",
+      "sha": "14f2d3fb6f110af0dbd79d1a0250887b1eba5d94"
+    },
+    {
+      "name": "audit/stock-journal-regression-20261009",
+      "sha": "703829c3579429dd9e4ec2582457f8d43e338d55"
+    },
+    {
+      "name": "audit/ui-ux-accessibility-20261009",
+      "sha": "7aa1a9fc9b382fe80da76aaf1e4c6348fdfd6191"
+    },
+    {
+      "name": "audit-six-month-backtest",
+      "sha": "1c0a34e4f66031f5e3173c180d943b30711ca337"
+    },
+    {
+      "name": "feature/alpaca-paper-access",
+      "sha": "7935d679abfab143b5e7b0c3f95dec6b30ccdbbe"
+    },
+    {
+      "name": "feature/atomic-odds-writes",
+      "sha": "c272ceb1575907de7ac4242c2ff4d4f3ec353618"
+    },
+    {
+      "name": "feature/binary-calibration-diagnostics",
+      "sha": "7e162838e041be4837845f482c0e49d87bad1d22"
+    },
+    {
+      "name": "feature/dual-track-data-foundation",
+      "sha": "8ad49a70a0435e078fc5f171c96fcac3a9664ddf"
+    },
+    {
+      "name": "feature/green-workspace-ui",
+      "sha": "a083b4df492867cc5a27019ef14c57a74ea20f9b"
+    },
+    {
+      "name": "feature/nba-elo-walkforward-foundation",
+      "sha": "517612901c5e0f6e96daff48071c79f60cc2f1e7"
+    },
+    {
+      "name": "feature/nba-game-analysis-20261011",
+      "sha": "a32b8a0a5d2977bf46cdb366b7f6a19749787a26"
+    },
+    {
+      "name": "feature/nba-owner-command-receipts-20261012",
+      "sha": "fee6926b6b864bea21ee8a53581c43be63258344"
+    },
+    {
+      "name": "feature/odds-snapshot-uniqueness",
+      "sha": "162d2d8bb278d171bec895572b9e6dcb5e79cbbd"
+    },
+    {
+      "name": "feature/owner-paper-controls-20261009",
+      "sha": "8ee62e3d2e74709bc0f1cefc9fa4b0a06b8c26ae"
+    },
+    {
+      "name": "feature/owner-paper-run-controls-20261009",
+      "sha": "c2f4427d74411c6c4e70f08ec02be26f2512c887"
+    },
+    {
+      "name": "feature/paper-results-readiness-20261011",
+      "sha": "ea7781b90fbb6702104a0bdec95121844100d001"
+    },
+    {
+      "name": "feature/secure-ingestion-readiness",
+      "sha": "fd0c8727513b6bf320739c6863a43e720526b62f"
+    },
+    {
+      "name": "feature/selective-odds-refresh-20261011",
+      "sha": "b557685db9ba5daacdf3ae478cb7a288e45e0783"
+    },
+    {
+      "name": "feature/sports-completion-20261011",
+      "sha": "82a208186e20720875b2a975a74b34c44d3d3378"
+    },
+    {
+      "name": "feature/sports-odds-freshness-ui-20261011",
+      "sha": "f689d4a4e1a5d2bf28557b2faf0d5fc1a2900470"
+    },
+    {
+      "name": "feature/stock-alpaca-archive-20261011",
+      "sha": "f3d79edabbb275925f3718ed794211f82c139170"
+    },
+    {
+      "name": "feature/ux-paper-clarity-20261012",
+      "sha": "c123db52281af2571f9987e9d6d3a2a5d089625c"
+    },
+    {
+      "name": "main",
+      "sha": "ab97d6dcfb439418a64a145a1261d91bce7ac50a"
+    },
+    {
+      "name": "nba-historical-source-audit",
+      "sha": "e7ac91ca8404f096e4a2ec19f4ce30ebdc1e19a9"
+    },
+    {
+      "name": "recent-nba-forward-research",
+      "sha": "d747cc6bb44abd22994ba4e5945be5a959190929"
+    },
+    {
+      "name": "release/sportsedge-ui-merged-20261012",
+      "sha": "4251572b67b11aa66d2eb36186433f15f34157f3"
+    },
+    {
+      "name": "release/ui-only-main-20261012",
+      "sha": "94b73c8dc2d71d5cd7d769bf522dc22995326eb2"
+    },
+    {
+      "name": "research/nba-100x10-paper-study-20261009",
+      "sha": "dc7899b380096b348823692817c54990443a47ea"
+    },
+    {
+      "name": "research/nba-archived-price-stress-test-20261011",
+      "sha": "1bca2bdb6e3a9c53b15021a63242e26055e285d2"
+    },
+    {
+      "name": "research/nba-astra-verified-import-20261012",
+      "sha": "5d35ae4d0efc5b51a119d02d650e22bcc7c151d2"
+    },
+    {
+      "name": "research/nba-quant-audit-20261009",
+      "sha": "68e1ce1b7a944d21a5c266ef87e10eb923fe9747"
+    },
+    {
+      "name": "research/paper-execution-planner-20261009",
+      "sha": "267c59a21e673dc875be044a110589942167dcb1"
+    },
+    {
+      "name": "research/stock-asof-data-contract-20261009",
+      "sha": "46d7de25827fef0618a8287405d3af5611f96f0a"
+    },
+    {
+      "name": "research/stock-astra-verified-import-20261012",
+      "sha": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82"
+    },
+    {
+      "name": "research/stock-end-to-end-parity-20261012",
+      "sha": "d62e509421a0929fe5c4bcf8456eb1dcc3e7a952"
+    },
+    {
+      "name": "research/stock-historical-ledger-20261011",
+      "sha": "df24e4edac92ba7c9b3eca425da72cfb5954bf8d"
+    },
+    {
+      "name": "research/stock-momentum-baseline-20261009",
+      "sha": "1db25c4dbce44c065bc67e69e1a354ebc1bd962c"
+    },
+    {
+      "name": "research/stocks-1000-paper-study-20261009",
+      "sha": "eff4274825a92efee698f1ae62966927f7ba56fa"
+    }
+  ],
+  "open_prs": [
+    {
+      "number": 37,
+      "title": "Ship SportsEdge UI polish to main (no trading or model changes)",
+      "head_sha": "94b73c8dc2d71d5cd7d769bf522dc22995326eb2"
+    },
+    {
+      "number": 36,
+      "title": "NBA paper controls: durable command receipts, replay safety and PR dependency map",
+      "head_sha": "fee6926b6b864bea21ee8a53581c43be63258344"
+    },
+    {
+      "number": 35,
+      "title": "Professional SportsEdge UX: clean dashboard, responsive workspaces and honest performance reporting",
+      "head_sha": "c123db52281af2571f9987e9d6d3a2a5d089625c"
+    },
+    {
+      "number": 32,
+      "title": "Release readiness: pin PR dependency graph and block unsafe production promotion",
+      "head_sha": "5c5c8cc30d19e560272b182ead227e786a5e528c"
+    },
+    {
+      "number": 26,
+      "title": "Sports UX: show live-aging sportsbook quote status beside saved odds",
+      "head_sha": "f689d4a4e1a5d2bf28557b2faf0d5fc1a2900470"
+    },
+    {
+      "number": 25,
+      "title": "Sports: select NBA/EPL odds refresh safely and preview provider request counts",
+      "head_sha": "b557685db9ba5daacdf3ae478cb7a288e45e0783"
+    },
+    {
+      "number": 24,
+      "title": "Paper betting: reconcile only pending NBA results and reduce score requests",
+      "head_sha": "ea7781b90fbb6702104a0bdec95121844100d001"
+    },
+    {
+      "number": 23,
+      "title": "Sports: add read-only NBA Game Analysis and stale-line screening",
+      "head_sha": "a32b8a0a5d2977bf46cdb366b7f6a19749787a26"
+    },
+    {
+      "number": 22,
+      "title": "Sports completion: reject stale and superseded markets",
+      "head_sha": "82a208186e20720875b2a975a74b34c44d3d3378"
+    },
+    {
+      "number": 21,
+      "title": "Owner-authenticated paper controls: bounded NBA runs, release disabled",
+      "head_sha": "8ee62e3d2e74709bc0f1cefc9fa4b0a06b8c26ae"
+    },
+    {
+      "number": 20,
+      "title": "Paper trading UI: safe readiness controls and truthful NBA run reporting",
+      "head_sha": "c2f4427d74411c6c4e70f08ec02be26f2512c887"
+    }
+  ],
+  "source": {
+    "method": "GitHub connector authenticated blobs; 30 stock-related files verified by Git SHA1",
+    "partial_snapshot": true,
+    "full_clone": false,
+    "remote_result_commit": null,
+    "local_branch": "research/stock-buffer-evaluation-20261013"
+  },
+  "patch_verification": {
+    "archive_manifests": "PASS both attachments",
+    "original_audit_against_main": "PASS 8 byte-identical files",
+    "accounting_against_exact_pr34_tree": "PASS git apply --cached --check",
+    "accounting_applied_bytes": "PASS all 8 files",
+    "accounting_reproduction": "PASS byte-identical to original packaged synthetic_results.json"
+  },
+  "tests": {
+    "python": "3.12",
+    "commands": [
+      {
+        "command": "python -m unittest discover -s analytics -p 'test_stock*.py' -v",
+        "passed": 151,
+        "failed": 0
+      },
+      {
+        "command": "python -m unittest analytics.test_alpaca_history_archive -v",
+        "passed": 11,
+        "failed": 0
+      }
+    ],
+    "total_passed": 162,
+    "new_candidate_tests": 17,
+    "accounting_v2_tests": 40,
+    "separate_pr15_tests": 8,
+    "all_fixtures": "SYNTHETIC; not a backtest",
+    "unresolved_failures": [],
+    "development_failures": [
+      "Direct unauthenticated git ls-remote failed with authentication error; switched to authenticated GitHub connector.",
+      "Initial GitHub blob parser incorrectly expected JSON; corrected to raw returned content and independently verified all Git hashes.",
+      "Initial unittest invocation from scratch parent failed: analytics start directory not importable; reran from SportsEdge root."
+    ]
+  },
+  "preservation": {
+    "inherited_blob_count": 30,
+    "imported_v2_file_count": 8,
+    "all_unchanged": true
+  },
+  "evaluation": {
+    "candidate_count": 1,
+    "new_selection_hypotheses": 0,
+    "synthetic_pair_repeat_identical": true,
+    "historical_prices_acquired": false,
+    "sealed_test_accessed": false,
+    "performance": null,
+    "conclusion": "not_testable_yet"
+  },
+  "side_effects": {
+    "remote_push": false,
+    "merge": false,
+    "deployment": false,
+    "provider_data_request": false,
+    "paid_request": false,
+    "brokerage_access": false,
+    "trading": false
+  }
+}

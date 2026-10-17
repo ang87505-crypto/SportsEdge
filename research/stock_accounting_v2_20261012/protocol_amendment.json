@@ -1,0 +1,47 @@
+{
+  "version": "stock-accounting-execution-v2-protocol-amendment-20261012",
+  "status": "frozen implementation policy before any genuine returns; engineering review required before historical use",
+  "base_commit": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82",
+  "original_protocol_sha256": "aa5ef6532348e8100c2c7da97a4940e86ecf5ccba5af23896ceacfb0b4b8b9d4",
+  "unchanged": {
+    "baseline": "stock-mom252-skip21-trend200-v1",
+    "candidate": "stock-mom252-skip21-trend200-holdrank10-v1",
+    "parameters": "all original lookbacks, ranks, filters, 5 stocks, 2 per sector, 10% per name, 50% gross, whole shares",
+    "periods_and_statistical_tests": "unchanged original registered protocol",
+    "candidate_adapter": "blocked; requires separately reviewed version-specific recomputation from account state"
+  },
+  "execution_policy": {
+    "decision_at": "08:00 America/New_York first next exchange session; each month boundary must contain model evidence",
+    "equity": "actual prior-close economic NAV including sale receivables and dividend entitlements; floor USD NAV to integer cents only at model budget boundary",
+    "positions": "actual prior economic quantities by permanent security ID; no caller-supplied signal/equity/holdings overrides",
+    "price_precision": "USD Decimal text, up to 6 source decimals; 60-digit HALF_EVEN arithmetic isolated from caller context; original baseline retains own 50-digit arithmetic",
+    "cash_rounding": "once per order: buy gross ceil to cents, sale gross floor to cents, then integer fee; dividend aggregate entitlement per account/event HALF_UP to cents only at cash credit",
+    "quotes": "raw USD bid/ask snapshot observed <= available <= open, age <=60 seconds; explicit additional slippage, no second half-spread field",
+    "open_quantity_policy": "price-contingent next-open sizing remains idealized, not pre-open MOO execution evidence",
+    "gap_and_caps": "min(frozen prior budget, 10% conservative post-cost NAV lower bound); reserve worst-case liquidation plus target repurchase costs; fees included in share budget; check actual post-cost 10%/50% exposure; caps are rebalance-time, not continuous",
+    "funding": "all purchases paid immediately from settled cash; sale proceeds held unsettled; no borrowing or reuse of same-day sales; maximum affordable partial whole-share buys in sorted permanent-ID order, logged; no intramonth retries",
+    "settlement": "regular-way US common stocks: T+3 in supported 2000..2017-09-04 range, T+2 from 2017-09-05, T+1 from 2024-05-28; separate externally audited settlement-business calendar; cash usable first processed checkpoint on/after due date; no settlement failures assumed",
+    "dividends": "ordinary USD cash only, <25% prior closing price, no due bills; prior-session economic holdings fixed before ex-date open trades; exact receivable then payable cash at explicit supplied credit timestamp; no automatic reinvestment",
+    "payable_timestamp": "explicit scenario cash-credit timestamp, not inferred from a date alone; verify broker/source timing or register conservative timing before real evaluation",
+    "events": "whole-share splits/reverse splits and explicit same-permanent-ID renames supported; one event per security per session; reject unsupported mergers, delistings, spinoffs, due bills, combined events and fractional entitlements",
+    "liquidity": "1% prior 20-session consolidated mean volume, split-normalized to prior-close share units (floor mean), then adjusted for current-open split; also require displayed size; source authenticity not established",
+    "failure": "no missing monthly decisions/dates/held marks; unavailable execution, incomplete evidence or unsupported event invalidates whole study; never skip failed securities or dates",
+    "marking": "future close marks passed only to close bookkeeping, never to open planner; later decisions reconcile latest mark and model prices plus all economic actions since account origin within model coverage"
+  },
+  "cost_scenarios": "original 5bp half-spread plus 10bp slippage and sensitivity values unchanged; normalize assumed half-spread into synthetic/proxy bid/ask upstream with provenance, or use actual bid/ask without adding a second spread; no real source adapter included",
+  "remaining_gates": [
+    "legally obtained PIT security master, universe and sector history including delisted companies",
+    "sample verification: source bytes, exact decimals, quote/bar availability and revisions, raw/action reconciliation",
+    "independent exchange and settlement calendars and corporate-action coverage",
+    "verified ex-date and cash-credit timing, supported split and rename normalization",
+    "delisting/merger/cash-in-lieu lifecycle implementation and tests before any study requiring those events",
+    "full-universe and known-IPO eligibility adapter (baseline row cap and short-history behavior remain)",
+    "sample containing dividend, split, rename and delisting; unsupported delisting must initially demonstrate explicit study rejection",
+    "separately reviewed candidate adapter; sealed holdout access and original benchmark/cost/uncertainty protocol"
+  ],
+  "release": {
+    "historical_performance_measured": false,
+    "trading_enabled": false,
+    "provider_requests": 0
+  }
+}

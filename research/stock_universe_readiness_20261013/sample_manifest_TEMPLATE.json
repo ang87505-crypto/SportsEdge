@@ -1,0 +1,27 @@
+{
+  "version": "stock-source-sample-preflight-v1",
+  "kind": "source_sample",
+  "phase": "development",
+  "coverage_start": "2010-01-01T00:00:00-05:00",
+  "coverage_end": "2010-12-31T23:59:59-05:00",
+  "rights_confirmed": false,
+  "rights_scope": "unverified",
+  "volume_basis": "unknown",
+  "availability_evidence": "unverified",
+  "files": {
+    "rights": [],
+    "security_master": [],
+    "prices": [],
+    "corporate_actions": [],
+    "exchange_calendar": [],
+    "settlement_calendar": [],
+    "benchmark": [],
+    "field_mapping": []
+  },
+  "event_examples": {
+    "ordinary_cash_dividend": [],
+    "split": [],
+    "rename": [],
+    "delisting": []
+  }
+}

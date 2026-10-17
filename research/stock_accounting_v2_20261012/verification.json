@@ -1,0 +1,230 @@
+{
+  "base_commit": "92eaa17a4ba3147d9faa2d39785fabf5f49e9a82",
+  "resulting_remote_commit": null,
+  "delivery": "additive patch only; no remote publication",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "command": "python -m unittest discover -s analytics -p 'test_*.py' -q",
+  "tests_run": 220,
+  "new_v2_tests": 40,
+  "inherited_tests": 180,
+  "failures": 0,
+  "errors": 0,
+  "synthetic_reproduction_byte_identical": true,
+  "synthetic_results_sha256": "964044b23e5beaca1130aad67e8c9d83029a12869736c4c4cfd54eaf1d0bf07e",
+  "protocol_amendment_sha256": "ce6189969559d7fbcf3951dc1992f0e340493d32be7e72360f36fd1f7835222b",
+  "inherited_files_verified": [
+    {
+      "path": ".github/workflows/diagnostics.yml",
+      "git_blob_sha1": "2485bc7a5c4c2578a46d5a1d2fe23925ebaa0e5e"
+    },
+    {
+      "path": ".github/workflows/dual-track-verify.yml",
+      "git_blob_sha1": "253d818f31f9893fe647c756c69daae921cd2839"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "git_blob_sha1": "5f8fc1f717f5ac5d00fc828aa91eecf33daff1bb"
+    },
+    {
+      "path": "AGENTS.md",
+      "git_blob_sha1": "af3b7c84114bafeee578bf1adff2ef74af2cc6a2"
+    },
+    {
+      "path": "analytics/alpaca_history_archive.py",
+      "git_blob_sha1": "88b10b58a44e1afe0ff0238bf839775f876d9281"
+    },
+    {
+      "path": "analytics/betting_math.py",
+      "git_blob_sha1": "428da2ae651deedb19c3c2b3619387fb5b467699"
+    },
+    {
+      "path": "analytics/calibration_diagnostics.py",
+      "git_blob_sha1": "ef7cdb8897cd2d4a2847a2a7d02e05eaad18cbe5"
+    },
+    {
+      "path": "analytics/elo_walkforward.py",
+      "git_blob_sha1": "11cbfa4dbff9cc3b5a91bbd23a7452828495d0bb"
+    },
+    {
+      "path": "analytics/epl_forward_paper.py",
+      "git_blob_sha1": "2d87c55475f55dd28c10978ab3fde869ca3e000a"
+    },
+    {
+      "path": "analytics/historical_validation.py",
+      "git_blob_sha1": "fa823eb2bda61d9544b9825cc27a1a5be5cb7dd5"
+    },
+    {
+      "path": "analytics/model_evaluation.py",
+      "git_blob_sha1": "810d874186f25731fd8ef809f9d1015fbfc3c774"
+    },
+    {
+      "path": "analytics/nba_elo_walkforward.py",
+      "git_blob_sha1": "eb5936b101ffc223e726753e420af26fb21e7600"
+    },
+    {
+      "path": "analytics/nba_historical_source.py",
+      "git_blob_sha1": "c2703e25e1e7a06422fcd17e111da942fae111dd"
+    },
+    {
+      "path": "analytics/nba_recent_source.py",
+      "git_blob_sha1": "48eb930b40d33cbafb818559e85055ed38b70404"
+    },
+    {
+      "path": "analytics/stock_data_contract.py",
+      "git_blob_sha1": "84b5b8b08a7cff55b3372bd4b99cb276e6a7ef2f"
+    },
+    {
+      "path": "analytics/stock_execution_planner.py",
+      "git_blob_sha1": "d3ad436a4e2767442cd3314972638a3b4895b25f"
+    },
+    {
+      "path": "analytics/stock_historical_ledger.py",
+      "git_blob_sha1": "753a2a46b6668d8e9214219237bb0b4d1bb8915a"
+    },
+    {
+      "path": "analytics/stock_momentum_v1.py",
+      "git_blob_sha1": "5f1e7cbdea7a97e8a80dfa9cb3a05e4e4b25f41b"
+    },
+    {
+      "path": "analytics/stock_rank_buffer_candidate.py",
+      "git_blob_sha1": "0621c94e1404fc330481421693956bb9b9741f04"
+    },
+    {
+      "path": "analytics/stock_replay_integrity_audit.py",
+      "git_blob_sha1": "e9aa943ea6b2fe936b0234c9f1a541c46c1603e7"
+    },
+    {
+      "path": "analytics/stock_verified_signal_replay.py",
+      "git_blob_sha1": "a00b6b4564581b991aaa0885bdd1a674ad80a613"
+    },
+    {
+      "path": "analytics/test_alpaca_history_archive.py",
+      "git_blob_sha1": "51365ad72ca745e077587abbd6635841cebaf378"
+    },
+    {
+      "path": "analytics/test_betting_math.py",
+      "git_blob_sha1": "b85e2c8e38e247783a670b6fe7d152e7f6cf5672"
+    },
+    {
+      "path": "analytics/test_calibration_diagnostics.py",
+      "git_blob_sha1": "855a1c62411654ddfc51c647396c714d13f7d20a"
+    },
+    {
+      "path": "analytics/test_elo_snapshot.py",
+      "git_blob_sha1": "8de6589607d934b25b4a7af9ee78c6d43f5e658d"
+    },
+    {
+      "path": "analytics/test_elo_walkforward.py",
+      "git_blob_sha1": "3b02663870ad924cb6d7972a4d35ade3533f115e"
+    },
+    {
+      "path": "analytics/test_epl_forward_paper.py",
+      "git_blob_sha1": "37b6aaccf576e9e8a976f8c0c2485e7f0fbcacaa"
+    },
+    {
+      "path": "analytics/test_historical_validation.py",
+      "git_blob_sha1": "86e97babb4cabe9c6c6a855ebd29e6f53e1f70be"
+    },
+    {
+      "path": "analytics/test_model_evaluation.py",
+      "git_blob_sha1": "bf1fc70c64782ee116c74d3624e4ceb7a48e61f6"
+    },
+    {
+      "path": "analytics/test_nba_elo_walkforward.py",
+      "git_blob_sha1": "b2b7361f7b9b7d5c8ed65134eafab213098efe3b"
+    },
+    {
+      "path": "analytics/test_nba_historical_source.py",
+      "git_blob_sha1": "7c4857aedd0a6981beb0d642a63043b297fd2eee"
+    },
+    {
+      "path": "analytics/test_nba_recent_source.py",
+      "git_blob_sha1": "94aa111a677c5dd1af3bfd0e3423c91f74f9129b"
+    },
+    {
+      "path": "analytics/test_stock_data_contract.py",
+      "git_blob_sha1": "9d4c13278ad378a32d27e58921a612c0b9dd1ae6"
+    },
+    {
+      "path": "analytics/test_stock_execution_planner.py",
+      "git_blob_sha1": "780c237d07221f9d5a3cce502ff4a10097cede74"
+    },
+    {
+      "path": "analytics/test_stock_historical_ledger.py",
+      "git_blob_sha1": "529af42890dc09c9f746dc7eb2f9d68612b4774b"
+    },
+    {
+      "path": "analytics/test_stock_independent_audit.py",
+      "git_blob_sha1": "bce3d3454ead8332da60efdbd643f70d910c0b6f"
+    },
+    {
+      "path": "analytics/test_stock_momentum_v1.py",
+      "git_blob_sha1": "7aa1d84f298da54d480a7a2852d6d4ac906f4d9c"
+    },
+    {
+      "path": "analytics/test_stock_verified_signal_replay.py",
+      "git_blob_sha1": "4f358491c6502885885aa69b14acd8163950d210"
+    },
+    {
+      "path": "analytics/verify_reproduced_snapshot.py",
+      "git_blob_sha1": "11274dabc8c71ebeae334f111b11dc8c8e68fcc1"
+    },
+    {
+      "path": "docs/PAPER_RUN_EXECUTION_HANDOFF_2026_10_09.md",
+      "git_blob_sha1": "627da6994481204bd4d0413f13cd9e4df59ce434"
+    },
+    {
+      "path": "docs/STOCK_ALPACA_HISTORICAL_ARCHIVE_2026_10_11.md",
+      "git_blob_sha1": "8fd3708ce9075441b8963fd76a0d2a94af404d18"
+    },
+    {
+      "path": "docs/STOCK_ASTRA_READINESS_2026_10_12.md",
+      "git_blob_sha1": "8c7c497e9212d4270382019ea543abf96c4a2a82"
+    },
+    {
+      "path": "docs/STOCK_DATA_CONTRACT_AND_ASTRA_HANDOFF_2026_10_09.md",
+      "git_blob_sha1": "a31d9baec55e6db629538014f30c09073b468b93"
+    },
+    {
+      "path": "docs/STOCK_HISTORICAL_LEDGER_2026_10_11.md",
+      "git_blob_sha1": "d75dd6fd8e9a652bfda6aa92c7bf7122250747fc"
+    },
+    {
+      "path": "docs/STOCK_INDEPENDENT_AUDIT_2026_10_12.md",
+      "git_blob_sha1": "cf60249a2496adf293d2c2b66354cf19f43af210"
+    },
+    {
+      "path": "docs/STOCK_MOMENTUM_BASELINE_2026_10_09.md",
+      "git_blob_sha1": "9869e13a23b375d25402427e249ff6c7b6679fb7"
+    },
+    {
+      "path": "research/stock_audit_20261012/protocol.json",
+      "git_blob_sha1": "6c83d10ab4244dce85b3c57f2f05ce4c73ed50ff"
+    },
+    {
+      "path": "research/stock_audit_20261012/reproduce.py",
+      "git_blob_sha1": "638ce2d95723208c318142e926b0be4fdec48881"
+    },
+    {
+      "path": "research/stock_audit_20261012/synthetic_results.json",
+      "git_blob_sha1": "aa1954734d01ce85d000335d0a231832567e52d1"
+    },
+    {
+      "path": "research/stock_audit_20261012/verification.json",
+      "git_blob_sha1": "4032ce2a3a0628d9632d215e7876ddd79a6eb0e2"
+    },
+    {
+      "path": "src/data/research/elo_2026_10_08.json",
+      "git_blob_sha1": "ef49af93a93ff2704cd5e4071e7f4b1b1cd5d1db"
+    }
+  ],
+  "genuine_market_data_used": false,
+  "historical_performance_measured": false,
+  "provider_requests": 0,
+  "broker_calls": 0,
+  "remote_writes": 0,
+  "resolved_development_failures": [
+    "Incorrect working-directory prefix prevented first test-file creation; corrected path.",
+    "Next-month synthetic fixture retrieval timestamp preceded its new bars; corrected fixture retrieval time, preserving chronology validation."
+  ]
+}

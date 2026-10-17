@@ -1,0 +1,54 @@
+{
+  "kind": "SYNTHETIC_ENGINEERING_CHECK_NOT_BACKTEST",
+  "performance": null,
+  "conclusion": "not_testable_yet",
+  "genuine_prices_used": false,
+  "freeze_sha256": "e4acfedc49cb706c0fc0fea07c739f8a0346197c390c5dea4c0c7da51104c8c7",
+  "protected_dependencies_unchanged": true,
+  "repeated_outputs_identical": true,
+  "input_digest": "170f47df7b77c6a4f7bbfa03f933317ebd966156f0a0aafa34f8ec215c018ef3",
+  "checks": {
+    "baseline": {
+      "strategy_version": "stock-mom252-skip21-trend200-v1",
+      "decisions": 2,
+      "own_prior_holdings_used": true,
+      "selected_per_decision": [
+        [
+          "id-AAA",
+          "id-BBB",
+          "id-CCC",
+          "id-DDD",
+          "id-EEE"
+        ],
+        [
+          "id-AAA",
+          "id-BBB",
+          "id-CCC",
+          "id-DDD",
+          "id-EEE"
+        ]
+      ]
+    },
+    "candidate": {
+      "strategy_version": "stock-mom252-skip21-trend200-holdrank10-v1",
+      "decisions": 2,
+      "own_prior_holdings_used": true,
+      "selected_per_decision": [
+        [
+          "id-AAA",
+          "id-BBB",
+          "id-CCC",
+          "id-DDD",
+          "id-FFF"
+        ],
+        [
+          "id-AAA",
+          "id-BBB",
+          "id-CCC",
+          "id-DDD",
+          "id-FFF"
+        ]
+      ]
+    }
+  }
+}
