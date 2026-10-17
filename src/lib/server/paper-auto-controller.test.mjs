@@ -293,6 +293,46 @@ e2e('owner STOP is a kill switch: working orders are canceled and nothing new is
  assert.deepEqual(intents(w).map(i=>i.symbol+':'+i.status),['AAA:canceled','BBB:filled','CCC:filled']);
 });
 
+e2e('STOP cancels working strategy orders even while external state persists; the owner\'s orders are untouched',
+ async()=>{
+ for(const kind of ['execute','reconcile'])for(const when of ['owner','armed','owner+lost']){
+  const label=kind+' '+when;
+  const w=await armedWithDecision();
+  w.broker.behaviors.push('rest','rest','rest');
+  assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_WORKING',label);
+  if(when!=='armed')await w.store.call('stop',{experiment_id:w.experimentId,reason:'OWNER_STOP',actor:OWNER});
+  // The worker's own stop call can be lost in transit; the owner's STOP still cancels.
+  if(when==='owner+lost')w.store.failOnce=new Set(['stop']);
+  // A manual order in the dedicated account is external state that persists across runs.
+  w.broker.orders.push({id:'b-manual',clientOrderId:'manual-1',symbol:'ZZZ',side:'buy',type:'limit',
+   timeInForce:'day',status:'new',qty:'1',filledQty:'0',filledAvgPrice:null,limitPrice:'10.00',
+   submittedAt:'2026-10-19T13:50:00.000Z',extendedHours:false});
+  w.clock.set('2026-10-19T14:00:00.000Z');
+  const r=await (kind==='execute'?runExecuteSlot:runReconcileSlot)(w.deps,w.experimentId,'2026-10-19T14:00Z');
+  const lost=when==='owner+lost';
+  assert.equal(r.outcome,lost?'FAILED':'STOPPED',label+' '+JSON.stringify(r));
+  assert.equal(r.reason,(lost?'STOP_NOT_CONFIRMED:':'')+'EXTERNAL_OPEN_ORDER',label);
+  assert.equal(r.cancels,3,label);
+  assert.deepEqual(intents(w).map(i=>i.status),['canceled','canceled','canceled'],label);
+  assert.deepEqual(w.broker.cancels.filter(id=>id==='b-manual'),[],label);
+  assert.equal(w.broker.orders.find(o=>o.id==='b-manual').status,'new',label);
+  assert.equal(w.broker.posts.length,3,label);
+  const s=await status(w);
+  assert.equal(s.state,'STOPPED',label);assert.equal(s.unacknowledgedCriticalAlerts,lost?0:1,label);
+ }
+});
+
+e2e('a different account behind the credentials stops without canceling anything in it',async()=>{
+ const w=await armedWithDecision();
+ w.broker.behaviors.push('rest','rest','rest');
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_WORKING');
+ w.broker.reportedAccountId='99999999-1111-2222-3333-444444444444';
+ const r=await execute(w,'2026-10-19T14:00:00.000Z');
+ assert.equal(r.outcome,'STOPPED',JSON.stringify(r));assert.equal(r.reason,'ACCOUNT_IDENTITY_MISMATCH');
+ assert.equal(r.cancels,0);assert.deepEqual(w.broker.cancels,[]);
+ assert.deepEqual(intents(w).map(i=>i.status),['open','open','open']);
+});
+
 e2e('duplicate deliveries and overlapping slots share one lease and one set of orders',async()=>{
  const w=await armedWithDecision();
  w.clock.set('2026-10-19T13:45:00.000Z');
@@ -339,6 +379,40 @@ e2e('an external deposit contaminates the daily mark, is netted as a flow and st
  // The reported deposit explains the cash, so the mark reconciles, and it is contaminated for good.
  assert.equal(sqlValue(DB,`SELECT external_flow_cents||':'||contaminated||':'||cash_reconciled
   FROM sportsedge_paper_auto.daily_equity WHERE experiment_id='${w.experimentId}'`),'50000:true:true');
+ assert.equal((await status(w)).unacknowledgedCriticalAlerts,1);
+});
+
+e2e('the database stops atomically: a failed benchmark read or a lost stop call never loses the STOP',async()=>{
+ // A deposit is recorded as external activity, then the benchmark read fails before the mark.
+ const a=await armedWithDecision();
+ assert.equal((await execute(a,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ a.clock.set('2026-10-19T15:00:00.000Z');
+ a.broker.addDeposit(50000);
+ a.broker.failOnce=new Set(['dailyClose']);
+ const m1=await monitor(a,'2026-10-19T20:30:00.000Z','2026-10-19');
+ assert.equal(m1.outcome,'FAILED',JSON.stringify(m1));
+ let s=await status(a);
+ assert.equal(s.state,'STOPPED');assert.equal(s.unacknowledgedCriticalAlerts,1);
+ // The retried delivery records the mark, contaminated for good; the gate stays STOPPED.
+ const m2=await monitor(a,'2026-10-19T20:40:00.000Z','2026-10-19');
+ assert.equal(m2.reason,'DAILY_RECORDED',JSON.stringify(m2));
+ assert.equal(sqlValue(DB,`SELECT contaminated||':'||cash_reconciled FROM sportsedge_paper_auto.daily_equity
+  WHERE experiment_id='${a.experimentId}'`),'true:true');
+ s=await status(a);
+ assert.equal(s.state,'STOPPED');assert.equal(s.unacknowledgedCriticalAlerts,1);
+ // Cash nothing explains, and the worker's own stop call is lost in transit.
+ const b=await armedWithDecision();
+ assert.equal((await execute(b,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ b.broker.cashCents+=5000;
+ b.store.failOnce=new Set(['stop']);
+ const n1=await monitor(b,'2026-10-19T20:30:00.000Z','2026-10-19');
+ assert.equal(n1.reason,'STOP_NOT_CONFIRMED:UNEXPLAINED_CASH_CHANGE',JSON.stringify(n1));
+ s=await status(b);
+ assert.equal(s.state,'STOPPED');assert.equal(s.unacknowledgedCriticalAlerts,1);
+ // A retried delivery re-detects it from the recorded mark instead of reporting success.
+ const n2=await monitor(b,'2026-10-19T20:40:00.000Z','2026-10-19');
+ assert.equal(n2.outcome,'STOPPED',JSON.stringify(n2));assert.equal(n2.reason,'UNEXPLAINED_CASH_CHANGE');
+ assert.equal((await status(b)).unacknowledgedCriticalAlerts,1);
 });
 
 e2e('HOLD and MISSED sessions are recorded and execute nothing',async()=>{

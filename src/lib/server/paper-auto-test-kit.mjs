@@ -45,6 +45,8 @@ export function psqlStore(database,clock,latencyMs=0){
   calls:[],
   async call(fn,p){
    this.calls.push(fn);
+   // Tests name calls whose next request is lost in transit, before it reaches the database.
+   if(this.failOnce?.delete(fn))throw new PaperAutoStoreError('NETWORK',false);
    clock.advance(latencyMs);
    const literal=JSON.stringify(p).replaceAll("'","''");
    const r=psql(database,`SELECT public.sportsedge_paper_auto_${fn}('${literal}'::jsonb);`,
@@ -168,7 +170,10 @@ export class FakeBroker{
   return out;
  }
  async activitiesSince(after){return this.activities.filter(a=>Date.parse(a.at)>=Date.parse(after));}
- async dailyClose(symbol,session){return {symbol,session,close:'581.25',source:'test:fake-sip-close'};}
+ async dailyClose(symbol,session){
+  if(this.failOnce?.delete('dailyClose'))throw Object.assign(Error('fake network failure'),{code:'NETWORK'});
+  return {symbol,session,close:'581.25',source:'test:fake-sip-close'};
+ }
  addDeposit(cents){
   activitySeq++;
   this.cashCents+=cents;
