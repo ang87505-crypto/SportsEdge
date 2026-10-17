@@ -977,7 +977,7 @@ DECLARE r sportsedge_paper_auto.runs%ROWTYPE; who text; detail jsonb:=coalesce(p
 DECLARE i sportsedge_paper_auto.intents%ROWTYPE; old text; t timestamptz:=sportsedge_paper_auto._now();
 DECLARE bid text; bst text; fq numeric; fp numeric; hs bigint; legal boolean;
 BEGIN
- r:=sportsedge_paper_auto._running(run,NULL);
+ r:=sportsedge_paper_auto._lock_run(run,NULL);
  IF r.kind NOT IN ('execute','reconcile','monitor') THEN RAISE EXCEPTION 'PAPER_AUTO_RUN_KIND'; END IF;
  IF jsonb_typeof(detail)<>'object' THEN RAISE EXCEPTION 'PAPER_AUTO_INVALID_DETAIL'; END IF;
  who:='run:'||run;
@@ -1032,6 +1032,12 @@ BEGIN
   broker_order_id=bid,broker_status=bst,filled_qty=fq,filled_avg_price=fp,updated_at=t
  WHERE intent_id=iid RETURNING * INTO i;
  PERFORM sportsedge_paper_auto._event(i,old,who,detail);
+ -- A broker rejection stops the experiment in this transaction, so a lost stop call
+ -- can never leave it ARMED for the next decision.
+ IF nxt='rejected' THEN
+  PERFORM sportsedge_paper_auto._halt(r.experiment_id,'ORDER_REJECTED','worker:'||r.worker,
+   jsonb_build_object('runId',run,'intentId',iid,'symbol',i.symbol));
+ END IF;
  RETURN jsonb_build_object('intentId',iid,'status',i.status,'lockVersion',i.lock_version,'changed',true);
 END $$;
 
