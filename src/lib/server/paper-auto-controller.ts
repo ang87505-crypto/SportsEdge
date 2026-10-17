@@ -301,6 +301,11 @@ async function guarded(ctx:Ctx,kind:SlotKind,slot:string,body:()=>Promise<SlotRe
    else await ctx.store.call('raise_alert',{run_id:ctx.runId,severity:'warning',
     code:/^[A-Z0-9_]{3,64}$/.test(code)?code:'CONTROLLER_EXCEPTION',detail:{}});
   }catch{/* reported below as an unconfirmed stop; the owner STOP remains available */}
+  // Once STOPPED, the kill switch cancels working strategy orders in this run, best effort,
+  // and never in an account other than the registered one.
+  if(stopped&&code!=='ACCOUNT_IDENTITY_MISMATCH'){
+   try{await cancelWorking(ctx,await readState(ctx));}catch{/* the next execute or reconcile run cancels */}
+  }
   const outcome:SlotOutcome=stopped?'STOPPED':'FAILED';
   const reason=stop&&!stopped?'STOP_NOT_CONFIRMED:'+code:code;
   try{return await finish(ctx,kind,slot,outcome,reason,detail,{ok:false,blockers:[code]});}
@@ -463,11 +468,13 @@ export async function runExecuteSlot(deps:ControllerDeps,experimentId:string,slo
   const lease=await ctx.store.call('acquire_lease',{run_id:ctx.runId});
   if(lease.acquired!==true)return finish(ctx,'execute',slot,'BLOCKED','LEASE_HELD');
   let seen=await reconcileBroker(ctx);
-  requireClean(seen);
   if(seen.state.gateMode==='STOPPED'){
+   // The kill switch acts first: external state that persists must not keep orders working.
    await cancelWorking(ctx,seen.state);
+   requireClean(seen);
    return finish(ctx,'execute',slot,'BLOCKED','GATE_STOPPED');
   }
+  requireClean(seen);
   if(seen.state.gateMode!=='ARMED')return finish(ctx,'execute',slot,'BLOCKED','GATE_'+seen.state.gateMode);
   if(seen.accountIssues.length)throw new ControllerStop(seen.accountIssues[0]);
   if(seen.state.intents.some(i=>UNRESOLVED.has(i.status)))
@@ -553,8 +560,8 @@ export async function runReconcileSlot(deps:ControllerDeps,experimentId:string,s
    return finish(ctx,'reconcile',slot,'SUCCEEDED','LEASE_HELD',{clean:false,accountId:null},
     {ok:false,blockers:['LEASE_HELD']});
   const seen=await reconcileBroker(ctx);
-  requireClean(seen);
   if(seen.state.gateMode==='STOPPED')await cancelWorking(ctx,seen.state);
+  requireClean(seen);
   const state=await readState(ctx);
   const blockers=[...seen.accountIssues,
    ...(state.intents.some(i=>UNRESOLVED.has(i.status))?['UNRESOLVED_SUBMISSION']:[])];
