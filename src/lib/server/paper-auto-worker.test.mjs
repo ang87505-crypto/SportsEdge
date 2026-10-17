@@ -16,6 +16,9 @@ function run(args,env={}){
  const r=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',WORKER,...args],
   {encoding:'utf8',env:{...base,HTTPS_PROXY:'http://127.0.0.1:9',HTTP_PROXY:'http://127.0.0.1:9',...env},timeout:30_000});
  const line=r.stdout.trim().split('\n').at(-1);
+ // No credential, service key or owner reference ever reaches the job log.
+ for(const secret of [...Object.values(SETTINGS),OWNER.SPORTSEDGE_PAPER_AUTO_OWNER_REF].filter(v=>!v.startsWith('https:')))
+  assert.ok(!r.stdout.includes(secret)&&!r.stderr.includes(secret),'leaked a configured secret');
  return {code:r.status,out:JSON.parse(line)};
 }
 
