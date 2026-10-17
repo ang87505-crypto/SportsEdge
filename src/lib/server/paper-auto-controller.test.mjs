@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createDatabase,dropDatabase,psqlStore,fakeClock,FakeBroker,e2eDatabaseAvailable,sqlValue}
  from './paper-auto-test-kit.mjs';
-import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,proceedsCents}
- from './paper-auto-controller.ts';
+import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,proceedsCents,
+ confirmIntentAbsent,parseRegistrationConfig} from './paper-auto-controller.ts';
 import {quarterHourSlot} from './paper-auto-time.ts';
 import {parseLedger,resumeCandidate} from '../stocks/paper-auto-ledger.ts';
 import {forwardPerformance} from '../stocks/paper-auto-performance.ts';
@@ -408,4 +408,56 @@ e2e('the dashboard reads the real ledger: only reconciled, uncontaminated marks 
  assert.equal(p.verified.throughSession,'2026-10-20');
  assert.equal(p.verified.pnlCents,300,'AAA +$1.00 on 3 shares; the $500 deposit is never return');
  assert.equal(p.benchmark.state,'MEASURED');assert.equal(p.benchmark.benchmarkReturn,0);
+});
+
+const uncertainId=(w)=>sqlValue(DB,`SELECT intent_id FROM sportsedge_paper_auto.intents
+ WHERE experiment_id='${w.experimentId}' AND status='uncertain'`);
+e2e('owner confirm-absent needs the close, a missed lookup and a complete order history; it never sends',async()=>{
+ const w=await armedWithDecision();
+ w.broker.behaviors.push('timeout_absent');
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'SUBMISSIONS_PAUSED');
+ const id=uncertainId(w);
+ w.clock.set('2026-10-19T19:59:00.000Z');
+ assert.deepEqual(await confirmIntentAbsent(w.deps,w.experimentId,id,OWNER),{confirmed:false,reason:'SESSION_NOT_CLOSED'});
+ w.clock.set('2026-10-19T20:20:00.000Z');
+ assert.deepEqual(await confirmIntentAbsent(w.deps,w.experimentId,id,OWNER),{confirmed:true,reason:'CONFIRMED_ABSENT'});
+ assert.equal(sqlValue(DB,`SELECT status FROM sportsedge_paper_auto.intents WHERE intent_id='${id}'`),'confirmed_absent');
+ assert.deepEqual(await confirmIntentAbsent(w.deps,w.experimentId,id,OWNER),{confirmed:false,reason:'NOT_UNCERTAIN'});
+ assert.equal(w.broker.posts.length,1,'only the original POST; recovery never sends an order');
+});
+
+e2e('confirm-absent refuses when the order exists, whether the lookup or only the history shows it',async()=>{
+ const late=await armedWithDecision();
+ late.broker.behaviors.push('timeout_late');
+ assert.equal((await execute(late,'2026-10-19T13:45:00.000Z')).reason,'SUBMISSIONS_PAUSED');
+ late.broker.revealLate();
+ late.clock.set('2026-10-19T20:20:00.000Z');
+ assert.deepEqual(await confirmIntentAbsent(late.deps,late.experimentId,uncertainId(late),OWNER),
+  {confirmed:false,reason:'ORDER_FOUND_RECONCILE_INSTEAD'});
+ // The lookup cannot see the order, but the complete history can: a missed lookup alone proves nothing.
+ const blind=await armedWithDecision();
+ blind.broker.behaviors.push('timeout_exists');
+ blind.broker.lookupBlind=true;
+ assert.equal((await execute(blind,'2026-10-19T13:45:00.000Z')).reason,'SUBMISSIONS_PAUSED');
+ blind.clock.set('2026-10-19T20:20:00.000Z');
+ const id=uncertainId(blind);
+ assert.deepEqual(await confirmIntentAbsent(blind.deps,blind.experimentId,id,OWNER),
+  {confirmed:false,reason:'ORDER_FOUND_RECONCILE_INSTEAD'});
+ assert.equal(sqlValue(DB,`SELECT status FROM sportsedge_paper_auto.intents WHERE intent_id='${id}'`),'uncertain');
+ await assert.rejects(()=>confirmIntentAbsent(blind.deps,blind.experimentId,id,'owner'),/INVALID_OWNER_REF/);
+});
+
+test('registration files are reviewed configs with exact keys and the database ranges',()=>{
+ const good={experimentId:'fwd-2026-baseline',modelVersion:BASELINE,decisionWindowStart:'2026-11-01',
+  decisionWindowEnd:'2026-12-31',capitalLimitCents:120000,maxOrderNotionalCents:15000,maxDailyNotionalCents:100000,
+  maxOrdersPerDay:20,maxOpenOrders:10,maxAttemptsPerLeg:3,drawdownStopBps:2500,feeReserveCents:0};
+ assert.deepEqual(parseRegistrationConfig(good,'fwd-2026-baseline'),good);
+ assert.equal(parseRegistrationConfig(good,'fwd-2026-other'),null,'the file must name its own experiment');
+ for(const bad of [{modelVersion:'stock-mom252-skip21-trend200-v2'},{decisionWindowEnd:'2026-10-31'},
+  {decisionWindowStart:'2026-02-30'},{maxDailyNotionalCents:14999},{drawdownStopBps:50},{feeReserveCents:50},
+  {capitalLimitCents:0},{maxOrdersPerDay:1.5},{maxOpenOrders:21},{maxAttemptsPerLeg:6},{ownerRef:'owner-'+'a'.repeat(32)}])
+  assert.equal(parseRegistrationConfig({...good,...bad},'fwd-2026-baseline'),null,JSON.stringify(bad));
+ const missing={...good};delete missing.maxOpenOrders;
+ assert.equal(parseRegistrationConfig(missing,'fwd-2026-baseline'),null);
+ assert.equal(parseRegistrationConfig([good],'fwd-2026-baseline'),null);
 });

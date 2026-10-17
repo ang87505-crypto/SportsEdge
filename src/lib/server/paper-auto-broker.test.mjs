@@ -151,6 +151,34 @@ test('a full page of open orders is incomplete, and activities page by token',as
  assert.equal(new URL(calls.at(-1).url).searchParams.get('page_token'),acts[99].id);
 });
 
+test('order history pages through every status without skipping a shared boundary timestamp',async()=>{
+ // One order per second, except that orders 498-501 share a timestamp across the first page boundary.
+ const at=(k)=>new Date(Date.parse('2026-10-19T13:45:00Z')+1000*(k>=498&&k<=501?498:k)).toISOString();
+ const all=Array.from({length:1203},(_,k)=>order({id:'b-'+k,client_order_id:'sepa'+String(k).padStart(40,'0'),
+  status:'filled',filled_qty:'3',filled_avg_price:'30.01',submitted_at:at(k)}));
+ const {calls,fetcher}=recorder([['https://paper-api.alpaca.markets/v2/orders',(u)=>{
+  const after=Date.parse(u.searchParams.get('after'));
+  return [u,200,all.filter(o=>Date.parse(o.submitted_at)>after).slice(0,500)];
+ }]]);
+ const history=await alpacaPaperAutoBroker(KEYS,fetcher).ordersSubmittedSince('2026-10-19T13:45:00.000Z');
+ assert.equal(history.length,1203,'orders sharing the boundary timestamp are re-read, not skipped');
+ assert.equal(new Set(history.map(o=>o.id)).size,1203);
+ for(const c of calls){
+  const u=new URL(c.url);
+  assert.equal(c.method,'GET');
+  assert.deepEqual([u.searchParams.get('status'),u.searchParams.get('direction'),u.searchParams.get('limit')],
+   ['all','asc','500']);
+ }
+ assert.equal(new URL(calls[0].url).searchParams.get('after'),'2026-10-19T13:44:59.999Z');
+ // A full page that adds nothing new cannot progress: incomplete, never a partial history.
+ const stuck=recorder([['https://paper-api.alpaca.markets/v2/orders',(u)=>[u,200,all.slice(0,500).map(o=>
+  ({...o,submitted_at:'2026-10-19T13:45:00.000Z'}))]]]);
+ await assert.rejects(()=>alpacaPaperAutoBroker(KEYS,stuck.fetcher).ordersSubmittedSince('2026-10-19T13:00:00Z'),
+  e=>e.code==='INCOMPLETE');
+ await assert.rejects(()=>alpacaPaperAutoBroker(KEYS,stuck.fetcher).ordersSubmittedSince('yesterday'),
+  e=>e.code==='INVALID_REQUEST');
+});
+
 test('the benchmark close uses free historical SIP bars ending at least 15 minutes ago',async()=>{
  const {calls,fetcher}=recorder([['https://data.alpaca.markets/v2/stocks/bars',200,
   {bars:{SPY:[{t:'2026-10-19T04:00:00Z',o:580,h:582,l:579,c:581.25,v:1}]}}]]);

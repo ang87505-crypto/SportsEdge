@@ -16,6 +16,8 @@ on:
       - '.github/workflows/paper-auto-controller.yml'
       - '.github/workflows/paper-auto-worker.yml'
       - '.github/workflows/paper-auto-decision.yml'
+      - '.github/workflows/paper-auto-owner.yml'
+      - 'config/paper-auto/**'
 permissions:
   contents: read
 jobs:
@@ -50,7 +52,7 @@ jobs:
       - name: Broker, store and clock adapters (no network)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs
       - name: Owner dashboard API and forward performance (no network)
-        run: node --experimental-strip-types --test src/lib/server/paper-auto-owner.test.mjs src/lib/stocks/paper-auto-performance.test.mjs
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-owner.test.mjs src/lib/stocks/paper-auto-performance.test.mjs src/lib/server/paper-auto-worker.test.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -61,4 +63,5 @@ jobs:
       - name: Broker writes and scheduled runs stay released OFF
         run: |
           node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['brokerWritesEnabled:false','scheduledRunsEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
-          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml .github/workflows/paper-auto-decision.yml
+          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml .github/workflows/paper-auto-decision.yml .github/workflows/paper-auto-owner.yml
+          grep -q 'if: github.actor == github.repository_owner' .github/workflows/paper-auto-owner.yml

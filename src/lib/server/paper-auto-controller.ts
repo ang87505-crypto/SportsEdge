@@ -644,3 +644,51 @@ export async function registerExperiment(deps:Pick<ControllerDeps,'store'|'broke
   drawdown_stop_bps:r.drawdownStopBps,fee_reserve_cents:r.feeReserveCents});
  return {registered:true as const,status};
 }
+
+const REGISTRATION_KEYS=['experimentId','modelVersion','decisionWindowStart','decisionWindowEnd','capitalLimitCents',
+ 'maxOrderNotionalCents','maxDailyNotionalCents','maxOrdersPerDay','maxOpenOrders','maxAttemptsPerLeg',
+ 'drawdownStopBps','feeReserveCents'] as const;
+/** A reviewed registration file (config/paper-auto/<id>.json): exact keys, the database's ranges; else null. */
+export function parseRegistrationConfig(raw:unknown,experimentId:string):Omit<Registration,'ownerRef'>|null{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+ const x=raw as Record<string,unknown>;
+ if(Object.keys(x).length!==REGISTRATION_KEYS.length||!REGISTRATION_KEYS.every(k=>Object.hasOwn(x,k)))return null;
+ const n=(k:string,lo:number,hi:number)=>Number.isSafeInteger(x[k])&&(x[k] as number)>=lo&&(x[k] as number)<=hi;
+ const day=(k:string)=>typeof x[k]==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x[k] as string)&&
+  new Date((x[k] as string)+'T12:00:00Z').toISOString().slice(0,10)===x[k];
+ if(x.experimentId!==experimentId||!/^[a-z0-9][a-z0-9-]{2,62}$/.test(experimentId)||
+  (x.modelVersion!=='stock-mom252-skip21-trend200-v1'&&x.modelVersion!=='stock-mom252-skip21-trend200-holdrank10-v1')||
+  !day('decisionWindowStart')||!day('decisionWindowEnd')||
+  (x.decisionWindowEnd as string)<(x.decisionWindowStart as string)||
+  !n('capitalLimitCents',1,100_000_000_000)||!n('maxOrderNotionalCents',1,100_000_000_000)||
+  !n('maxDailyNotionalCents',x.maxOrderNotionalCents as number,100_000_000_000)||!n('maxOrdersPerDay',1,200)||
+  !n('maxOpenOrders',1,20)||!n('maxAttemptsPerLeg',1,5)||!n('drawdownStopBps',100,9000)||
+  (x.feeReserveCents!==0&&x.feeReserveCents!==100))return null;
+ return Object.fromEntries(REGISTRATION_KEYS.map(k=>[k,x[k]])) as Omit<Registration,'ownerRef'>;
+}
+
+export type AbsenceResult={confirmed:boolean;reason:'CONFIRMED_ABSENT'|'NOT_UNCERTAIN'|'SESSION_NOT_CLOSED'|
+ 'ORDER_FOUND_RECONCILE_INSTEAD'};
+/**
+ * Owner-only recovery for an uncertain submission. After 16:15 New York on its session,
+ * the client-id lookup must miss AND a complete order history since before the
+ * reservation must not contain the client order id. A missed lookup alone proves
+ * nothing, and a found order is left to the next reconcile run to record.
+ */
+export async function confirmIntentAbsent(deps:ControllerDeps,experimentId:string,intentId:string,
+ ownerRef:string):Promise<AbsenceResult>{
+ if(!/^owner-[a-f0-9]{32}$/.test(ownerRef))throw Error('INVALID_OWNER_REF');
+ const state=await readState({...deps,experimentId,runId:'',posts:0,cancels:0});
+ const intent=state.intents.find(i=>i.intentId===intentId);
+ if(!intent||intent.status!=='uncertain')return {confirmed:false,reason:'NOT_UNCERTAIN'};
+ const session=nyDate(Date.parse(intent.updatedAt)),now=deps.now();
+ if(!(nyDate(now)>session||(nyDate(now)===session&&nyMinutes(now)>=16*60+15)))
+  return {confirmed:false,reason:'SESSION_NOT_CLOSED'};
+ if(await deps.broker.orderByClientId(intent.clientOrderId))return {confirmed:false,reason:'ORDER_FOUND_RECONCILE_INSTEAD'};
+ const lookupAt=iso(deps.now());
+ const history=await deps.broker.ordersSubmittedSince(iso(Date.parse(intent.createdAt)-5*60_000));
+ if(history.some(o=>o.clientOrderId===intent.clientOrderId))return {confirmed:false,reason:'ORDER_FOUND_RECONCILE_INSTEAD'};
+ await deps.store.call('confirm_absent',{intent_id:intentId,owner_ref:ownerRef,client_id_lookup_not_found_at:lookupAt,
+  complete_history_checked_at:iso(deps.now()),history_complete:true});
+ return {confirmed:true,reason:'CONFIRMED_ABSENT'};
+}

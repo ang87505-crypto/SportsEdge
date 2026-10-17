@@ -26,7 +26,8 @@ Everything below that changes a system needs separate, explicit owner authorizat
 | `paper-strategy-rebalance.ts` (PR #67) | worker | Astra's frozen planner. It sizes every leg; the controller never changes a target, a quantity or a limit price. |
 | `paper-auto-broker.ts` | worker | Paper-only Alpaca adapter. It never retries a POST, never follows redirects, bounds every reply, and parses money exactly. |
 | `paper-auto-store.ts` | worker / server | PostgREST adapter pinned to the staging project. It tells a database refusal apart from an unknown outcome. |
-| `scripts/paper-auto-worker.ts` | GitHub Actions | CLI entry point. It writes one JSON line and exits 1 when the owner must act. |
+| `scripts/paper-auto-worker.ts` | GitHub Actions | CLI entry point. It writes one JSON line and exits 1 when the owner must act. The owner-only `register` and `confirm-absent` kinds run from `paper-auto-owner.yml`. |
+| `/stocks/paper-auto` and `/api/internal/paper-auto` | Vercel (owner session) | Status, STOP, pause, resume, alert acknowledgement and the separated forward evidence. Staging database only; no Alpaca key. |
 
 ### Slot behaviour
 
@@ -109,8 +110,9 @@ A browser tab, a laptop or a long-lived serverless function is never relied on.
 | --- | --- |
 | `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 125 refusal and 90 equality assertions. 21 of 21 schema guard mutations caught. |
 | `database/tests/paper_auto_v1_race.sh` (independent connections) | PASS, three repeated runs. |
-| `paper-auto-broker.test.mjs` (adapters, no network) | 12 of 12 pass. |
-| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 16 of 16 scenarios pass. 11 of 11 controller guard mutations caught. |
+| `paper-auto-broker.test.mjs` (adapters, no network) | 13 of 13 pass, including a paged order history that re-reads a tied boundary timestamp rather than skipping it. |
+| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 20 of 20 scenarios and 1 configuration test pass. 12 of 12 controller guard mutations caught. |
+| `paper-auto-owner.test.mjs`, `paper-auto-performance.test.mjs`, `paper-auto-worker.test.mjs` (no network) | 7, 8 and 2 of each pass: owner API sessions, strict actions and RPC mapping; verified-return chaining; owner CLI refusals before any network call. |
 
 The controller scenarios cover:
 - the happy path, idempotent slots, HOLD and the daily mark;
@@ -128,7 +130,9 @@ The controller scenarios cover:
 - a late delivery that cannot relabel an earlier session, and unexplained cash that STOPs;
 - a mark during an unresolved submission that blocks, then reconciles the next session;
 - drawdown from a real after-close high-water mark;
-- a MISSED session.
+- a MISSED session;
+- the dashboard reading the real ledger, where a deposit ends the verified chain and is never counted as return;
+- owner `confirm-absent` only after the close, refused when either the lookup or only the complete history shows the order.
 
 Passing CI does **not** show that any real broker order was executed.
 
@@ -142,7 +146,20 @@ Passing CI does **not** show that any real broker order was executed.
    - `SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY`
    - `ALPACA_PAPER_AUTO_KEY_ID`
    - `ALPACA_PAPER_AUTO_SECRET_KEY`
-5. Register each experiment from the owner-only path. Registration checks that the account is active, flat, below the capital cap, and starts `STOPPED`. Suggested values:
+   - `SPORTSEDGE_PAPER_AUTO_OWNER_REF`, an opaque `owner-` plus 32 lowercase hex characters. It is attribution, not a credential.
+
+   For the dashboard, add these to the Vercel environment that serves it, Preview only, never Production:
+   - the two staging Supabase values above;
+   - `SPORTSEDGE_PAPER_AUTO_EXPERIMENT_IDS`, the comma-separated experiment ids to show;
+   - the existing `SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY` owner session.
+
+   The dashboard holds no Alpaca key.
+5. Register each experiment:
+   - Merge a reviewed PR that adds `config/paper-auto/<experiment>.json`. The file holds exactly these keys: `experimentId`, `modelVersion`, `decisionWindowStart`, `decisionWindowEnd`, `capitalLimitCents`, `maxOrderNotionalCents`, `maxDailyNotionalCents`, `maxOrdersPerDay`, `maxOpenOrders`, `maxAttemptsPerLeg`, `drawdownStopBps` and `feeReserveCents`.
+   - Dispatch **Recurring PAPER owner action** with `register`. Only the repository owner can run it.
+   - Registration reads the account, checks that it is active, flat and below the capital cap, and records the experiment as `STOPPED`.
+
+   Suggested values:
 
    | Setting | Suggested value |
    | --- | --- |
@@ -160,7 +177,7 @@ Passing CI does **not** show that any real broker order was executed.
    - record decisions with the bridge;
    - dispatch `monitor` after the close.
 7. Merge a reviewed PR that sets `brokerWritesEnabled: true` and nothing else.
-8. Dispatch `reconcile`, then resume as the owner (compare-and-swap on the gate version).
+8. Dispatch `reconcile`, then press **Resume after reconciliation** on `/stocks/paper-auto` within 15 minutes. This is a compare-and-swap on the gate version.
 9. Dispatch the first `execute` manually during regular hours, then reconcile as described below.
 10. Only after a clean first session, merge a reviewed PR that adds the schedule above and sets `scheduledRunsEnabled: true`.
 
@@ -173,14 +190,32 @@ Do this after step 9:
 - the daily mark is recorded.
 
 Any `uncertain` intent is resolved only by:
-- a later broker observation; or
-- the owner's `confirm_absent`, after 16:15 New York, with a client-id lookup and a complete order-history check.
+- a later broker observation, which any reconcile or execute run records; or
+- the owner action `confirm-absent` with the intent id, after 16:15 New York on its session. It records absence only when the client-id lookup misses **and** the complete order history since before the reservation does not contain the client order id. If either finds the order, it changes nothing; dispatch `reconcile` instead.
 
 ### Rollback, at any time
 
-- **STOP** from the owner path. It is immediate for new orders. Working DAY orders are canceled by the next worker run, or expire at the close.
+- **STOP** with **Record owner STOP** on `/stocks/paper-auto`. It is immediate for new orders, and repeating it after an unknown outcome is safe. Working DAY orders are canceled by the next worker run, or expire at the close.
 - Disable the workflow in the GitHub UI, or revert the release PR.
 - STOP never needs a deployment.
+
+## Owner dashboard and forward evidence
+
+`/stocks/paper-auto` and `/api/internal/paper-auto` are owner-only:
+- they require the private owner session cookie, a same-origin POST and exact JSON fields;
+- they read the staging ledger and record STOP, pause, resume and alert acknowledgements;
+- they never contact Alpaca;
+- a database refusal returns 409, and an unknown outcome returns 503 and is never retried by the server.
+
+The page keeps four kinds of evidence apart:
+- **Broker observations:** the after-close marks with the database's cash reconciliation.
+- **Verified strategy P&L:** the starting equity chained through marks that are uncontaminated and cash-reconciled.
+  - Unreconciled marks are skipped.
+  - The first contaminated mark ends the chain for good.
+  - Nothing is annualized.
+  - SPY is compared over the same marks.
+- **Historical backtests:** a separate research track; no figure is shown.
+- **Unverified research.**
 
 ## Not done and why
 

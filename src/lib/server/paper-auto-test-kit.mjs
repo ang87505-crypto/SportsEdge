@@ -89,6 +89,9 @@ export class FakeBroker{
  async openOrders(){
   return this.orders.filter(o=>['new','accepted','partially_filled'].includes(o.status)).map(o=>this.view(o));
  }
+ async ordersSubmittedSince(after){
+  return this.orders.filter(o=>Date.parse(o.submittedAt)>=Date.parse(after)).map(o=>this.view(o));
+ }
  async orderByClientId(clientOrderId){
   if(this.lookupBlind)return null; // an order the broker accepted but cannot show yet
   const o=this.orders.find(x=>x.clientOrderId===clientOrderId);
