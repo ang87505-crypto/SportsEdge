@@ -1,5 +1,6 @@
 name: SportsEdge synthetic stock replay - independently rerun
 on:
+  pull_request:
   push:
     branches:
       - research/synthetic-replay-verification-20261017
