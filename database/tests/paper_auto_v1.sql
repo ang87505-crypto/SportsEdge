@@ -142,6 +142,28 @@ LANGUAGE sql AS $$
   'max_daily_notional_cents',daily,'max_orders_per_day',orders,'max_open_orders',open,
   'max_attempts_per_leg',attempts,'drawdown_stop_bps',drawdown,'fee_reserve_cents',fee)
 $$;
+CREATE FUNCTION paper_auto_test.activity(id text, typ text, at text, cents bigint, k text) RETURNS jsonb
+LANGUAGE sql AS $$
+ SELECT jsonb_build_object('activity_id',id,'activity_type',typ,'activity_at',at,'net_amount_cents',cents,
+  'classification',k,'raw_digest',repeat('e',64))
+$$;
+-- One after-close monitor run: optional activities, then a flat-account mark captured at 16:29 EDT.
+CREATE FUNCTION paper_auto_test.mark(e text, day text, cash bigint, acts jsonb DEFAULT '[]') RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE m text; r jsonb;
+BEGIN
+ PERFORM paper_auto_test.at(day||'T20:30:00Z');
+ m:=paper_auto_test.begin(e,'monitor',day);
+ IF jsonb_array_length(acts)>0 THEN
+  PERFORM paper_auto_test.rpc('record_activities',jsonb_build_object('run_id',m,'activities',acts));
+ END IF;
+ r:=paper_auto_test.rpc('record_daily',jsonb_build_object('run_id',m,'session_date',day,
+  'captured_at',day||'T20:29:00Z','equity_cents',cash,'cash_cents',cash,'long_market_value_cents',0,
+  'positions','[]'::jsonb,'benchmark_symbol','SPY','benchmark_close','580.00','benchmark_source','test:sip',
+  'contaminated',false));
+ PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',m,'status','succeeded'));
+ RETURN r;
+END $$;
 CREATE TABLE paper_auto_test.ctx(k text PRIMARY KEY, v text NOT NULL);
 CREATE FUNCTION paper_auto_test.put(key text, val text) RETURNS void
 LANGUAGE sql AS $$ INSERT INTO paper_auto_test.ctx VALUES(key,val) ON CONFLICT(k) DO UPDATE SET v=EXCLUDED.v $$;
@@ -525,7 +547,7 @@ SELECT paper_auto_test.at('2026-10-19T13:39:00Z');
 SELECT paper_auto_test.put('stale_rec',paper_auto_test.reconcile('fwd-2026-holdrank','2026-10-19T13:39Z'));
 SELECT paper_auto_test.at('2026-10-19T13:55:00Z');
 DO $$
-DECLARE e text:='fwd-2026-holdrank'; d text:=repeat('b',64); bx text; bx2 text; m text; r jsonb; s bigint; i text;
+DECLARE e text:='fwd-2026-holdrank'; d text:=repeat('b',64); bx text; bx2 text; r jsonb; s bigint; i text;
 BEGIN
  PERFORM paper_auto_test.raises(paper_auto_test.call('resume',paper_auto_test.resume_args(e,
   paper_auto_test.get('stale_rec'))),'FRESH_CLEAN_RECONCILIATION');
@@ -547,14 +569,8 @@ BEGIN
   jsonb_build_array(paper_auto_test.leg('EEE','buy',2,4000))),'SNAPSHOT_NOT_FRESH');
  PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(bx,d,paper_auto_test.snapshot(bx,150000,150000,150000),
   jsonb_build_array(paper_auto_test.leg('EEE','buy',2,4000))),'EQUITY_ABOVE_CAPITAL_LIMIT');
- -- Drawdown is measured from the high-water mark of recorded after-close marks.
- m:=paper_auto_test.begin(e,'monitor','2026-10-16');
- PERFORM paper_auto_test.rpc('record_daily',jsonb_build_object('run_id',m,'session_date','2026-10-16',
-  'captured_at','2026-10-17T10:00:00Z','equity_cents',110000,'cash_cents',110000,'long_market_value_cents',0,
-  'positions','[]'::jsonb,'benchmark_symbol','SPY','benchmark_close','580.10',
-  'benchmark_source','alpaca:sip:1Day:adjustment=all','contaminated',false));
- PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',m,'status','succeeded'));
- PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(bx,d,paper_auto_test.snapshot(bx,98999,98999,98999),
+ -- Drawdown is measured from the starting equity until after-close marks exist (marks: section 14).
+ PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(bx,d,paper_auto_test.snapshot(bx,89999,89999,89999),
   jsonb_build_array(paper_auto_test.leg('EEE','buy',2,4000))),'DRAWDOWN_LIMIT');
  -- EEE: expired, then an explicit API refusal ends the leg for good.
  s:=paper_auto_test.snapshot(bx,99000,99000,99000);
@@ -763,10 +779,22 @@ BEGIN
   'benchmark_symbol','SPY','benchmark_close','581.25','benchmark_source','alpaca:sip:1Day:adjustment=all',
   'contaminated',false);
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily),'DAILY_NOT_AFTER_CLOSE');
+ -- A mark is observed on its own session's evening and recorded fresh: never backdated or relabeled.
+ PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object(
+  'session_date','2026-10-16','captured_at','2026-10-17T10:00:00Z')),'DAILY_CAPTURE_NOT_FRESH');
+ PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object(
+  'session_date','2026-10-16','captured_at','2026-10-19T20:44:00Z')),'DAILY_CAPTURE_NOT_FRESH');
+ PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object(
+  'captured_at','2026-10-19T20:29:59Z')),'DAILY_CAPTURE_NOT_FRESH');
+ PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object(
+  'captured_at','2026-10-19T20:45:06Z')),'DAILY_CAPTURE_NOT_FRESH');
  daily:=daily||jsonb_build_object('captured_at','2026-10-19T20:44:00Z');
  r:=paper_auto_test.rpc('record_daily',daily);
  PERFORM paper_auto_test.eq(r->>'externalFlowCents','50000','deposit derived from activities');
  PERFORM paper_auto_test.eq(r->>'contaminated','true','manual fill contaminates');
+ -- Cash is reconciled against every recorded activity: 100000 - 7998 - 7998 + 50000 - 12 = 133992.
+ PERFORM paper_auto_test.eq(r->>'cashReconciled'||':'||(r->>'cashUnexplainedCents'),'false:7007',
+  'cash not explained by recorded activities');
  PERFORM paper_auto_test.eq((SELECT fees_cents::text FROM sportsedge_paper_auto.daily_equity
   WHERE experiment_id=e AND session_date='2026-10-19'),'12','fees derived');
  r:=paper_auto_test.rpc('record_daily',daily);
@@ -792,10 +820,74 @@ BEGIN
   'every recorded broker order id is attributable');
  PERFORM paper_auto_test.eq(jsonb_array_length(r->'knownActivityIds')::text,'4','known activities');
  r:=paper_auto_test.rpc('ledger',jsonb_build_object('experiment_id',e));
- PERFORM paper_auto_test.eq(jsonb_array_length(r->'daily')::text,'2','daily series');
+ PERFORM paper_auto_test.eq(jsonb_array_length(r->'daily')::text,'1','daily series');
+ PERFORM paper_auto_test.eq(r->'daily'->0->>'cashUnexplainedCents','7007','ledger shows unexplained cash');
  PERFORM paper_auto_test.eq(r->'experiment'->>'brokerAccountNumberSuffix','COND','account suffix only');
  PERFORM paper_auto_test.eq(r->'activityCounts'->>'external_fill','1','activity counts');
  IF r::text ~ '22222222-3333' OR r::text ~ 'owner-a' THEN RAISE EXCEPTION 'LEDGER_LEAKS_IDENTITY %',r; END IF;
+END $$;
+
+-- 14. Marks across sessions: flows since the previous mark, permanent contamination by external
+-- cash flows, cash reconciled against all recorded activities, and the drawdown high-water mark.
+SELECT paper_auto_test.at('2026-10-20T11:00:00Z');
+DO $$
+DECLARE e text:='fwd-2026-ledger'; r jsonb;
+BEGIN
+ r:=paper_auto_test.rpc('register',paper_auto_test.experiment(e,'stock-mom252-skip21-trend200-v1',
+  '33333333-4444-5555-6666-777777777777','PA0THIRD',3,0,2500,12,60000,5));
+ PERFORM paper_auto_test.eq(r->>'state','STOPPED','third experiment state');
+ r:=paper_auto_test.mark(e,'2026-10-20',100000);
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'cashUnexplainedCents',r->>'contaminated',
+  r->>'externalFlowCents'),'true:0:false:0','flat account reconciles to the starting equity');
+ r:=paper_auto_test.mark(e,'2026-10-21',100500,jsonb_build_array(paper_auto_test.activity(
+  '20261021140000000::div-1','DIV','2026-10-21T14:00:00Z',500,'dividend')));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'contaminated',r->>'dividendsCents'),
+  'true:false:500','a recorded dividend explains the cash');
+ -- Unexplained cash leaves the mark unreconciled without contaminating later marks.
+ r:=paper_auto_test.mark(e,'2026-10-22',100600);
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'cashUnexplainedCents',r->>'contaminated'),
+  'false:100:false','unexplained cash');
+ r:=paper_auto_test.mark(e,'2026-10-23',100600,jsonb_build_array(paper_auto_test.activity(
+  '20261022040000000::div-2','DIV','2026-10-22T04:00:00Z',100,'dividend')));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'dividendsCents'),'true:0',
+  'a late activity reconciles the next mark; its flow stays in its own window');
+ -- A Saturday deposit is a flow of Monday's period and contaminates every later mark.
+ r:=paper_auto_test.mark(e,'2026-10-26',120600,jsonb_build_array(paper_auto_test.activity(
+  '20261024040000000::csd-1','CSD','2026-10-24T04:00:00Z',20000,'external_cashflow')));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'contaminated',r->>'externalFlowCents'),
+  'true:true:20000','weekend deposit');
+ r:=paper_auto_test.mark(e,'2026-10-27',120600);
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'contaminated',r->>'externalFlowCents'),'true:0',
+  'a deposit contaminates later marks');
+ r:=paper_auto_test.rpc('ledger',jsonb_build_object('experiment_id',e));
+ PERFORM paper_auto_test.eq((SELECT string_agg(concat_ws('/',x->>'session',x->>'cashReconciled',x->>'contaminated'),
+  ',' ORDER BY x->>'session') FROM jsonb_array_elements(r->'daily') x),
+  '2026-10-20/true/false,2026-10-21/true/false,2026-10-22/false/false,2026-10-23/true/false,'
+  ||'2026-10-26/true/true,2026-10-27/true/true','ledger marks');
+END $$;
+SELECT paper_auto_test.at('2026-10-28T12:00:30Z');
+DO $$
+DECLARE e text:='fwd-2026-ledger'; run text:=paper_auto_test.begin('fwd-2026-ledger','decision','2026-10-28');
+DECLARE d text:=repeat('9',64);
+BEGIN
+ PERFORM paper_auto_test.rpc('record_decision',jsonb_build_object('run_id',run,'decision_id',d,
+  'outcome','HOLD_NO_TARGETS','decision_at','2026-10-28T12:00:00Z','input_digest',repeat('e',64),
+  'signal',paper_auto_test.signal(e,'stock-mom252-skip21-trend200-v1',d,'2026-10-28T12:00:00Z',
+   '2026-10-28T12:00:10Z','[]'::jsonb,paper_auto_test.prior('AAA',100000))));
+ PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',run,'status','succeeded'));
+END $$;
+SELECT paper_auto_test.at('2026-10-28T14:00:00Z');
+DO $$
+DECLARE e text:='fwd-2026-ledger'; ex text;
+BEGIN
+ PERFORM paper_auto_test.arm(e,'2026-10-28T14:00Z');
+ ex:=paper_auto_test.begin(e,'execute','2026-10-28T14:00Z');
+ PERFORM paper_auto_test.rpc('acquire_lease',jsonb_build_object('run_id',ex));
+ -- 25% below the 120600 high-water mark of recorded marks, though only 10% below the starting equity.
+ PERFORM paper_auto_test.raises(paper_auto_test.reserve_call(ex,repeat('9',64),
+  paper_auto_test.snapshot(ex,90449,90449,90449),jsonb_build_array(paper_auto_test.leg('AAA','sell',1,2000))),
+  'DRAWDOWN_LIMIT');
+ PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',ex,'status','blocked'));
 END $$;
 DROP SCHEMA paper_auto_test CASCADE;
 SELECT 'PAPER_AUTO_V1_POSTGRES_PASS' AS result;

@@ -128,9 +128,12 @@ A missing lookup on its own changes nothing.
 
 - Activities are attributed by broker order id. A FILL of a recorded intent must be a `strategy_fill`, and any other FILL must be an `external_fill`. While any submission outcome is unknown, unattributable fills are refused (`FILL_ATTRIBUTION_PENDING`) rather than guessed.
 - Re-recording an activity is idempotent; changed content is a conflict.
-- `record_daily` writes one immutable mark per session, captured after 16:15 New York on that session or later.
-  - External flows, fees and dividends come from the recorded activities, not from the caller.
-  - Any external fill, corporate action or unsupported activity on or before the session sets `contaminated`, on top of the caller's own flag.
+- `record_daily` writes one immutable mark per session.
+  - The mark must be captured on that session's own New York evening, at or after 16:15, and recorded within 15 minutes of the capture (`DAILY_CAPTURE_NOT_FRESH` otherwise). A later run can never relabel today's equity as an earlier session's mark, and no mark can predate registration.
+  - External flows, fees and dividends come from the recorded activities, not from the caller. They are summed over the period since the previous mark, or since registration, so a flow dated on a weekend or holiday still lands in a period.
+  - Any external fill, **external cash flow**, corporate action or unsupported activity on or before the session sets `contaminated`, on top of the caller's own flag. Because the rule covers every earlier session, contamination is permanent: a deposit can never be presented as strategy return.
+  - **Cash reconciliation.** Registration requires a flat account, so cash starts at the starting equity. The database recomputes the expected cash from every recorded activity up to the capture: a fill moves cash by quantity × price, and anything else moves it by its net amount. `cash_unexplained_cents` stores the difference. `cash_reconciled` is true only when the difference is zero; each fill whose notional has a fractional cent may add one cent of rounding.
+  - An unreconciled mark is unverified, but it does not contaminate later marks. A late-recorded activity can explain the next mark, because the comparison is absolute. A balance change that no activity explains, such as an account reset or an unreported deposit, never reconciles again.
 
 ## Clock
 
@@ -147,14 +150,17 @@ psql -f database/tests/paper_auto_v1.sql          # PAPER_AUTO_V1_POSTGRES_PASS
 bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PASS
 ```
 
-- The contract suite makes 120 refusal assertions and 80 equality assertions.
-- Fourteen hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
+- The contract suite makes 125 refusal assertions and 90 equality assertions.
+- Twenty-one hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
   - claim without ARMED; claim without the unknown-outcome barrier;
   - retrying rejected legs; buying a non-target; uncertain to not_submitted;
   - STOP keeping reserved intents; drawdown disabled; confirming absence before the close;
   - resume without a clean reconciliation; backdated decisions;
   - a duplicate client id treated as a rejection; reserve without the lease;
-  - misclassified fills; ignored contamination.
+  - misclassified fills; ignored contamination;
+  - relabeled or stale daily marks; deposits not contaminating; flows attributed by date only;
+  - cash reconciliation disabled; a loose reconciliation tolerance; a reversed fill cash sign;
+  - drawdown measured from the starting equity only.
 - The race script uses independent connections. It shows:
   - one run from 8 duplicate deliveries;
   - one lease holder;
