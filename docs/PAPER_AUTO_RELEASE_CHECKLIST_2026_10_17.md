@@ -108,7 +108,7 @@ A browser tab, a laptop or a long-lived serverless function is never relied on.
 
 | Suite | Result |
 | --- | --- |
-| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 125 refusal and 90 equality assertions. 21 of 21 schema guard mutations caught. |
+| `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 125 refusal and 91 equality assertions. 22 of 22 schema guard mutations caught. |
 | `database/tests/paper_auto_v1_race.sh` (independent connections) | PASS, three repeated runs. |
 | `paper-auto-broker.test.mjs` (adapters, no network) | 13 of 13 pass, including a paged order history that re-reads a tied boundary timestamp rather than skipping it. |
 | `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 20 of 20 scenarios and 1 configuration test pass. 12 of 12 controller guard mutations caught. |
@@ -210,6 +210,7 @@ Any `uncertain` intent is resolved only by:
 The page keeps four kinds of evidence apart:
 - **Broker observations:** the after-close marks with the database's cash reconciliation.
 - **Verified strategy P&L:** the starting equity chained through marks that are uncontaminated and cash-reconciled.
+  - It is split into unrealized P&L (broker cost basis of open positions) and realized P&L (the rest; no flow can occur inside the chain).
   - Unreconciled marks are skipped.
   - The first contaminated mark ends the chain for good.
   - Nothing is annualized.

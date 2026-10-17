@@ -407,6 +407,8 @@ e2e('the dashboard reads the real ledger: only reconciled, uncontaminated marks 
  assert.equal(p.verified.state,'ENDED');assert.equal(p.verified.endedAtSession,'2026-10-21');
  assert.equal(p.verified.throughSession,'2026-10-20');
  assert.equal(p.verified.pnlCents,300,'AAA +$1.00 on 3 shares; the $500 deposit is never return');
+ assert.deepEqual(l.daily.map(d=>d.unrealizedPlCents),[0,300,300],'broker cost basis gives unrealized P&L');
+ assert.deepEqual([p.verified.unrealizedPlCents,p.verified.realizedPlCents],[300,0]);
  assert.equal(p.benchmark.state,'MEASURED');assert.equal(p.benchmark.benchmarkReturn,0);
 });
 

@@ -144,10 +144,10 @@ function Experiment({l,act,working}:{l:PaperAutoLedger;act:Act;working:boolean})
   <h3 style={{marginTop:28}}>1 · Broker observations (Alpaca PAPER, simulated fills)</h3>
   <p className="quiet">After-close account marks exactly as recorded, with the database&apos;s cash reconciliation.</p>
   {l.daily.length?<div className="table-wrap"><table className="data-table">
-   <thead><tr><th>Session</th><th>Equity</th><th>Cash</th><th>Positions</th><th>External flow</th><th>Cash check</th><th>Status</th></tr></thead>
+   <thead><tr><th>Session</th><th>Equity</th><th>Cash</th><th>Positions</th><th>Unrealized</th><th>External flow</th><th>Cash check</th><th>Status</th></tr></thead>
    <tbody>{perf.marks.slice().reverse().map(m=><tr key={m.session}><td>{m.session}<small>{when(m.capturedAt)}</small></td>
     <td>{money(m.equityCents)}</td><td>{money(m.cashCents)}</td><td>{money(m.longMarketValueCents)}</td>
-    <td>{money(m.externalFlowCents)}</td><td>{m.cashReconciled?'Reconciled':'Unexplained '+money(Number(m.cashUnexplainedCents))}</td>
+    <td>{money(m.unrealizedPlCents)}</td><td>{money(m.externalFlowCents)}</td><td>{m.cashReconciled?'Reconciled':'Unexplained '+money(Number(m.cashUnexplainedCents))}</td>
     <td>{VERDICT_TEXT[m.verdict]}</td></tr>)}</tbody></table></div>
    :<Empty title="No after-close marks yet">The monitor records one mark per session after 16:15 New York.</Empty>}
   <Orders l={l}/>
@@ -156,7 +156,8 @@ function Experiment({l,act,working}:{l:PaperAutoLedger;act:Act;working:boolean})
   {v.state==='NO_MARKS'||v.state==='NO_VERIFIED_MARKS'?<Empty title="Not measured yet">Returns are never computed
    from the registration snapshot alone. They start with the first uncontaminated, cash-reconciled mark.</Empty>:
    <div className="stats-grid">
-    <Stat label="Since registration" value={pct(v.cumulativeReturn)} detail={`${money(v.pnlCents)} through ${v.throughSession}`}/>
+    <Stat label="Since registration" value={pct(v.cumulativeReturn)} detail={`${money(v.pnlCents)} through ${v.throughSession}`+
+     ` · realized ${money(v.realizedPlCents)} · unrealized ${money(v.unrealizedPlCents)}`}/>
     <Stat label="Max drawdown" value={dd(v.maxDrawdown)} detail={`${v.verifiedMarks} verified · ${v.skippedMarks} skipped`}/>
     <Stat label="Same window vs SPY" value={pct(b.excessReturn)} detail={b.state==='MEASURED'?
      `${b.fromSession} to ${b.toSession}: strategy ${pct(b.strategyReturn)}, SPY ${pct(b.benchmarkReturn)}`:'Needs two verified SPY closes'}/>

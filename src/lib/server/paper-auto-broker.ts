@@ -21,7 +21,8 @@ type Json=Record<string,unknown>;
 export type BrokerAccount={id:string;accountNumber:string;status:string;currency:string;
  cashCents:number;equityCents:number;lastEquityCents:number;longMarketValueCents:number;
  buyingPowerCents:number;tradingBlocked:boolean;accountBlocked:boolean;readAt:string};
-export type BrokerPosition={symbol:string;assetId:string;qty:string;side:'long'|'short';marketValueCents:number};
+export type BrokerPosition={symbol:string;assetId:string;qty:string;side:'long'|'short';marketValueCents:number;
+ costBasisCents:number};
 export type BrokerOrder={id:string;clientOrderId:string|null;symbol:string;side:'buy'|'sell';
  type:string;timeInForce:string;status:string;qty:string;filledQty:string;
  filledAvgPrice:string|null;limitPrice:string|null;submittedAt:string;extendedHours:boolean};
@@ -240,7 +241,7 @@ export function alpacaPaperAutoBroker(settings:Settings,fetcher:typeof fetch=fet
     const p=object(r);
     if(p.side!=='long'&&p.side!=='short')bad();
     return {symbol:symbolOf(p.symbol),assetId:text(p.asset_id,64),qty:quantity(p.qty),side:p.side,
-     marketValueCents:dollarsToCents(p.market_value)};
+     marketValueCents:dollarsToCents(p.market_value),costBasisCents:dollarsToCents(p.cost_basis)};
    });
   },
   async openOrders(){

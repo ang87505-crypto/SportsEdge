@@ -106,7 +106,8 @@ test('reads use GET on the fixed PAPER and data hosts only, with no redirects',a
   ['https://paper-api.alpaca.markets/v2/account',200,{id:'00000001-1111-2222-3333-444444444444',
    account_number:'PA0X',status:'ACTIVE',currency:'USD',cash:'1000.00',equity:'1000.00',last_equity:'1000',
    long_market_value:'0',buying_power:'1000',trading_blocked:false,account_blocked:false}],
-  ['https://paper-api.alpaca.markets/v2/positions',200,[]],
+  ['https://paper-api.alpaca.markets/v2/positions',200,[{symbol:'AAA',asset_id:'asset-a',qty:'3',side:'long',
+   market_value:'93.03',cost_basis:'90.03'}]],
   ['https://paper-api.alpaca.markets/v2/orders:by_client_order_id',404,{message:'not found'}],
   ['https://paper-api.alpaca.markets/v2/orders',200,[order()]],
   ['https://paper-api.alpaca.markets/v2/clock',200,{timestamp:'2026-11-02T09:31:00-05:00',is_open:true,
@@ -117,7 +118,8 @@ test('reads use GET on the fixed PAPER and data hosts only, with no redirects',a
  ]);
  const broker=alpacaPaperAutoBroker(KEYS,fetcher,()=>Date.parse('2026-11-02T14:31:01Z'));
  assert.equal((await broker.account()).equityCents,100000);
- assert.deepEqual(await broker.positions(),[]);
+ assert.deepEqual(await broker.positions(),[{symbol:'AAA',assetId:'asset-a',qty:'3',side:'long',marketValueCents:9303,
+  costBasisCents:9003}]);
  assert.equal((await broker.openOrders()).length,1);
  assert.equal(await broker.orderByClientId(REQ.clientOrderId),null,'404 is "not observed", never proof');
  assert.equal((await broker.clock()).isOpen,true);

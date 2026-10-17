@@ -584,7 +584,8 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
    daily=await ctx.store.call('record_daily',{run_id:ctx.runId,session_date:session,
     captured_at:seen.account.readAt,equity_cents:seen.account.equityCents,cash_cents:seen.account.cashCents,
     long_market_value_cents:seen.account.longMarketValueCents,
-    positions:seen.positions.map(p=>({symbol:p.symbol,qty:p.qty,marketValueCents:p.marketValueCents})),
+    positions:seen.positions.map(p=>({symbol:p.symbol,qty:p.qty,marketValueCents:p.marketValueCents,
+     costBasisCents:p.costBasisCents})),
     benchmark_symbol:'SPY',...(benchmark?{benchmark_close:benchmark.close}:{}),
     benchmark_source:benchmark?.source??'unavailable:alpaca:sip:1Day',contaminated:seen.external.length>0});
   }

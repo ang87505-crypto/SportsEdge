@@ -7,7 +7,7 @@ function mark(session,equityCents,extra={}){
  return {session,capturedAt:session+'T20:29:00Z',equityCents,cashCents:equityCents,longMarketValueCents:0,
   externalFlowCents:0,feesCents:0,dividendsCents:0,benchmarkSymbol:'SPY',benchmarkClose:'580',
   benchmarkSource:'alpaca:sip:1Day:adjustment=raw',contaminated:false,cashReconciled:true,
-  cashUnexplainedCents:'0',...extra};
+  cashUnexplainedCents:'0',unrealizedPlCents:0,...extra};
 }
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-12,`${a} != ${b}`);
 
@@ -89,4 +89,13 @@ test('labels state that paper fills are simulated and nothing is annualized',()=
  const text=PAPER_AUTO_PERFORMANCE_LABELS.join(' ');
  assert.match(text,/simulated/);assert.match(text,/not achievable real-money returns/);
  assert.match(text,/Not annualized/);assert.match(text,/without dividends/);
+});
+
+test('verified P&L splits into unrealized (broker cost basis) and realized; unknown stays unknown',()=>{
+ const p=forwardPerformance(100000,REGISTERED,[mark('2026-10-20',100000),mark('2026-10-21',101200,{unrealizedPlCents:900})]);
+ assert.deepEqual([p.verified.pnlCents,p.verified.unrealizedPlCents,p.verified.realizedPlCents],[1200,900,300]);
+ const unknown=forwardPerformance(100000,REGISTERED,[mark('2026-10-20',100500,{unrealizedPlCents:null})]);
+ assert.deepEqual([unknown.verified.unrealizedPlCents,unknown.verified.realizedPlCents],[null,null]);
+ assert.equal(parseDailyMarks([mark('2026-10-20',1,{unrealizedPlCents:1.5})]),null);
+ assert.equal(parseDailyMarks([mark('2026-10-20',1,{unrealizedPlCents:-250})])[0].unrealizedPlCents,-250);
 });

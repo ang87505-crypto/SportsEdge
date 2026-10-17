@@ -18,14 +18,15 @@ export const PAPER_AUTO_PERFORMANCE_LABELS=[
 export type DailyMark={session:string;capturedAt:string;equityCents:number;cashCents:number;
  longMarketValueCents:number;externalFlowCents:number;feesCents:number;dividendsCents:number;
  benchmarkSymbol:string;benchmarkClose:string|null;benchmarkSource:string;contaminated:boolean;
- cashReconciled:boolean;cashUnexplainedCents:string};
+ cashReconciled:boolean;cashUnexplainedCents:string;unrealizedPlCents:number|null};
 export type MarkVerdict='VERIFIED'|'UNRECONCILED_SKIPPED'|'CONTAMINATED'|'AFTER_CONTAMINATION';
 export type ForwardPerformance={
  startingEquityCents:number;registeredAt:string;
  marks:Array<DailyMark&{verdict:MarkVerdict}>;
  verified:{state:'NO_MARKS'|'NO_VERIFIED_MARKS'|'MEASURING'|'ENDED';endedAtSession:string|null;
   throughSession:string|null;verifiedMarks:number;skippedMarks:number;lastEquityCents:number|null;
-  pnlCents:number|null;cumulativeReturn:number|null;maxDrawdown:number|null};
+  pnlCents:number|null;unrealizedPlCents:number|null;realizedPlCents:number|null;cumulativeReturn:number|null;
+  maxDrawdown:number|null};
  benchmark:{symbol:'SPY';state:'NEEDS_TWO_VERIFIED_CLOSES'|'MEASURED';fromSession:string|null;
   toSession:string|null;strategyReturn:number|null;benchmarkReturn:number|null;excessReturn:number|null};
 };
@@ -50,13 +51,14 @@ export function parseDailyMarks(raw:unknown):DailyMark[]|null{
    !(x.benchmarkClose===null||(typeof x.benchmarkClose==='string'&&CLOSE.test(x.benchmarkClose)&&
     Number(x.benchmarkClose)>0))||typeof x.benchmarkSource!=='string'||x.benchmarkSource.length>160||
    typeof x.contaminated!=='boolean'||typeof x.cashReconciled!=='boolean'||
-   typeof x.cashUnexplainedCents!=='string'||!UNEXPLAINED.test(x.cashUnexplainedCents))return null;
+   typeof x.cashUnexplainedCents!=='string'||!UNEXPLAINED.test(x.cashUnexplainedCents)||
+   !(x.unrealizedPlCents===null||cents(x.unrealizedPlCents,-1e11)))return null;
   if(out.length&&out[out.length-1].session>=x.session)return null;
   out.push({session:x.session,capturedAt:x.capturedAt,equityCents:x.equityCents,cashCents:x.cashCents,
    longMarketValueCents:x.longMarketValueCents,externalFlowCents:x.externalFlowCents,feesCents:x.feesCents,
    dividendsCents:x.dividendsCents,benchmarkSymbol:x.benchmarkSymbol,benchmarkClose:x.benchmarkClose,
    benchmarkSource:x.benchmarkSource,contaminated:x.contaminated,cashReconciled:x.cashReconciled,
-   cashUnexplainedCents:x.cashUnexplainedCents});
+   cashUnexplainedCents:x.cashUnexplainedCents,unrealizedPlCents:x.unrealizedPlCents});
  }
  return out;
 }
@@ -83,6 +85,7 @@ export function forwardPerformance(startingEquityCents:number,registeredAt:strin
   maxDrawdown=Math.max(maxDrawdown,(peak-m.equityCents)/peak);
  }
  const last=verifiedMarks.at(-1)??null;
+ const pnl=last?last.equityCents-startingEquityCents:null,unrealized=last?.unrealizedPlCents??null;
  const closes=verifiedMarks.filter(m=>m.benchmarkSymbol==='SPY'&&m.benchmarkClose!==null);
  const from=closes[0]??null,to=closes.length>1?closes[closes.length-1]:null;
  const strategyReturn=from&&to?to.equityCents/from.equityCents-1:null;
@@ -91,7 +94,9 @@ export function forwardPerformance(startingEquityCents:number,registeredAt:strin
   verified:{state:!marks.length?'NO_MARKS':!last?'NO_VERIFIED_MARKS':ended?'ENDED':'MEASURING',
    endedAtSession:ended,throughSession:last?.session??null,verifiedMarks:verifiedMarks.length,
    skippedMarks:judged.filter(m=>m.verdict==='UNRECONCILED_SKIPPED').length,
-   lastEquityCents:last?.equityCents??null,pnlCents:last?last.equityCents-startingEquityCents:null,
+   lastEquityCents:last?.equityCents??null,pnlCents:pnl,unrealizedPlCents:unrealized,
+   // With no flows inside the chain, everything not still open in positions has been realized.
+   realizedPlCents:pnl!==null&&unrealized!==null?pnl-unrealized:null,
    cumulativeReturn:last?last.equityCents/startingEquityCents-1:null,maxDrawdown:last?maxDrawdown:null},
   benchmark:{symbol:'SPY',state:from&&to?'MEASURED':'NEEDS_TWO_VERIFIED_CLOSES',
    fromSession:from&&to?from.session:null,toSession:to?.session??null,strategyReturn,benchmarkReturn,
