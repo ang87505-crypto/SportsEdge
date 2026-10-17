@@ -9,18 +9,9 @@ on:
 permissions:
   contents: read
 
+# The Next.js build runs once per PR in verify.yml; this workflow keeps only
+# the independent replay of pinned match history.
 jobs:
-  build:
-    name: Isolated Next.js build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
-      - run: npm ci
-      - run: npm run build
 
   reproduce:
     name: Replay pinned public-domain match history
