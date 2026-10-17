@@ -114,7 +114,7 @@ A browser tab, a laptop or a long-lived serverless function is never relied on.
 | `database/tests/paper_auto_v1.sql` (pinned clock) | PASS: 127 refusal and 101 equality assertions. 31 of 31 schema guard mutations caught. |
 | `database/tests/paper_auto_v1_race.sh` (independent connections) | PASS, three repeated runs. |
 | `paper-auto-broker.test.mjs` (adapters, no network) | 13 of 13 pass, including a paged order history that re-reads a tied boundary timestamp rather than skipping it. |
-| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 25 of 25 scenarios and 1 configuration test pass. 15 of 15 controller guard mutations caught. |
+| `paper-auto-controller.test.mjs` (fake broker plus the real schema) | 25 of 25 scenarios and 1 configuration test pass. 17 of 17 controller guard mutations caught, including both `confirm-absent` guards. |
 | `paper-auto-owner.test.mjs`, `paper-auto-performance.test.mjs`, `paper-auto-worker.test.mjs` (no network) | 7, 9 and 2 of each pass: owner API sessions, strict actions and RPC mapping; verified-return chaining; owner CLI refusals before any network call. |
 
 The controller scenarios cover:
