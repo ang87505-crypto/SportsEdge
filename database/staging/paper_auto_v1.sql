@@ -1216,6 +1216,7 @@ BEGIN
   'status',sportsedge_paper_auto._status(e),
   'experiment',jsonb_build_object('experimentId',x.experiment_id,'modelVersion',x.model_version,
    'brokerAccountId',x.broker_account_id,'brokerAccountNumber',x.broker_account_number,
+   'registeredAt',x.registered_at,
    'startingEquityCents',x.starting_equity_cents,'capitalLimitCents',x.capital_limit_cents,
    'decisionWindowStart',x.decision_window_start,'decisionWindowEnd',x.decision_window_end,
    'maxOrderNotionalCents',x.max_order_notional_cents,'maxDailyNotionalCents',x.max_daily_notional_cents,

@@ -776,6 +776,8 @@ BEGIN
   'APPEND_ONLY_DAILY_EQUITY');
  r:=paper_auto_test.rpc('worker_state',jsonb_build_object('experiment_id',e));
  PERFORM paper_auto_test.eq(r->'experiment'->>'brokerAccountId','22222222-3333-4444-5555-666666666666','worker account');
+ PERFORM paper_auto_test.eq((r->'experiment'->>'registeredAt')::timestamptz::text,
+  '2026-10-19T11:00:00Z'::timestamptz::text,'activity window anchor');
  PERFORM paper_auto_test.eq(r->'latestDecision'->>'outcome','TARGETS','worker decision');
  PERFORM paper_auto_test.eq(r->>'filledBySecurity',
   '[{"symbol": "FFF", "netShares": "2.000000000", "securityId": "id-FFF"}, '
