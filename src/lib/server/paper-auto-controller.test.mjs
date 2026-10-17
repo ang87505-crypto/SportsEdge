@@ -185,6 +185,22 @@ e2e('a broker rejection stops the experiment; nothing else is sent until the own
  assert.equal(w.broker.posts.length,1);
 });
 
+e2e('a broker rejection stops in the database even when the worker\'s stop call is lost',async()=>{
+ const w=await armedWithDecision();
+ w.broker.behaviors.push('reject403');
+ w.store.failOnce=new Set(['stop']);
+ const r=await execute(w,'2026-10-19T13:45:00.000Z');
+ assert.equal(r.outcome,'FAILED',JSON.stringify(r));assert.equal(r.reason,'STOP_NOT_CONFIRMED:ORDER_REJECTED');
+ const s=await status(w);
+ assert.equal(s.state,'STOPPED');assert.equal(s.unacknowledgedCriticalAlerts,1);
+ assert.deepEqual(intents(w).map(i=>i.symbol+':'+i.status),['AAA:rejected','BBB:not_submitted','CCC:not_submitted']);
+ // The next session's decision is never executed while the experiment is stopped.
+ await decide(w,'2026-10-20');
+ const next=await execute(w,'2026-10-20T13:45:00.000Z');
+ assert.equal(next.reason,'GATE_STOPPED',JSON.stringify(next));
+ assert.equal(w.broker.posts.length,1);
+});
+
 e2e('external open orders, external positions and a different account each stop the experiment',async()=>{
  for(const tamper of ['order','position','account']){
   const w=await armedWithDecision();
