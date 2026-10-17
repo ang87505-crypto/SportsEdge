@@ -42,3 +42,5 @@ jobs:
         run: npm run lint
       - name: Production build
         run: npm run build
+      - name: Authenticated API routes are not prerendered
+        run: node scripts/check-runtime-routes.mjs
