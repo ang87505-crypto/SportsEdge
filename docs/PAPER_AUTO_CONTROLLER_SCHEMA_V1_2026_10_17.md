@@ -147,7 +147,7 @@ psql -f database/tests/paper_auto_v1.sql          # PAPER_AUTO_V1_POSTGRES_PASS
 bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PASS
 ```
 
-- The contract suite makes 121 refusal assertions and 77 equality assertions.
+- The contract suite makes 120 refusal assertions and 78 equality assertions.
 - Fourteen hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
   - claim without ARMED; claim without the unknown-outcome barrier;
   - retrying rejected legs; buying a non-target; uncertain to not_submitted;
