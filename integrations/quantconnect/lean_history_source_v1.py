@@ -44,7 +44,7 @@ def _datetime(value, name):
     return value
 
 
-def read_raw_window(algorithm, symbol, *, start, end, decision_at):
+def read_raw_window(algorithm, symbol, *, start, end, decision_at, phase_callback=None):
     """Acquire at most 40 calendar days from QuantConnect, without orders.
 
     start/end are QC exchange-local naive datetimes, end is EXCLUSIVE.
@@ -52,6 +52,7 @@ def read_raw_window(algorithm, symbol, *, start, end, decision_at):
     No source timestamp is promoted to an independently verified publication
     timestamp. Full-market execution must page validated ranges in-cloud.
     """
+    _need(phase_callback is None or callable(phase_callback), "Invalid diagnostic callback")
     start = _datetime(start, "start")
     end = _datetime(end, "end")
     at = _datetime(decision_at, "decision_at")
@@ -70,16 +71,22 @@ def read_raw_window(algorithm, symbol, *, start, end, decision_at):
     from AlgorithmImports import Resolution, DataNormalizationMode
     # QC documented History API accepts these explicit options. If the runtime
     # rejects them, fail rather than retrying with adjusted/fill-forward defaults.
+    if phase_callback is not None:
+        phase_callback("REQUEST")  # fixed code only; never source data
     history = algorithm.history(
         symbols=[symbol], start=start, end=end,
         resolution=Resolution.DAILY, fill_forward=False,
         extended_market_hours=False,
         data_normalization_mode=DataNormalizationMode.RAW)
+    if phase_callback is not None:
+        phase_callback("FRAME")
     _need(history is not None and hasattr(history, "iterrows"),
           "Historical source must be a LEAN history dataframe")
     result = []
     seen = set()
     for index, item in history.iterrows():
+        if phase_callback is not None:
+            phase_callback("INDEX")
         _need(len(result) < MAX_ROWS, "History exceeded bounded window")
         _need(isinstance(index, tuple) and len(index) == 2,
               "Single-symbol multi-index history required")
@@ -95,6 +102,8 @@ def read_raw_window(algorithm, symbol, *, start, end, decision_at):
         date_text = day.isoformat()
         _need(date_text not in seen, "Duplicate historical daily bar")
         seen.add(date_text)
+        if phase_callback is not None:
+            phase_callback("OHLCV")
         try:
             values = {k: _decimal(item[k], k) for k in ("open", "high", "low", "close")}
             volume = _decimal(item["volume"], "volume", positive=False)
@@ -112,6 +121,8 @@ def read_raw_window(algorithm, symbol, *, start, end, decision_at):
             "low": str(values["low"]), "close": str(values["close"]),
             "volume": int(volume),
         })
+    if phase_callback is not None:
+        phase_callback("FINAL")
     _need(bool(result), "No historical bars returned")
     _need(result == sorted(result, key=lambda x: x["session_date"]),
           "Unordered historical observations")
