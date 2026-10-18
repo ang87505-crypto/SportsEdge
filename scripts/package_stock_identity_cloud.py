@@ -24,6 +24,7 @@ METADATA = ['research/stock_audit_20261012/protocol.json',
 def build(destination):
     source = {f'analytics/{m}.py': (ROOT / f'analytics/{m}.py').read_text() for m in MODULES}
     source['integrations/quantconnect/cloud_identity.py'] = (ROOT / 'integrations/quantconnect/cloud_identity.py').read_text()
+    source['integrations/quantconnect/lean_history_source_v1.py'] = (ROOT / 'integrations/quantconnect/lean_history_source_v1.py').read_text()
     groups = [{name: text} for name, text in sorted(source.items())]
     groups.append({name: (ROOT / name).read_text() for name in METADATA})
     groups[-1].update({'analytics/__init__.py': '', 'integrations/__init__.py': '',
