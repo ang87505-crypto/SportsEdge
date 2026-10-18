@@ -177,3 +177,13 @@
   .tabbar [aria-current] { color: var(--text); background: var(--accent-soft); }
   .tabbar [aria-current] svg { color: var(--accent-2); }
 }
+
+/* Only displayed when isolated preview test fixtures are enabled. */
+.fixture-preview-banner {
+ display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+ padding:12px 16px; margin:0 0 18px;
+ border:1px solid rgba(232,183,92,.40);
+ border-radius:var(--r-md); background:rgba(110,76,22,.15);
+ color:var(--text-2); line-height:1.5; font-size:var(--fs-sm);
+}
+.fixture-preview-banner strong { color:#f1c57a; font-weight:700; letter-spacing:.02em; }
