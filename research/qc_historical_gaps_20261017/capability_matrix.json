@@ -1,0 +1,236 @@
+{
+  "version": "sportsedge-qc-capability-matrix-v1",
+  "as_of": "2026-10-17",
+  "scope": "QuantConnect Cloud data for the frozen 2000-2011 development study; 1999 warmup",
+  "historical_source_admitted": false,
+  "performance": null,
+  "status_meanings": {
+    "SUPPLIED_UNREVIEWED": "QC documents or LEAN source shows the data exists; not independently reviewed for this study",
+    "PARTIAL": "QC supplies part of what the frozen contract requires; the remainder must come from elsewhere",
+    "NOT_SUPPLIED": "QC does not supply it in a form the frozen contract can use",
+    "UNKNOWN": "QC does not document it and nothing in this review established it",
+    "NOT_A_VENDOR_QUESTION": "Owner attestation or protocol matter, not a dataset"
+  },
+  "verification_meanings": {
+    "official_docs": "Read on quantconnect.com documentation on 2026-10-17",
+    "lean_source": "Read in QuantConnect/Lean master on GitHub on 2026-10-17",
+    "forum_staff": "QuantConnect staff statement on its forum; undated or informal",
+    "native_cloud_run": "Observed in the owner's QC cloud run (fixed status codes only)",
+    "repo_doc": "Recorded by an earlier SportsEdge PR document, not re-verified here"
+  },
+  "entries": [
+    {
+      "id": "universe_membership_including_delisted",
+      "gates": ["pit_membership_including_delisted", "membership_with_delistings"],
+      "status": "PARTIAL",
+      "qc_supplies": "Morningstar fundamental universe: NYSE/NASDAQ/AMEX/BATS, from January 1998, includes delisted companies, excludes ETFs/ADRs/OTC (about 8,700 companies before and 9,705 after the October 2026 migration). AlgoSeek US Equities prices: about 27,500 securities from January 1998, described as survivorship-bias-free SIP coverage, no OTC.",
+      "gap": "Morningstar does not provide fundamentals for every US equity, so common stocks without fundamentals can be missing from the fundamental universe even though AlgoSeek has their prices. Neither dataset is documented as complete dated NYSE/NASDAQ/AMEX common-stock membership. No independent count reconciliation exists.",
+      "verified_by": ["official_docs"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data",
+                   "https://www.quantconnect.com/docs/v2/writing-algorithms/universes/equity/fundamental-universes",
+                   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities"],
+      "implemented_here": ["integrations/quantconnect/qc_pit_bias_audit_v1.py", "integrations/quantconnect/qc_pit_audit_main.py"],
+      "remaining": "Run the in-cloud audit; reconcile membership counts against an independent reference without exporting QC values."
+    },
+    {
+      "id": "permanent_identity_and_ticker_history",
+      "gates": ["pit_membership_including_delisted", "membership_with_delistings"],
+      "status": "SUPPLIED_UNREVIEWED",
+      "qc_supplies": "LEAN Symbol keeps one SecurityIdentifier across ticker changes; map-file rows are (date, ticker, optional primary exchange, optional mapping mode); SymbolChangedEvent is emitted on renames.",
+      "gap": "Ticker-reuse and issuer-succession correctness is vendor-asserted. A merger successor is a different Symbol; no link to the predecessor is supplied.",
+      "verified_by": ["lean_source", "official_docs"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/SecurityIdentifier.cs",
+                   "https://github.com/QuantConnect/Lean/blob/master/Common/Data/Auxiliary/MapFileRow.cs",
+                   "https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions"],
+      "implemented_here": ["integrations/quantconnect/qc_identity_registry_v1.py"],
+      "remaining": "Review identity continuity on a sample of known renames and ticker reuses inside QC."
+    },
+    {
+      "id": "first_trading_dates",
+      "gates": ["first_trading_dates", "pit_membership_including_delisted"],
+      "status": "PARTIAL",
+      "qc_supplies": "SecurityIdentifier.Date is 'the first date mentioned in the map_files'; Morningstar SecurityReference.IPODate is the first public trading day.",
+      "gap": "For securities already trading when coverage starts, the SID date is left-censored at the coverage start and is not a listing date. IPODate availability and point-in-time status are undocumented.",
+      "verified_by": ["lean_source"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/SecurityIdentifier.cs",
+                   "https://github.com/QuantConnect/Lean/blob/master/Common/Data/Fundamental/Generated/SecurityReference.cs"],
+      "implemented_here": ["integrations/quantconnect/qc_identity_registry_v1.py"],
+      "remaining": "Confirm the real coverage-start date of map files; prove censoring harmless with left_censor_is_harmless on the reviewed calendar."
+    },
+    {
+      "id": "historical_sector_exchange_type",
+      "gates": ["historical_classifications", "historical_classification"],
+      "status": "UNKNOWN",
+      "qc_supplies": "Morningstar AssetClassification (sector, industry group, industry, SIC, NAICS) and SecurityReference (ExchangeId, SecurityType, IsDepositaryReceipt, ShareClassStatus, DelistingDate, DelistingReason). Map files carry primary exchange.",
+      "gap": "QC does not document whether classification history is point-in-time or the current value back-filled. A QC staff forum reply described Morningstar point-in-time behaviour as 'Yes; ish'. Morningstar's own documentation says industry assignments change over time.",
+      "verified_by": ["lean_source", "forum_staff"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/Data/Fundamental/Generated/AssetClassification.cs",
+                   "https://www.quantconnect.com/forum/discussion/14856/is-quot-us-fundamental-data-morningstar-quot-point-in-time-data/"],
+      "implemented_here": ["integrations/quantconnect/qc_pit_bias_audit_v1.py", "integrations/quantconnect/qc_identity_registry_v1.py"],
+      "remaining": "Run the static-classification detector; obtain a reviewed vendor-code mapping (exchange, security type, sector) as an explicit input."
+    },
+    {
+      "id": "raw_prices_and_consolidated_volume",
+      "gates": ["raw_actions_and_consolidated_volume", "consolidated_volume"],
+      "status": "SUPPLIED_UNREVIEWED",
+      "qc_supplies": "AlgoSeek daily bars from the full SIP CTA/UTP feed (every exchange and FINRA), requested with RAW normalization and no fill-forward by the existing PR #78 reader.",
+      "gap": "Daily open/close construction (official auction prints or first/last trade) is undocumented. Publication and correction times are not supplied.",
+      "verified_by": ["official_docs", "native_cloud_run"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities",
+                   "docs/QC_RAW_253_LOOKBACK_2026_10_17.md"],
+      "implemented_here": [],
+      "remaining": "Already-built reader is reused unchanged; open-price semantics remain a review item."
+    },
+    {
+      "id": "splits",
+      "gates": ["raw_actions_and_consolidated_volume", "corporate_action_completeness"],
+      "status": "SUPPLIED_UNREVIEWED",
+      "qc_supplies": "Split objects with SplitFactor; LEAN divides holdings by SplitFactor (2-for-1 = 0.5) and credits fractional remainders as cash at the latest price.",
+      "gap": "Non-terminating factors are rounded decimals; exact terms need a reviewed declaration. Frozen accounting v2 rejects fractional entitlements that LEAN would cash out.",
+      "verified_by": ["lean_source", "official_docs"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/Securities/SecurityPortfolioManager.cs",
+                   "https://github.com/QuantConnect/Lean/blob/master/Common/Data/Market/Split.cs"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "Supply reviewed terms for rounded factors."
+    },
+    {
+      "id": "cash_dividends",
+      "gates": ["raw_actions_and_consolidated_volume", "corporate_action_completeness", "corporate_event_economics"],
+      "status": "PARTIAL",
+      "qc_supplies": "Dividend objects on the ex-date; Dividend.Create derives Distribution from factor-file price ratios and rounds it to 2 decimals.",
+      "gap": "No pay, record or declaration date, currency, or special-dividend flag. The exact declared amount is not preserved. Accounting v2 needs pay_at and the exact per-old-share amount.",
+      "verified_by": ["lean_source"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/Data/Market/Dividend.cs"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "Reviewed dividend declarations (amount, pay date) from a separate source, cross-checked in-cloud against LEAN."
+    },
+    {
+      "id": "symbol_changes",
+      "gates": ["corporate_action_completeness"],
+      "status": "SUPPLIED_UNREVIEWED",
+      "qc_supplies": "SymbolChangedEvent with old and new ticker; open orders are cancelled on change.",
+      "gap": "None beyond review.",
+      "verified_by": ["official_docs", "lean_source"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "None specific."
+    },
+    {
+      "id": "delistings_and_recoveries",
+      "gates": ["corporate_event_economics", "corporate_action_completeness"],
+      "status": "NOT_SUPPLIED",
+      "qc_supplies": "Delisting warning and delisted events with 'the final price before delisting'; LEAN liquidates held positions; Security Master and AlgoSeek exclude OTC.",
+      "gap": "No post-delisting OTC prices, no cash/stock/mixed consideration, no recovery value. Last-price liquidation is not a recovery and is forbidden by the frozen protocol.",
+      "verified_by": ["lean_source", "official_docs", "forum_staff"],
+      "evidence": ["https://github.com/QuantConnect/Lean/blob/master/Common/Data/Market/Delisting.cs",
+                   "https://www.quantconnect.com/forum/discussion/8572/delisting-etn-effect-on-alphas/"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "An external terminal-event source (delisting returns and consideration), or a pre-outcome protocol amendment. This is the main reason a separate dataset could be needed."
+    },
+    {
+      "id": "mergers_and_acquisitions",
+      "gates": ["corporate_event_economics", "corporate_action_completeness"],
+      "status": "NOT_SUPPLIED",
+      "qc_supplies": "The Security Master lists 'Mergers' as a data point, but its documented history types are Split, Dividend, SymbolChangedEvent and Delisting only.",
+      "gap": "No consideration, exchange ratio, election or successor link.",
+      "verified_by": ["official_docs"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "Same as delistings."
+    },
+    {
+      "id": "spinoffs",
+      "gates": ["corporate_event_economics", "corporate_action_completeness"],
+      "status": "NOT_SUPPLIED",
+      "qc_supplies": "Not mentioned in the Security Master or corporate-actions documentation.",
+      "gap": "Unverified risk: because LEAN derives Distribution from price-factor ratios, a spinoff adjustment may surface as a factor-derived 'dividend'. The mapper's declaration cross-check and accounting v2's large-distribution guard block such cases rather than book them as cash.",
+      "verified_by": ["official_docs"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master"],
+      "implemented_here": ["integrations/quantconnect/qc_lifecycle_mapper_v1.py"],
+      "remaining": "External spinoff terms, plus the lifecycle accounting extension already listed as missing in PR #53."
+    },
+    {
+      "id": "availability_and_revisions",
+      "gates": ["availability_and_revisions", "publication_and_corrections"],
+      "status": "NOT_SUPPLIED",
+      "qc_supplies": "Backtests apply corporate actions at midnight ET; live fundamental data arrives around 6-7 AM ET. Fundamentals are 'As Original Reported', and older file dates are approximated at 45 days.",
+      "gap": "No historical publication or correction timestamps for prices, actions or classifications. Backtest-clock availability is vendor-asserted, not evidence.",
+      "verified_by": ["official_docs"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/securities/asset-classes/us-equity/corporate-actions",
+                   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data"],
+      "implemented_here": ["integrations/quantconnect/qc_pit_bias_audit_v1.py", "integrations/quantconnect/qc_identity_registry_v1.py"],
+      "remaining": "Protocol decision on whether vendor as-of times are acceptable; every record built here is tagged vendor_asof_unverified."
+    },
+    {
+      "id": "dataset_vintage_and_reproducibility",
+      "gates": ["license", "availability_and_revisions"],
+      "status": "PARTIAL",
+      "qc_supplies": "LEAN version is visible in the cloud; a legacy Morningstar dataset was selectable through the engine-version selector during October 2026.",
+      "gap": "Morningstar fundamentals switched to new feeds for the whole history from October 2026 (new default from October 11, legacy retired October 31, 2026). QC says results 'will change'; a forum reply reports that the legacy selection was silently ignored. Earlier diagnostic runs may not reproduce.",
+      "verified_by": ["official_docs", "forum_staff"],
+      "evidence": ["https://www.quantconnect.com/forum/discussion/21449",
+                   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data"],
+      "implemented_here": [],
+      "remaining": "Record which Morningstar feed each run used in dataset_revision; rerun the universe diagnostic on the new feed."
+    },
+    {
+      "id": "exchange_and_settlement_calendars",
+      "gates": ["exchange_and_settlement_calendars", "calendar"],
+      "status": "UNKNOWN",
+      "qc_supplies": "LEAN uses a market-hours database internally; not reviewed here.",
+      "gap": "No reviewed, dated 1998-2011 NYSE holiday and early-close calendar, and no settlement calendar (T+3 for this period), has been sourced.",
+      "verified_by": [],
+      "evidence": [],
+      "implemented_here": [],
+      "remaining": "Independently sourced calendar; the PR #78 lookback reader already refuses to infer sessions."
+    },
+    {
+      "id": "execution_proxy",
+      "gates": ["execution_proxy"],
+      "status": "PARTIAL",
+      "qc_supplies": "Daily raw open from AlgoSeek bars.",
+      "gap": "Whether the daily open is the official opening auction is undocumented; halted or missing opens need explicit handling.",
+      "verified_by": ["official_docs"],
+      "evidence": ["https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities"],
+      "implemented_here": [],
+      "remaining": "Review open-price semantics; frozen cost conventions are unchanged."
+    },
+    {
+      "id": "benchmarks_and_risk_free",
+      "gates": ["benchmarks"],
+      "status": "UNKNOWN",
+      "qc_supplies": "ETF prices such as SPY with dividends; no licensed broad-market total-return index was identified in this review.",
+      "gap": "The registered benchmark is a licensed broad-market total-return index. An ETF proxy would need a pre-outcome protocol amendment. No dated risk-free source was established, so Sharpe stays null.",
+      "verified_by": [],
+      "evidence": [],
+      "implemented_here": [],
+      "remaining": "Choose and register the benchmark source before any outcome is seen."
+    },
+    {
+      "id": "license_scope",
+      "gates": ["license", "license_scope"],
+      "status": "PARTIAL",
+      "qc_supplies": "In-cloud use on the owner's account; earlier repository notes record that QC terms prohibit exporting underlying data, including through logs or screenshots, while allowing ordinary backtest summary results.",
+      "gap": "Terms were not re-read in this review; publication rights for derived website reports are unconfirmed.",
+      "verified_by": ["repo_doc"],
+      "evidence": ["https://www.quantconnect.com/terms/"],
+      "implemented_here": [],
+      "remaining": "Owner confirms terms for the specific derived report before publication."
+    },
+    {
+      "id": "prior_holdout_exposure",
+      "gates": ["prior_holdout_exposure"],
+      "status": "NOT_A_VENDOR_QUESTION",
+      "qc_supplies": "Not applicable.",
+      "gap": "Owner attestation that 2012-2025 results were not inspected.",
+      "verified_by": [],
+      "evidence": [],
+      "implemented_here": [],
+      "remaining": "Owner attestation."
+    }
+  ],
+  "paid_subscription": {
+    "required": "NOT_ESTABLISHED",
+    "reason": "In-cloud access to AlgoSeek US Equities, the Security Master and Morningstar fundamentals worked from the owner's existing account (diagnostic plus RAW smoke PASS). Nothing in this review shows a paid QC tier is needed to read the data. Two things remain unverified: whether a full-universe, six-account replay fits Free-node memory and runtime, and how terminal-event recoveries can be sourced. QC does not supply recoveries in any tier, so a separate dataset (for example CRSP delisting returns through WRDS) is needed only if the protocol keeps requiring reviewed recoveries."
+  }
+}
