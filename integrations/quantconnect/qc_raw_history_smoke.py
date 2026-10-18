@@ -33,7 +33,8 @@ class SportsEdgeRawHistorySmoke(QCAlgorithm):
         self._phase = "INPUT"
         def mark_phase(value):
             # Fixed phase codes only. Never expose vendor data or exception text.
-            if value in ("REQUEST", "FRAME", "INDEX", "OHLCV", "FINAL"):
+            if value in ("REQUEST", "FRAME", "FRAME_NULL", "FRAME_NON_DATAFRAME",
+                         "INDEX", "OHLCV", "FINAL"):
                 self._phase = value
         try:
             result = read_raw_window(
