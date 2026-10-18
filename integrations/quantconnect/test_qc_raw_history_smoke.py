@@ -23,6 +23,8 @@ class Algorithm:
         self.messages = []
         self.history_calls = 0
         self.fail_history = False
+        self.bad_frame = False
+        self.bad_price = False
 
     def set_start_date(self, *args): pass
     def set_end_date(self, *args): pass
@@ -43,6 +45,13 @@ class Algorithm:
             raise ValueError("PRIVATE_LICENSED_SOURCE_DATA")
         assert kwargs["data_normalization_mode"] == "RAW"
         assert kwargs["fill_forward"] is False
+        if self.bad_frame:
+            return object()
+        if self.bad_price:
+            frame = Frame()
+            frame.iterrows = lambda: iter([(("SPY", datetime(2001, 1, 3, 16)),
+                {"open": "NaN", "high": "102", "low": "99", "close": "101", "volume": "500"})])
+            return frame
         return Frame()
 
 
@@ -82,8 +91,19 @@ class SmokeTests(unittest.TestCase):
         instance.fail_history = True
         with patch.dict(sys.modules, {"AlgorithmImports": self.imports}):
             instance.on_data(None)
-        self.assertTrue(any("SMOKE_BLOCKED" in s for s in instance.messages))
+        self.assertTrue(any("SMOKE_BLOCKED_REQUEST" in s for s in instance.messages))
         self.assertTrue(all("PRIVATE_LICENSED_SOURCE_DATA" not in s for s in instance.messages))
+
+    def test_static_phase_codes_for_schema_and_bar_validation(self):
+        for field, code in (("bad_frame", "FRAME"), ("bad_price", "OHLCV")):
+            instance = self.cls()
+            instance.initialize()
+            setattr(instance, field, True)
+            with patch.dict(sys.modules, {"AlgorithmImports": self.imports}):
+                instance.on_data(None)
+            self.assertTrue(any("SMOKE_BLOCKED_" + code in s for s in instance.messages))
+            self.assertTrue(all("NaN" not in s and "500" not in s
+                                for s in instance.messages))
 
     def test_no_order_or_export_endpoints(self):
         src = Path(__file__).with_name("qc_raw_history_smoke.py").read_text()
