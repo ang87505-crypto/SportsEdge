@@ -16,8 +16,9 @@ export function PerformanceChart({points,heading,description,initialCents,source
  {points:RealizedPoint[];heading:string;description:string;initialCents:number;source:string}){
  const [mode,setMode]=useState<Mode>('equity');
  const drawdown=useMemo(()=>{
-  let peak=-Infinity;
-  return points.map(p=>{peak=Math.max(peak,p.equityCents);return peak>0?(p.equityCents-peak)/peak:0;});
+  const out:number[]=[];
+  for(let i=0,peak=-Infinity;i<points.length;i++){peak=Math.max(peak,points[i].equityCents);out.push(peak>0?(points[i].equityCents-peak)/peak:0);}
+  return out;
  },[points]);
  if(!points.length)return <section className="glass panel realized-chart-panel" aria-label={heading}>
   <div className="chart-header"><div><h2>{heading}</h2><p>{description}</p></div><Evidence kind="not-measured"/></div>

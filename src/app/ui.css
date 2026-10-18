@@ -73,17 +73,18 @@
 .evidence-glyph { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 3px; font-size: 9px; background: var(--tone-soft); border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent); }
 
 /* ===== Metrics ===== */
-.metric { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.metric-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 16px; }
+.metric { display: flex; flex-direction: column; gap: 6px; min-width: 0; container-type: inline-size; }
+.metric-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; min-height: 16px; }
+.metric-top .evidence { flex-shrink: 0; }
 .metric-label { color: var(--text-2); font-size: var(--fs-sm); display: inline-flex; align-items: center; gap: 5px; }
 .metric-hint { display: inline-grid; place-items: center; width: 13px; height: 13px; border-radius: 50%; border: 1px solid var(--line-3); font-size: 9px; color: var(--text-3); font-style: italic; cursor: help; }
 .metric-value {
   font-family: var(--font-display); font-weight: 600; font-variant-numeric: tabular-nums;
-  font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; color: var(--text);
-  overflow-wrap: anywhere;
+  font-size: clamp(18px, 15cqi, 28px); line-height: 1.05; letter-spacing: -0.01em; color: var(--text);
+  overflow-wrap: break-word;
 }
-.metric-lg .metric-value { font-size: 38px; }
-.metric-sm .metric-value { font-size: 20px; }
+.metric-lg .metric-value { font-size: clamp(22px, 17cqi, 38px); }
+.metric-sm .metric-value { font-size: clamp(16px, 12cqi, 20px); }
 .metric-detail { color: var(--text-3); font-size: var(--fs-xs); line-height: 1.45; }
 
 .metric-grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line-2); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-panel); }
@@ -271,8 +272,6 @@ label { display: grid; gap: 6px; color: var(--text-2); font-size: var(--fs-sm); 
   .section-header { flex-direction: column; align-items: flex-start; margin-top: 26px; }
   .metric-grid.cols-3 { grid-template-columns: 1fr; }
   .metric-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric-value { font-size: 24px; }
-  .metric-lg .metric-value { font-size: 30px; }
   .metric-grid > .metric { padding: 14px; }
   .two-grid, .form-grid { grid-template-columns: 1fr; }
   .form-grid .full { grid-column: auto; }
@@ -289,5 +288,9 @@ label { display: grid; gap: 6px; color: var(--text-2); font-size: var(--fs-sm); 
 }
 @media (max-width: 420px) {
   .metric-grid.cols-4, .metric-grid.cols-5, .stats-grid { grid-template-columns: 1fr 1fr; }
-  .metric-value { font-size: 22px; }
 }
+
+/* Tone text must win over component defaults (metric values, table cells). */
+.metric-value.tone-text-positive, .data-table .tone-text-positive, .kv .tone-text-positive { color: var(--pos); }
+.metric-value.tone-text-negative, .data-table .tone-text-negative, .kv .tone-text-negative { color: var(--neg); }
+.metric-value.tone-text-warning, .data-table .tone-text-warning { color: var(--warn); }

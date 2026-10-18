@@ -48,9 +48,9 @@ export default function Page(){
    </Panel>
    <Panel title="Accuracy over time" description={`Rolling ${WINDOW}-game winner accuracy through the evaluation, against always picking the home team.`}>
     <LineChart series={[{id:'model',label:'Elo model',color:'var(--c1)',points:roll.acc},{id:'home',label:'Always home',color:'var(--c-ref)',dashed:true,points:roll.base}]}
-     height={260} yFormat="pct0" xFormat="monthYear"
+     height={260} yFormat="pct0" xFormat="monthYear" gapBreak={45*86400000}
      ariaLabel={`Rolling ${WINDOW}-game accuracy of the Elo model and an always-home baseline across ${summary.evaluation_games} games`}/>
-    <p className="quiet small-print">Each point covers the previous {WINDOW} games in time order. Early-season dips reflect stale ratings.</p>
+    <p className="quiet small-print">Each point covers the previous {WINDOW} games in time order. Lines break over the off-season. Early-season dips reflect stale ratings.</p>
    </Panel>
   </div>
 

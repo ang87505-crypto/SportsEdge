@@ -56,8 +56,8 @@ export function Legend({items}:{items:{label:string;color:string;dashed?:boolean
  return <ul className="chart-legend">{items.map(i=><li key={i.label}><span className={i.dashed?'legend-swatch is-dashed':'legend-swatch'} style={{['--swatch' as string]:i.color}} aria-hidden="true"/>{i.label}</li>)}</ul>;
 }
 
-export function LineChart({series,height=240,yFormat:yF,xFormat:xF,ariaLabel,baseline,area=false,yDomain,emptyText='No data to chart.'}:
- {series:ChartSeries[];height?:number;yFormat:Formatter;xFormat:Formatter;ariaLabel:string;
+export function LineChart({series,height=240,yFormat:yF,xFormat:xF,ariaLabel,baseline,area=false,yDomain,gapBreak,emptyText='No data to chart.'}:
+ {series:ChartSeries[];height?:number;yFormat:Formatter;xFormat:Formatter;ariaLabel:string;gapBreak?:number;
   baseline?:{y:number;label:string};area?:boolean;yDomain?:[number,number];emptyText?:string}){
  const [ref,width]=useWidth<HTMLDivElement>();
  const [active,setActive]=useState<number|null>(null);
@@ -78,7 +78,8 @@ export function LineChart({series,height=240,yFormat:yF,xFormat:xF,ariaLabel,bas
  const W=Math.max(width,1),H=height,iw=Math.max(1,W-M.left-M.right),ih=H-M.top-M.bottom;
  const sx=(x:number)=>M.left+(geometry.xMax===geometry.xMin?iw/2:(x-geometry.xMin)/(geometry.xMax-geometry.xMin)*iw);
  const sy=(y:number)=>M.top+(geometry.hi-y)/(geometry.hi-geometry.lo)*ih;
- const path=(pts:ChartPoint[])=>pts.map((p,i)=>`${i?'L':'M'}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ');
+ // A gap wider than gapBreak (in x units) starts a new segment instead of drawing a line through missing data.
+ const path=(pts:ChartPoint[])=>pts.map((p,i)=>`${i&&!(gapBreak&&p.x-pts[i-1].x>gapBreak)?'L':'M'}${sx(p.x).toFixed(1)} ${sy(p.y).toFixed(1)}`).join(' ');
  const idx=active===null?null:Math.min(active,primary.length-1);
  const ax=idx===null?null:primary[idx].x;
  const nearest=(pts:ChartPoint[],x:number)=>pts.reduce((b,p)=>Math.abs(p.x-x)<Math.abs(b.x-x)?p:b,pts[0]);

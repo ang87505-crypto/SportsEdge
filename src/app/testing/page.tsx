@@ -15,25 +15,24 @@ const tracks=[
 ];
 export default function TestingCenter(){
  return <>
-  <PageHeading eyebrow="PLATFORM / TESTING" title="Your SportsEdge testing center."
-   description="A single starting point for the owner acceptance tour. Review what exists, what is private, and what is still blocked without chasing separate developer Preview links."
-   action={<Link className="button button-secondary" href="/progress">Evidence and blockers →</Link>}/>
+  <PageHeading title="Test center"
+   description="The starting point for the owner acceptance tour: what can be inspected, what is private, and what is still blocked."
+   action={<Link className="button button-secondary" href="/progress">Research status</Link>}/>
   <section className="glass panel test-release-banner">
-   <div><span className="eyebrow">FULL END-TO-END ACCEPTANCE</span><h2>Not released yet.</h2>
+   <div><h2>Full end-to-end acceptance: Not released yet.</h2>
     <p>Navigation and offline simulations are ready to inspect. Live paper-broker reconciliation, owner-authenticated staging, persistent receipt service, and an approved paper-order test still require separate verification.</p></div>
-   <span className="pill pill-amber">Execution disabled</span>
+   <span className="badge tone-warning">Execution disabled</span>
   </section>
-  <div className="section-title"><h2>What you can test—and what is blocked</h2><span className="pill">Committed capabilities, not live telemetry</span></div>
+  <div className="section-header"><div><h2>What you can test, and what is blocked</h2><p>Committed capabilities, not live telemetry.</p></div></div>
   <div className="test-status-grid">{tracks.map(x=><article key={x.title} className="glass test-status-card">
-    <div className="module-top"><strong>{x.title}</strong><span className={x.status==='Inspectable'?'pill':'pill pill-amber'}>{x.status}</span></div>
+    <div className="module-top"><strong>{x.title}</strong><span className={x.status==='Inspectable'?'badge tone-positive':x.status==='Off'?'badge tone-neutral':'badge tone-warning'}>{x.status}</span></div>
     <p>{x.text}</p>
    </article>)}</div>
   <TestingWalkthrough/>
   <section className="glass panel test-help">
-   <span className="eyebrow">BEFORE TURNING ON PAPER ORDERS</span>
-   <h2>One controlled release—not a hidden switch.</h2>
+   <h2>Before turning on paper orders</h2>
    <p>Before scheduling or submitting even virtual stock orders, we need reviewed model signals, complete broker reconciliation, a persistent and audited execution outbox, operational risk and emergency-stop controls, authenticated staging checks, and your explicit approval of the specific strategy, budget and limits.</p>
-   <div className="button-row"><Link href="/stocks/research" className="button button-secondary">Stock model evidence →</Link><Link href="/guide" className="button button-secondary">Platform guide →</Link></div>
+   <div className="button-row"><Link href="/stocks/research" className="button button-secondary">Stock research</Link><Link href="/guide" className="button button-secondary">Guide & methodology</Link></div>
   </section>
  </>;
 }

@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/research/nba','/research/epl'];
+const routes=['/','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -44,7 +44,7 @@ try{
  const send=rpc(ws);
  await send('Page.enable');await send('Runtime.enable');
  for(const route of routes){
-  const sizes=['/','/sports','/stocks'].includes(route)?widths:[390,1440];
+  const sizes=['/','/sports','/stocks','/paper-betting'].includes(route)?widths:[390,1440];
   for(const width of sizes){
    const label=`${route==='/'?'overview':route.slice(1).replaceAll('/','-')}-${width}`;
    try{
@@ -55,18 +55,20 @@ try{
     // App Router streams page content after the document/main landmark; a blank
     // heading during hydration is not a usability failure. Wait for user-visible
     // content before capturing the screenshot or checking route assertions.
-    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca'].includes(route)){
+    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/research','/stocks/journal'].includes(route)){
       await until(async()=>evaluate(send,`!!document.querySelector('main#main-content h1')`),label+' visible page heading',25000);
     }
     await delay(200);
     const data=await evaluate(send,`(()=>{
      const main=document.querySelector('main#main-content');
-     const isTool=location.pathname.startsWith('/research')||location.pathname==='/guide'||location.pathname==='/connections'||location.pathname==='/progress'||location.pathname==='/testing';
-     const nav=document.querySelector(innerWidth<=760?'nav[aria-label="Mobile navigation"]':(isTool?'nav[aria-label="Research and tools"]':'nav[aria-label="Workspaces"]'));
+     // Desktop and tablet use the sidebar (full or icon rail); phones use the bottom tab bar.
+     const mobile=innerWidth<=760;
+     const nav=document.querySelector(mobile?'nav[aria-label="Mobile navigation"]':'nav[aria-label="Primary"]');
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
-      currentNav:nav?.querySelectorAll('a[aria-current="page"]').length??0,
+      currentNav:nav?.querySelectorAll(mobile?'[aria-current]':'a[aria-current="page"]').length??0,
+      platformRoute:['/progress','/testing','/guide'].includes(location.pathname),
       appError:document.body.innerText.includes('Application error:'),
       mobileScrollbar:innerWidth<=760?getComputedStyle(nav).scrollbarWidth:null,
       placeholders:[...main.querySelectorAll('a[href="#"]')].length};
@@ -75,17 +77,17 @@ try{
     if(data.route!==route)issues.push('Wrong route');
     if(!data.mainPresent)issues.push('Missing main landmark');
     if(!data.navVisible)issues.push('Primary navigation hidden');
-    if(data.currentNav!==1)issues.push('Expected exactly one active navigation link');
+    if(data.currentNav!==1)issues.push('Expected exactly one active navigation item');
     if(data.scrollWidth>width+3)issues.push(`Page overflows viewport by ${data.scrollWidth-width}px`);
     if(width<=760&&data.mobileScrollbar!=='none')issues.push('Mobile tab scrollbar is visible');
     if(data.appError)issues.push('Next.js application error');
 
     if(data.placeholders)issues.push('Placeholder links detected');
-    if(['/', '/sports','/stocks','/paper-betting','/progress','/connections','/guide'].includes(route)&&!data.heading)issues.push('Missing page heading');
+    if(!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(path.join(output,label+'.png'),Buffer.from(screenshot.data,'base64'));
-     if(['/', '/sports', '/stocks', '/paper-betting'].includes(route)){
+     if(['/', '/sports', '/stocks', '/paper-betting', '/stocks/research', '/research/nba'].includes(route)){
       const metrics=await send('Page.getLayoutMetrics');
       const pageHeight=Math.min(3500,Math.max(900,Math.ceil(metrics.cssContentSize?.height??metrics.contentSize?.height??900)));
       const full=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height:pageHeight,scale:1}});
@@ -111,21 +113,29 @@ try{
   await until(async()=>evaluate(send,`location.pathname==='/' && !!document.querySelector('main h1')`),'mobile return to Overview',12000);
   console.log('PASS mobile navigation: Stocks → Overview');
  }catch(error){const message='Mobile navigation interaction: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
- // Experience v3: exercise real mode switching and keyboard-accessible quick navigation.
+ // Overview command center, drawer navigation and keyboard-accessible quick navigation.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/'});
-  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.pathways-tabs button')`),'interactive research pathways');
+  await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.status-list li').length>=5`),'overview system status');
   await delay(320);
-  await evaluate(send,`(()=>{document.querySelectorAll('.pathways-tabs button')[1].click();return true})()`);
-  await until(async()=>evaluate(send,`document.querySelectorAll('.pathways-tabs button')[1].getAttribute('aria-pressed')==='true' && document.querySelector('.pathways-copy h3')?.textContent?.includes('frozen algorithm')`),'Stock research pathway');
-  console.log('PASS research pathway: Sports → Stocks with truthful next steps');
+  const honestStatus=await evaluate(send,`(()=>{const t=document.querySelector('.status-list').innerText;return t.includes('Real-money execution')&&t.includes('Not available')&&!t.includes('Running')})()`);
+  if(!honestStatus)throw Error('Overview must state that real-money execution is not available and never claim automation is running');
+  console.log('PASS overview: system status lists real-money execution as not available');
+  await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] button').click();return true})()`);
+  await until(async()=>evaluate(send,`document.querySelector('dialog.drawer')?.open===true && !!document.querySelector('nav[aria-label="All sections"] a[href="/testing"]')`),'mobile navigation drawer');
+  await evaluate(send,`(()=>{document.querySelector('nav[aria-label="All sections"] a[href="/stocks/research"]').click();return true})()`);
+  await until(async()=>evaluate(send,`location.pathname==='/stocks/research' && !document.querySelector('dialog.drawer')?.open && !!document.querySelector('main h1')`),'drawer navigation closes and routes',12000);
+  console.log('PASS mobile drawer: opens, lists every section, navigates and closes');
+  await send('Page.navigate',{url:base+'/'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.command-trigger')`),'command trigger');
+  await delay(320);
   await evaluate(send,`(()=>{document.querySelector('.command-trigger').click();return true})()`);
   await until(async()=>evaluate(send,`document.querySelector('.command-dialog')?.open===true && document.activeElement?.matches('.command-search-field input')`),'accessible command menu');
-  await evaluate(send,`(()=>{document.querySelectorAll('.command-result')[2].click();return true})()`);
+  await evaluate(send,`(()=>{document.querySelector('.command-result[data-href="/stocks"]').click();return true})()`);
   await until(async()=>evaluate(send,`location.pathname==='/stocks' && !document.querySelector('.command-dialog')?.open`),'command palette Stocks navigation',12000);
   console.log('PASS command palette: opens, focuses search, navigates, closes');
- }catch(error){const message='Experience v3 interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ }catch(error){const message='Overview and navigation interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  // Progress hub filters and honest empty-state charts: read-only interaction checks.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
@@ -135,11 +145,15 @@ try{
   await evaluate(send,`(()=>{document.querySelectorAll('.progress-filters button')[1].click();return true})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.progress-card-grid article').length===3 && document.querySelectorAll('.progress-filters button')[1].getAttribute('aria-pressed')==='true'`),'filtered stock research cards');
   console.log('PASS progress: stocks filter shows registered and blocked evidence');
-  await send('Page.navigate',{url:base+'/stocks'});
+  await send('Page.navigate',{url:base+'/stocks/journal'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.stock-insights')`),'stock realized insights');
   const honest=await evaluate(send,`!!document.querySelector('.chart-empty') && !document.querySelector('.chart-graphic svg')`);
   if(!honest)throw Error('Empty manual stock journal must not display fabricated performance curve');
-  console.log('PASS stocks: empty manual journal shows no fabricated chart');
+  console.log('PASS practice journal: empty manual journal shows no fabricated chart');
+  await send('Page.navigate',{url:base+'/stocks'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.operator-states')`),'stocks dashboard');
+  await until(async()=>evaluate(send,`!document.querySelector('.operator-states li.is-current') && document.body.innerText.includes('Not connected on this deployment')`),'stocks dashboard truthful states',12000);
+  console.log('PASS stocks: no operator state claimed and unconfigured broker shows no balances');
  }catch(error){const message='Progress and performance interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
   // Test center: route discovery, mobile tour filters, and owner-only preview disclosure.
  try{
@@ -149,7 +163,7 @@ try{
   const defaultState=await evaluate(send,`({
     disabled:document.querySelector('.test-release-banner')?.innerText?.includes('Not released yet'),
     hasUnverified:document.querySelector('.test-status-grid')?.innerText?.includes('Not established'),
-    menuEntry:!!document.querySelector('nav[aria-label="Mobile navigation"] a[href="/testing"]')
+    menuEntry:!!document.querySelector('nav[aria-label="All sections"] a[href="/testing"]')
   })`);
   if(!defaultState.disabled||!defaultState.hasUnverified||!defaultState.menuEntry)
    throw Error('Testing hub must disclose unreleased state, private Preview route, and primary navigation');
@@ -170,7 +184,7 @@ try{
  // Exercise backup preview and safe cancellation in the isolated CI browser. No write/restore.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
-  await send('Page.navigate',{url:base+'/stocks'});
+  await send('Page.navigate',{url:base+'/stocks/journal'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('input[aria-label="Choose journal backup JSON"]')`),'journal import control');
   await delay(400);
   const selected=await evaluate(send,`(()=>{

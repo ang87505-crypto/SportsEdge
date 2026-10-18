@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {PageHeading,Stat,Details} from '@/components/ui';
+import {PageHeading,Metric,MetricGrid,Details,Callout,Panel,Evidence} from '@/components/ui';
 import {ResearchProgressBoard,type ProgressRecord} from '@/components/research-progress-board';
 import protocol from '../../../research/stock_audit_20261012/protocol.json';
 import nba from '@/data/research/nba_recent_summary.json';
@@ -29,12 +29,12 @@ const items:ProgressRecord[]=[
   description:'Automated broker paper orders are not enabled by this stock research protocol. Local journal trades are independent manual practice.',
   next:'Only after audited signals: add owner approval, risk caps, duplicate-order protection, reconciliation and an emergency stop.',
   href:'/stocks',source:'Stock research protocol / release flags'},
- {id:'paper-connect',group:'Platform',title:'Private broker portfolio dashboard',state:'In review',
-  description:'The separate Alpaca paper read-only integration is under review in PR #47. Production does not expose private broker balances from this research page.',
-  next:'Finish independent owner authentication review, Preview testing and an explicitly approved release.',
-  href:'/stocks',source:'Separate Alpaca integration (PR #47)'},
+ {id:'paper-connect',group:'Platform',title:'Private Alpaca PAPER account viewer',state:'Available',
+  description:'An owner-key protected, read-only viewer shows broker-reported PAPER balances, positions and orders. It shows nothing until the owner key and PAPER credentials are configured for a deployment.',
+  next:'Recurring PAPER automation and its owner dashboard remain in separate, unreleased pull requests.',
+  href:'/stocks/alpaca',source:'Owner-only Alpaca PAPER viewer'},
  {id:'ui',group:'Platform',title:'SportsEdge navigation and research workspace',state:'Available',
-  description:'Responsive homepage, workspace navigation, historical-summary labels and a guided research process.',
+  description:'Command-center overview, grouped navigation for Sports AI, Paper Betting and Stocks, provenance labels on every figure, and responsive layouts.',
   next:'Verify ongoing mobile usability and keep source labels and empty states accurate as new modules ship.',
   href:'/',source:'Production website user interface'}
 ];
@@ -42,36 +42,34 @@ const items:ProgressRecord[]=[
 export default function ResearchProgress(){
  const registered=protocol.baseline;
  return <>
-  <PageHeading eyebrow="PLATFORM / RESEARCH STATUS" title="One place for the work that matters."
-   description="Track research evidence, readiness gates and the next concrete step. No synthetic ROI, guessed completion percentages, or sensitive account balances."
-   action={<Link href="/stocks/research" className="button button-secondary">Stock study details ↗</Link>}/>
-  <div className="notice"><strong>Evidence snapshot, not live CI telemetry.</strong> These statuses come from the committed research protocol and application capabilities. They do not update automatically when a draft pull request changes, a backtest is run elsewhere, or a broker account changes. Verify the underlying source before acting.</div>
-  <div className="stats-grid progress-stats">
-   <Stat label="Stock strategy" value="Registered" detail={`Baseline: ${registered}`}/>
-   <Stat label="Historical stock returns" value={protocol.release.historical_performance_measured?'Protocol says measured':'Not measured'} detail="After-cost returns need a genuine audited backtest"/>
-   <Stat label="Model stock paper orders" value={protocol.release.automatic_paper_trades?'On':'Off'} detail="No model-directed broker execution enabled"/>
-   <Stat label="Real-money stock trading" value={protocol.release.real_trades?'On':'Off'} detail="Separate explicit controls required"/>
-  </div>
+  <PageHeading title="Research status" description="Each research track with the evidence that exists today and the next concrete gate. No synthetic returns, guessed completion percentages or private balances."
+   meta={<Evidence kind="recorded" label="Committed evidence snapshot"/>}
+   action={<Link href="/stocks/research" className="button button-secondary">Stock research details</Link>}/>
+  <Callout tone="info" title="Evidence snapshot, not live telemetry">Statuses come from the committed research protocol and shipped capabilities. They do not change when a draft pull request, an external backtest or a broker account changes. Check the source before acting.</Callout>
+  <MetricGrid columns={4} className="progress-stats">
+   <Metric label="Stock strategy" value="Registered" detail={`Baseline ${registered}`}/>
+   <Metric label="Historical stock returns" value={protocol.release.historical_performance_measured?'Measured':'Not measured'} evidence={protocol.release.historical_performance_measured?'verified':'not-measured'} detail="Needs a genuine audited backtest"/>
+   <Metric label="Model stock paper orders" value={protocol.release.automatic_paper_trades?'On':'Off'} detail="No model-directed broker execution"/>
+   <Metric label="Real-money stock trading" value={protocol.release.real_trades?'On':'Off'} detail="Not available on SportsEdge"/>
+  </MetricGrid>
   <ResearchProgressBoard records={items}/>
-  <div className="two-grid progress-links">
-   <section className="glass panel">
-    <span className="eyebrow">STOCKS / REGISTERED WINDOWS</span><h2>Keep training and testing separate.</h2>
-    <p>Development: {protocol.periods.training_development}</p>
-    <p>Validation: {protocol.periods.validation}</p>
-    <p>Sealed test: {protocol.periods.sealed_test}</p>
-    <p>Real historical results are not inferred from unit tests, documentation, simulated balances or paper-broker access.</p>
-    <Link href="/stocks/research" className="button button-secondary">Review full stock protocol ↗</Link>
-   </section>
-   <section className="glass panel">
-    <span className="eyebrow">SOURCE OF TRUTH</span><h2>Code and evidence remain versioned.</h2>
-    <p>Completed code, research plans and tests live in GitHub. Broker paper balances remain with Alpaca and behind separate owner-only access; they are not published here.</p>
-    <div className="progress-source-links">
-     <a href="https://github.com/ang87505-crypto/SportsEdge" target="_blank" rel="noopener noreferrer">Open source repository ↗</a>
-     <a href="https://github.com/ang87505-crypto/SportsEdge/pulls" target="_blank" rel="noopener noreferrer">Review engineering pull requests ↗</a>
-     <a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/research/stock_audit_20261012/protocol.json" target="_blank" rel="noopener noreferrer">Frozen stock research protocol ↗</a>
-    </div>
-   </section>
+  <div className="split-1-1 progress-links">
+   <Panel title="Registered stock windows" description="Training and testing stay separate.">
+    <dl className="kv">
+     <div><dt>Development</dt><dd>{protocol.periods.training_development}</dd></div>
+     <div><dt>Validation</dt><dd>{protocol.periods.validation}</dd></div>
+     <div><dt>Sealed test</dt><dd>{protocol.periods.sealed_test}</dd></div>
+    </dl>
+    <p className="panel-note">Historical results are never inferred from unit tests, documentation, simulated balances or paper-broker access.</p>
+   </Panel>
+   <Panel title="Source of truth" description="Code, research plans and tests are versioned in GitHub. Broker PAPER balances stay with Alpaca behind owner-only access.">
+    <ul className="link-list">
+     <li><a href="https://github.com/ang87505-crypto/SportsEdge" target="_blank" rel="noopener noreferrer">Source repository</a></li>
+     <li><a href="https://github.com/ang87505-crypto/SportsEdge/pulls" target="_blank" rel="noopener noreferrer">Engineering pull requests</a></li>
+     <li><a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/research/stock_audit_20261012/protocol.json" target="_blank" rel="noopener noreferrer">Frozen stock research protocol</a></li>
+    </ul>
+   </Panel>
   </div>
-  <Details title="Why is there no percent-complete meter?"><p>A percentage could imply that required source data, execution evidence or statistical validity have been established when they have not. Each research item names the evidence currently documented and the explicit outstanding gate instead.</p><p>Actual broker trades, historical backtests and model releases must be verified independently before their statuses change.</p></Details>
+  <Details title="Why is there no percent-complete meter?"><p>A percentage would imply that source data, execution evidence or statistical validity exist when they do not. Each item names the evidence documented today and the gate still outstanding.</p><p>Broker trades, historical backtests and model releases must be verified independently before their statuses change.</p></Details>
  </>;
 }
