@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${plexSans.variable} ${plexCondensed.variable} h-full antialiased`}
     >
-      <body><Suspense fallback={<div className="boot" role="status">Opening SportsEdge…</div>}><WorkspaceShell>{children}</WorkspaceShell></Suspense></body>
+      <body><Suspense fallback={<div className="boot" role="status">Opening SportsEdge…</div>}><WorkspaceShell previewFixtures={process.env.SPORTSEDGE_PREVIEW_FIXTURES==="1"}>{children}</WorkspaceShell></Suspense></body>
     </html>
   );
 }
