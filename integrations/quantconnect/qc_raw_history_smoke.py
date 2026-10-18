@@ -30,16 +30,22 @@ class SportsEdgeRawHistorySmoke(QCAlgorithm):
         # probe only requests days BEFORE Feb 1, so it cannot rely on the
         # later/current data Slice as model input.
         self._checked = True
+        self._phase = "INPUT"
+        def mark_phase(value):
+            # Fixed phase codes only. Never expose vendor data or exception text.
+            if value in ("REQUEST", "FRAME", "INDEX", "OHLCV", "FINAL"):
+                self._phase = value
         try:
             result = read_raw_window(
                 self, self.spy,
                 start=datetime(2001, 1, 2),
                 end=datetime(2001, 2, 1),
-                decision_at=datetime(2001, 2, 2, 8))
+                decision_at=datetime(2001, 2, 2, 8),
+                phase_callback=mark_phase)
             if result["historical_source_admitted"] or result["performance"] is not None:
                 raise ValueError("Unexpected historical source promotion")
         except Exception:
             # QC data source values and exception contents must remain in-cloud.
-            self.debug("SPORTSEDGE_QC_RAW_HISTORY_SMOKE_BLOCKED; NO_ORDERS")
+            self.debug("SPORTSEDGE_QC_RAW_HISTORY_SMOKE_BLOCKED_" + self._phase + "; NO_ORDERS; NO_PNL")
             return
         self.debug("SPORTSEDGE_QC_RAW_HISTORY_SMOKE_PASSED; SOURCE_NOT_ADMITTED; NO_ORDERS; NO_PNL")
