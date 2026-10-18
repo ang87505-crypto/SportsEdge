@@ -25,6 +25,7 @@ class Algorithm:
         self.fail_history = False
         self.bad_frame = False
         self.bad_price = False
+        self.none_frame = False
 
     def set_start_date(self, *args): pass
     def set_end_date(self, *args): pass
@@ -39,12 +40,19 @@ class Algorithm:
     def debug(self, message):
         self.messages.append(message)
 
-    def history(self, **kwargs):
+    def history(self, *args, **kwargs):
         self.history_calls += 1
+        assert len(args) == 3 and len(args[0]) == 1
+        assert args[0][0].value == "SPY"
+        assert args[1] == datetime(2001, 1, 2)
+        assert args[2] == datetime(2001, 2, 1)
+        assert "symbols" not in kwargs
         if self.fail_history:
             raise ValueError("PRIVATE_LICENSED_SOURCE_DATA")
         assert kwargs["data_normalization_mode"] == "RAW"
         assert kwargs["fill_forward"] is False
+        if self.none_frame:
+            return None
         if self.bad_frame:
             return object()
         if self.bad_price:
@@ -95,7 +103,8 @@ class SmokeTests(unittest.TestCase):
         self.assertTrue(all("PRIVATE_LICENSED_SOURCE_DATA" not in s for s in instance.messages))
 
     def test_static_phase_codes_for_schema_and_bar_validation(self):
-        for field, code in (("bad_frame", "FRAME"), ("bad_price", "OHLCV")):
+        for field, code in (("bad_frame", "FRAME_NON_DATAFRAME"),
+                            ("none_frame", "FRAME_NULL"), ("bad_price", "OHLCV")):
             instance = self.cls()
             instance.initialize()
             setattr(instance, field, True)
