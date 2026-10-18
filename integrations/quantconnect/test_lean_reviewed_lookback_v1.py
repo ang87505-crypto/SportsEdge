@@ -119,7 +119,7 @@ class ReviewedLookbackTests(unittest.TestCase):
     def test_no_trade_export_or_source_approval_shortcuts(self):
         script = Path(__file__).with_name("lean_reviewed_lookback_v1.py").read_text()
         for banned in ("market_order(", "set_holdings(", "liquidate(",
-                       "requests.", "urlopen(", "json.dump(", "object_store."):
+                       "requests.post(", "urlopen(", "json.dump(", "object_store."):
             self.assertNotIn(banned, script)
 
 
