@@ -73,15 +73,25 @@ def read_raw_window(algorithm, symbol, *, start, end, decision_at, phase_callbac
     # rejects them, fail rather than retrying with adjusted/fill-forward defaults.
     if phase_callback is not None:
         phase_callback("REQUEST")  # fixed code only; never source data
+    # Positional tickers force the Python DataFrame-returning History overload.
+    # The previously used symbols= keyword selected a different LEAN overload
+    # in the owner's cloud runtime: the returned object lacked iterrows().
+    # Never coerce an unrecognized .NET sequence into apparently valid bars.
     history = algorithm.history(
-        symbols=[symbol], start=start, end=end,
+        [symbol], start, end,
         resolution=Resolution.DAILY, fill_forward=False,
         extended_market_hours=False,
         data_normalization_mode=DataNormalizationMode.RAW)
     if phase_callback is not None:
         phase_callback("FRAME")
-    _need(history is not None and hasattr(history, "iterrows"),
-          "Historical source must be a LEAN history dataframe")
+    if history is None:
+        if phase_callback is not None:
+            phase_callback("FRAME_NULL")
+        raise SourceNotAdmitted("History API returned no frame")
+    if not hasattr(history, "iterrows"):
+        if phase_callback is not None:
+            phase_callback("FRAME_NON_DATAFRAME")
+        raise SourceNotAdmitted("History API returned a non-DataFrame shape")
     result = []
     seen = set()
     for index, item in history.iterrows():
