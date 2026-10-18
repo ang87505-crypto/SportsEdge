@@ -33,8 +33,8 @@ class FakeAlgorithm:
         self.entries = entries
         self.requests = []
 
-    def history(self, **kwargs):
-        self.requests.append(kwargs)
+    def history(self, *args, **kwargs):
+        self.requests.append((args, kwargs))
         return FakeFrame(self.entries)
 
 
@@ -58,11 +58,13 @@ def collect(rows, **kwargs):
 class CloudHistorySourceTests(unittest.TestCase):
     def test_requests_raw_non_fill_forward_daily_and_fails_closed(self):
         algo, result = collect([entry(3), entry(4)])
-        self.assertEqual(algo.requests[0]["data_normalization_mode"], "raw")
-        self.assertEqual(algo.requests[0]["resolution"], "daily")
-        self.assertEqual(algo.requests[0]["fill_forward"], False)
-        self.assertEqual(algo.requests[0]["extended_market_hours"], False)
-        self.assertEqual(algo.requests[0]["symbols"], [SYMBOL])
+        args, kwargs = algo.requests[0]
+        self.assertEqual(args, ([SYMBOL], FROM, TO))
+        self.assertEqual(kwargs["data_normalization_mode"], "raw")
+        self.assertEqual(kwargs["resolution"], "daily")
+        self.assertEqual(kwargs["fill_forward"], False)
+        self.assertEqual(kwargs["extended_market_hours"], False)
+        self.assertNotIn("symbols", kwargs)
         self.assertEqual(result["bars"][0]["open"], "10")
         self.assertEqual(result["bars"][0]["volume"], 100)
         self.assertFalse(result["bar_publication_time_verified"])
@@ -118,7 +120,7 @@ class CloudHistorySourceTests(unittest.TestCase):
     def test_provider_failure_does_not_retry_with_unsafe_defaults(self):
         class ProviderRaises:
             count = 0
-            def history(self, **kwargs):
+            def history(self, *args, **kwargs):
                 self.count += 1
                 raise TypeError("No compatible raw history signature")
         obj = ProviderRaises()
