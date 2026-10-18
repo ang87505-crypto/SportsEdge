@@ -44,7 +44,7 @@ function ModeNote(){
  </div>;
 }
 
-export default function WorkspaceShell({children}:{children:ReactNode}){
+export default function WorkspaceShell({children,previewFixtures=false}:{children:ReactNode;previewFixtures?:boolean}){
  const path=usePathname();
  const drawer=useRef<HTMLDialogElement>(null);
  const [drawerOpen,setDrawerOpen]=useState(false);
@@ -85,6 +85,7 @@ export default function WorkspaceShell({children}:{children:ReactNode}){
    </header>
 
    <main id="main-content" className="content" tabIndex={-1}>
+    {previewFixtures&&<aside role="note" className="fixture-preview-banner"><strong>STAGING PREVIEW · TEST DATA ONLY</strong><span> Sports research, quotes and betting balances on this Preview are synthetic examples from an isolated staging database — not real results, live odds or investment performance.</span></aside>}
     {parent&&<Link href={parent.href} className="back-link"><NavIcon name="back" size={15}/>{parent.label}</Link>}
     {children}
    </main>
