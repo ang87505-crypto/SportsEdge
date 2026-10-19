@@ -13,6 +13,7 @@ import {classifyActivityType,dollarsToCents,isOpenOrder,type BrokerAccount,type 
  type BrokerPosition,type OrderRequest,type PaperAutoBroker} from './paper-auto-broker.ts';
 import {PaperAutoStoreError,storeCode,type PaperAutoStore,type StoreReply} from './paper-auto-store.ts';
 import {iso,nyDate,nyMinutes} from './paper-auto-time.ts';
+import {paperRiskBreach} from './paper-auto-risk.ts';
 
 export const CONTROLLER_LIMITS={
  /** A working limit order older than this is canceled and re-planned on fresh quotes. */
@@ -330,6 +331,16 @@ async function reconcileBroker(ctx:Ctx):Promise<Seen>{
 function requireClean(seen:Seen){
  if(seen.external.length)throw new ControllerStop(seen.external[0].split(':')[0],{blockers:seen.external});
 }
+/** Apply the same operational risk policy on execute, reconcile and daily monitor. */
+function enforceRisk(seen:Seen){
+ const x=seen.state.experiment;
+ let code;
+ try{code=paperRiskBreach({equityCents:seen.account.equityCents,highWaterCents:seen.state.highWaterCents,
+  capitalLimitCents:x.capitalLimitCents,drawdownStopBps:x.drawdownStopBps});}
+ catch{throw new ControllerStop('STATE_INVALID',{what:'risk'});}
+ if(code)throw new ControllerStop(code,{equityCents:seen.account.equityCents,
+  highWaterCents:seen.state.highWaterCents});
+}
 /** Polls working intents until terminal or the poll budget ends. */
 async function settle(ctx:Ctx):Promise<WorkerState>{
  let state=await readState(ctx);
@@ -479,11 +490,7 @@ export async function runExecuteSlot(deps:ControllerDeps,experimentId:string,slo
   if(seen.accountIssues.length)throw new ControllerStop(seen.accountIssues[0]);
   if(seen.state.intents.some(i=>UNRESOLVED.has(i.status)))
    return finish(ctx,'execute',slot,'BLOCKED','UNRESOLVED_SUBMISSION',{},{ok:false,blockers:['UNRESOLVED_SUBMISSION']});
-  const x=seen.state.experiment;
-  if(seen.account.equityCents>x.capitalLimitCents)throw new ControllerStop('CAPITAL_LIMIT_REACHED');
-  if(seen.account.equityCents*10000<seen.state.highWaterCents*(10000-x.drawdownStopBps))
-   throw new ControllerStop('DRAWDOWN_LIMIT',{equityCents:seen.account.equityCents,
-    highWaterCents:seen.state.highWaterCents});
+  enforceRisk(seen);
   const nowMs=ctx.now(),today=nyDate(nowMs),decision=seen.state.decision;
   if(!decision||decision.session!==today||!['TARGETS','HOLD_NO_TARGETS'].includes(decision.outcome))
    return finish(ctx,'execute',slot,'SUCCEEDED','NO_EXECUTABLE_DECISION_TODAY',{},OK);
@@ -562,6 +569,7 @@ export async function runReconcileSlot(deps:ControllerDeps,experimentId:string,s
   const seen=await reconcileBroker(ctx);
   if(seen.state.gateMode==='STOPPED')await cancelWorking(ctx,seen.state);
   requireClean(seen);
+  enforceRisk(seen);
   const state=await readState(ctx);
   const blockers=[...seen.accountIssues,
    ...(state.intents.some(i=>UNRESOLVED.has(i.status))?['UNRESOLVED_SUBMISSION']:[])];
@@ -585,7 +593,7 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
  return guarded(ctx,'monitor',session,async()=>{
   const seen=await reconcileBroker(ctx);
   let daily:StoreReply|null=null;
-  if(await ctx.broker.session(session)){
+  try{if(await ctx.broker.session(session)){
    const benchmark=await ctx.broker.dailyClose('SPY',session);
    // External state contaminates the mark; it is still recorded so the series stays continuous.
    daily=await ctx.store.call('record_daily',{run_id:ctx.runId,session_date:session,
@@ -595,6 +603,11 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
      costBasisCents:p.costBasisCents})),
     benchmark_symbol:'SPY',...(benchmark?{benchmark_close:benchmark.close}:{}),
     benchmark_source:benchmark?.source??'unavailable:alpaca:sip:1Day',contaminated:seen.external.length>0});
+  }}catch(e){
+   // An auxiliary benchmark or mark-write failure must not hide a breach
+   // already visible in the fresh account. External-state halts take priority.
+   if(!seen.external.length)enforceRisk(seen);
+   throw e;
   }
   requireClean(seen);
   if(daily&&daily.cashReconciled===false){
@@ -603,6 +616,9 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
    if(seen.state.intents.some(i=>UNRESOLVED.has(i.status)))throw new RunBlocked('MARK_PENDING_ATTRIBUTION');
    throw new ControllerStop('UNEXPLAINED_CASH_CHANGE',{session,cashUnexplainedCents:String(daily.cashUnexplainedCents)});
   }
+  // The SQL mark transaction also halts on a clean-mark breach. This observer
+  // check gives the run its explicit risk outcome and covers non-SQL adapters.
+  enforceRisk(seen);
   return finish(ctx,'monitor',session,'SUCCEEDED',daily?'DAILY_RECORDED':'NOT_A_SESSION',daily?{daily}:{},OK);
  });
 }

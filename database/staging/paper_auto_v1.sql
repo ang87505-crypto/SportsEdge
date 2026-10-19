@@ -1125,6 +1125,28 @@ BEGIN
  RETURN jsonb_build_object('inserted',inserted,'newExternalOrUnsupported',ext,'stopped',ext>0);
 END $$;
 
+-- Operational limits use the same strict breach convention as the worker.
+-- Numeric products preserve exact comparisons for the full bigint input range.
+CREATE FUNCTION sportsedge_paper_auto._risk_reason(equity bigint,hwm bigint,capital bigint,bps integer)
+RETURNS text LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT CASE WHEN equity>capital THEN 'CAPITAL_LIMIT_REACHED'
+  WHEN equity::numeric*10000<hwm::numeric*(10000-bps) THEN 'DRAWDOWN_LIMIT' END
+$$;
+CREATE FUNCTION sportsedge_paper_auto._halt_for_risk(e text,equity bigint,who text,evidence jsonb)
+RETURNS text LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE x sportsedge_paper_auto.experiments%ROWTYPE; hwm bigint; reason text;
+BEGIN
+ SELECT * INTO STRICT x FROM sportsedge_paper_auto.experiments WHERE experiment_id=e;
+ SELECT greatest(x.starting_equity_cents,coalesce(max(equity_cents),0)) INTO hwm
+ FROM sportsedge_paper_auto.daily_equity WHERE experiment_id=e;
+ reason:=sportsedge_paper_auto._risk_reason(equity,hwm,x.capital_limit_cents,x.drawdown_stop_bps);
+ IF reason IS NOT NULL THEN
+  PERFORM sportsedge_paper_auto._halt(e,reason,who,
+   evidence||jsonb_build_object('equityCents',equity,'highWaterCents',hwm));
+ END IF;
+ RETURN reason;
+END $$;
+
 -- One immutable after-close mark per session, observed that evening and recorded at
 -- once, so a mark is never backdated or relabeled. Flows, fees and dividends come
 -- from activities recorded since the previous mark. Any external fill, external
@@ -1137,7 +1159,7 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE run text:=sportsedge_paper_auto._text(p,'run_id','^run-[a-f0-9]{32}$');
 DECLARE r sportsedge_paper_auto.runs%ROWTYPE; x sportsedge_paper_auto.experiments%ROWTYPE; d date;
 DECLARE old sportsedge_paper_auto.daily_equity%ROWTYPE; row_in sportsedge_paper_auto.daily_equity%ROWTYPE;
-DECLARE t timestamptz:=sportsedge_paper_auto._now(); since timestamptz; expected numeric; rounding bigint;
+DECLARE t timestamptz:=sportsedge_paper_auto._now(); since timestamptz; expected numeric; rounding bigint; risk text;
 BEGIN
  r:=sportsedge_paper_auto._lock_run(run,'monitor');
  SELECT * INTO STRICT x FROM sportsedge_paper_auto.experiments WHERE experiment_id=r.experiment_id;
@@ -1194,9 +1216,13 @@ BEGIN
    AND old.external_flow_cents=row_in.external_flow_cents AND old.contaminated=row_in.contaminated
    AND old.cash_unexplained_cents=row_in.cash_unexplained_cents AND old.cash_reconciled=row_in.cash_reconciled
    AND old.unrealized_pl_cents IS NOT DISTINCT FROM row_in.unrealized_pl_cents THEN
+   IF old.cash_reconciled AND NOT old.contaminated THEN
+    risk:=sportsedge_paper_auto._halt_for_risk(x.experiment_id,old.equity_cents,'worker:'||r.worker,
+     jsonb_build_object('runId',run,'session',d));
+   END IF;
    RETURN jsonb_build_object('recorded',false,'duplicate',true,'sessionDate',d,
     'contaminated',old.contaminated,'cashUnexplainedCents',trim_scale(old.cash_unexplained_cents)::text,
-    'cashReconciled',old.cash_reconciled,'unrealizedPlCents',old.unrealized_pl_cents);
+    'cashReconciled',old.cash_reconciled,'unrealizedPlCents',old.unrealized_pl_cents,'riskStopCode',risk);
   END IF;
   RAISE EXCEPTION 'PAPER_AUTO_DAILY_CONFLICT';
  END IF;
@@ -1217,11 +1243,17 @@ BEGIN
   PERFORM sportsedge_paper_auto._halt(x.experiment_id,'UNEXPLAINED_CASH_CHANGE','worker:'||r.worker,
    jsonb_build_object('runId',run,'session',d,'cashUnexplainedCents',trim_scale(row_in.cash_unexplained_cents)::text));
  END IF;
+ -- Keep the mark and its risk halt in one transaction. Losing the worker reply
+ -- or its later STOP call cannot leave a clean-mark breach ARMED.
+ IF row_in.cash_reconciled AND NOT row_in.contaminated THEN
+  risk:=sportsedge_paper_auto._halt_for_risk(x.experiment_id,row_in.equity_cents,'worker:'||r.worker,
+   jsonb_build_object('runId',run,'session',d));
+ END IF;
  RETURN jsonb_build_object('recorded',true,'duplicate',false,'sessionDate',d,
   'externalFlowCents',row_in.external_flow_cents,'feesCents',row_in.fees_cents,
   'dividendsCents',row_in.dividends_cents,'contaminated',row_in.contaminated,
   'cashUnexplainedCents',trim_scale(row_in.cash_unexplained_cents)::text,'cashReconciled',row_in.cash_reconciled,
-  'unrealizedPlCents',row_in.unrealized_pl_cents);
+  'unrealizedPlCents',row_in.unrealized_pl_cents,'riskStopCode',risk);
 END $$;
 
 CREATE FUNCTION public.sportsedge_paper_auto_raise_alert(p jsonb) RETURNS jsonb

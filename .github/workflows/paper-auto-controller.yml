@@ -10,6 +10,7 @@ on:
       - 'src/lib/stocks/paper-strategy-rebalance.ts'
       - 'scripts/paper-auto-worker.ts'
       - 'database/staging/paper_auto_v1.sql'
+      - 'database/staging/paper_auto_risk_v2.sql'
       - 'analytics/stock_forward_bridge_v1.py'
       - 'analytics/test_stock_forward_bridge_v1.py'
       - 'analytics/stock_forward_signal_v1.py'
@@ -50,7 +51,7 @@ jobs:
           node-version: '24'
       - run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
       - name: Broker, store and clock adapters (no network)
-        run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-broker.test.mjs src/lib/server/paper-auto-risk.test.mjs
       - name: Owner dashboard API and forward performance (no network)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-owner.test.mjs src/lib/stocks/paper-auto-performance.test.mjs src/lib/server/paper-auto-worker.test.mjs
       - uses: actions/setup-python@v5

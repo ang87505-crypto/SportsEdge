@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'database/staging/paper_auto_v1.sql'
+      - 'database/staging/paper_auto_risk_v2.sql'
       - 'database/tests/paper_auto_v1*'
       - '.github/workflows/paper-auto-postgres.yml'
 permissions:
@@ -32,6 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -qq -y postgresql-client)
       - name: Apply the recurring controller schema to a disposable database
         run: |
@@ -39,6 +41,14 @@ jobs:
           psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_v1.sql
       - name: Prove STOP, leases, claims, caps, receipts and ledger rules with a pinned clock
         run: psql -X -q -v ON_ERROR_STOP=1 -f database/tests/paper_auto_v1.sql
+      - name: Upgrade the pinned previous v1 schema twice and rerun the contract
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE sportsedge_paper_auto_upgrade"
+          git show b680bf18a907e77cf5026b6bdd31449bbc913b36:database/staging/paper_auto_v1.sql > "$RUNNER_TEMP/paper_auto_previous_v1.sql"
+          PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/paper_auto_previous_v1.sql"
+          PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_risk_v2.sql
+          PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_risk_v2.sql
+          PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/tests/paper_auto_v1.sql
       - name: Race RPCs across independent connections
         run: |
           psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE sportsedge_paper_auto_race"
