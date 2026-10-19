@@ -9,10 +9,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
+    # The same PR tree is built by Verify SportsEdge and browser QA.
+    # Preserve the independent build for the legacy push-only entry point.
+    if: github.event_name == 'push'
     name: Isolated Next.js build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,6 +33,7 @@ jobs:
   reproduce:
     name: Replay pinned public-domain match history
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

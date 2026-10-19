@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   normalize:
     name: NBA and soccer provider-contract tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,9 +29,14 @@ jobs:
       - name: Test provider normalization and atomic snapshot preparation
         run: node --test src/lib/ingestion/*.test.mjs src/lib/research-math.test.mjs src/lib/result-validation.test.mjs src/lib/stocks/*.test.mjs
       - name: Lint
+        # All PRs receive these checks in Verify SportsEdge; retain the
+        # standalone checks for this workflow's legacy push trigger.
+        if: github.event_name == 'push'
         run: npm run lint
       - name: Production build (generates Next route types)
+        if: github.event_name == 'push'
         run: npm run build
       - name: Typecheck
+        if: github.event_name == 'push'
         run: npx tsc --noEmit
 
