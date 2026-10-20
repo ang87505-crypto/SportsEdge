@@ -7,6 +7,7 @@ q(){ psql -X -q -A -t -v ON_ERROR_STOP=1 "$@"; }
 at(){ local t=$1; shift; PGOPTIONS="-c paper_auto_test.now=$t" q "$@"; }
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 fail(){ echo "$1"; exit 1; }
+printf 'Race setup: creating synthetic fixtures...\n'
 q >/dev/null <<'SQL'
 CREATE OR REPLACE FUNCTION sportsedge_paper_auto._now() RETURNS timestamptz
 LANGUAGE sql VOLATILE SET search_path=pg_catalog AS $$
@@ -87,10 +88,12 @@ BEGIN
  PERFORM race.rpc('finish_run',jsonb_build_object('run_id',run,'status','succeeded'));
 END $$;
 SQL
+printf 'Race setup: arming the synthetic experiment...\n'
 T0=2026-10-19T14:00:00Z
 [ "$(at $T0 -c "SELECT race.arm('2026-10-19T13:59Z')")" = ARMED ] || fail ARM_FAILED
 
 # R1: eight duplicate scheduler deliveries of one slot start exactly one run.
+printf 'R1: duplicate scheduler deliveries\n'
 for n in 1 2 3 4 5 6 7 8; do
  (at $T0 -c "SELECT race.begin('monitor','2026-10-19')" >/dev/null 2>&1 && echo won || echo lost) > $tmp/r1.$n &
 done; wait
@@ -98,6 +101,7 @@ wins=$(cat $tmp/r1.* | grep -c won || true)
 [ "$wins" = 1 ] || fail "BEGIN_RUN_RACE_FAILED wins=$wins"
 
 # R2: two execute runs race for the experiment lease; exactly one holds it.
+printf 'R2: experiment lease\n'
 A=$(at $T0 -c "SELECT race.begin('execute','2026-10-19T14:00Z')")
 B=$(at $T0 -c "SELECT race.begin('execute','2026-10-19T14:15Z')")
 (at $T0 -c "SELECT race.lease('$A')" >/dev/null 2>&1 && echo "$A" || echo lost) > $tmp/r2.a &
@@ -109,6 +113,7 @@ EX=$(cat $tmp/r2.a $tmp/r2.b | grep '^run-')
 SNAP=$(at $T0 -c "SELECT race.snap('$EX')")
 
 # R3: the lease holder reserving the same leg twice concurrently persists one intent.
+printf 'R3: duplicate intent reservation\n'
 for n in 1 2; do
  (at $T0 -c "SELECT race.reserve('$EX',$SNAP,'TA')" 2>/dev/null || echo lost) > $tmp/r3.$n &
 done; wait
@@ -119,6 +124,7 @@ IA=$(cat $tmp/r3.* | grep '^pai-')
  || fail RESERVE_RACE_DUPLICATE_ROW
 
 # R4: two concurrent claims of one intent; exactly one may POST.
+printf 'R4: intent claims\n'
 for n in 1 2; do
  (at $T0 -c "SELECT race.claim('$EX','$IA')" >/dev/null 2>&1 && echo won || echo lost) > $tmp/r4.$n &
 done; wait
@@ -128,6 +134,7 @@ wins=$(cat $tmp/r4.* | grep -c won || true)
  || fail CLAIM_RACE_EVENTS
 
 # R5: two broker observations with the same expected version; compare-and-swap admits one.
+printf 'R5: order-observation versions\n'
 for n in 1 2; do
  (at $T0 -c "SELECT race.record('$EX','$IA',1,'open','b-race-a')" >/dev/null 2>&1 && echo won || echo lost) > $tmp/r5.$n &
 done; wait
@@ -137,6 +144,7 @@ wins=$(cat $tmp/r5.* | grep -c won || true)
 
 # R6: STOP races a claim. The gate row serializes them: either the claim committed
 # first (intent submitting) or STOP voided the reservation and the claim was refused.
+printf 'R6: STOP versus an intent claim\n'
 k=0
 for sym in TB TC TD TE TF TG; do
  k=$((k+1)); T=$(date -u -d "2026-10-19T14:01:00Z + $((k*30)) seconds" +%Y-%m-%dT%H:%M:%SZ)
@@ -157,6 +165,7 @@ for sym in TB TC TD TE TF TG; do
 done
 
 # R7: concurrent STOPs both succeed; the gate changes once and both are audited.
+printf 'R7: concurrent STOP requests\n'
 T=2026-10-19T14:10:00Z
 v0=$(at $T -c "SELECT race.rpc('status','{\"experiment_id\":\"race-2026\"}')->>'gateVersion'")
 e0=$(q -c "SELECT count(*) FROM sportsedge_paper_auto.gate_events WHERE experiment_id='race-2026'")
@@ -167,6 +176,7 @@ e1=$(q -c "SELECT count(*) FROM sportsedge_paper_auto.gate_events WHERE experime
 [ $((v1-v0)) = 1 ] && [ $((e1-e0)) = 2 ] || fail "STOP_STOP_RACE_FAILED versions=$v0..$v1 events=$e0..$e1"
 
 # R8: after a crash, duplicate deliveries take over the stale slot exactly once.
+printf 'R8: stale-slot takeover\n'
 at 2026-10-19T14:20:00Z -c "SELECT race.begin('reconcile','2026-10-18')" >/dev/null
 for n in 1 2 3; do
  (at 2026-10-19T14:31:00Z -c "SELECT race.begin('reconcile','2026-10-18')" >/dev/null 2>&1 && echo won || echo lost) > $tmp/r8.$n &
@@ -176,6 +186,7 @@ done; wait
  || fail STALE_TAKEOVER_STATE
 
 # R9: finishing a lease holder while another run acquires never deadlocks.
+printf 'R9: lease release and acquisition\n'
 for n in 1 2 3 4 5 6 7 8; do
  T=$(date -u -d "2026-10-19T16:00:00Z + $((n*400)) seconds" +%Y-%m-%dT%H:%M:%SZ)
  X=$(at $T -c "SELECT race.lease(race.begin('reconcile','2026-10-20T0${n}:00Z'))")

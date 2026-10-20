@@ -16,14 +16,14 @@ previous=b680bf18a907e77cf5026b6bdd31449bbc913b36
 git -C "$repo" cat-file -e "$previous:database/staging/paper_auto_v1.sql" || {
   printf 'The pinned previous schema is missing from local Git history. Fetch it first.\n' >&2; exit 1;
 }
-docker info >/dev/null
+timeout --kill-after=5 20 docker info >/dev/null
 run_dir=$(mktemp -d /tmp/sportsedge-paper-pg17.XXXXXX)
 container_id=
 exec > >(tee "$run_dir/verification.log") 2>&1
 cleanup() {
   local result=$?
   trap - EXIT INT TERM
-  if [[ -n "$container_id" ]] && ! docker rm -f -v "$container_id" >/dev/null 2>&1; then
+  if [[ -n "$container_id" ]] && ! timeout --kill-after=5 20 docker rm -f -v "$container_id" >/dev/null 2>&1; then
     printf 'Container cleanup failed: %s\n' "$container_id"
     result=1
   fi
@@ -67,13 +67,21 @@ docker image inspect postgres:17 --format 'PostgreSQL image ID: {{.Id}}'
 
 # psql lives inside the container. Each invocation opens an independent real
 # connection; forward PGOPTIONS so each synthetic clock remains pinned.
-# SQL is supplied through stdin/-c, so no source, keys or host ports are mounted.
+# -c calls never attach the caller's terminal. SQL scripts still stream stdin.
+# No source, keys or host ports are mounted. Client and server timeouts bound
+# stalled commands, including schema application before the race-suite timeout.
 cat > "$run_dir/bin/psql" <<'PSQL'
 #!/usr/bin/env bash
 set -euo pipefail
-exec docker exec -i \
+input=(-i)
+for arg in "$@"; do
+  case "$arg" in -c|--command|--command=*|-c?*) input=(); break ;; esac
+done
+if [[ "${#input[@]}" == 0 ]]; then exec </dev/null; fi
+exec timeout --kill-after=5 45 docker exec "${input[@]}" \
   -e PGHOST=/var/run/postgresql -e PGPORT=5432 -e PGUSER=postgres \
-  -e PGDATABASE="${PGDATABASE:-postgres}" -e PGOPTIONS="${PGOPTIONS:-}" \
+  -e PGDATABASE="${PGDATABASE:-postgres}" \
+  -e PGOPTIONS="-c statement_timeout=40000 -c lock_timeout=15000 ${PGOPTIONS:-}" \
   "$SPORTSEDGE_TEST_PG_CONTAINER" psql "$@"
 PSQL
 chmod 700 "$run_dir/bin/psql"
@@ -87,33 +95,36 @@ for mode in fresh upgraded; do
   printf '\nSQL contract: %s schema\n' "$mode"
   database="sportsedge_verify_${mode}"
   psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE $database"
+  printf 'Applying %s schema for the SQL contract...\n' "$mode"
   psql -X -q -v ON_ERROR_STOP=1 -d "$database" < "$run_dir/$mode.sql"
-  timeout 180 psql -X -q -v ON_ERROR_STOP=1 -d "$database" < database/tests/paper_auto_v1.sql
+  timeout --kill-after=5 180 psql -X -q -v ON_ERROR_STOP=1 -d "$database" < database/tests/paper_auto_v1.sql
   printf '\nIndependent-connection races: %s schema\n' "$mode"
   database="sportsedge_verify_${mode}_race"
   psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE $database"
+  printf 'Applying %s schema for the race tests...\n' "$mode"
   psql -X -q -v ON_ERROR_STOP=1 -d "$database" < "$run_dir/$mode.sql"
-  PGDATABASE="$database" timeout 240 bash database/tests/paper_auto_v1_race.sh
+  printf 'Starting race tests (four-minute deadline).\n'
+  PGDATABASE="$database" timeout --kill-after=5 240 bash database/tests/paper_auto_v1_race.sh </dev/null
 done
 
 printf '\nPython signal bridge (synthetic captures)\n'
-timeout 180 python3 -m unittest analytics.test_stock_forward_bridge_v1 -v
+timeout --kill-after=5 180 python3 -m unittest analytics.test_stock_forward_bridge_v1 -v </dev/null
 printf '\nNode controller and focused regressions: fresh schema\n'
-timeout 600 node --experimental-strip-types --test --test-reporter=tap \
+timeout --kill-after=5 600 node --experimental-strip-types --test --test-reporter=tap \
   src/lib/server/paper-auto-controller.test.mjs \
   src/lib/server/paper-auto-risk.test.mjs \
   src/lib/server/paper-auto-broker.test.mjs \
   src/lib/server/paper-auto-owner.test.mjs \
   src/lib/server/paper-auto-worker.test.mjs \
   src/lib/stocks/paper-auto-performance.test.mjs \
-  src/lib/stocks/paper-strategy-rebalance.test.mjs
+  src/lib/stocks/paper-strategy-rebalance.test.mjs </dev/null
 
 # The controller fixture reads this path. Change only the disposable archive's
 # schema input to prove the same controller suite on old v1 + v2 applied twice.
 printf '\nNode controller: pinned previous schema plus twice-applied upgrade\n'
 cp "$run_dir/upgraded.sql" database/staging/paper_auto_v1.sql
-timeout 600 node --experimental-strip-types --test --test-reporter=tap \
-  src/lib/server/paper-auto-controller.test.mjs
+timeout --kill-after=5 600 node --experimental-strip-types --test --test-reporter=tap \
+  src/lib/server/paper-auto-controller.test.mjs </dev/null
 
 printf '\nChecking the existing release switches\n'
 node <<'JS'
