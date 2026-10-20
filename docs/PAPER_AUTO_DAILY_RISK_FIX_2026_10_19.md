@@ -22,7 +22,15 @@ STOP prevents new submissions and cancels working strategy orders when the worke
 - `npm run build` passed, including TypeScript. `npm run lint` passed with two existing unused-variable warnings in `alpaca-owner-first-order.test.mjs`.
 - The diff leaves strategy definitions, release flags and operational workflow schedules unchanged.
 
-The native PostgreSQL 17 controller suite and independent-connection race suite still require CI. The local runtime maps only UID 0 and cannot start a normal non-root PostgreSQL server. PGlite validation does not substitute for concurrency coverage. The PR must not be treated as ready to merge until those native checks pass.
+The native PostgreSQL 17 controller suite and independent-connection race suite remain unverified. The local runtime maps only UID 0 and cannot start a normal non-root PostgreSQL server. PGlite validation does not substitute for concurrency coverage. The PR must not be treated as ready to merge until those native checks pass.
+
+`scripts/verify-paper-auto-local.sh` provides an alternate native runner for a Codespace or Linux environment with Docker, Node 24 and Python 3. It archives the selected committed revision into a temporary directory, preserving modified files in the caller's checkout. It starts a PostgreSQL 17 container with networking disabled and no host ports or mounts, and uses that container's `psql` client through independent connections. No host PostgreSQL installation, npm install, broker key or Supabase key is needed.
+
+```sh
+bash scripts/verify-paper-auto-local.sh <reviewed-commit-sha>
+```
+
+The runner checks the SQL contract and independent-connection races on both fresh v1 and the pinned old v1 plus v2 applied twice. It runs the synthetic Python bridge tests, the focused Node tests and complete native controller suite, then repeats the controller suite using the twice-upgraded schema fixture in the temporary copy. It verifies the existing release flags remain OFF. Its EXIT trap removes only the container and its anonymous test volume; it keeps the source snapshot and `verification.log` under the printed temporary path. `SPORTSEDGE_NATIVE_PG17_PASS` is printed only if every command and container cleanup succeeds. Runtime versions and the PostgreSQL image ID are recorded. This helper has passed shell syntax checks; native execution is still pending.
 
 To repeat the focused Node checks:
 
