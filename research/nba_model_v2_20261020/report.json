@@ -307,5 +307,100 @@
         "samples": 2000
       }
     }
-  }
+  },
+  "refresh_cadence": {
+    "daily": {
+      "production": {
+        "games": 2460,
+        "brier": 0.21421916048122785,
+        "log_loss": 0.618326979052279,
+        "accuracy": 0.6646341463414634,
+        "ece": 0.03702494273752252
+      },
+      "shadow_v2_snapshot": {
+        "games": 2460,
+        "brier": 0.20866400558354212,
+        "log_loss": 0.604813124192139,
+        "accuracy": 0.6776422764227642,
+        "ece": 0.030419818176342504
+      },
+      "shadow_minus_production_brier": {
+        "mean_difference": -0.005555154897685753,
+        "lower_95": -0.007526531937964565,
+        "upper_95": -0.003421145091506616,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "weekly": {
+      "production": {
+        "games": 2460,
+        "brier": 0.21511439779140262,
+        "log_loss": 0.6203276953582678,
+        "accuracy": 0.6642276422764227,
+        "ece": 0.0352655238923847
+      },
+      "shadow_v2_snapshot": {
+        "games": 2460,
+        "brier": 0.20963712505194917,
+        "log_loss": 0.6069855449210472,
+        "accuracy": 0.6743902439024391,
+        "ece": 0.031854796304093824
+      },
+      "shadow_minus_production_brier": {
+        "mean_difference": -0.005477272739453471,
+        "lower_95": -0.007550624926751793,
+        "upper_95": -0.0033251930703196847,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "monthly": {
+      "production": {
+        "games": 2460,
+        "brier": 0.21882395707050642,
+        "log_loss": 0.629486895460559,
+        "accuracy": 0.6544715447154471,
+        "ece": 0.03195753800316824
+      },
+      "shadow_v2_snapshot": {
+        "games": 2460,
+        "brier": 0.2135678998627789,
+        "log_loss": 0.6162591056057097,
+        "accuracy": 0.6707317073170732,
+        "ece": 0.03176821834145617
+      },
+      "shadow_minus_production_brier": {
+        "mean_difference": -0.005256057207727489,
+        "lower_95": -0.00724281831878335,
+        "upper_95": -0.003109429535926891,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "frozen_at_season_start": {
+      "production": {
+        "games": 2460,
+        "brier": 0.2453316963850859,
+        "log_loss": 0.6928130966809,
+        "accuracy": 0.6004065040650407,
+        "ece": 0.09394257314293787
+      },
+      "shadow_v2_snapshot": {
+        "games": 2460,
+        "brier": 0.2387458463395473,
+        "log_loss": 0.6730871327350977,
+        "accuracy": 0.6048780487804878,
+        "ece": 0.06272688323016198
+      },
+      "shadow_minus_production_brier": {
+        "mean_difference": -0.006585850045538583,
+        "lower_95": -0.00856882665729459,
+        "upper_95": -0.0046133002522799945,
+        "days": 330,
+        "samples": 2000
+      }
+    }
+  },
+  "refresh_cadence_note": "Live forecasts come from research_publish, which prices games from a stored rating snapshot. 'frozen_at_season_start' is the current production behaviour; shadow_v2_snapshot is margin-of-victory updates plus 25% season regression, which research_publish can serve unchanged."
 }

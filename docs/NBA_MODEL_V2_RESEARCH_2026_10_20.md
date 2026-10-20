@@ -49,13 +49,41 @@ As in production, every forecast for a UTC day is made before any result from th
 
 Full numbers: `research/nba_model_v2_20261020/report.json`.
 
+## Finding: live forecasts use a frozen snapshot
+
+Live forecasts are not produced by the walk-forward above. `research_publish` (in `database/migrations/20261008231840_forward_research_ledger_v1.sql`) prices each game from one stored rating snapshot plus a fixed home advantage. The only version in use, `nba-elo-k20-h65-2026-04-v1`, holds ratings from April 13, 2026, and nothing refreshes it during the season.
+
+Replaying the test seasons with the same refresh behaviour (`refresh_cadence` in the report):
+
+| Refresh | Production Brier | Production accuracy | Shadow v2 snapshot Brier | Shadow accuracy |
+| --- | --- | --- | --- | --- |
+| Daily | 0.2142 | 66.5% | 0.2087 | 67.8% |
+| Weekly | 0.2151 | 66.4% | 0.2096 | 67.4% |
+| Monthly | 0.2188 | 65.4% | 0.2136 | 67.1% |
+| **Frozen all season (today)** | **0.2453** | **60.0%** | 0.2387 | 60.5% |
+
+A Brier score of 0.25 is what a 50/50 guess on every game scores. So the 66.5% shown on the site describes a daily-updating model, not the forecasts being published for 2026–27. Refreshing the snapshot weekly recovers almost all of the gap, needs no schema change, and matters more than any variant above.
+
 ## Recommendation
 
-E clears the pre-registered bar. The next step is a **forward shadow test**, not a switch:
+1. **Refresh ratings weekly.** Publish a new immutable model version each week from the latest results. This is the biggest single improvement. It needs an owner decision because the paper-betting code (`NBA_MODEL_VERSION` in `src/lib/nba-paper-run-contract.ts` and `nba-paper-once.ts`) only accepts the April version.
+2. **Run v2 as a forward shadow, not a switch.** The shadow snapshot is margin-of-victory updates plus 25% season regression; `research_publish` can price it unchanged. The back-to-back and neutral-site parts would need a richer publish function, so they are left out of the shadow. Shadow forecasts are never used for paper bets.
+3. **Decide with the pre-registered scorecard** (`analytics/nba_shadow_scorecard.py`). Keep collecting until 300 paired final games. Adopt the shadow only if the paired game-day bootstrap 95% interval for the Brier difference is entirely below zero; otherwise keep production. Add closing-line value once closing odds are recorded.
 
-1. Publish E's forecasts beside the production forecasts for the 2026–27 season, without placing paper bets on them.
-2. After a pre-set number of games (for example 300), compare both on Brier score and, once closing odds are recorded, on closing-line value.
-3. Change the paper-betting model only if E still leads.
+## Shadow test: owner steps
+
+Nothing below has been run against any database.
+
+1. Build the snapshot for the cutoff day, using results before that day only:
+   ```
+   python analytics/nba_snapshot.py --folder <sources> --manifest src/data/research/nba_recent_sources.json \
+     --as-of 2026-10-20 --season 2027 --current-season-espn <folder>/nba_schedule_2027.csv --out-dir <dir>
+   ```
+   The season-start snapshot is committed in `research/nba_model_v2_20261020/shadow/`: 30 teams, ratings through April 13, 2026, already pulled 25% toward 1505. The 2026–27 NBA Stats file was not yet published, so current-season results come from ESPN only; the snapshot records that as `single_source`.
+2. Review the generated `.sql` (an idempotent `insert … on conflict do nothing` into `research_model_versions`). Run it in staging first.
+3. For each fixture already checked for production, call `research_publish(game_id, '<shadow version>')`. The function enforces pregame timing and team mapping exactly as for production.
+4. Weekly, repeat steps 1–3 with a new `--as-of`. Each week gets its own immutable version.
+5. Export `research_forecasts` and `research_results` as JSON and run `python analytics/nba_shadow_scorecard.py export.json`.
 
 ## Limitations
 

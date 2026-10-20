@@ -64,6 +64,15 @@ def main() -> None:
     for n in candidates:
         results[n]["test_brier_vs_baseline"] = paired_day_bootstrap(split(forecasts["baseline"], set(TEST)), split(forecasts[n], set(TEST)), samples=2000)
 
+    # How much does the live pipeline's frozen snapshot cost, and how often must it be refreshed?
+    from nba_snapshot import SHADOW, refreshed_forecasts
+    cadence = {}
+    for label, every in (("daily", 1), ("weekly", 7), ("monthly", 30), ("frozen_at_season_start", None)):
+        prod_rows = [r for s in TEST for r in refreshed_forecasts(games, variants["baseline"], s, every)]
+        shadow_rows = [r for s in TEST for r in refreshed_forecasts(games, SHADOW, s, every)]
+        cadence[label] = {"production": score(prod_rows), "shadow_v2_snapshot": score(shadow_rows),
+                          "shadow_minus_production_brier": paired_day_bootstrap(prod_rows, shadow_rows, samples=2000)}
+
     report = {
         "study": "Pre-registered NBA Elo variant comparison",
         "status": "research only; production model unchanged",
@@ -81,10 +90,14 @@ def main() -> None:
             "Variants use published FiveThirtyEight-style defaults, not values tuned to these seasons; only the rest penalty is fitted, on 2023-24 alone.",
         ],
         "variants": results,
+        "refresh_cadence": cadence,
+        "refresh_cadence_note": "Live forecasts come from research_publish, which prices games from a stored rating snapshot. 'frozen_at_season_start' is the current production behaviour; shadow_v2_snapshot is margin-of-victory updates plus 25% season regression, which research_publish can serve unchanged.",
     }
     with args.output.open("x") as f:
         json.dump(report, f, indent=2, allow_nan=False)
     print(json.dumps({k: report[k] for k in ("games", "winner_on_development", "winner_test_brier_vs_baseline", "recommendation")}, indent=2))
+    for label, c in cadence.items():
+        print(f"cadence {label:24s} production brier {c['production']['brier']:.4f} acc {c['production']['accuracy']:.3f} | shadow brier {c['shadow_v2_snapshot']['brier']:.4f} acc {c['shadow_v2_snapshot']['accuracy']:.3f}")
     for n, r in results.items():
         print(f"{n:10s} dev brier {r['development']['brier']:.5f}  test brier {r['test']['brier']:.5f}  acc {r['test']['accuracy']:.4f}  logloss {r['test']['log_loss']:.4f}  ece {r['test']['ece']:.4f}  rest {r['settings']['rest_penalty']}")
 
