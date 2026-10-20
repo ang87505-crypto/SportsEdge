@@ -106,7 +106,7 @@ export function LineChart({series,height=240,yFormat:yF,xFormat:xF,ariaLabel,bas
     {baseline&&<g><line className="chart-baseline" x1={M.left} x2={W-M.right} y1={sy(baseline.y)} y2={sy(baseline.y)}/><text className="chart-tick" x={W-M.right} y={sy(baseline.y)-6} textAnchor="end">{baseline.label}</text></g>}
     {xTicks.map((t,i)=><text key={i} className="chart-tick" x={sx(t)} y={H-7} textAnchor={i===0?'start':i===xTicks.length-1?'end':'middle'}>{xFormat(t)}</text>)}
     {area&&series[0]&&<path d={`${path(series[0].points)} L${sx(series[0].points.at(-1)!.x)} ${sy(Math.max(geometry.lo,Math.min(geometry.hi,baseline?.y??geometry.lo)))} L${sx(series[0].points[0].x)} ${sy(Math.max(geometry.lo,Math.min(geometry.hi,baseline?.y??geometry.lo)))} Z`} fill={series[0].color} opacity={0.1}/>}
-    {series.map(s=><path key={s.id} d={path(s.points)} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dashed?'5 4':undefined}/>)}
+    {series.map(s=><path key={s.id} className={s.dashed?'series is-dashed':'series'} pathLength={s.dashed?undefined:1} d={path(s.points)} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dashed?'5 4':undefined}/>)}
     {series.length>1&&width>520&&series.map(s=>{const last=s.points.at(-1);return last?<text key={s.id} className="chart-direct-label" x={sx(last.x)+8} y={sy(last.y)+4}>{s.label}</text>:null;})}
     {series.map(s=>s.points.length===1?<circle key={s.id+'-single'} cx={sx(s.points[0].x)} cy={sy(s.points[0].y)} r={4} fill={s.color}/>:null)}
     {ax!==null&&<g><line className="chart-crosshair" x1={sx(ax)} x2={sx(ax)} y1={M.top} y2={H-M.bottom}/>
@@ -142,7 +142,7 @@ export function CalibrationChart({bins,label}:{bins:CalibrationBin[];label:strin
     {bins.map((b,i)=>{
      const [lo,hi]=b.observed_frequency_wilson_95;
      const r=3+5*Math.sqrt(b.sample_size/maxN);
-     return <g key={i} onPointerEnter={()=>setActive(i)} onPointerLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} tabIndex={0} role="img"
+     return <g key={i} className="cal-point" style={{['--i' as string]:i}} onPointerEnter={()=>setActive(i)} onPointerLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} tabIndex={0} role="img"
        aria-label={`Predicted ${(b.mean_probability*100).toFixed(1)}%, observed ${(b.observed_frequency*100).toFixed(1)}% across ${b.sample_size} games`}>
       <line x1={sx(b.mean_probability)} x2={sx(b.mean_probability)} y1={sy(lo)} y2={sy(hi)} stroke="var(--c1)" strokeWidth={2} strokeLinecap="round" opacity={0.55}/>
       <circle cx={sx(b.mean_probability)} cy={sy(b.observed_frequency)} r={r} fill="var(--c1)" stroke="var(--surface)" strokeWidth={2}/>

@@ -77,7 +77,7 @@ export function Evidence({kind,label}:{kind:EvidenceKind;label?:string}){
 export function Metric({label,value,detail,tone,evidence,size='md',hint}:
  {label:ReactNode;value:ReactNode;detail?:ReactNode;tone?:Tone;evidence?:EvidenceKind;size?:'md'|'lg'|'sm';hint?:string}){
  return <div className={cx('metric',`metric-${size}`)}>
-  <div className="metric-top"><span className="metric-label" title={hint}>{label}{hint&&<span className="metric-hint" aria-hidden="true">i</span>}</span>{evidence&&<Evidence kind={evidence}/>}</div>
+  <div className="metric-top"><span className="metric-label">{label}{hint&&<span className="metric-hint" tabIndex={0} role="note" aria-label={hint} data-tip={hint}>i</span>}</span>{evidence&&<Evidence kind={evidence}/>}</div>
   <strong className={cx('metric-value',tone&&`tone-text-${tone}`)}>{value}</strong>
   {detail&&<span className="metric-detail">{detail}</span>}
  </div>;

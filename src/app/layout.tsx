@@ -5,6 +5,7 @@ import "./ui.css";
 import "./shell.css";
 import "./charts.css";
 import "./pages.css";
+import "./motion.css";
 import {Suspense} from "react";
 import WorkspaceShell from "@/components/workspace-shell";
 

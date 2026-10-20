@@ -42,13 +42,23 @@ try{
  ws=new WebSocket(tab.webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
  const send=rpc(ws);
+ // Collect uncaught exceptions and console.error calls (React hydration and render errors land here).
+ const pageErrors=[];
+ ws.addEventListener('message',({data})=>{const m=JSON.parse(data);
+  if(m.method==='Runtime.exceptionThrown')pageErrors.push(m.params.exceptionDetails?.exception?.description??m.params.exceptionDetails?.text??'exception');
+  if(m.method==='Runtime.consoleAPICalled'&&m.params.type==='error')pageErrors.push(m.params.args.map(a=>a.value??a.description??'').join(' ').slice(0,300));
+ });
+ const internalLinks=new Set();
  await send('Page.enable');await send('Runtime.enable');
+ // Route screenshots and layout checks run with reduced motion so scroll-reveal never hides content in captures.
+ await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
  for(const route of routes){
   const sizes=['/','/sports','/stocks','/paper-betting'].includes(route)?widths:[390,1440];
   for(const width of sizes){
    const label=`${route==='/'?'overview':route.slice(1).replaceAll('/','-')}-${width}`;
    try{
     await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+    pageErrors.length=0;
     const navigation=await send('Page.navigate',{url:base+route});
     if(navigation.errorText)throw Error(navigation.errorText);
     await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main#main-content')`),label+' main landmark',25000);
@@ -71,7 +81,8 @@ try{
       platformRoute:['/progress','/testing','/guide'].includes(location.pathname),
       appError:document.body.innerText.includes('Application error:'),
       mobileScrollbar:innerWidth<=760?getComputedStyle(nav).scrollbarWidth:null,
-      placeholders:[...main.querySelectorAll('a[href="#"]')].length};
+      placeholders:[...main.querySelectorAll('a[href="#"]')].length,
+      links:[...document.querySelectorAll('a[href^="/"]')].map(a=>a.getAttribute('href'))};
     })()`);
     const issues=[];
     if(data.route!==route)issues.push('Wrong route');
@@ -81,6 +92,8 @@ try{
     if(data.scrollWidth>width+3)issues.push(`Page overflows viewport by ${data.scrollWidth-width}px`);
     if(width<=760&&data.mobileScrollbar!=='none')issues.push('Mobile tab scrollbar is visible');
     if(data.appError)issues.push('Next.js application error');
+    for(const href of data.links)internalLinks.add(href.split('#')[0]||'/');
+    if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
     if(data.placeholders)issues.push('Placeholder links detected');
     if(!data.heading)issues.push('Missing page heading');
@@ -94,7 +107,8 @@ try{
       await writeFile(path.join(output,label+'-full.png'),Buffer.from(full.data,'base64'));
      }
     }
-    results.push({...data,issues});
+    const summary={...data};delete summary.links;
+    results.push({...summary,issues});
     if(issues.length)failures.push(`${label}: ${issues.join('; ')}`);
     console.log(`${issues.length?'FAIL':'PASS'} ${label} [${data.scrollWidth}px] ${data.heading??''}`);
    }catch(error){const reason=`${label}: ${error instanceof Error?error.message:String(error)}`;failures.push(reason);console.error('FAIL '+reason);}
@@ -203,6 +217,52 @@ try{
   if(!noWrite)throw Error('Preview/cancel must never modify local journal');
   console.log('PASS manual journal: validates local JSON, requires confirmation, cancel does not write');
  }catch(error){const message='Journal backup browser interaction: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Every internal link found on any page must resolve.
+ try{
+  const broken=[];
+  for(const href of internalLinks){const r=await fetch(base+href,{redirect:'follow'});if(!r.ok)broken.push(`${href} (${r.status})`);}
+  if(broken.length)throw Error('Broken internal links: '+broken.join(', '));
+  console.log(`PASS links: ${internalLinks.size} internal destinations resolve`);
+ }catch(error){const message='Internal links: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Unknown routes get the styled 404 with section links, not a bare error.
+ try{
+  const r=await fetch(base+'/no-such-page');
+  if(r.status!==404)throw Error('expected HTTP 404, got '+r.status);
+  await send('Page.navigate',{url:base+'/no-such-page'});
+  await until(async()=>evaluate(send,`document.querySelector('main h1')?.textContent?.includes('Page not found') && !!document.querySelector('.status-page a[href="/stocks"]')`),'styled not-found page');
+  console.log('PASS not found: styled 404 with links back to every section');
+ }catch(error){const message='Not-found page: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Motion: blocks reveal as they scroll into view, the progress bar tracks scroll, Sections jumps work.
+ try{
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/stocks/research'});
+  await until(async()=>evaluate(send,`document.documentElement.classList.contains('motion-ok') && document.querySelectorAll('[data-reveal]').length>4`),'motion armed');
+  await delay(400);
+  const pending=await evaluate(send,`document.querySelectorAll('[data-reveal]:not(.is-in)').length`);
+  if(!pending)throw Error('Expected below-the-fold blocks to wait for scroll');
+  for(let y=0;y<12;y++){await evaluate(send,`window.scrollBy(0,700)`);await delay(160);}
+  await until(async()=>evaluate(send,`document.querySelectorAll('[data-reveal]:not(.is-in)').length===0`),'all blocks revealed after scrolling',8000);
+  const bar=await evaluate(send,`getComputedStyle(document.querySelector('.scroll-progress span')).transform`);
+  if(!/matrix\(0\.9|matrix\(1,/.test(bar))throw Error('Scroll progress should be near full at the bottom: '+bar);
+  await evaluate(send,`(()=>{document.querySelector('.section-menu .float-button').click();return true})()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.section-menu-panel button').length>=3`),'sections menu');
+  const before=await evaluate(send,`window.scrollY`);
+  await evaluate(send,`(()=>{document.querySelectorAll('.section-menu-panel button')[1].click();return true})()`);
+  await until(async()=>evaluate(send,`Math.abs(window.scrollY-${before})>300 && !document.querySelector('.section-menu-panel')`),'section jump',6000);
+  console.log('PASS motion: reveal on scroll, progress bar, Sections jump menu');
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await send('Page.navigate',{url:base+'/stocks/research'});
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main h1')`),'reduced motion page');
+  await delay(300);
+  const hidden=await evaluate(send,`!document.documentElement.classList.contains('motion-ok') && [...document.querySelectorAll('.panel-v2')].every(e=>getComputedStyle(e).opacity==='1')`);
+  if(!hidden)throw Error('Reduced motion must never hide content');
+  console.log('PASS reduced motion: nothing hidden or animated');
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/research/nba'});
+  await until(async()=>evaluate(send,`document.querySelector('nav[aria-label="Sports AI pages"] a[aria-current="page"]')?.getAttribute('href')==='/research/nba'`),'mobile section tabs');
+  console.log('PASS section tabs: phone users can switch between Sports AI pages');
+ }catch(error){const message='Motion and wayfinding: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}

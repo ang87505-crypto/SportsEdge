@@ -4,6 +4,7 @@ import {usePathname} from 'next/navigation';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {NavIcon} from '@/components/nav-icon';
 import {CommandMenu} from '@/components/command-menu';
+import {MotionLayer} from '@/components/motion';
 import {SECTIONS,PLATFORM,sectionFor,crumbsFor,parentFor} from '@/lib/navigation';
 
 const isExact=(href:string,path:string)=>path===href;
@@ -36,6 +37,33 @@ function SidebarTree({path,onNavigate}:{path:string;onNavigate?:()=>void}){
  </>;
 }
 
+/** Root and child pages of the current section, for tablet and phone where the sidebar tree is hidden. */
+function SectionTabs({path}:{path:string}){
+ const section=sectionFor(path);
+ if(!section||!section.children.length)return null;
+ const pages=[{href:section.href,label:section.id==='sports'?"Today's board":section.id==='stocks'?'Dashboard':section.label},...section.children];
+ return <nav className="section-tabs" aria-label={`${section.label} pages`}>
+  {pages.map(p=><Link key={p.href} href={p.href} aria-current={path===p.href?'page':undefined}>{p.label}</Link>)}
+ </nav>;
+}
+
+/** End-of-page wayfinding: the rest of this section, then the other primary sections. */
+function ContinueNav({path}:{path:string}){
+ if(path==='/')return null;
+ const section=sectionFor(path);
+ const inSection=section&&section.id!=='overview'?[{href:section.href,label:section.label,description:section.description},...section.children].filter(p=>p.href!==path):[];
+ const others=SECTIONS.filter(s=>s.id!=='overview'&&s.id!==section?.id);
+ if(!inSection.length&&!others.length)return null;
+ return <nav className="continue-nav" aria-label="Continue exploring">
+  {inSection.length>0&&<div><h2 className="continue-title">More in {section!.label}</h2><div className="continue-grid">
+   {inSection.map(p=><Link key={p.href} href={p.href} className="continue-card"><strong>{p.label}</strong><span>{p.description}</span></Link>)}
+  </div></div>}
+  <div><h2 className="continue-title">{inSection.length?'Other sections':'Explore'}</h2><div className="continue-grid">
+   {others.map(s=><Link key={s.href} href={s.href} className="continue-card"><span className="continue-icon"><NavIcon name={s.icon} size={18}/></span><strong>{s.label}</strong><span>{s.description}</span></Link>)}
+  </div></div>
+ </nav>;
+}
+
 function ModeNote(){
  return <div className="mode-note">
   <div className="mode-note-title"><NavIcon name="shield" size={15}/> Paper and research only</div>
@@ -58,6 +86,7 @@ export default function WorkspaceShell({children,previewFixtures=false}:{childre
  function closeDrawer(){drawer.current?.close();}
 
  return <div className="app">
+  <div className="ambient" aria-hidden="true"><span/><span/><span/></div>
   <a className="skip-link" href="#main-content">Skip to content</a>
   <aside className="sidebar" aria-label="Sidebar">
    <Link href="/" className="brand" aria-label="SportsEdge overview">
@@ -84,11 +113,14 @@ export default function WorkspaceShell({children,previewFixtures=false}:{childre
     </div>
    </header>
 
+   <SectionTabs path={path}/>
    <main id="main-content" className="content" tabIndex={-1}>
     {previewFixtures&&<aside role="note" className="fixture-preview-banner"><strong>STAGING PREVIEW · TEST DATA ONLY</strong><span> Sports research, quotes and betting balances on this Preview are synthetic examples from an isolated staging database — not real results, live odds or investment performance.</span></aside>}
     {parent&&<Link href={parent.href} className="back-link"><NavIcon name="back" size={15}/>{parent.label}</Link>}
-    {children}
+    <div className="page-enter" key={path}>{children}</div>
+    <ContinueNav path={path}/>
    </main>
+   <MotionLayer/>
 
    <footer className="app-footer">
     <span>SportsEdge research platform. Paper betting and Alpaca PAPER only; no real-money execution.</span>
