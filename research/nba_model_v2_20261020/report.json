@@ -1,0 +1,311 @@
+{
+  "study": "Pre-registered NBA Elo variant comparison",
+  "status": "research only; production model unchanged",
+  "source_revision": "3329d0dc07b1d88e9c4cd2761ad81538f43026faaf3fa5366f3d714258beec41",
+  "seasons": {
+    "warmup": 2023,
+    "development": 2024,
+    "test": [
+      2025,
+      2026
+    ]
+  },
+  "games": {
+    "total": 4920,
+    "development": 1230,
+    "test": 2460
+  },
+  "baseline_reproduces_published_accuracy": true,
+  "decision_rule": "Lowest development Brier wins; recommend only if the held-out Brier difference has a 95% game-day bootstrap interval entirely below zero.",
+  "winner_on_development": "E_all",
+  "winner_test_brier_vs_baseline": {
+    "mean_difference": -0.006394211608138885,
+    "lower_95": -0.00885579983395239,
+    "upper_95": -0.003948237096726281,
+    "days": 330,
+    "samples": 4000
+  },
+  "recommendation": "Adopt E_all for a forward shadow test",
+  "limitations": [
+    "The 2024-25 and 2025-26 seasons were already used to report the production model, so the test window is not untouched.",
+    "Accuracy and Brier score measure forecasts, not betting profit; no historical prices are used.",
+    "Variants use published FiveThirtyEight-style defaults, not values tuned to these seasons; only the rest penalty is fitted, on 2023-24 alone."
+  ],
+  "variants": {
+    "baseline": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": false,
+        "season_regression": 0.0,
+        "rest_penalty": 0.0,
+        "neutral_fix": false
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.21424830032384332,
+        "log_loss": 0.615097634866148,
+        "accuracy": 0.6487804878048781,
+        "ece": 0.0399223414213322
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.21421916048122785,
+        "log_loss": 0.618326979052279,
+        "accuracy": 0.6646341463414634,
+        "ece": 0.03702494273752252
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.21637685750142158,
+          "log_loss": 0.6216576948541092,
+          "accuracy": 0.6544715447154471,
+          "ece": 0.05148382583920539
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.21206146346103413,
+          "log_loss": 0.6149962632504488,
+          "accuracy": 0.6747967479674797,
+          "ece": 0.029162647892805274
+        }
+      }
+    },
+    "A_mov": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": true,
+        "season_regression": 0.0,
+        "rest_penalty": 0.0,
+        "neutral_fix": false
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.21353428391895624,
+        "log_loss": 0.6136216469254857,
+        "accuracy": 0.6552845528455284,
+        "ece": 0.046789013760517036
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.21024341924415788,
+        "log_loss": 0.6091361969940591,
+        "accuracy": 0.6731707317073171,
+        "ece": 0.037332818560459564
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.21351983657266138,
+          "log_loss": 0.6152628406037226,
+          "accuracy": 0.6642276422764227,
+          "ece": 0.04834126972729134
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.20696700191565434,
+          "log_loss": 0.6030095533843957,
+          "accuracy": 0.6821138211382114,
+          "ece": 0.03061083892421911
+        }
+      },
+      "test_brier_vs_baseline": {
+        "mean_difference": -0.003975741237070007,
+        "lower_95": -0.005628322199153668,
+        "upper_95": -0.0021981435678645597,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "B_regress": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": false,
+        "season_regression": 0.25,
+        "rest_penalty": 0.0,
+        "neutral_fix": false
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.21442561000430194,
+        "log_loss": 0.6157632483443042,
+        "accuracy": 0.640650406504065,
+        "ece": 0.04884204518319112
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.21221272637023275,
+        "log_loss": 0.6128355186436789,
+        "accuracy": 0.6654471544715447,
+        "ece": 0.032669683690772854
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.21471873171589428,
+          "log_loss": 0.6174558384496808,
+          "accuracy": 0.6528455284552845,
+          "ece": 0.039186749912564746
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.2097067210245712,
+          "log_loss": 0.6082151988376772,
+          "accuracy": 0.6780487804878049,
+          "ece": 0.027632478719007654
+        }
+      },
+      "test_brier_vs_baseline": {
+        "mean_difference": -0.002006434110995133,
+        "lower_95": -0.003050429373061459,
+        "upper_95": -0.0009870999161903666,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "C_rest": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": false,
+        "season_regression": 0.0,
+        "rest_penalty": 58.0,
+        "neutral_fix": false
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.21239001207541142,
+        "log_loss": 0.6118323877808501,
+        "accuracy": 0.6552845528455284,
+        "ece": 0.04554355380618735
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.21323374867492548,
+        "log_loss": 0.6158759685938261,
+        "accuracy": 0.6711382113821138,
+        "ece": 0.040113137302879576
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.21335778795071933,
+          "log_loss": 0.6143601874720802,
+          "accuracy": 0.6634146341463415,
+          "ece": 0.049460885455303596
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.21310970939913154,
+          "log_loss": 0.6173917497155719,
+          "accuracy": 0.6788617886178862,
+          "ece": 0.03786472585919968
+        }
+      },
+      "test_brier_vs_baseline": {
+        "mean_difference": -0.0009854118063024146,
+        "lower_95": -0.0024042470666736466,
+        "upper_95": 0.00039542400541142,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "D_neutral": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": false,
+        "season_regression": 0.0,
+        "rest_penalty": 0.0,
+        "neutral_fix": true
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.2141842684003803,
+        "log_loss": 0.6149807307221837,
+        "accuracy": 0.6495934959349593,
+        "ece": 0.039769879505762794
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.2142043475700899,
+        "log_loss": 0.6182035717545481,
+        "accuracy": 0.6650406504065041,
+        "ece": 0.03780562297091999
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.2162932819091607,
+          "log_loss": 0.6214211848701898,
+          "accuracy": 0.6544715447154471,
+          "ece": 0.050742725406564285
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.21211541323101912,
+          "log_loss": 0.6149859586389063,
+          "accuracy": 0.675609756097561,
+          "ece": 0.029154294166779532
+        }
+      },
+      "test_brier_vs_baseline": {
+        "mean_difference": -1.4812911137952977e-05,
+        "lower_95": -0.00021986574840113755,
+        "upper_95": 0.00017701396209750467,
+        "days": 330,
+        "samples": 2000
+      }
+    },
+    "E_all": {
+      "settings": {
+        "k": 20.0,
+        "home_advantage": 65.0,
+        "mov": true,
+        "season_regression": 0.25,
+        "rest_penalty": 62.0,
+        "neutral_fix": true
+      },
+      "development": {
+        "games": 1230,
+        "brier": 0.21146231460163642,
+        "log_loss": 0.6100978785127148,
+        "accuracy": 0.6617886178861788,
+        "ece": 0.03840739991454835
+      },
+      "test": {
+        "games": 2460,
+        "brier": 0.20782494887308897,
+        "log_loss": 0.6024727288226034,
+        "accuracy": 0.6813008130081301,
+        "ece": 0.03245151249060932
+      },
+      "test_by_season": {
+        "2025": {
+          "games": 1230,
+          "brier": 0.2087605830629996,
+          "log_loss": 0.6037733296081429,
+          "accuracy": 0.6764227642276422,
+          "ece": 0.038062093831777014
+        },
+        "2026": {
+          "games": 1230,
+          "brier": 0.20688931468317834,
+          "log_loss": 0.601172128037064,
+          "accuracy": 0.6861788617886179,
+          "ece": 0.029410886864880848
+        }
+      },
+      "test_brier_vs_baseline": {
+        "mean_difference": -0.006394211608138885,
+        "lower_95": -0.00885579983395239,
+        "upper_95": -0.003881691347835082,
+        "days": 330,
+        "samples": 2000
+      }
+    }
+  }
+}
