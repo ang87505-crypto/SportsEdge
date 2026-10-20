@@ -2,6 +2,7 @@ import {Suspense} from 'react';
 import {connection} from 'next/server';
 import Link from 'next/link';
 import {paperPerformance} from '@/lib/server/research-db';
+import {paperClosingLineValue,type PaperClv} from '@/lib/server/paper-clv';
 import {PageHeading,Panel,Metric,MetricGrid,Evidence,Empty,Details,KeyValues,Loading} from '@/components/ui';
 import {StackedBar} from '@/components/charts';
 import {PerformanceChart} from '@/components/performance-chart';
@@ -9,7 +10,7 @@ import {PaperLedgerBrowser} from '@/components/paper-ledger-browser';
 import {NbaPaperRunPanel} from '@/components/nba-paper-run-panel';
 import {NavIcon} from '@/components/nav-icon';
 import {realizedSeries,type RealizedPoint} from '@/lib/performance-series';
-import {american,pct,usdCents} from '@/lib/format';
+import {american,dateTimeUtc,pct,usdCents} from '@/lib/format';
 
 export const metadata={title:'Paper Betting · SportsEdge',description:'Shared virtual-money NBA ledger: bankroll, open and settled bets, and realized performance.'};
 
@@ -75,6 +76,8 @@ async function Ledger(){
    </Panel>
   </div>
 
+  <Suspense fallback={<Loading label="Checking closing prices"/>}><ClosingLineValue/></Suspense>
+
   <PaperLedgerBrowser positions={d.positions}/>
 
   <OwnerTools/>
@@ -84,6 +87,48 @@ async function Ledger(){
    <Details title="Where are soccer paper bets?"><p>EPL forecasts are an archived experiment with no paper ledger. They are not included in these balances. See the <Link href="/research/epl">Soccer model</Link> for its snapshot and limitations.</p></Details>
   </div>
  </>;
+}
+
+function minutes(m:number|null){
+ if(m===null)return '—';
+ return m<90?`${m} min`:m<48*60?`${Math.round(m/60)} h`:`${Math.round(m/1440)} d`;
+}
+
+/** Did recorded bets get better prices than the market's last stored price before tip-off? */
+async function ClosingLineValue(){
+ await connection();
+ let clv:PaperClv|null=null;
+ try{clv=await paperClosingLineValue();}catch{}
+ const head={title:'Closing-line value',description:'Each bet\'s price against the same sportsbook\'s last stored price before tip-off. Positive values beat the close.'};
+ if(!clv)return <Panel {...head} actions={<Evidence kind="unavailable"/>} className="mt-12"><p className="quiet">Closing prices could not be read. Bet results above are unaffected.</p></Panel>;
+ const s=clv.summary;
+ if(!s.withClose)return <Panel {...head} actions={<Evidence kind="not-measured"/>} className="mt-12">
+  <p className="quiet">{clv.startedBets?`None of the ${clv.startedBets} bet(s) on started games has a stored two-way price at its sportsbook before tip-off.`:'No bets on started games yet. A close exists only once a game has tipped off.'}</p>
+ </Panel>;
+ const evTone=s.interval&&s.interval[0]>0?'positive':s.interval&&s.interval[1]<0?'negative':undefined;
+ return <Panel {...head} actions={<Evidence kind="recorded"/>} className="mt-12" flush>
+  <div className="panel-pad">
+   <MetricGrid columns={4}>
+    <Metric size="sm" label="Bets with a close" value={`${s.withClose} of ${s.bets}`} detail="Started games only"/>
+    <Metric size="sm" label="Beat the close" value={pct(s.beatCloseRate,0)} hint="Share of bets placed at a better price than the last stored pregame price at the same book." detail="Better price than the last pregame quote"/>
+    <Metric size="sm" label="Expected return at close" value={pct(s.meanClosingEv,1,{signed:true})} tone={evTone} hint="Average of (closing margin-free probability × bet decimal odds − 1). If closing prices are efficient, this estimates the bets' true expected return." detail={s.interval?`95% interval ${pct(s.interval[0],1,{signed:true})} to ${pct(s.interval[1],1,{signed:true})}`:'Needs 2+ bets for an interval'}/>
+    <Metric size="sm" label="Close observed" value={minutes(s.medianMinutesBeforeStart)} detail="Median time before tip-off"/>
+   </MetricGrid>
+   {s.medianMinutesBeforeStart!==null&&s.medianMinutesBeforeStart>120&&<p className="game-card-warning" style={{marginTop:10}}>The stored “close” is usually more than two hours before tip-off, so it is an early price, not the true closing line. Collecting odds nearer tip-off would make this measure stronger.</p>}
+   {clv.quoteLimitReached&&<p className="game-card-warning" style={{marginTop:10}}>The quote read hit its limit; some closes may be missing.</p>}
+  </div>
+  <div className="table-wrap table-scroll"><table className="data-table ledger-table">
+   <thead><tr><th scope="col">Bet</th><th scope="col" className="num">Bet price</th><th scope="col" className="num">Close</th><th scope="col" className="num">Price CLV</th><th scope="col" className="num">EV at close</th></tr></thead>
+   <tbody>{[...clv.bets].reverse().slice(0,50).map(b=><tr key={b.id}>
+    <td data-label="Bet"><strong>{b.selection}</strong><small>{b.sportsbook}, close {dateTimeUtc(b.close.observedAt)}</small></td>
+    <td data-label="Bet price" className="num">{american(b.americanOdds)}</td>
+    <td data-label="Close" className="num">{american(b.close.americanOdds)}<small>{pct(b.close.probability,1)} margin-free</small></td>
+    <td data-label="Price CLV" className={`num ${b.priceClv>0?'tone-text-positive':b.priceClv<0?'tone-text-negative':''}`}>{pct(b.priceClv,1,{signed:true})}</td>
+    <td data-label="EV at close" className={`num ${b.closingEv>0?'tone-text-positive':b.closingEv<0?'tone-text-negative':''}`}>{pct(b.closingEv,1,{signed:true})}</td>
+   </tr>)}</tbody>
+  </table></div>
+  <p className="ledger-foot">Closing-line value measures price quality, not results. It needs many bets before it means much, and it depends on when prices were collected.</p>
+ </Panel>;
 }
 
 function OwnerTools(){
