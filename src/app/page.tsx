@@ -59,7 +59,7 @@ export default function Home(){
  const activity=useMemo(()=>{
   if(!details)return [];
   const items:{at:string;kind:string;tone:Tone;text:ReactNode;href:string}[]=[];
-  for(const f of details.forecasts)items.push({at:f.publishedAt,kind:'Forecast',tone:'info',href:'/research/nba',
+  for(const f of details.forecasts)if(f.role!=='other')items.push({at:f.publishedAt,kind:f.role==='shadow'?'Shadow':'Forecast',tone:f.role==='shadow'?'neutral':'info',href:'/research/nba',
    text:<>{f.away} at {f.home}: home win {pct(f.homeProbability)}</>});
   for(const p of details.positions){
    items.push({at:p.placedAt,kind:'Paper bet',tone:'neutral',href:'/paper-betting',text:<>{p.selection} {american(p.americanOdds)}, {usdCents(p.stakeCents)} virtual stake</>});
@@ -113,7 +113,7 @@ export default function Home(){
     </div>
     <p className="home-panel-note">{summary.evaluation_games.toLocaleString()} games. Accuracy is not a betting return: historical sportsbook prices were not available, so no ROI is claimed.</p>
     <div className="home-panel-foot">
-     <span>{details?`${details.forecasts.length} recorded forward forecast(s)`:research.status==='loading'?'Loading forecasts…':'Forecasts unavailable'}</span>
+     <span>{details?`${details.forecasts.filter(f=>f.role==='production').length} recorded forward forecast(s)`:research.status==='loading'?'Loading forecasts…':'Forecasts unavailable'}</span>
      <Link href="/sports" className="text-link">Open today&apos;s board</Link>
     </div>
    </Panel>

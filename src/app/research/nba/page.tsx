@@ -4,6 +4,8 @@ import Link from 'next/link';
 import {PageHeading,Panel,Metric,MetricGrid,Evidence,Callout,Details,Empty,Loading,Badge} from '@/components/ui';
 import {CalibrationChart,LineChart,PairedBars} from '@/components/charts';
 import summary from '@/data/research/nba_recent_summary.json';
+import v2 from '../../../../research/nba_model_v2_20261020/report.json';
+import {forecastRole} from '@/lib/dashboard-snapshot';
 import predictions from '@/data/research/nba_recent_predictions.json';
 import {forecasts,type ForecastRow} from '@/lib/server/research-db';
 import {dateTimeUtc,pct} from '@/lib/format';
@@ -33,6 +35,7 @@ export default function Page(){
   <PageHeading title="NBA model" description="An Elo rating model that estimates each team's chance of winning. Here is how its probabilities held up on two past seasons, and the forecasts it has published since."
    meta={<><Evidence kind="historical"/><Badge tone="neutral">Elo, K={summary.settings.k_factor}, home +{summary.settings.home_advantage}</Badge></>}
    action={<Link href="/sports" className="button button-secondary">Today&apos;s board</Link>}/>
+  <Callout tone="warning" title="Live forecasts use ratings frozen in April">Forecasts published for 2026–27 come from team ratings stored on {dateTimeUtc(summary.ratings_as_of)}, and those ratings do not update during the season. Replaying 2024–26 that way scored {pct(v2.refresh_cadence.frozen_at_season_start.production.accuracy,1)} winner accuracy (Brier {v2.refresh_cadence.frozen_at_season_start.production.brier.toFixed(3)}), against {pct(v2.refresh_cadence.daily.production.accuracy,1)} (Brier {v2.refresh_cadence.daily.production.brier.toFixed(3)}) for the daily-updated model measured on this page. Weekly refreshes would recover most of the gap: {pct(v2.refresh_cadence.weekly.production.accuracy,1)}. Details are in the October 20 model research note in <code>docs/</code>.</Callout>
   <Callout tone="info" title="Accuracy is not profit">Historical accuracy asks “who won?”. A betting return asks “did the price paid produce a profit?”. Matched historical sportsbook prices were not available, so no historical ROI is reported. Forward paper results are on the <Link className="text-link" href="/paper-betting">Paper Betting</Link> page.</Callout>
 
   <MetricGrid columns={4}>
@@ -95,7 +98,7 @@ async function ForwardForecasts(){
      <td data-label="Tip-off">{dateTimeUtc(r.starts_at)}</td>
      <td data-label="Home win"><span className="inline-prob"><span className="inline-prob-track" aria-hidden="true"><span style={{width:`${p*100}%`}}/></span>{pct(p)}</span></td>
      <td data-label="Away win" className="num">{pct(1-p)}</td>
-     <td data-label="Published">{dateTimeUtc(r.published_at)}<small>{r.model_version}</small></td>
+     <td data-label="Published">{dateTimeUtc(r.published_at)}<small>{forecastRole(r.model_version)==='production'?'Production':forecastRole(r.model_version)==='shadow'?'Shadow v2 (not used for bets)':'Other'}: {r.model_version}</small></td>
     </tr>;})}</tbody>
    </table></div>}
  </Panel>;

@@ -25,15 +25,19 @@ export default function Sports(){
  const [research]=useResearch();
  const now=useNow();
 
- const forecastsByGame=useMemo(()=>{
-  const map=new Map<string,SnapshotForecast>();
-  if(research.status!=='ready')return map;
+ // Latest forecast per game, kept separately per role so a shadow row can never stand in for the production model.
+ const [forecastsByGame,shadowByGame]=useMemo(()=>{
+  const prod=new Map<string,SnapshotForecast>(),shadow=new Map<string,SnapshotForecast>();
+  if(research.status!=='ready')return [prod,shadow];
   for(const f of research.data.details.forecasts){
+   const map=f.role==='production'?prod:f.role==='shadow'?shadow:null;
+   if(!map)continue;
    const prev=map.get(String(f.gameId));
    if(!prev||Date.parse(f.publishedAt)>Date.parse(prev.publishedAt))map.set(String(f.gameId),f);
   }
-  return map;
+  return [prod,shadow];
  },[research]);
+ const hasShadow=shadowByGame.size>0;
 
  const games=feed.status==='ready'?feed.data.games:[];
  const term=search.trim().toLowerCase();
@@ -75,6 +79,7 @@ export default function Sports(){
      <span>Latest quote {newest?<Badge tone={quoteTone(now?ageHours(newest,now):null)}>{now?age(newest,now):dateTime(newest)}</Badge>:<Badge tone="warning">none stored</Badge>}</span>
      <span>Source: The Odds API, stored snapshots</span>
      {sport==='nba'&&<span>Model: {research.status==='ready'?`${forecastsByGame.size} recorded forecast(s)`:research.status==='loading'?'loading':'unavailable'}</span>}
+     {sport==='nba'&&hasShadow&&<span title="Research comparison only; never used for paper bets">Shadow v2: {shadowByGame.size}</span>}
     </>}
   </div>
 
@@ -83,7 +88,7 @@ export default function Sports(){
    visible.length===0?<Panel><Empty title={games.length?'No games match these filters':'No upcoming games stored'}
      action={games.length?<button type="button" className="button button-secondary" onClick={()=>{setSearch('');setFilter('all');}}>Clear filters</button>:undefined}>
      {games.length?'Try another team name or show all games.':`There are no scheduled ${sport==='nba'?'NBA':'EPL'} games with stored data right now. Check the other sport or come back after the next collection run.`}</Empty></Panel>:
-   <div className="game-grid">{visible.map(g=><GameCard key={g.id} game={g} sport={sport} forecast={sport==='nba'?forecastsByGame.get(g.id)??null:null} now={now}/>)}</div>}
+   <div className="game-grid">{visible.map(g=><GameCard key={g.id} game={g} sport={sport} forecast={sport==='nba'?forecastsByGame.get(g.id)??null:null} shadow={sport==='nba'&&hasShadow?shadowByGame.get(g.id)??null:undefined} now={now}/>)}</div>}
 
   {feed.status==='ready'&&feed.data.quoteLimitReached&&<Callout tone="warning" title="Quote limit reached">This read hit its 1,000-quote limit, so some books may be missing from the comparison.</Callout>}
 
@@ -94,7 +99,8 @@ export default function Sports(){
  </>;
 }
 
-function GameCard({game,sport,forecast,now}:{game:FeedGame;sport:Sport;forecast:SnapshotForecast|null;now:number}){
+function GameCard({game,sport,forecast,shadow,now}:{game:FeedGame;sport:Sport;forecast:SnapshotForecast|null;shadow?:SnapshotForecast|null;now:number}){
+ const showShadow=shadow!==undefined;
  const outcomes=sport==='soccer'?[game.home,'Draw',game.away]:[game.away,game.home];
  const books=new Set(game.bookmakers.map(q=>q.sportsbook)).size;
  const newest=latestQuote([game]);
@@ -104,7 +110,8 @@ function GameCard({game,sport,forecast,now}:{game:FeedGame;sport:Sport;forecast:
   const quotes=game.bookmakers.filter(q=>q.selection===sel);
   const best=quotes.reduce<typeof quotes[number]|null>((b,q)=>!b||q.americanOdds>b.americanOdds?q:b,null);
   const model=forecast?sel===game.home?forecast.homeProbability:sel===game.away?1-forecast.homeProbability:null:null;
-  return {sel,market,best,model,diff:model!==null&&market.median!==null?model-market.median:null};
+  const shadowP=shadow?sel===game.home?shadow.homeProbability:sel===game.away?1-shadow.homeProbability:null:null;
+  return {sel,market,best,model,shadowP,diff:model!==null&&market.median!==null?model-market.median:null};
  });
  const home=rows.find(r=>r.sel===game.home)!;
  return <article className="game-card-v2" aria-labelledby={`game-${game.id}`}>
@@ -120,10 +127,11 @@ function GameCard({game,sport,forecast,now}:{game:FeedGame;sport:Sport;forecast:
   </header>
 
   <table className="game-odds">
-   <thead><tr><th scope="col">Outcome</th>{sport==='nba'&&<th scope="col" className="num">Model</th>}<th scope="col" className="num">Market</th>{sport==='nba'&&<th scope="col" className="num">Diff.</th>}<th scope="col" className="num">Best price</th></tr></thead>
+   <thead><tr><th scope="col">Outcome</th>{sport==='nba'&&<th scope="col" className="num">Model</th>}{showShadow&&<th scope="col" className="num" title="Shadow v2 research model. Never used for paper bets.">Shadow</th>}<th scope="col" className="num">Market</th>{sport==='nba'&&<th scope="col" className="num">Diff.</th>}<th scope="col" className="num">Best price</th></tr></thead>
    <tbody>{rows.map(r=><tr key={r.sel}>
     <th scope="row">{r.sel}</th>
     {sport==='nba'&&<td className="num">{pct(r.model)}</td>}
+    {showShadow&&<td className="num quiet">{pct(r.shadowP)}</td>}
     <td className="num">{pct(r.market.median)}{r.market.books>0&&<small>{r.market.books} book{r.market.books===1?'':'s'}</small>}</td>
     {sport==='nba'&&<td className="num">{r.diff===null?'—':<span className={Math.abs(r.diff)>=0.05?'diff-strong':undefined}>{pp(r.diff)}</span>}</td>}
     <td className="num">{r.best?<>{american(r.best.americanOdds)}<small>{r.best.sportsbook}</small></>:'—'}</td>
@@ -132,7 +140,8 @@ function GameCard({game,sport,forecast,now}:{game:FeedGame;sport:Sport;forecast:
 
   {sport==='nba'&&(forecast||home.market.median!==null)&&<ProbabilityCompare rows={[
    {label:`Model, ${shortName(game.home)}`,value:home.model,color:'var(--c1)'},
-   {label:`Market, ${shortName(game.home)}`,value:home.market.median,color:'var(--c2)'}]}
+   {label:`Market, ${shortName(game.home)}`,value:home.market.median,color:'var(--c2)'},
+   ...(shadow?[{label:`Shadow v2, ${shortName(game.home)}`,value:home.shadowP,color:'var(--c3)'}]:[])]}
    caption={home.diff!==null?<>Home-win difference {pp(home.diff)}. A difference is not an edge until forward results confirm it.</>:forecast?'No complete market to compare against.':'No published model forecast for this game.'}/>}
   {sport==='nba'&&home.diff!==null&&Math.abs(home.diff)>=0.1&&<p className="game-card-warning">A gap this large usually means the Elo model is missing information the market has, such as injuries or roster changes.</p>}
   {sport==='soccer'&&<p className="game-card-note">Market probabilities only. The EPL model is an archived experiment; see <Link className="text-link" href="/research/epl">Soccer model</Link>.</p>}

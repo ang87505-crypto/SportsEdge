@@ -1,14 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {snapshotDetails,parseSportsFeed,marketProbability,latestQuote} from './dashboard-snapshot.ts';
+import {readFileSync} from 'node:fs';
+import {snapshotDetails,parseSportsFeed,marketProbability,latestQuote,forecastRole,PRODUCTION_NBA_MODEL} from './dashboard-snapshot.ts';
 
 const game={id:1,starts_at:'2026-10-21T23:30:00Z',home:{name:'Boston Celtics'},away:{name:'New York Knicks'},leagues:{sport_code:'nba'}};
 test('valid forecast and settled position rows are extracted',()=>{
- const d=snapshotDetails({predictions:[{id:7,game_id:1,home_probability:0.61,published_at:'2026-10-20T10:00:00Z',starts_at:'2026-10-21T23:30:00Z',games:game}],
+ const d=snapshotDetails({predictions:[{id:7,game_id:1,model_version:'nba-elo-k20-h65-2026-04-v1',home_probability:0.61,published_at:'2026-10-20T10:00:00Z',starts_at:'2026-10-21T23:30:00Z',games:game}],
   paper:{pending_bets:0,settled_bets:1,win_rate:1,equity_cents:1010000,profit_cents:10000,initial_cents:1000000,roi:0.1,wins:1,losses:0,
    positions:[{id:3,selection:'Boston Celtics',american_odds:-120,stake_cents:10000,placed_at:'2026-10-20T11:00:00Z',settlement:{profit_cents:8333,outcome:'won',settled_at:'2026-10-22T03:00:00Z'}}]}});
  assert.equal(d.forecasts.length,1);
  assert.equal(d.forecasts[0].home,'Boston Celtics');
+ assert.equal(d.forecasts[0].role,'production');
  assert.equal(d.positions[0].settlement.outcome,'won');
  assert.equal(d.equityCents,1010000);
 });
@@ -36,4 +38,13 @@ test('sports feed parser rejects unavailable responses and keeps only valid quot
  assert.ok(Math.abs(m.median-0.57)<1e-12);
  assert.equal(latestQuote(f.games),'2026-10-20T09:30:00Z');
  assert.deepEqual(marketProbability(f.games[0],'A'),{median:null,books:0});
+});
+
+test('shadow forecasts are labelled separately and the production id matches the paper-bet contract',()=>{
+ assert.equal(forecastRole('nba-elo-v2-mov-reg25-2026-10-20'),'shadow');
+ assert.equal(forecastRole('nba-elo-k20-h65-2026-04-v1'),'production');
+ assert.equal(forecastRole(null),'other');
+ assert.equal(forecastRole('epl-elo-k20'),'other');
+ const contract=readFileSync(new URL('./nba-paper-run-contract.ts',import.meta.url),'utf8');
+ assert.ok(contract.includes(`NBA_MODEL_VERSION='${PRODUCTION_NBA_MODEL}'`),'dashboard production model id must equal the paper-bet contract');
 });

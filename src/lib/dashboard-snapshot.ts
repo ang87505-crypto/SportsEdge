@@ -15,7 +15,17 @@ export function isResearchSnapshot(v:unknown):v is ResearchSnapshot{
  * malformed rows are dropped and malformed figures become null, so a partial backend change can
  * never surface as a fabricated number.
  */
-export type SnapshotForecast={id:number;gameId:number;home:string;away:string;startsAt:string;publishedAt:string;homeProbability:number;sport:string|null};
+export type SnapshotForecast={id:number;gameId:number;home:string;away:string;startsAt:string;publishedAt:string;homeProbability:number;sport:string|null;
+ modelVersion:string|null;role:ForecastRole};
+/** Production is the only model used for paper bets; shadow versions are research comparisons. */
+export type ForecastRole='production'|'shadow'|'other';
+export const PRODUCTION_NBA_MODEL='nba-elo-k20-h65-2026-04-v1';
+export const SHADOW_NBA_PREFIX='nba-elo-v2-';
+export function forecastRole(version:string|null):ForecastRole{
+ if(version===PRODUCTION_NBA_MODEL)return 'production';
+ if(version&&version.startsWith(SHADOW_NBA_PREFIX))return 'shadow';
+ return 'other';
+}
 export type SnapshotPosition={id:number;selection:string;americanOdds:number;stakeCents:number;placedAt:string;
  settlement:{outcome:'won'|'lost'|'void';profitCents:number;settledAt:string}|null};
 export type SnapshotDetails={initialCents:number|null;equityCents:number|null;availableCents:number|null;pendingStakeCents:number|null;
@@ -38,7 +48,8 @@ export function snapshotDetails(v:ResearchSnapshot):SnapshotDetails{
   const home=name(g.home),away=name(g.away);
   if(id===null||gameId===null||prob===null||prob<0||prob>1||!startsAt||!publishedAt||!home||!away)continue;
   const league=obj(g.leagues);
-  forecasts.push({id,gameId,home,away,startsAt,publishedAt,homeProbability:prob,sport:league&&typeof league.sport_code==='string'?league.sport_code:null});
+  const modelVersion=typeof r.model_version==='string'?r.model_version:null;
+  forecasts.push({id,gameId,home,away,startsAt,publishedAt,homeProbability:prob,sport:league&&typeof league.sport_code==='string'?league.sport_code:null,modelVersion,role:forecastRole(modelVersion)});
  }
  const positions:SnapshotPosition[]=[];
  for(const raw of Array.isArray(p.positions)?p.positions:[]){
