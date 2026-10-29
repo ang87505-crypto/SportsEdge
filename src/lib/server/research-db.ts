@@ -1,10 +1,16 @@
 import 'server-only';
 import {performance,noVig,type SettledPosition} from '@/lib/research-math';
 export async function researchDb<T>(path: string, body?: object): Promise<T> {
-  const address=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY??process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const address=process.env.SUPABASE_URL,key=process.env.SUPABASE_READONLY_KEY??process.env.SUPABASE_SECRET_KEY??process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!address||!key)throw new Error('Research database is not configured');
   const url=new URL(address);
   if(url.protocol!=='https:'||!url.hostname.endsWith('.supabase.co')||url.pathname!=='/'||url.search||url.hash)throw new Error('Invalid database address');
+  if(process.env.SPORTSEDGE_PREVIEW_FIXTURES==='1'){
+    // Fixture Preview may only access the isolated staging project with an
+    // anon/publishable key. Never accept a production or service-role key.
+    if(url.hostname!=='mcaxfaaohyencpspalfe.supabase.co'||!key.startsWith('sb_publishable_'))
+      throw new Error('Synthetic staging Preview requires its isolated read-only research source');
+  }
   const response=await fetch(`${url.origin}/rest/v1/${path}`,{method:body?'POST':'GET',body:body?JSON.stringify(body):undefined,headers:{apikey:key,...(key.startsWith('eyJ')?{Authorization:`Bearer ${key}`} : {}),'Content-Type':'application/json',Accept:'application/json'},cache:'no-store',signal:AbortSignal.timeout(12000)});
   if(!response.ok)throw new Error(`Research database request failed (${response.status})`);
   const raw=await response.text();return (raw?JSON.parse(raw):null) as T;

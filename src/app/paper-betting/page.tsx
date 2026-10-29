@@ -1,30 +1,95 @@
 import {Suspense} from 'react';
 import {connection} from 'next/server';
+import Link from 'next/link';
 import {paperPerformance} from '@/lib/server/research-db';
-import {PageHeading,Stat,Details,Action,Empty} from '@/components/ui';
+import {PageHeading,Panel,Metric,MetricGrid,Evidence,Empty,Details,KeyValues,Loading} from '@/components/ui';
+import {StackedBar} from '@/components/charts';
 import {PerformanceChart} from '@/components/performance-chart';
 import {PaperLedgerBrowser} from '@/components/paper-ledger-browser';
 import {NbaPaperRunPanel} from '@/components/nba-paper-run-panel';
+import {NavIcon} from '@/components/nav-icon';
 import {realizedSeries,type RealizedPoint} from '@/lib/performance-series';
-export default function Page(){return <Suspense fallback={<div className="loading">Loading paper bets…</div>}><Paper/></Suspense>;}
-const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
-const rate=(n:number|null)=>n===null?'Not measured':`${(n*100).toFixed(2)}%`;
-async function Paper(){
+import {american,pct,usdCents} from '@/lib/format';
+
+export const metadata={title:'Paper Betting · SportsEdge',description:'Shared virtual-money NBA ledger: bankroll, open and settled bets, and realized performance.'};
+
+export default function Page(){
+ return <>
+  <PageHeading title="Paper Betting" description="A shared virtual-money NBA ledger. A bet is recorded only when the model's fixed rules qualify it, and results settle against checked final scores."
+   action={<Link href="/sports" className="button button-secondary">Browse games</Link>}/>
+  <div className="virtual-banner" role="note">
+   <span className="virtual-banner-icon"><NavIcon name="shield" size={18}/></span>
+   <div><strong>Virtual money only.</strong> No sportsbook account is connected and nothing on this page can place a real wager. Balances are research records.</div>
+  </div>
+  <Suspense fallback={<Loading label="Loading the paper ledger"/>}><Ledger/></Suspense>
+ </>;
+}
+
+async function Ledger(){
  await connection();
  let d:Awaited<ReturnType<typeof paperPerformance>>|null=null;
  try{d=await paperPerformance();}catch{}
+ if(!d)return <>
+  <Panel><Empty title="The paper ledger is unavailable" action={<a className="button button-secondary" href="/paper-betting">Reload ledger</a>}>The saved research database did not respond. No balance or result has been substituted.</Empty></Panel>
+  <OwnerTools/>
+ </>;
+
  let graph:RealizedPoint[]=[];
  let graphInvalid=false;
- if(d){
-  try{
-   const events=d.positions.filter(p=>p.settlement!==null).map(p=>({
-    id:String(p.id),at:p.settlement!.settled_at,
-    profitCents:Number(p.settlement!.profit_cents)
-   }));
-   graph=realizedSeries(d.initial_cents,events);
-  }catch{graphInvalid=true;}
- }
-return <><PageHeading eyebrow="SPORTS PAPER BETS" title="Practice now. Measure honestly." description="Follow the NBA model’s shared virtual account. A paper bet records an idea and a price without placing a real wager." action={<Action href="/sports" secondary>Browse games</Action>}/><div className="notice"><strong>Shared NBA experiment.</strong> These are the model’s recorded positions, not a personal betting account. “Pending” means the game has not been settled in this ledger.</div><NbaPaperRunPanel/>{!d?<section className="glass"><Empty title="The ledger is temporarily unavailable">Try again shortly. No result or balance has been substituted.</Empty></section>:<><div className="stats-grid"><Stat label="Virtual account value" value={money(d.equity_cents)} detail="Starting cash plus settled profit/loss"/><Stat label="Available virtual cash" value={money(d.available_cents)} detail={`${money(d.pending_stake_cents)} reserved in pending bets`}/><Stat label="Settled return (ROI)" value={rate(d.roi)} detail="Profit / amount staked on settled bets"/><Stat label="Settled win rate" value={rate(d.win_rate)} detail={`${d.settled_bets} settled · ${d.pending_bets} pending`}/></div>{graphInvalid?<div className="notice" role="alert"><strong>Performance chart unavailable.</strong> Some settlement records could not be validated. Review the saved ledger; no curve has been guessed.</div>:<PerformanceChart points={graph} initialCents={d.initial_cents}
- heading="NBA virtual balance after settlement"
- description="Trace profit as recorded NBA virtual bets settle. Pending bets do not create imaginary returns."
- source="Source: recorded NBA research settlements, ordered by settlement date"/>}<PaperLedgerBrowser positions={d.positions}/><Details title="Risk, profit and drawdown explained"><p><strong>Realized profit / loss:</strong> {money(d.profit_cents)}. Only settled wagers affect this figure.</p><p><strong>Largest realized drawdown:</strong> {d.settled_bets?`${money(d.max_drawdown_cents)} (${rate(d.max_drawdown_fraction)})`:'Not measured yet'}. This is the largest fall from a previous account high.</p><p><strong>Pending exposure:</strong> {money(d.pending_stake_cents)} across {d.pending_bets} wagers. This cash is reserved, not counted as a loss.</p></Details><Details title="The fixed rules behind these paper bets"><p>Starting virtual bankroll: {money(d.initial_cents)}. Each new position uses 1% of available cash, with at most one position per forecast.</p><p>Prices must form a complete market from one sportsbook and be observed within one hour. The model’s estimated expected return must be at least 2%, with a positive difference against the market’s margin-adjusted probability.</p><p>Results settle only against checked final scores. Prices can move and a real bet might not be accepted at the recorded price. This experiment has no established economic advantage.</p></Details></>}<Details title="Where are the soccer paper bets?"><p>EPL forecasts have a separate experimental ledger and bankroll. They are not included in the NBA balances above. See <a href="/research/epl">EPL research</a> for the current model snapshot and its limitations.</p></Details></>;}
+ try{
+  graph=realizedSeries(d.initial_cents,d.positions.filter(p=>p.settlement!==null).map(p=>({id:String(p.id),at:p.settlement!.settled_at,profitCents:Number(p.settlement!.profit_cents)})));
+ }catch{graphInvalid=true;}
+
+ const voids=d.positions.filter(p=>p.settlement?.outcome==='void').length;
+ const stakes=d.positions.map(p=>Number(p.stake_cents)).filter(Number.isFinite);
+ const avgStake=stakes.length?Math.round(stakes.reduce((a,b)=>a+b,0)/stakes.length):null;
+ const odds=d.positions.map(p=>Number(p.american_odds)).filter(Number.isFinite).sort((a,b)=>a-b);
+ const medianOdds=odds.length?odds[Math.floor(odds.length/2)]:null;
+ const profitTone=d.profit_cents>0?'positive':d.profit_cents<0?'negative':undefined;
+
+ return <>
+  <MetricGrid columns={4}>
+   <Metric size="lg" label="Virtual balance" value={usdCents(d.equity_cents)} evidence="simulated" detail={`Starting bankroll ${usdCents(d.initial_cents)} plus settled results`}/>
+   <Metric size="lg" label="Net realized P&L" value={usdCents(d.profit_cents,{signed:true})} tone={profitTone} detail="Settled bets only. Open stakes are not losses."/>
+   <Metric size="lg" label="ROI on settled stakes" value={pct(d.roi,2,{signed:true})} tone={d.roi===null||d.roi===0?undefined:d.roi>0?'positive':'negative'} hint="Net realized profit divided by the total amount staked on settled, non-void bets." detail={d.roi===null?'Not measured until a bet settles':'Small samples are noisy'}/>
+   <Metric size="lg" label="Record" value={d.wins+d.losses?`${d.wins}–${d.losses}`:'—'} detail={d.win_rate===null?'No settled results yet':`Win rate ${pct(d.win_rate,1)}${voids?`, ${voids} void`:''}`}/>
+  </MetricGrid>
+
+  <div className="ledger-grid">
+   {graphInvalid?<Panel title="Performance chart unavailable"><p className="quiet">Some settlement records could not be validated, so no curve is drawn. Review the ledger below; nothing has been guessed.</p></Panel>:
+    <PerformanceChart points={graph} initialCents={d.initial_cents} heading="Realized balance" description="How the virtual balance moved as bets settled. Open bets do not move this line."
+     source="Source: recorded NBA research settlements, ordered by settlement time"/>}
+   <Panel title="Exposure and outcomes" description="Current state of the virtual bankroll">
+    <StackedBar label="Bet outcomes" segments={[
+     {label:'Won',value:d.wins,color:'var(--pos)'},{label:'Lost',value:d.losses,color:'var(--neg)'},
+     {label:'Void',value:voids,color:'var(--unk)'},{label:'Open',value:d.pending_bets,color:'var(--c2)'}]}/>
+    <div style={{marginTop:14}}>
+     <KeyValues items={[
+      ['Available cash',usdCents(d.available_cents)],
+      ['Open exposure',<>{usdCents(d.pending_stake_cents)} <span className="quiet">({d.pending_bets} bet{d.pending_bets===1?'':'s'})</span></>],
+      ['Largest drawdown',d.settled_bets?<span className={d.max_drawdown_cents>0?'tone-text-negative':undefined}>{usdCents(-d.max_drawdown_cents)} ({pct(d.max_drawdown_fraction,1)})</span>:'Not measured'],
+      ['Typical stake',avgStake===null?'—':usdCents(avgStake)],
+      ['Median recorded price',american(medianOdds)],
+     ]}/>
+    </div>
+   </Panel>
+  </div>
+
+  <PaperLedgerBrowser positions={d.positions}/>
+
+  <OwnerTools/>
+
+  <div className="two-grid" style={{marginTop:12}}>
+   <Details title="The fixed rules behind these bets"><p>Starting virtual bankroll: {usdCents(d.initial_cents)}. Each new position stakes 1% of available cash, with at most one position per forecast.</p><p>Prices must come from one sportsbook&apos;s complete market observed within the last hour. The model&apos;s estimated expected return must be at least 2%, and its probability must exceed the market&apos;s margin-free probability.</p><p>Results settle only against checked final scores. A real sportsbook might not accept the recorded price. This experiment has not shown an economic edge.</p></Details>
+   <Details title="Where are soccer paper bets?"><p>EPL forecasts are an archived experiment with no paper ledger. They are not included in these balances. See the <Link href="/research/epl">Soccer model</Link> for its snapshot and limitations.</p></Details>
+  </div>
+ </>;
+}
+
+function OwnerTools(){
+ return <section className="owner-tools" aria-labelledby="owner-tools-title">
+  <div className="section-header"><div><h2 id="owner-tools-title">Owner tools</h2><p>Requires the private owner key. Records at most one virtual bet per confirmation.</p></div><Evidence kind="simulated"/></div>
+  <NbaPaperRunPanel/>
+ </section>;
+}
+

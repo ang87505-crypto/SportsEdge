@@ -22,23 +22,20 @@ export function StockJournalInsights({journal,invalid}:{journal:Journal;invalid:
  const volume=closed.reduce((sum,t)=>sum+t.shares*t.entryCents,0);
  const realized=closed.reduce((sum,t)=>sum+(t.exitCents!-t.entryCents)*t.shares,0);
  return <section className="stock-insights" aria-labelledby="journal-insights-heading">
-  <div className="section-title">
-   <div><div className="eyebrow">VIRTUAL JOURNAL INSIGHTS</div><h2 id="journal-insights-heading">See how your recorded decisions added up.</h2></div>
-   <span className="pill">Local browser data</span>
-  </div>
-  <div className="journal-insight-kpis">
-   <div><span>Closed journal trades</span><strong>{invalid?'—':closed.length}</strong><small>Manual entries and exits only</small></div>
-   <div><span>Winning / losing closes</span><strong>{invalid?'—':`${winners} / ${losers}`}</strong><small>Flat outcomes excluded</small></div>
-   <div><span>Realized profit / loss</span><strong>{invalid?'Unavailable':cash(realized)}</strong><small>Before any unrecorded costs</small></div>
-   <div><span>Closed-trade entry notional</span><strong>{invalid?'Unavailable':cash(volume)}</strong><small>Not lifetime volume or live market value</small></div>
+  <div className="section-header"><div><h2 id="journal-insights-heading">How your closed trades added up</h2><p>Realized outcomes from trades you closed. Open positions are not valued.</p></div></div>
+  <div className="metric-grid cols-4 journal-insight-kpis">
+   <div className="metric"><span className="metric-label">Closed trades</span><strong className="metric-value">{invalid?'—':closed.length}</strong><span className="metric-detail">Manual entries and exits</span></div>
+   <div className="metric"><span className="metric-label">Winning / losing</span><strong className="metric-value">{invalid?'—':`${winners} / ${losers}`}</strong><span className="metric-detail">Flat closes excluded</span></div>
+   <div className="metric"><span className="metric-label">Realized P&amp;L</span><strong className="metric-value">{invalid?'Unavailable':cash(realized)}</strong><span className="metric-detail">Before unrecorded costs</span></div>
+   <div className="metric"><span className="metric-label">Closed entry notional</span><strong className="metric-value">{invalid?'Unavailable':cash(volume)}</strong><span className="metric-detail">Not live market value</span></div>
   </div>
   <PerformanceChart
    points={points}
    heading="Manual trade outcomes"
-   description="Explore what happened when you closed recorded practice trades. This curve does not value open positions."
+   description="Realized balance after each practice trade you closed."
    initialCents={INITIAL_CENTS}
    source="Source: entries and exits in your browser-local stock journal"
   />
-  <p className="journal-insight-footer">Your manual journal is not your Alpaca account and not the frozen stock algorithm. <Link href="/stocks/research">Check the actual stock research status ↗</Link></p>
+  <p className="journal-insight-footer">This journal is not your Alpaca account and not the frozen stock strategy. <Link className="text-link" href="/stocks/research">See the stock research status</Link></p>
  </section>;
 }
