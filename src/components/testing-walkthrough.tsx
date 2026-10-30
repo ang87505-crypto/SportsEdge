@@ -20,7 +20,7 @@ const steps:Step[]=[
  {id:'stocks',area:'Stocks',name:'Try the manual stock journal',
  description:'Review your local watchlist and trade journal. Export a JSON backup before changing or restoring anything.',
  check:'Can you distinguish manual-entry P&L from actual Alpaca paper-equity and algorithm backtest returns?',
- href:'/stocks',linkText:'Open stock journal',state:'Inspectable'},
+ href:'/stocks/journal',linkText:'Open practice journal',state:'Inspectable'},
  {id:'research',area:'Stocks',name:'Check stock backtest evidence',
  description:'Read the frozen strategy protocol and published research gates. Engineering tests alone are not profitable backtest results.',
  check:'Are genuine historical returns still shown as unverified until a real audit is approved?',
@@ -41,7 +41,7 @@ export function TestingWalkthrough(){
  const visible=steps.map((s,i)=>({s,i})).filter(({s})=>filter==='All'||s.state===filter);
  return <section aria-label="SportsEdge guided owner acceptance tour" className="test-tour">
   <div className="test-tour-top">
-   <div><span className="eyebrow">OWNER ACCEPTANCE TOUR</span><h2>One route through every major feature.</h2><p>Use this when we reach the full-testing milestone. Visiting a step does not certify it as passed.</p></div>
+   <div><h2>Owner acceptance tour</h2><p>One route through every major feature. Visiting a step does not certify it as passed.</p></div>
    <span className="pill">6 checkpoints</span>
   </div>
   <div className="test-tour-filters" role="group" aria-label="Filter owner testing steps">
@@ -61,16 +61,16 @@ export function TestingWalkthrough(){
     </button>)}
    </nav>
    <article className="glass test-tour-detail" aria-live="polite" aria-labelledby="test-current-step">
-    <div className="module-top"><span className="eyebrow">STEP {selected+1} OF {steps.length}</span><span className={active.state==='Inspectable'?'pill':'pill pill-amber'}>{active.state}</span></div>
+    <div className="module-top"><span className="eyebrow">Step {selected+1} of {steps.length}</span><span className={active.state==='Inspectable'?'pill':'pill pill-amber'}>{active.state}</span></div>
     <h3 id="test-current-step">{active.name}</h3>
     <p>{active.description}</p>
     <div className="test-tour-expect"><strong>What to check during testing</strong><p>{active.check}</p></div>
     <div className="button-row">
-     <Link className="button" href={active.href}>{active.linkText} →</Link>
+     <Link className="button" href={active.href}>{active.linkText}</Link>
      <button type="button" className="button button-secondary" onClick={()=>{
       const current=visible.findIndex(x=>x.i===selected);
       setSelected(visible[(current+1)%visible.length].i);
-     }} disabled={visible.length<=1}>Next checkpoint →</button>
+     }} disabled={visible.length<=1}>Next checkpoint</button>
     </div>
     {active.state==='Private preview'&&<p className="test-tour-note">This route works only on an owner-configured Preview deployment. Production may intentionally reject private sign-in.</p>}
     {active.state==='Blocked'&&<p className="test-tour-note">Engineering progress is not authorization to submit simulated or real orders.</p>}
