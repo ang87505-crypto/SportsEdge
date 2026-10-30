@@ -196,7 +196,11 @@ test('the store is pinned to staging, posts {p}, and separates refusals from unk
  assert.throws(()=>stagingPaperAutoStore({}),e=>e.code==='NOT_CONFIGURED');
  assert.throws(()=>stagingPaperAutoStore({SPORTSEDGE_STAGING_SUPABASE_URL:'https://evil.supabase.co',
   SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY:'x'.repeat(40)}),e=>e.code==='INVALID_CONFIG');
- const env={SPORTSEDGE_STAGING_SUPABASE_URL:'https://mcaxfaaohyencpspalfe.supabase.co',
+ // Neither the Production project nor the retired staging address is accepted.
+ for(const host of ['fzyjazhvkstvwwzjhlrr','mcaxfaaohyencpspalfe','hdldwedvilzjbmadlolb'])
+  assert.throws(()=>stagingPaperAutoStore({SPORTSEDGE_STAGING_SUPABASE_URL:`https://${host}.supabase.co`,
+   SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY:'x'.repeat(40)}),e=>e.code==='INVALID_CONFIG');
+ const env={SPORTSEDGE_STAGING_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',
   SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY:'sb_secret_'+'x'.repeat(30)};
  const replies=[[200,'{"state":"STOPPED"}'],[400,'{"code":"P0001","message":"PAPER_AUTO_NOT_ARMED"}'],
   [409,'{"code":"23505","message":"duplicate key value"}'],[503,'upstream'],[504,'{"message":"PAPER_AUTO_X_Y"}']];
@@ -207,7 +211,7 @@ test('the store is pinned to staging, posts {p}, and separates refusals from unk
   return new Response(body,{status});
  });
  assert.deepEqual(await store.call('status',{experiment_id:'e-1'}),{state:'STOPPED'});
- assert.equal(seen[0].url,'https://mcaxfaaohyencpspalfe.supabase.co/rest/v1/rpc/sportsedge_paper_auto_status');
+ assert.equal(seen[0].url,'https://vfyzbliksooljxrlfadp.supabase.co/rest/v1/rpc/sportsedge_paper_auto_status');
  assert.equal(seen[0].body,'{"p":{"experiment_id":"e-1"}}');
  await assert.rejects(()=>store.call('claim_intent',{}),e=>e.code==='PAPER_AUTO_NOT_ARMED'&&e.refused===true);
  await assert.rejects(()=>store.call('reserve_intents',{}),e=>e.code==='DB_23505'&&e.refused===true);

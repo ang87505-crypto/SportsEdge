@@ -3,7 +3,8 @@
  * SERVER/WORKER ONLY. Pinned to the SportsEdge staging project; there is no
  * Production fallback. Errors carry only the database's PAPER_AUTO_* code.
  */
-const STAGING_HOST='mcaxfaaohyencpspalfe.supabase.co';
+// The owner's dedicated staging project (created 2026-10-30); never the Production project.
+const STAGING_HOST='vfyzbliksooljxrlfadp.supabase.co';
 const MAX_REPLY_BYTES=2_000_000;
 export const PAPER_AUTO_RPCS=['register','status','stop','pause','resume','ack_alert','begin_run',
  'heartbeat','acquire_lease','finish_run','record_decision','record_snapshot','reserve_intents',
