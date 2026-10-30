@@ -44,12 +44,12 @@ export function StockJournalBackup({currentRaw,current,invalid,onRestore}:{
   }catch(e){setError(e instanceof Error?e.message:'Restore failed. The existing journal was not replaced.');}
  }
  return <section className="glass panel journal-backup-panel" aria-labelledby="journal-backup-title">
-  <div className="journal-backup-heading"><div><span className="eyebrow">PORTABLE MANUAL JOURNAL</span><h2 id="journal-backup-title">Bring your practice records with you.</h2></div><span className="pill">Local files only</span></div>
+  <div className="journal-backup-heading"><div><h2 id="journal-backup-title">Back up or restore this journal</h2></div><span className="pill">Local files only</span></div>
   <p>The watchlist and virtual trades are stored only in this browser. Export a JSON backup before clearing browser data, switching devices, or restoring another file.</p>
   <div className="journal-backup-steps">
-   <div><strong>01 · Save a copy</strong><span>Use the Export journal button above. Keep the JSON file somewhere safe.</span></div>
-   <div><strong>02 · Review a backup</strong><span>Select an exported SportsEdge JSON file. We validate its structure and amounts before making changes.</span></div>
-   <div><strong>03 · Restore deliberately</strong><span>Restoring <b>replaces</b> this browser&apos;s current manual watchlist and journal; it does not combine accounts or touch Alpaca.</span></div>
+   <div><strong>Save a copy</strong><span>Use Export journal at the top of the page. Keep the JSON file somewhere safe.</span></div>
+   <div><strong>Review a backup</strong><span>Select an exported SportsEdge JSON file. We validate its structure and amounts before making changes.</span></div>
+   <div><strong>Restore deliberately</strong><span>Restoring <b>replaces</b> this browser&apos;s current manual watchlist and journal; it does not combine accounts or touch Alpaca.</span></div>
   </div>
   <label className="journal-backup-picker">Choose exported journal JSON
    <input type="file" accept=".json,application/json" onChange={event=>void selectFile(event)} aria-label="Choose journal backup JSON"/>
