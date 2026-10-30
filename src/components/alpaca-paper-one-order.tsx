@@ -1,11 +1,7 @@
 'use client';
 import {useState} from 'react';
-type Pre={status:'READ_ONLY_PREFLIGHT';symbol:string;shares:1;limitCents:number;
- checkedAt:string;marketOpen:boolean;sessionCloseAt:string|null;
- staging:'HALTED'|'UNAVAILABLE';blockers:string[];
- quote:null|{bidCents:number;askCents:number;observedAt:string};brokerOrderSubmitted:false};
-type Saved={status:string;gateHalted:boolean;symbol?:string;limitCents?:number;
- shares?:number;brokerOrderObserved?:boolean;brokerStatus?:string};
+import {parseOneOrderCheck,parsePaperPreflight,explainPaperRequestFailure,explainPaperBlocker,
+ type PaperPreflightCheck,type SavedPaperStatus} from '@/lib/stocks/alpaca-paper-ui-diagnostics';
 const ignore=new Set(['STAGING_EMERGENCY_STOP_ENGAGED',
  'NO_OWNER_APPROVED_EXECUTION_PATH','NO_DURABLE_BROKER_ORDER_RELEASE']);
 function parsePrice(x:string){
@@ -16,47 +12,66 @@ function parsePrice(x:string){
 }
 export function AlpacaPaperOneOrder(){
  const [ticker,setTicker]=useState(''),[price,setPrice]=useState('');
- const [check,setCheck]=useState<Pre|null>(null),[approved,setApproved]=useState(false);
+ const [check,setCheck]=useState<PaperPreflightCheck|null>(null),[approved,setApproved]=useState(false);
  const [used,setUsed]=useState(false),[busy,setBusy]=useState(false);
- const [released,setReleased]=useState(false),[state,setState]=useState<Saved|null>(null);
+ const [released,setReleased]=useState(false),[state,setState]=useState<SavedPaperStatus|null>(null);
  const [info,setInfo]=useState('');
+ const [statusCheckedAt,setStatusCheckedAt]=useState<string|null>(null);
  const limit=parsePrice(price);
  const valid=!!check&&check.quote!==null&&check.marketOpen&&
   check.staging==='HALTED'&&check.blockers.every(b=>ignore.has(b))&&
   check.symbol===ticker&&check.limitCents===limit&&
-  released&&!used;
+  released&&state?.gateHalted===true&&state.status==='not_authorized'&&!used;
  function edit(){setCheck(null);setApproved(false);}
  async function refreshStatus(){
-  setBusy(true);
+  if(busy)return;
+  setBusy(true);setInfo('');
+  // Every check invalidates the old approval and quote; a stale success is never authority.
+  setCheck(null);setApproved(false);
+  setReleased(false);setState(null);setStatusCheckedAt(null);
   try{
-   const r=await fetch('/api/internal/alpaca-paper/one-order',{cache:'no-store',credentials:'same-origin'});
-   const v:unknown=await r.json();
-   if(!r.ok||!v||typeof v!=='object'||Array.isArray(v))throw Error();
-   const x=v as Record<string,unknown>;
-   if(typeof x.oneShotReleaseReady!=='boolean'||!x.stage||
-    typeof x.stage!=='object')throw Error();
-   setReleased(x.oneShotReleaseReady);
-   const s=x.stage as Saved;
-   if(typeof s.status!=='string'||typeof s.gateHalted!=='boolean')throw Error();
-   setState(s);
-  }catch{setReleased(false);setInfo('Could not verify release/staging. Submission disabled.');}
-  finally{setBusy(false);}
+   const response=await fetch('/api/internal/alpaca-paper/one-order',{
+    method:'GET',cache:'no-store',credentials:'same-origin'});
+   const body:unknown=await response.json();
+   if(!response.ok){
+    setInfo(explainPaperRequestFailure(response.status,body,'release'));return;
+   }
+   const parsed=parseOneOrderCheck(body);
+   if(!parsed){
+    setInfo('Unexpected release response. The previous result was cleared; trading remains disabled.');
+    return;
+   }
+   setReleased(parsed.oneShotReleaseReady);
+   setState(parsed.stage);
+   setStatusCheckedAt(new Date().toISOString());
+   if(!parsed.oneShotReleaseReady)
+    setInfo('This Preview has not released the owner one-order test. No submission is allowed.');
+   else if(!parsed.stage.gateHalted||parsed.stage.status!=='not_authorized')
+    setInfo('Staging has an existing or unresolved order state. Reconcile before another submission.');
+  }catch{
+   setInfo('Release/status request failed. Previous results were cleared; submission remains disabled.');
+  }finally{setBusy(false);}
  }
  async function preflight(){
   if(limit===null||busy)return;
   edit();setBusy(true);setInfo('');
   try{
    const params=new URLSearchParams({symbol:ticker,limitCents:String(limit)});
-   const r=await fetch('/api/internal/alpaca-paper/preflight?'+params,{cache:'no-store',credentials:'same-origin'});
-   const v:unknown=await r.json();
-   if(!r.ok||!v||typeof v!=='object'||Array.isArray(v))throw Error();
-   const x=v as Record<string,unknown>;
-   if(x.status!=='READ_ONLY_PREFLIGHT'||x.symbol!==ticker||
-    x.limitCents!==limit||!Array.isArray(x.blockers)||
-    x.brokerOrderSubmitted!==false)throw Error();
-   setCheck(x as Pre);
-  }catch{setInfo('Alpaca preflight could not verify the proposed order. No order was sent.');}
-  finally{setBusy(false);}
+   const response=await fetch('/api/internal/alpaca-paper/preflight?'+params,{
+    method:'GET',cache:'no-store',credentials:'same-origin'});
+   const body:unknown=await response.json();
+   if(!response.ok){
+    setInfo(explainPaperRequestFailure(response.status,body,'preflight'));return;
+   }
+   const parsed=parsePaperPreflight(body,ticker,limit);
+   if(!parsed){
+    setInfo('Unexpected broker preflight response. No order is authorized.');
+    return;
+   }
+   setCheck(parsed);
+  }catch{
+   setInfo('Read-only broker preflight request failed. No order was sent.');
+  }finally{setBusy(false);}
  }
  async function submit(){
   if(!valid||!approved||busy||limit===null)return;
@@ -75,7 +90,11 @@ export function AlpacaPaperOneOrder(){
     'PAPER order accepted by Alpaca. Review its status; acknowledgment does not mean filled.':
     'Submission blocked or uncertain. DO NOT retry. Check staging and Alpaca broker history.');
   }catch{setInfo('Unknown outcome. NEVER retry without reconciling Alpaca history.');}
-  finally{setBusy(false);void refreshStatus();}
+  finally{
+   // Preserve the broker acknowledgment/uncertain-outcome warning for the owner.
+   // Invalidate release evidence; require an explicit fresh status reconciliation.
+   setBusy(false);setReleased(false);setState(null);setStatusCheckedAt(null);
+  }
  }
  return <section className="glass panel" id="alpaca-one-order" style={{margin:'24px 0'}}>
   <div className="module-top"><span className="pill">ALPACA PAPER · ONE ORDER</span>
@@ -86,6 +105,8 @@ export function AlpacaPaperOneOrder(){
   <button className="button button-secondary" type="button" disabled={busy}
    onClick={()=>void refreshStatus()}>Check release and saved order status</button>
   <p>Dedicated one-order release: <strong>{released?'enabled on this Preview':'OFF until verified'}</strong></p>
+  <p className="quiet" style={{fontSize:12}}>Release status: {statusCheckedAt?
+   'Verified '+new Date(statusCheckedAt).toLocaleString():'Not currently verified'}. A previous successful check is never reused.</p>
   {state&&<p className="notice">Saved staging status: <strong>{state.status}</strong>.
    Emergency STOP {state.gateHalted?'engaged':'NOT engaged'}.
    {state.symbol&&<span> {state.symbol} 1 share; limit USD {(Number(state.limitCents)/100).toFixed(2)}.</span>}</p>}
@@ -110,7 +131,10 @@ export function AlpacaPaperOneOrder(){
    {check.quote?<p>IEX bid USD {(check.quote.bidCents/100).toFixed(2)},
     ask USD {(check.quote.askCents/100).toFixed(2)}.
     Observed {new Date(check.quote.observedAt).toLocaleString()}.</p>:<p>No fresh quote.</p>}
-   <p>Safety blockers: {check.blockers.join(' · ')}</p>
+   <p>Safety blockers ({check.blockers.length}):</p>
+   {check.blockers.length===0?<p>None reported; other independent order checks still apply.</p>:
+    <ul style={{paddingLeft:22,margin:'8px 0'}}>{check.blockers.map(b=><li key={b}>
+     <strong>{b}</strong> — {explainPaperBlocker(b)}</li>)}</ul>}
    <p>Expires in 30 seconds; the final authorization independently checks again.</p>
   </div>}
   <label style={{display:'flex',gap:9,alignItems:'start',margin:'14px 0'}}>
