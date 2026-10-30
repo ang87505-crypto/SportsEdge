@@ -618,7 +618,9 @@ export async function runMonitorSlot(deps:ControllerDeps,experimentId:string,ses
   }
   // The SQL mark transaction also halts on a clean-mark breach. This observer
   // check gives the run its explicit risk outcome and covers non-SQL adapters.
-  enforceRisk(seen);
+  // Like the SQL, it skips a contaminated mark: external activity already
+  // stopped the experiment, and a deposit is not a strategy breach.
+  if(daily?.contaminated!==true)enforceRisk(seen);
   return finish(ctx,'monitor',session,'SUCCEEDED',daily?'DAILY_RECORDED':'NOT_A_SESSION',daily?{daily}:{},OK);
  });
 }
