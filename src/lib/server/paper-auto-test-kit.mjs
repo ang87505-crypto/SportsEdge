@@ -72,7 +72,8 @@ export class FakeBroker{
  constructor(clock,{accountId,accountNumber,cashCents,writesEnabled=true}){
   Object.assign(this,{time:clock,writesEnabled,accountId,accountNumber,cashCents,
    positionsBySymbol:new Map(),orders:[],activities:[],quotes:new Map(),behaviors:[],
-   posts:[],cancels:[],hidden:[],quoteAgeMs:1000,status:'ACTIVE',reportedAccountId:accountId,lookupBlind:false});
+   posts:[],cancels:[],hidden:[],quoteAgeMs:1000,status:'ACTIVE',reportedAccountId:accountId,lookupBlind:false,
+   costBySymbol:new Map()});
  }
  setQuote(symbol,askCents,bidCents=askCents-1){this.quotes.set(symbol,{askCents,bidCents});}
  mark(symbol){return this.quotes.get(symbol)?.askCents??0;}
@@ -85,11 +86,15 @@ export class FakeBroker{
  }
  async positions(){
   return [...this.positionsBySymbol].filter(([,q])=>q!==0).map(([symbol,q])=>({symbol,assetId:'asset-'+symbol,
-   qty:String(Math.abs(q)),side:q>0?'long':'short',marketValueCents:q*this.mark(symbol)}));
+   qty:String(Math.abs(q)),side:q>0?'long':'short',marketValueCents:q*this.mark(symbol),
+   costBasisCents:this.costBySymbol.get(symbol)??0}));
  }
  view(o){const v={...o};delete v.fillAfterLookups;delete v.fillCents;return v;}
  async openOrders(){
   return this.orders.filter(o=>['new','accepted','partially_filled'].includes(o.status)).map(o=>this.view(o));
+ }
+ async ordersSubmittedSince(after){
+  return this.orders.filter(o=>Date.parse(o.submittedAt)>=Date.parse(after)).map(o=>this.view(o));
  }
  async orderByClientId(clientOrderId){
   if(this.lookupBlind)return null; // an order the broker accepted but cannot show yet
@@ -104,7 +109,10 @@ export class FakeBroker{
   o.status=Number(o.filledQty)===Number(o.qty)?'filled':'partially_filled';
   const sign=o.side==='buy'?1:-1;
   this.cashCents-=sign*qty*priceCents;
-  this.positionsBySymbol.set(o.symbol,(this.positionsBySymbol.get(o.symbol)??0)+sign*qty);
+  // Average cost, as Alpaca reports it: buys add at the fill price; sells release a pro-rata share.
+  const held=this.positionsBySymbol.get(o.symbol)??0,cost=this.costBySymbol.get(o.symbol)??0;
+  this.costBySymbol.set(o.symbol,sign>0?cost+qty*priceCents:held===qty?0:Math.round(cost*(held-qty)/held));
+  this.positionsBySymbol.set(o.symbol,held+sign*qty);
   activitySeq++;
   this.activities.push({id:`20261019${String(activitySeq).padStart(9,'0')}::fill-${activitySeq}`,
    activityType:'FILL',at:iso(this.time.now()),symbol:o.symbol,side:o.side,qty:String(qty),

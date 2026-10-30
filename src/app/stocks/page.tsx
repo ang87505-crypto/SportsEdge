@@ -29,7 +29,7 @@ export default function Stocks(){
   <div className="stocks-top">
    <PaperPortfolio view={paper}/>
    <Panel title="Paper automation" description="Recurring Alpaca PAPER operator state" className="automation-panel">
-    <OperatorStates current={null} note="Not deployed in this build, so no operator state is reported. The UI never implies automation is running."/>
+    <OperatorStates current={null} note="This summary does not read the experiment ledger, so no operator state is shown here. The owner-only automation page reports the recorded state; the UI never implies automation is running."/>
     <KeyValues items={[
      ['Scheduled paper orders',<Badge key="s" tone="neutral">{PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled?'Released':'Off'}</Badge>],
      ['Model-driven broker writes',<Badge key="w" tone="neutral">{PAPER_AUTOMATION_RELEASE.placeOrdersEnabled?'Released':'Off'}</Badge>],
@@ -37,6 +37,7 @@ export default function Stocks(){
      ['Broker reconciliation',<Badge key="r" tone={PAPER_AUTOMATION_RELEASE.brokerReconciliationComplete?'positive':'neutral'}>{PAPER_AUTOMATION_RELEASE.brokerReconciliationComplete?'Complete':'Incomplete'}</Badge>],
      ['Real-money trading',<Badge key="m" tone="neutral">Never</Badge>],
     ]}/>
+    <Link href="/stocks/paper-auto" className="text-link">Automation status and STOP (owner)</Link>
     <Link href="/stocks/alpaca#alpaca-staging-stop-title" className="estop-link"><span className="estop-icon" aria-hidden="true"/><span><strong>Emergency stop</strong><small>Owner-only staging STOP on the paper account page</small></span></Link>
    </Panel>
   </div>

@@ -106,7 +106,8 @@ test('reads use GET on the fixed PAPER and data hosts only, with no redirects',a
   ['https://paper-api.alpaca.markets/v2/account',200,{id:'00000001-1111-2222-3333-444444444444',
    account_number:'PA0X',status:'ACTIVE',currency:'USD',cash:'1000.00',equity:'1000.00',last_equity:'1000',
    long_market_value:'0',buying_power:'1000',trading_blocked:false,account_blocked:false}],
-  ['https://paper-api.alpaca.markets/v2/positions',200,[]],
+  ['https://paper-api.alpaca.markets/v2/positions',200,[{symbol:'AAA',asset_id:'asset-a',qty:'3',side:'long',
+   market_value:'93.03',cost_basis:'90.03'}]],
   ['https://paper-api.alpaca.markets/v2/orders:by_client_order_id',404,{message:'not found'}],
   ['https://paper-api.alpaca.markets/v2/orders',200,[order()]],
   ['https://paper-api.alpaca.markets/v2/clock',200,{timestamp:'2026-11-02T09:31:00-05:00',is_open:true,
@@ -117,7 +118,8 @@ test('reads use GET on the fixed PAPER and data hosts only, with no redirects',a
  ]);
  const broker=alpacaPaperAutoBroker(KEYS,fetcher,()=>Date.parse('2026-11-02T14:31:01Z'));
  assert.equal((await broker.account()).equityCents,100000);
- assert.deepEqual(await broker.positions(),[]);
+ assert.deepEqual(await broker.positions(),[{symbol:'AAA',assetId:'asset-a',qty:'3',side:'long',marketValueCents:9303,
+  costBasisCents:9003}]);
  assert.equal((await broker.openOrders()).length,1);
  assert.equal(await broker.orderByClientId(REQ.clientOrderId),null,'404 is "not observed", never proof');
  assert.equal((await broker.clock()).isOpen,true);
@@ -149,6 +151,34 @@ test('a full page of open orders is incomplete, and activities page by token',as
  const acts=await broker.activitiesSince('2026-10-19T11:00:00Z');
  assert.equal(acts.length,103);
  assert.equal(new URL(calls.at(-1).url).searchParams.get('page_token'),acts[99].id);
+});
+
+test('order history pages through every status without skipping a shared boundary timestamp',async()=>{
+ // One order per second, except that orders 498-501 share a timestamp across the first page boundary.
+ const at=(k)=>new Date(Date.parse('2026-10-19T13:45:00Z')+1000*(k>=498&&k<=501?498:k)).toISOString();
+ const all=Array.from({length:1203},(_,k)=>order({id:'b-'+k,client_order_id:'sepa'+String(k).padStart(40,'0'),
+  status:'filled',filled_qty:'3',filled_avg_price:'30.01',submitted_at:at(k)}));
+ const {calls,fetcher}=recorder([['https://paper-api.alpaca.markets/v2/orders',(u)=>{
+  const after=Date.parse(u.searchParams.get('after'));
+  return [u,200,all.filter(o=>Date.parse(o.submitted_at)>after).slice(0,500)];
+ }]]);
+ const history=await alpacaPaperAutoBroker(KEYS,fetcher).ordersSubmittedSince('2026-10-19T13:45:00.000Z');
+ assert.equal(history.length,1203,'orders sharing the boundary timestamp are re-read, not skipped');
+ assert.equal(new Set(history.map(o=>o.id)).size,1203);
+ for(const c of calls){
+  const u=new URL(c.url);
+  assert.equal(c.method,'GET');
+  assert.deepEqual([u.searchParams.get('status'),u.searchParams.get('direction'),u.searchParams.get('limit')],
+   ['all','asc','500']);
+ }
+ assert.equal(new URL(calls[0].url).searchParams.get('after'),'2026-10-19T13:44:59.999Z');
+ // A full page that adds nothing new cannot progress: incomplete, never a partial history.
+ const stuck=recorder([['https://paper-api.alpaca.markets/v2/orders',(u)=>[u,200,all.slice(0,500).map(o=>
+  ({...o,submitted_at:'2026-10-19T13:45:00.000Z'}))]]]);
+ await assert.rejects(()=>alpacaPaperAutoBroker(KEYS,stuck.fetcher).ordersSubmittedSince('2026-10-19T13:00:00Z'),
+  e=>e.code==='INCOMPLETE');
+ await assert.rejects(()=>alpacaPaperAutoBroker(KEYS,stuck.fetcher).ordersSubmittedSince('yesterday'),
+  e=>e.code==='INVALID_REQUEST');
 });
 
 test('the benchmark close uses free historical SIP bars ending at least 15 minutes ago',async()=>{

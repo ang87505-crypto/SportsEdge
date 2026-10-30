@@ -23,6 +23,7 @@ export const SECTIONS:NavSection[]=[
   children:[
    {href:'/stocks/research',label:'Quant research',description:'Frozen strategy, evidence gates and costs'},
    {href:'/stocks/alpaca',label:'Paper account & orders',description:'Alpaca PAPER owner dashboard'},
+   {href:'/stocks/paper-auto',label:'Paper automation',description:'Recurring PAPER status, STOP and forward evidence'},
    {href:'/stocks/journal',label:'Practice journal',description:'Manual virtual trades in this browser'},
   ]},
 ];

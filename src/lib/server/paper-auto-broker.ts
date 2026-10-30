@@ -21,7 +21,8 @@ type Json=Record<string,unknown>;
 export type BrokerAccount={id:string;accountNumber:string;status:string;currency:string;
  cashCents:number;equityCents:number;lastEquityCents:number;longMarketValueCents:number;
  buyingPowerCents:number;tradingBlocked:boolean;accountBlocked:boolean;readAt:string};
-export type BrokerPosition={symbol:string;assetId:string;qty:string;side:'long'|'short';marketValueCents:number};
+export type BrokerPosition={symbol:string;assetId:string;qty:string;side:'long'|'short';marketValueCents:number;
+ costBasisCents:number};
 export type BrokerOrder={id:string;clientOrderId:string|null;symbol:string;side:'buy'|'sell';
  type:string;timeInForce:string;status:string;qty:string;filledQty:string;
  filledAvgPrice:string|null;limitPrice:string|null;submittedAt:string;extendedHours:boolean};
@@ -46,6 +47,8 @@ export interface PaperAutoBroker{
  openOrders():Promise<BrokerOrder[]>;
  /** null means "not observed", which is NEVER proof that a submission failed. */
  orderByClientId(clientOrderId:string):Promise<BrokerOrder|null>;
+ /** Every order submitted after afterIso, in any status; INCOMPLETE rather than a partial list. */
+ ordersSubmittedSince(afterIso:string):Promise<BrokerOrder[]>;
  submitLimitOrder(order:OrderRequest):Promise<SubmitOutcome>;
  cancelOrder(brokerOrderId:string):Promise<CancelOutcome>;
  clock():Promise<BrokerClock>;
@@ -238,7 +241,7 @@ export function alpacaPaperAutoBroker(settings:Settings,fetcher:typeof fetch=fet
     const p=object(r);
     if(p.side!=='long'&&p.side!=='short')bad();
     return {symbol:symbolOf(p.symbol),assetId:text(p.asset_id,64),qty:quantity(p.qty),side:p.side,
-     marketValueCents:dollarsToCents(p.market_value)};
+     marketValueCents:dollarsToCents(p.market_value),costBasisCents:dollarsToCents(p.cost_basis)};
    });
   },
   async openOrders(){
@@ -312,6 +315,24 @@ export function alpacaPaperAutoBroker(settings:Settings,fetcher:typeof fetch=fet
     out.set(symbol,{symbol,bidCents:quoteCents(v.bp),askCents:quoteCents(v.ap),observedAt:stamp(v.t),feed:'iex'});
    }
    return out;
+  },
+  async ordersSubmittedSince(afterIso){
+   if(!Number.isFinite(Date.parse(afterIso)))throw new PaperAutoBrokerError('INVALID_REQUEST');
+   const out=new Map<string,BrokerOrder>();
+   let cursor=iso(Date.parse(afterIso)-1);
+   for(let page=0;page<20;page++){
+    const raw=await getJson(PAPER,'/v2/orders',{status:'all',limit:'500',nested:'false',direction:'asc',
+     after:cursor},5_000_000);
+    if(!Array.isArray(raw)||raw.length>500)bad();
+    const orders=raw.map(parseOrder);
+    let fresh=0;
+    for(const o of orders)if(!out.has(o.id)){out.set(o.id,o);fresh++;}
+    if(orders.length<500)return [...out.values()];
+    if(!fresh)throw new PaperAutoBrokerError('INCOMPLETE');
+    // Step back 1 ms so orders sharing the boundary timestamp are re-read and deduplicated, never skipped.
+    cursor=iso(Date.parse(orders[orders.length-1].submittedAt)-1);
+   }
+   throw new PaperAutoBrokerError('INCOMPLETE');
   },
   async activitiesSince(afterIso){
    if(!Number.isFinite(Date.parse(afterIso)))throw new PaperAutoBrokerError('INVALID_REQUEST');

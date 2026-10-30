@@ -148,7 +148,8 @@ LANGUAGE sql AS $$
   'classification',k,'raw_digest',repeat('e',64))
 $$;
 -- One after-close monitor run: optional activities, then a flat-account mark captured at 16:29 EDT.
-CREATE FUNCTION paper_auto_test.mark(e text, day text, cash bigint, acts jsonb DEFAULT '[]') RETURNS jsonb
+CREATE FUNCTION paper_auto_test.mark(e text, day text, cash bigint, acts jsonb DEFAULT '[]',
+ positions jsonb DEFAULT '[]') RETURNS jsonb
 LANGUAGE plpgsql AS $$
 DECLARE m text; r jsonb;
 BEGIN
@@ -159,7 +160,7 @@ BEGIN
  END IF;
  r:=paper_auto_test.rpc('record_daily',jsonb_build_object('run_id',m,'session_date',day,
   'captured_at',day||'T20:29:00Z','equity_cents',cash,'cash_cents',cash,'long_market_value_cents',0,
-  'positions','[]'::jsonb,'benchmark_symbol','SPY','benchmark_close','580.00','benchmark_source','test:sip',
+  'positions',positions,'benchmark_symbol','SPY','benchmark_close','580.00','benchmark_source','test:sip',
   'contaminated',false));
  PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',m,'status','succeeded'));
  RETURN r;
@@ -809,7 +810,8 @@ BEGIN
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_activities',jsonb_build_object('run_id',m2,'activities',
   jsonb_build_array(a->2||jsonb_build_object('raw_digest',repeat('9',64))))),'ACTIVITY_CONFLICT');
  daily:=jsonb_build_object('run_id',m2,'session_date','2026-10-19','captured_at','2026-10-19T20:14:59Z',
-  'equity_cents',149120,'cash_cents',140999,'long_market_value_cents',8121,'positions','[]'::jsonb,
+  'equity_cents',149120,'cash_cents',140999,'long_market_value_cents',8121,'positions',jsonb_build_array(
+   jsonb_build_object('symbol','FFF','qty','2','marketValueCents',8121,'costBasisCents',7998)),
   'benchmark_symbol','SPY','benchmark_close','581.25','benchmark_source','alpaca:sip:1Day:adjustment=all',
   'contaminated',false);
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily),'DAILY_NOT_AFTER_CLOSE');
@@ -829,13 +831,15 @@ BEGIN
  -- Cash is reconciled against every recorded activity: 100000 - 7998 - 7998 + 50000 - 12 = 133992.
  PERFORM paper_auto_test.eq(r->>'cashReconciled'||':'||(r->>'cashUnexplainedCents'),'false:7007',
   'cash not explained by recorded activities');
+ PERFORM paper_auto_test.eq(r->>'unrealizedPlCents','123','unrealized P&L from broker cost basis');
  PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE'),'1',
   'unexplained cash with nothing unresolved raises a stop alert atomically');
  PERFORM paper_auto_test.eq((SELECT fees_cents::text FROM sportsedge_paper_auto.daily_equity
   WHERE experiment_id=e AND session_date='2026-10-19'),'12','fees derived');
  r:=paper_auto_test.rpc('record_daily',daily);
  PERFORM paper_auto_test.eq(r->>'duplicate','true','daily idempotent');
- PERFORM paper_auto_test.eq(r->>'cashReconciled','false','a duplicate reply still reports the reconciliation');
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'unrealizedPlCents'),'false:123',
+  'a duplicate reply still reports the reconciliation and unrealized P&L');
  PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'UNEXPLAINED_CASH_CHANGE'),'1','a retry adds no alert');
  PERFORM paper_auto_test.raises(paper_auto_test.call('record_daily',daily||jsonb_build_object('equity_cents',1)),
   'DAILY_CONFLICT');
@@ -876,7 +880,7 @@ BEGIN
  PERFORM paper_auto_test.eq(r->>'state','STOPPED','third experiment state');
  r:=paper_auto_test.mark(e,'2026-10-20',100000);
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'cashUnexplainedCents',r->>'contaminated',
-  r->>'externalFlowCents'),'true:0:false:0','flat account reconciles to the starting equity');
+  r->>'externalFlowCents',r->>'unrealizedPlCents'),'true:0:false:0:0','flat account reconciles to the starting equity');
  r:=paper_auto_test.mark(e,'2026-10-21',100500,jsonb_build_array(paper_auto_test.activity(
   '20261021140000000::div-1','DIV','2026-10-21T14:00:00Z',500,'dividend')));
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'contaminated',r->>'dividendsCents'),
@@ -894,9 +898,11 @@ BEGIN
   '20261024040000000::csd-1','CSD','2026-10-24T04:00:00Z',20000,'external_cashflow')));
  PERFORM paper_auto_test.eq(concat_ws(':',r->>'cashReconciled',r->>'contaminated',r->>'externalFlowCents'),
   'true:true:20000','weekend deposit');
- r:=paper_auto_test.mark(e,'2026-10-27',120600);
- PERFORM paper_auto_test.eq(concat_ws(':',r->>'contaminated',r->>'externalFlowCents'),'true:0',
-  'a deposit contaminates later marks');
+ r:=paper_auto_test.mark(e,'2026-10-27',120600,'[]',jsonb_build_array(jsonb_build_object('symbol','ZZZ','qty','1',
+  'marketValueCents',0),jsonb_build_object('symbol','YYY','qty','1','marketValueCents',500,'costBasisCents',400)));
+ PERFORM paper_auto_test.eq(concat_ws(':',r->>'contaminated',r->>'externalFlowCents',
+  coalesce(r->>'unrealizedPlCents','unknown')),'true:0:unknown',
+  'a deposit contaminates later marks; one position without a cost basis makes unrealized P&L unknown');
  r:=paper_auto_test.rpc('ledger',jsonb_build_object('experiment_id',e));
  PERFORM paper_auto_test.eq((SELECT string_agg(concat_ws('/',x->>'session',x->>'cashReconciled',x->>'contaminated'),
   ',' ORDER BY x->>'session') FROM jsonb_array_elements(r->'daily') x),

@@ -1,0 +1,54 @@
+# Recurring Alpaca PAPER owner actions. Manual dispatch by the repository owner only;
+# there is deliberately no schedule. Neither action places, replaces or cancels an
+# order: register reads the account and records a STOPPED experiment from a reviewed
+# config/paper-auto/<experiment>.json, and confirm-absent records that an uncertain
+# submission never reached Alpaca, after the close, only when the client-id lookup
+# misses and a complete order history does not contain it.
+name: Recurring PAPER owner action (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Owner action
+        required: true
+        type: choice
+        options: [register, confirm-absent]
+      experiment:
+        description: Experiment id (register reads config/paper-auto/<id>.json)
+        required: true
+        type: string
+      intent:
+        description: confirm-absent only, the uncertain intent id (pai-...)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: paper-auto-${{ inputs.experiment }}
+  cancel-in-progress: false
+jobs:
+  owner:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run the owner action
+        env:
+          ACTION: ${{ inputs.action }}
+          EXPERIMENT: ${{ inputs.experiment }}
+          INTENT: ${{ inputs.intent }}
+          SPORTSEDGE_PAPER_AUTO_OWNER_REF: ${{ secrets.SPORTSEDGE_PAPER_AUTO_OWNER_REF }}
+          SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
+          SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          args=("$ACTION" --experiment "$EXPERIMENT")
+          if [ -n "$INTENT" ]; then args+=(--intent "$INTENT"); fi
+          node --experimental-strip-types scripts/paper-auto-worker.ts "${args[@]}"

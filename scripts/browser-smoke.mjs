@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -65,7 +65,7 @@ try{
     // App Router streams page content after the document/main landmark; a blank
     // heading during hydration is not a usability failure. Wait for user-visible
     // content before capturing the screenshot or checking route assertions.
-    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/research','/stocks/journal'].includes(route)){
+    if(['/', '/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal'].includes(route)){
       await until(async()=>evaluate(send,`!!document.querySelector('main#main-content h1')`),label+' visible page heading',25000);
     }
     await delay(200);

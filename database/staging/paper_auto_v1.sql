@@ -258,6 +258,7 @@ CREATE TABLE sportsedge_paper_auto.daily_equity(
  contaminated boolean NOT NULL,
  cash_unexplained_cents numeric(20,6) NOT NULL,
  cash_reconciled boolean NOT NULL,
+ unrealized_pl_cents bigint,
  run_id text NOT NULL REFERENCES sportsedge_paper_auto.runs(run_id),
  recorded_at timestamptz NOT NULL DEFAULT sportsedge_paper_auto._now(),
  PRIMARY KEY(experiment_id,session_date)
@@ -1179,28 +1180,36 @@ BEGIN
  FROM sportsedge_paper_auto.activities WHERE experiment_id=x.experiment_id AND activity_at<=row_in.captured_at;
  row_in.cash_unexplained_cents:=round(row_in.cash_cents-expected,6);
  row_in.cash_reconciled:=abs(row_in.cash_unexplained_cents)<=rounding;
+ -- Unrealized P&L from the broker's per-position cost basis; unknown if any position lacks it.
+ SELECT CASE WHEN count(*)=0 THEN 0
+  -- A missing key is SQL NULL, which bool_and would skip: count it as a missing cost basis.
+  WHEN bool_and(coalesce(jsonb_typeof(ps->'marketValueCents')='number' AND jsonb_typeof(ps->'costBasisCents')='number',false))
+  THEN round(sum(CASE WHEN jsonb_typeof(ps->'marketValueCents')='number' AND jsonb_typeof(ps->'costBasisCents')='number'
+   THEN (ps->>'marketValueCents')::numeric-(ps->>'costBasisCents')::numeric END))::bigint END
+ INTO row_in.unrealized_pl_cents FROM jsonb_array_elements(p->'positions') ps;
  SELECT * INTO old FROM sportsedge_paper_auto.daily_equity WHERE experiment_id=x.experiment_id AND session_date=d;
  IF FOUND THEN
   IF old.equity_cents=row_in.equity_cents AND old.cash_cents=row_in.cash_cents
    AND old.long_market_value_cents=row_in.long_market_value_cents
    AND old.external_flow_cents=row_in.external_flow_cents AND old.contaminated=row_in.contaminated
-   AND old.cash_unexplained_cents=row_in.cash_unexplained_cents AND old.cash_reconciled=row_in.cash_reconciled THEN
+   AND old.cash_unexplained_cents=row_in.cash_unexplained_cents AND old.cash_reconciled=row_in.cash_reconciled
+   AND old.unrealized_pl_cents IS NOT DISTINCT FROM row_in.unrealized_pl_cents THEN
    RETURN jsonb_build_object('recorded',false,'duplicate',true,'sessionDate',d,
     'contaminated',old.contaminated,'cashUnexplainedCents',trim_scale(old.cash_unexplained_cents)::text,
-    'cashReconciled',old.cash_reconciled);
+    'cashReconciled',old.cash_reconciled,'unrealizedPlCents',old.unrealized_pl_cents);
   END IF;
   RAISE EXCEPTION 'PAPER_AUTO_DAILY_CONFLICT';
  END IF;
  INSERT INTO sportsedge_paper_auto.daily_equity(experiment_id,session_date,captured_at,equity_cents,cash_cents,
   long_market_value_cents,external_flow_cents,fees_cents,dividends_cents,positions,benchmark_symbol,
-  benchmark_close,benchmark_source,contaminated,cash_unexplained_cents,cash_reconciled,run_id)
+  benchmark_close,benchmark_source,contaminated,cash_unexplained_cents,cash_reconciled,unrealized_pl_cents,run_id)
  VALUES(x.experiment_id,d,row_in.captured_at,row_in.equity_cents,row_in.cash_cents,row_in.long_market_value_cents,
   row_in.external_flow_cents,row_in.fees_cents,row_in.dividends_cents,p->'positions',
   sportsedge_paper_auto._text(p,'benchmark_symbol','^[A-Z]{1,5}$'),
   CASE WHEN p->>'benchmark_close' IS NULL THEN NULL
    ELSE sportsedge_paper_auto._text(p,'benchmark_close','^[0-9]{1,10}(\.[0-9]{1,6})?$')::numeric END,
   sportsedge_paper_auto._text(p,'benchmark_source','^[A-Za-z0-9 :/._=-]{3,160}$'),
-  row_in.contaminated,row_in.cash_unexplained_cents,row_in.cash_reconciled,run);
+  row_in.contaminated,row_in.cash_unexplained_cents,row_in.cash_reconciled,row_in.unrealized_pl_cents,run);
  -- Cash that no recorded activity explains, while no submission is unresolved, is an
  -- external balance change: stop in this transaction rather than trusting a later call.
  IF NOT row_in.cash_reconciled AND NOT EXISTS(SELECT 1 FROM sportsedge_paper_auto.intents
@@ -1211,7 +1220,8 @@ BEGIN
  RETURN jsonb_build_object('recorded',true,'duplicate',false,'sessionDate',d,
   'externalFlowCents',row_in.external_flow_cents,'feesCents',row_in.fees_cents,
   'dividendsCents',row_in.dividends_cents,'contaminated',row_in.contaminated,
-  'cashUnexplainedCents',trim_scale(row_in.cash_unexplained_cents)::text,'cashReconciled',row_in.cash_reconciled);
+  'cashUnexplainedCents',trim_scale(row_in.cash_unexplained_cents)::text,'cashReconciled',row_in.cash_reconciled,
+  'unrealizedPlCents',row_in.unrealized_pl_cents);
 END $$;
 
 CREATE FUNCTION public.sportsedge_paper_auto_raise_alert(p jsonb) RETURNS jsonb
@@ -1258,7 +1268,7 @@ BEGIN
     'externalFlowCents',external_flow_cents,'feesCents',fees_cents,'dividendsCents',dividends_cents,
     'benchmarkSymbol',benchmark_symbol,'benchmarkClose',benchmark_close::text,'benchmarkSource',benchmark_source,
     'contaminated',contaminated,'cashUnexplainedCents',trim_scale(cash_unexplained_cents)::text,
-    'cashReconciled',cash_reconciled) ORDER BY session_date)
+    'cashReconciled',cash_reconciled,'unrealizedPlCents',unrealized_pl_cents) ORDER BY session_date)
    FROM sportsedge_paper_auto.daily_equity WHERE experiment_id=e),'[]'::jsonb),
   'alerts',coalesce((SELECT jsonb_agg(jsonb_build_object('alertId',alert_id,'severity',severity,'code',code,
     'createdAt',created_at,'acknowledgedAt',acknowledged_at) ORDER BY created_at DESC)

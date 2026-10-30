@@ -135,8 +135,9 @@ A missing lookup on its own changes nothing.
   - External flows, fees and dividends come from the recorded activities, not from the caller. They are summed over the period since the previous mark, or since registration, so a flow dated on a weekend or holiday still lands in a period.
   - Any external fill, **external cash flow**, corporate action or unsupported activity on or before the session sets `contaminated`, on top of the caller's own flag. Because the rule covers every earlier session, contamination is permanent: a deposit can never be presented as strategy return.
   - **Cash reconciliation.** Registration requires a flat account, so cash starts at the starting equity. The database recomputes the expected cash from every recorded activity up to the capture: a fill moves cash by quantity × price, and anything else moves it by its net amount. `cash_unexplained_cents` stores the difference. `cash_reconciled` is true only when the difference is zero; each fill whose notional has a fractional cent may add one cent of rounding.
+  - `unrealized_pl_cents` is the sum of market value minus the broker's cost basis over the recorded positions. It is 0 when flat and NULL if any position lacks a cost basis, so a partial sum is never reported.
   - If cash is unreconciled while no submission is unresolved, `record_daily` stops the experiment in the same transaction with `UNEXPLAINED_CASH_CHANGE`. While a submission is unresolved, the difference may be unattributed fills, so the mark is recorded without a stop.
-  - A duplicate `record_daily` reply reports the stored contamination and reconciliation, so a retried run sees the same outcome.
+  - A duplicate `record_daily` reply reports the stored contamination, reconciliation and unrealized P&L, so a retried run sees the same outcome.
   - An unreconciled mark is unverified, but it does not contaminate later marks. A late-recorded activity can explain the next mark, because the comparison is absolute. A balance change that no activity explains, such as an account reset or an unreported deposit, never reconciles again.
 
 ## Clock
@@ -154,8 +155,8 @@ psql -f database/tests/paper_auto_v1.sql          # PAPER_AUTO_V1_POSTGRES_PASS
 bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PASS
 ```
 
-- The contract suite makes 127 refusal assertions and 100 equality assertions.
-- Twenty-nine hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
+- The contract suite makes 127 refusal assertions and 101 equality assertions.
+- Thirty-one hand-made mutations, each removing one guard, were all caught by the suite. The guards were:
   - claim without ARMED; claim without the unknown-outcome barrier;
   - retrying rejected legs; buying a non-target; uncertain to not_submitted;
   - STOP keeping reserved intents; drawdown disabled; confirming absence before the close;
@@ -166,7 +167,8 @@ bash database/tests/paper_auto_v1_race.sh         # PAPER_AUTO_V1_CONCURRENCY_PA
   - cash reconciliation disabled; a loose reconciliation tolerance; a reversed fill cash sign;
   - drawdown measured from the starting equity only;
   - no atomic stop on recorded external activity; no atomic stop on unexplained cash; stopping on unexplained cash while a submission is unresolved; stacked alerts in `stop`; stacked alerts in the internal halt; a duplicate mark reply without its reconciliation;
-  - no atomic stop on a recorded rejection; an atomic stop that keeps reserved intents.
+  - no atomic stop on a recorded rejection; an atomic stop that keeps reserved intents;
+  - unrealized P&L ignoring cost basis; a position without a cost basis skipped instead of making unrealized P&L unknown.
 - The race script uses independent connections. It shows:
   - one run from 8 duplicate deliveries;
   - one lease holder;
