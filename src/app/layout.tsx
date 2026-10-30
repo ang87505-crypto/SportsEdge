@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Sans_Condensed } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "./ui.css";
 import "./shell.css";
@@ -9,16 +9,27 @@ import "./motion.css";
 import {Suspense} from "react";
 import WorkspaceShell from "@/components/workspace-shell";
 
-const plexSans = IBM_Plex_Sans({
+// Self-hosted IBM Plex (SIL OFL 1.1, see ./fonts/OFL-LICENSE.txt, from @fontsource 5.3.0, latin subset)
+// so builds never depend on a live Google Fonts download.
+const plexSans = localFont({
   variable: "--font-plex-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  src: [
+    { path: "./fonts/ibm-plex-sans-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-latin-600-normal.woff2", weight: "600", style: "normal" },
+  ],
 });
 
-const plexCondensed = IBM_Plex_Sans_Condensed({
+const plexCondensed = localFont({
   variable: "--font-plex-condensed",
-  subsets: ["latin"],
-  weight: ["500", "600"],
+  display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  src: [
+    { path: "./fonts/ibm-plex-sans-condensed-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-condensed-latin-600-normal.woff2", weight: "600", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
