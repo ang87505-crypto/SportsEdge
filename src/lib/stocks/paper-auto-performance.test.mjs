@@ -15,6 +15,7 @@ test('no marks: nothing is measured from the registration snapshot alone',()=>{
  const p=forwardPerformance(100000,REGISTERED,[]);
  assert.equal(p.verified.state,'NO_MARKS');
  assert.equal(p.verified.cumulativeReturn,null);assert.equal(p.verified.pnlCents,null);
+ assert.equal(p.verified.observedMaxDrawdown,null);assert.equal(p.verified.drawdownCoverage,'NO_VERIFIED_MARKS');
  assert.equal(p.benchmark.state,'NEEDS_TWO_VERIFIED_CLOSES');
 });
 
@@ -26,6 +27,9 @@ test('verified marks chain from the starting equity, with drawdown and a same-wi
  assert.equal(p.verified.pnlCents,-10);
  close(p.verified.cumulativeReturn,99990/100000-1);
  close(p.verified.maxDrawdown,(101000-99990)/101000);
+ close(p.verified.observedMaxDrawdown,p.verified.maxDrawdown);
+ assert.equal(p.verified.drawdownCoverage,'OBSERVED_MARKS_ONLY');
+ assert.equal(p.verified.calendarCoverageVerified,false,'recorded marks do not prove complete exchange-calendar coverage');
  assert.equal(p.benchmark.state,'MEASURED');
  assert.deepEqual([p.benchmark.fromSession,p.benchmark.toSession],['2026-10-20','2026-10-22']);
  close(p.benchmark.strategyReturn,99990/100000-1);
@@ -39,7 +43,22 @@ test('an unreconciled mark is skipped and the chain continues through the next r
  assert.deepEqual(p.marks.map(m=>m.verdict),['VERIFIED','UNRECONCILED_SKIPPED','VERIFIED']);
  assert.equal(p.verified.skippedMarks,1);assert.equal(p.verified.verifiedMarks,2);
  close(p.verified.cumulativeReturn,0.02);
- assert.equal(p.verified.maxDrawdown,0,'the skipped 105000 never sets a peak');
+ assert.equal(p.verified.maxDrawdown,null,'the skipped peak makes maximum drawdown incomplete');
+ assert.equal(p.verified.observedMaxDrawdown,0,'the skipped 105000 never sets an observed peak');
+ assert.equal(p.verified.drawdownCoverage,'UNRECONCILED_GAPS');
+});
+
+test('a skipped trough cannot be presented as zero maximum drawdown',()=>{
+ const p=forwardPerformance(100000,REGISTERED,[mark('2026-10-20',100000),
+  mark('2026-10-21',70000,{cashReconciled:false}),mark('2026-10-22',100000)]);
+ assert.equal(p.verified.maxDrawdown,null);assert.equal(p.verified.observedMaxDrawdown,0);
+ assert.equal(p.verified.drawdownCoverage,'UNRECONCILED_GAPS');assert.equal(p.verified.skippedMarks,1);
+});
+test('an unverified latest mark keeps drawdown incomplete without altering verified P&L',()=>{
+ const p=forwardPerformance(100000,REGISTERED,[mark('2026-10-20',101000),
+  mark('2026-10-21',80000,{cashReconciled:false})]);
+ assert.equal(p.verified.pnlCents,1000);assert.equal(p.verified.throughSession,'2026-10-20');
+ assert.equal(p.verified.maxDrawdown,null);assert.equal(p.verified.drawdownCoverage,'UNRECONCILED_GAPS');
 });
 
 test('contamination ends the verified chain for good, so a deposit is never shown as return',()=>{
@@ -89,6 +108,7 @@ test('labels state that paper fills are simulated and nothing is annualized',()=
  const text=PAPER_AUTO_PERFORMANCE_LABELS.join(' ');
  assert.match(text,/simulated/);assert.match(text,/not achievable real-money returns/);
  assert.match(text,/Not annualized/);assert.match(text,/without dividends/);
+ assert.match(text,/Missing sessions and intraday moves are not measured/);
 });
 
 test('verified P&L splits into unrealized (broker cost basis) and realized; unknown stays unknown',()=>{

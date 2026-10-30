@@ -251,6 +251,56 @@ e2e('drawdown from the after-close high-water mark stops the experiment before a
  assert.equal(w.broker.posts.length,3);
 });
 
+e2e('midmonth monitoring preserves the breached daily mark and stops without a new decision',async()=>{
+ const w=await armedWithDecision({},{drawdownStopBps:1000});
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ w.broker.setQuote('AAA',6001);
+ assert.equal((await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19')).reason,'DAILY_RECORDED');
+ w.broker.setQuote('AAA',1);
+ const held=positions(w),m=await monitor(w,'2026-11-12T21:30:00.000Z','2026-11-12');
+ assert.equal(m.outcome,'STOPPED',JSON.stringify(m));assert.equal(m.reason,'DRAWDOWN_LIMIT');
+ assert.equal((await status(w)).state,'STOPPED');assert.equal(w.broker.posts.length,3);
+ assert.deepEqual(positions(w),held,'STOP does not silently liquidate positions');
+ assert.equal(sqlValue(DB,`SELECT cash_reconciled||':'||equity_cents FROM sportsedge_paper_auto.daily_equity
+  WHERE experiment_id='${w.experimentId}' AND session_date='2026-11-12'`),'true:91000');
+});
+
+e2e('a clean risk mark stops atomically even when the worker STOP call is lost',async()=>{
+ const w=await armedWithDecision({},{drawdownStopBps:1000});
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ w.broker.setQuote('AAA',6001);
+ assert.equal((await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19')).reason,'DAILY_RECORDED');
+ w.broker.setQuote('AAA',1);w.store.failOnce=new Set(['stop']);
+ const m=await monitor(w,'2026-11-12T21:30:00.000Z','2026-11-12');
+ assert.equal(m.reason,'STOP_NOT_CONFIRMED:DRAWDOWN_LIMIT',JSON.stringify(m));
+ assert.equal((await status(w)).state,'STOPPED');assert.equal((await status(w)).unacknowledgedCriticalAlerts,1);
+ const again=await monitor(w,'2026-11-12T21:40:00.000Z','2026-11-12');
+ assert.equal(again.reason,'DRAWDOWN_LIMIT');assert.equal((await status(w)).unacknowledgedCriticalAlerts,1);
+ assert.equal(sqlValue(DB,`SELECT count(*) FROM sportsedge_paper_auto.daily_equity
+  WHERE experiment_id='${w.experimentId}' AND session_date='2026-11-12'`),'1');
+});
+
+e2e('midmonth reconciliation enforces drawdown before it can authorize a resume',async()=>{
+ const w=await armedWithDecision({},{drawdownStopBps:1000});
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ w.broker.setQuote('AAA',6001);
+ assert.equal((await monitor(w,'2026-10-19T20:30:00.000Z','2026-10-19')).reason,'DAILY_RECORDED');
+ w.broker.setQuote('AAA',1);w.clock.set('2026-11-12T17:00:00.000Z');
+ const r=await runReconcileSlot(w.deps,w.experimentId,'2026-11-12T17:00Z');
+ assert.equal(r.reason,'DRAWDOWN_LIMIT');assert.equal((await status(w)).state,'STOPPED');
+ assert.equal(w.broker.posts.length,3);
+});
+
+e2e('daily monitoring applies the capital ceiling as well as drawdown',async()=>{
+ const w=await armedWithDecision({},{capitalLimitCents:100000});
+ assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
+ w.broker.setQuote('AAA',3101);
+ const m=await monitor(w,'2026-11-12T21:30:00.000Z','2026-11-12');
+ assert.equal(m.reason,'CAPITAL_LIMIT_REACHED');assert.equal((await status(w)).state,'STOPPED');
+ assert.equal(sqlValue(DB,`SELECT count(*) FROM sportsedge_paper_auto.daily_equity
+  WHERE experiment_id='${w.experimentId}' AND session_date='2026-11-12'`),'1');
+});
+
 e2e('a session is marked only on its own evening, and cash no activity explains stops the experiment',async()=>{
  const w=await armedWithDecision();
  assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');

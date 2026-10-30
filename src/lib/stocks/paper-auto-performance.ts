@@ -13,6 +13,7 @@ export const PAPER_AUTO_PERFORMANCE_LABELS=[
  'Alpaca PAPER fills are simulated: no market impact, queue position, regulatory fees or paper dividends. These are not achievable real-money returns.',
  'Verified returns use only uncontaminated, cash-reconciled after-close marks since registration. Not annualized.',
  'The SPY benchmark is a raw SIP closing-price return over the same marks, without dividends.',
+ 'Observed drawdown uses verified recorded marks only. Missing sessions and intraday moves are not measured; skipped marks make maximum drawdown incomplete.',
 ] as const;
 
 export type DailyMark={session:string;capturedAt:string;equityCents:number;cashCents:number;
@@ -26,7 +27,9 @@ export type ForwardPerformance={
  verified:{state:'NO_MARKS'|'NO_VERIFIED_MARKS'|'MEASURING'|'ENDED';endedAtSession:string|null;
   throughSession:string|null;verifiedMarks:number;skippedMarks:number;lastEquityCents:number|null;
   pnlCents:number|null;unrealizedPlCents:number|null;realizedPlCents:number|null;cumulativeReturn:number|null;
-  maxDrawdown:number|null};
+  maxDrawdown:number|null;observedMaxDrawdown:number|null;
+  drawdownCoverage:'NO_VERIFIED_MARKS'|'OBSERVED_MARKS_ONLY'|'UNRECONCILED_GAPS';
+  calendarCoverageVerified:false};
  benchmark:{symbol:'SPY';state:'NEEDS_TWO_VERIFIED_CLOSES'|'MEASURED';fromSession:string|null;
   toSession:string|null;strategyReturn:number|null;benchmarkReturn:number|null;excessReturn:number|null};
 };
@@ -78,6 +81,7 @@ export function forwardPerformance(startingEquityCents:number,registeredAt:strin
   return {...m,verdict};
  });
  const verifiedMarks=judged.filter(m=>m.verdict==='VERIFIED');
+ const skippedMarks=judged.filter(m=>m.verdict==='UNRECONCILED_SKIPPED').length;
  // With no flows inside the chain, each link (E_t - F_t) / E_(t-1) is E_t / E_(t-1).
  let peak=startingEquityCents,maxDrawdown=0;
  for(const m of verifiedMarks){
@@ -93,11 +97,16 @@ export function forwardPerformance(startingEquityCents:number,registeredAt:strin
  return {startingEquityCents,registeredAt,marks:judged,
   verified:{state:!marks.length?'NO_MARKS':!last?'NO_VERIFIED_MARKS':ended?'ENDED':'MEASURING',
    endedAtSession:ended,throughSession:last?.session??null,verifiedMarks:verifiedMarks.length,
-   skippedMarks:judged.filter(m=>m.verdict==='UNRECONCILED_SKIPPED').length,
+   skippedMarks,
    lastEquityCents:last?.equityCents??null,pnlCents:pnl,unrealizedPlCents:unrealized,
    // With no flows inside the chain, everything not still open in positions has been realized.
    realizedPlCents:pnl!==null&&unrealized!==null?pnl-unrealized:null,
-   cumulativeReturn:last?last.equityCents/startingEquityCents-1:null,maxDrawdown:last?maxDrawdown:null},
+   cumulativeReturn:last?last.equityCents/startingEquityCents-1:null,
+   // A skipped trough or peak can change the maximum. Preserve the observed
+   // lower bound separately and never present a gapped path as a measured maximum.
+   maxDrawdown:last&&skippedMarks===0?maxDrawdown:null,observedMaxDrawdown:last?maxDrawdown:null,
+   drawdownCoverage:!last?'NO_VERIFIED_MARKS':skippedMarks?'UNRECONCILED_GAPS':'OBSERVED_MARKS_ONLY',
+   calendarCoverageVerified:false},
   benchmark:{symbol:'SPY',state:from&&to?'MEASURED':'NEEDS_TWO_VERIFIED_CLOSES',
    fromSession:from&&to?from.session:null,toSession:to?.session??null,strategyReturn,benchmarkReturn,
    excessReturn:strategyReturn!==null&&benchmarkReturn!==null?strategyReturn-benchmarkReturn:null}};

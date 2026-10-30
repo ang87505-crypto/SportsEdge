@@ -20,7 +20,7 @@ const dd=(r:number|null)=>r===null?'—':`${(r*100).toFixed(2)}%`;
 const when=(iso:string|null)=>iso?new Date(iso).toLocaleString():'—';
 const trim=(v:string)=>v.includes('.')?v.replace(/\.?0+$/,''):v;
 const STATE_TEXT:Record<PaperAutoLedger['status']['state'],string>={
- STOPPED:'Stopped. No new orders; the next worker run cancels any working strategy order.',
+ STOPPED:'Stopped. No new orders; the next worker run cancels any working strategy order. Existing holdings remain exposed to price changes.',
  PAUSED:'Paused by the owner. No new orders until a reconciled resume.',
  READY:'Armed, checked within 26 hours and clear. Orders also need broker writes released in source.',
  BLOCKED:'Armed but not clear: a stale check, an unresolved submission, an open critical alert or an ended window.',
@@ -122,7 +122,7 @@ function Experiment({l,act,working}:{l:PaperAutoLedger;act:Act;working:boolean})
   </div>
   <div className="button-row">
    <button type="button" className="button" disabled={working}
-    onClick={()=>void act({action:'stop',experimentId:id},`Record an owner STOP for ${id}? New orders stop at once; the next worker run cancels working orders.`)}>
+    onClick={()=>void act({action:'stop',experimentId:id},`Record an owner STOP for ${id}? New orders stop at once; the next worker run cancels working orders. Existing holdings remain invested.`)}>
     Record owner STOP</button>
    <button type="button" className="button button-secondary" disabled={working||s.gateMode!=='ARMED'}
     onClick={()=>void act({action:'pause',experimentId:id},`Pause ${id}? No new orders until a reconciled resume.`)}>Pause</button>
@@ -158,7 +158,8 @@ function Experiment({l,act,working}:{l:PaperAutoLedger;act:Act;working:boolean})
    <div className="stats-grid">
     <Stat label="Since registration" value={pct(v.cumulativeReturn)} detail={`${money(v.pnlCents)} through ${v.throughSession}`+
      ` · realized ${money(v.realizedPlCents)} · unrealized ${money(v.unrealizedPlCents)}`}/>
-    <Stat label="Max drawdown" value={dd(v.maxDrawdown)} detail={`${v.verifiedMarks} verified · ${v.skippedMarks} skipped`}/>
+    <Stat label="Observed drawdown" value={v.drawdownCoverage==='UNRECONCILED_GAPS'?'Incomplete':dd(v.observedMaxDrawdown)}
+     detail={`${dd(v.observedMaxDrawdown)} on ${v.verifiedMarks} verified marks · ${v.skippedMarks} skipped · missing sessions not checked`}/>
     <Stat label="Same window vs SPY" value={pct(b.excessReturn)} detail={b.state==='MEASURED'?
      `${b.fromSession} to ${b.toSession}: strategy ${pct(b.strategyReturn)}, SPY ${pct(b.benchmarkReturn)}`:'Needs two verified SPY closes'}/>
     <Stat label="Chain" value={v.state==='ENDED'?'Ended':'Measuring'} detail={v.endedAtSession?

@@ -955,5 +955,38 @@ BEGIN
  PERFORM paper_auto_test.raises(paper_auto_test.claim_call(ex,i),'NOT_ARMED');
  PERFORM paper_auto_test.rpc('finish_run',jsonb_build_object('run_id',ex,'status','blocked'));
 END $$;
+-- 15. Daily observations enforce risk even outside monthly execution dates.
+-- Equality is allowed; a one-cent breach stops in the mark transaction.
+DO $$
+BEGIN
+ PERFORM paper_auto_test.eq(sportsedge_paper_auto._risk_reason(90000,100000,120000,1000),NULL,'drawdown equality');
+ PERFORM paper_auto_test.eq(sportsedge_paper_auto._risk_reason(89999,100000,120000,1000),'DRAWDOWN_LIMIT','one-cent drawdown breach');
+ PERFORM paper_auto_test.eq(sportsedge_paper_auto._risk_reason(120000,100000,120000,1000),NULL,'capital equality');
+ PERFORM paper_auto_test.eq(sportsedge_paper_auto._risk_reason(120001,100000,120000,1000),'CAPITAL_LIMIT_REACHED','capital breach');
+ PERFORM paper_auto_test.eq(sportsedge_paper_auto._risk_reason(8106479329266891,9007199254740991,9007199254740991,1000),
+  'DRAWDOWN_LIMIT','large exact risk products');
+END $$;
+SELECT paper_auto_test.at('2026-10-19T11:00:00Z');
+DO $$
+DECLARE e text:='fwd-2026-daily-risk'; r jsonb;
+BEGIN
+ r:=paper_auto_test.rpc('register',paper_auto_test.experiment(e,'stock-mom252-skip21-trend200-v1',
+  '44444444-5555-6666-7777-888888888888','PA0RISK',3,0,1000,12,60000,5));
+ PERFORM paper_auto_test.at('2026-10-19T13:40:00Z');
+ PERFORM paper_auto_test.arm(e,'2026-10-19T13:40Z');
+ r:=paper_auto_test.mark(e,'2026-10-19',100000);
+ PERFORM paper_auto_test.eq(r->>'riskStopCode',NULL,'initial mark clear');
+ r:=paper_auto_test.mark(e,'2026-10-20',90000,jsonb_build_array(paper_auto_test.activity(
+  '20261020140000000::fee-risk-1','FEE','2026-10-20T14:00:00Z',-10000,'fee')));
+ PERFORM paper_auto_test.eq(r->>'riskStopCode',NULL,'exact drawdown threshold clear');
+ PERFORM paper_auto_test.eq((SELECT mode FROM sportsedge_paper_auto.gates WHERE experiment_id=e),'ARMED','threshold stays armed');
+ r:=paper_auto_test.mark(e,'2026-10-21',89999,jsonb_build_array(paper_auto_test.activity(
+  '20261021140000000::fee-risk-2','FEE','2026-10-21T14:00:00Z',-1,'fee')));
+ PERFORM paper_auto_test.eq(r->>'riskStopCode','DRAWDOWN_LIMIT','daily risk reason');
+ PERFORM paper_auto_test.eq(paper_auto_test.state(e),'STOPPED','daily risk stops atomically');
+ PERFORM paper_auto_test.eq(paper_auto_test.open_alerts(e,'DRAWDOWN_LIMIT'),'1','one risk alert');
+ PERFORM paper_auto_test.eq((SELECT equity_cents||':'||cash_reconciled FROM sportsedge_paper_auto.daily_equity
+  WHERE experiment_id=e AND session_date='2026-10-21'),'89999:true','breach mark preserved');
+END $$;
 DROP SCHEMA paper_auto_test CASCADE;
 SELECT 'PAPER_AUTO_V1_POSTGRES_PASS' AS result;
