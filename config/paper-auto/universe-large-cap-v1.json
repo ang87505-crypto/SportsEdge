@@ -5,7 +5,8 @@
  "classification": "GICS sector names, assigned by the maintainer from public company descriptions; not licensed GICS data",
  "first_traded_on_basis": "Declared lower bound: every listed company traded publicly before 2015-01-02. It only requires a complete 253-session window; it is not an IPO date.",
  "available_at": "2026-10-30T03:00:00Z",
- "note": "Paper experiment stock-v2-weekly only. Not the frozen research universe and not evidence for it.",
+ "note": "Paper experiment stock-v2-weekly only. Not the frozen research universe and not evidence for it. max_last_close skips stocks (other than current holdings) whose last close is above $95, so a $1,000 paper account can buy every selected target in whole shares.",
+ "max_last_close": "95",
  "securities": [
   {
    "symbol": "AAPL",

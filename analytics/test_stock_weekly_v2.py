@@ -1,6 +1,7 @@
 """Fictional calendar, assets and prices; no market or return evidence."""
 from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 import json
 from pathlib import Path
 import unittest
@@ -184,6 +185,24 @@ class WeeklyBridgeTests(unittest.TestCase):
         r = run(uni=universe(available='2026-11-02T13:00:00Z'))
         self.assertEqual(r['diagnostics']['reasons'], ['UNIVERSE_NOT_AVAILABLE_BEFORE_DECISION'])
 
+    def test_price_cap_skips_unaffordable_stocks_but_never_a_holding(self):
+        uni = universe() | {'max_last_close': '68'}
+        r = run(uni=uni)
+        self.assertEqual(r['outcome'], 'TARGETS', r.get('diagnostics'))
+        skipped = r['diagnostics']['skipped']
+        self.assertTrue(skipped and all(v.startswith('LAST_CLOSE_ABOVE_CAP:') for v in skipped.values()))
+        self.assertEqual(sorted(skipped), ['S22', 'S23', 'S24'])
+        prices = r['signal']['priorInputs']
+        self.assertTrue(all(Decimal(prices[t['securityId']]['price']) <= 68 for t in r['signal']['targets']))
+        # The most expensive stock is held: it stays in the universe, so the decision can manage it.
+        held = 'alpaca:' + asset_id(24)
+        r = run(uni=uni, held=[held])
+        self.assertNotIn('S24', r['diagnostics']['skipped'])
+        self.assertIn(held, r['signal']['priorInputs'])
+        for bad in (95, 'x', '-1'):
+            self.assertTrue(run(uni=universe() | {'max_last_close': bad})['diagnostics']['reasons'][0]
+                            .startswith('UNIVERSE_MAX_LAST_CLOSE_INVALID'))
+
     def test_deterministic(self):
         self.assertEqual(run(), run())
 
@@ -199,6 +218,7 @@ class WeeklyBridgeTests(unittest.TestCase):
         doc = json.loads(path.read_text())
         rows = parse_universe(doc, datetime(2026, 10, 30, 12, tzinfo=timezone.utc))
         self.assertGreaterEqual(len(rows), 100)
+        self.assertEqual(doc['max_last_close'], '95')
         self.assertEqual(len({r['sector'] for r in rows}), 11)
 
 
