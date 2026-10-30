@@ -10,6 +10,9 @@ Differences from stock_forward_bridge_v1 (which stays unchanged for the frozen m
   unsupported or ambiguous corporate action is SKIPPED and named in the diagnostics,
   instead of rejecting the whole decision. A skipped member that is currently held
   still rejects the decision, because the planner cannot price an unscored holding.
+- Optional `max_last_close` in the universe file: a stock not currently held whose last
+  completed close is above it is skipped as unaffordable, so a small paper account
+  (10% of equity per target, whole shares) can buy every target it selects.
 
 Everything else is reused from v1 unchanged: the two observations (a reference capture
 before 08:00 and a decision capture sealed within 60 seconds of 08:00), raw SIP daily
@@ -55,6 +58,16 @@ def decision_point(sessions: list[dict], session: str, initial: bool = False):
 # ---------------------------------------------------------------- registered universe
 
 
+def max_last_close(universe):
+    """The optional affordability cap as a Decimal, or None."""
+    if 'max_last_close' not in universe:
+        return None
+    try:
+        return Decimal(decimal_text(universe['max_last_close'], 'max_last_close'))
+    except Rejected:
+        raise Rejected(['UNIVERSE_MAX_LAST_CLOSE_INVALID']) from None
+
+
 def parse_universe(universe, decision_at: datetime) -> list[dict]:
     if not isinstance(universe, dict) or universe.get('version') != UNIVERSE_VERSION:
         raise Rejected(['UNIVERSE_MISSING_OR_UNREGISTERED_VERSION'])
@@ -63,6 +76,9 @@ def parse_universe(universe, decision_at: datetime) -> list[dict]:
             raise Rejected(['UNIVERSE_FIELD_MISSING:' + k])
     if stamp(universe.get('available_at'), 'universe.available_at') >= decision_at:
         raise Rejected(['UNIVERSE_NOT_AVAILABLE_BEFORE_DECISION'])
+    if 'max_last_close' in universe and not isinstance(universe['max_last_close'], str):
+        raise Rejected(['UNIVERSE_MAX_LAST_CLOSE_INVALID'])
+    max_last_close(universe)
     rows = universe.get('securities')
     if not isinstance(rows, list) or not rows:
         raise Rejected(['UNIVERSE_EMPTY'])
@@ -158,6 +174,8 @@ def assemble(capture: dict, universe, *, experiment_id: str, registered_at: str,
         raise Rejected(['CALENDAR_HISTORY_TOO_SHORT'])
     window = [s['date'] for s in completed[-253:]]
     rows = parse_universe(universe, decision_at)
+    price_cap = max_last_close(universe)
+    held_ids = set(held_security_ids)
     listed = listed_by_symbol(capture['assets']['rows'])
     dates = {s['date'] for s in completed}
     before = bars_by_symbol(capture['reference_bars']['pages'], dates)
@@ -185,6 +203,10 @@ def assemble(capture: dict, universe, *, experiment_id: str, registered_at: str,
             skipped[sym] = 'BARS_NOT_OBSERVED_BEFORE_DECISION'
         elif any(old_bars[d] != now_bars[d] for d in expected):
             skipped[sym] = 'BARS_CHANGED_BETWEEN_OBSERVATIONS'
+        elif price_cap is not None and 'alpaca:' + listed[sym]['id'] not in held_ids \
+                and Decimal(now_bars[window[-1]]['c']) > price_cap:
+            # Unaffordable at 10% of a small account in whole shares; holdings are never skipped for price.
+            skipped[sym] = 'LAST_CLOSE_ABOVE_CAP:' + now_bars[window[-1]]['c']
         else:
             candidates[sym] = (r, listed[sym], expected, now_bars)
     actions, action_skips = member_actions(capture['actions']['pages'], set(candidates), (window[0], window[-1]))

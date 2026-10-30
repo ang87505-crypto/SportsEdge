@@ -13,6 +13,7 @@ unchanged.
 | Decision day | First session of each month, 2026 only | First session of each ISO week, no year limit; once on the first session with `initial` |
 | Universe | Every listed US common stock (about 4,000), needing a full security master | 136 large, liquid US common stocks in `config/paper-auto/universe-large-cap-v1.json` |
 | Missing bars, unsupported corporate actions | Reject the whole decision | Skip that stock and name it in the diagnostics. A skipped stock that is **held** still rejects the decision. |
+| Price | No cap | Stocks not held whose last close is above `max_last_close` ($95) are skipped, so the $1,000 account can buy every target |
 | Corporate-action coverage | Owner attestation required | Alpaca's feed as returned, labelled `alpaca-actions-unattested` |
 | Scoring and selection | `stock-mom252-skip21-trend200-v1` | **The same mathematics.** `stock_weekly_scoring_v2.py` is generated from the frozen source with only the calendar rule replaced. A test proves the scores are identical on a session that starts both a week and a month. |
 
@@ -29,14 +30,20 @@ version, the rebalance rule and the universe. The `scoringReportId` also hashes 
 
 | Setting | Value |
 |---|---|
-| Account | A dedicated Alpaca PAPER account, reset to $10,000, flat |
-| Capital limit | $12,500 |
-| Maximum per order | $1,250 |
-| Maximum per day | $12,000 |
+| Account | A dedicated Alpaca PAPER account with $1,000, flat |
+| Capital limit | $1,250 |
+| Maximum per order | $150 |
+| Maximum per day | $1,200 |
 | Orders per day / open orders | 20 / 10 |
 | Attempts per leg | 3 |
 | Drawdown stop | 25% |
 | Decision window | 2026-10-30 to 2027-12-31 |
+
+With $1,000, the planner's 10% per target is about $100 in whole shares. The universe
+file therefore sets `max_last_close` to `95`: a stock that isn't held and whose last
+completed close is above $95 is skipped as unaffordable, and named in the diagnostics.
+A stock the experiment already holds is never skipped for price, so it can still be
+rebalanced or sold.
 
 ## Running it
 
