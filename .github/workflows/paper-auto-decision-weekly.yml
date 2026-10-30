@@ -1,0 +1,78 @@
+# Weekly decision for the separately registered PAPER experiment stock-v2-weekly-*.
+# Manual dispatch only (no schedule). Dispatch before 07:55 New York on the first
+# exchange session of an ISO week, or on the experiment's first session with
+# initial=true. The reference capture runs at once; the decision capture starts at
+# 08:00:00 and must seal within 60 seconds, otherwise the session is recorded MISSED.
+# The frozen monthly model keeps its own workflow (paper-auto-decision.yml).
+name: Recurring PAPER weekly decision (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      experiment:
+        description: Registered weekly experiment id
+        required: true
+        type: string
+        default: stock-v2-weekly-1
+      session:
+        description: Exchange session to decide (YYYY-MM-DD, New York)
+        required: true
+        type: string
+      initial:
+        description: First session of the experiment (allowed on any weekday, once)
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: paper-auto-decision-${{ inputs.experiment }}
+  cancel-in-progress: false
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPERIMENT: ${{ inputs.experiment }}
+      SESSION: ${{ inputs.session }}
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+      SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
+      SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Registration and reconciled holdings (read-only)
+        run: node --experimental-strip-types scripts/paper-auto-worker.ts context --experiment "$EXPERIMENT" --output "$RUNNER_TEMP/registration.json"
+      - name: Reference capture now, decision capture from 08:00:00 New York (read-only market data)
+        env:
+          INITIAL: ${{ inputs.initial }}
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          flag=""; if [ "$INITIAL" = "true" ]; then flag="--initial"; fi
+          python -m analytics.stock_weekly_bridge_v2 capture --session "$SESSION" --universe "$UNIVERSE" $flag --output "$RUNNER_TEMP/capture.json" --execute-network
+      - name: Weekly signal from the sealed capture (no network)
+        run: python -m analytics.stock_weekly_bridge_v2 decide --capture "$RUNNER_TEMP/capture.json" --universe "$UNIVERSE" --registration "$RUNNER_TEMP/registration.json" --output "$RUNNER_TEMP/decision.json"
+      - name: Record TARGETS, HOLD, MISSED or INPUT_REJECTED
+        run: |
+          if [ -f "$RUNNER_TEMP/decision.json" ]; then
+            node --experimental-strip-types scripts/paper-auto-worker.ts decision --experiment "$EXPERIMENT" --decision-file "$RUNNER_TEMP/decision.json"
+          fi
+      - name: Compress the sealed capture for audit
+        if: always()
+        run: if [ -f "$RUNNER_TEMP/capture.json" ]; then gzip -9 "$RUNNER_TEMP/capture.json"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paper-auto-weekly-decision-${{ inputs.experiment }}-${{ inputs.session }}
+          path: |
+            ${{ runner.temp }}/capture.json.gz
+            ${{ runner.temp }}/decision.json
+          if-no-files-found: ignore
+          retention-days: 30
