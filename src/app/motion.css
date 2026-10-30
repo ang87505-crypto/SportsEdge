@@ -1,0 +1,155 @@
+/* ===== Ambient light: slow-moving emerald glows behind the frosted panels ===== */
+.ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.ambient span { position: absolute; border-radius: 50%; filter: blur(90px); will-change: transform; }
+.ambient span:nth-child(1) { width: 560px; height: 560px; top: -160px; left: 8%; background: rgba(32, 201, 120, 0.13); animation: drift-a 46s ease-in-out infinite alternate; }
+.ambient span:nth-child(2) { width: 480px; height: 480px; top: 28%; right: -140px; background: rgba(28, 150, 150, 0.09); animation: drift-b 58s ease-in-out infinite alternate; }
+.ambient span:nth-child(3) { width: 680px; height: 680px; bottom: -280px; left: 34%; background: rgba(22, 104, 66, 0.16); animation: drift-c 64s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate3d(180px, 120px, 0) scale(1.12); } }
+@keyframes drift-b { to { transform: translate3d(-160px, 140px, 0) scale(0.92); } }
+@keyframes drift-c { to { transform: translate3d(-140px, -110px, 0) scale(1.08); } }
+
+/* ===== Glass: deeper frost and a light-catching edge ===== */
+.panel-v2, .glass, .game-card-v2 {
+  background: linear-gradient(180deg, rgba(24, 40, 33, 0.5), rgba(12, 21, 17, 0.5));
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+.panel-v2::before, .glass::before, .game-card-v2::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(150deg, rgba(150, 240, 190, 0.26), rgba(150, 240, 190, 0.05) 32%, rgba(150, 240, 190, 0) 58%, rgba(150, 240, 190, 0.08));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.game-card-v2 { position: relative; }
+.metric-grid { background: rgba(162, 214, 186, 0.08); }
+.metric-grid > .metric { background: linear-gradient(180deg, rgba(22, 37, 30, 0.72), rgba(12, 21, 17, 0.72)); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+
+/* Pointer-follow light on interactive cards */
+:is(.home-section-link, .book, .game-card-v2, .guide-section, .track, .progress-record, .test-status-card, .continue-card) { position: relative; overflow: hidden; }
+:is(.home-section-link, .book, .game-card-v2, .guide-section, .track, .progress-record, .test-status-card, .continue-card)::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; border-radius: inherit;
+  background: radial-gradient(280px circle at var(--glow-x, 50%) var(--glow-y, 0%), rgba(130, 232, 176, 0.09), transparent 62%);
+  transition: opacity 0.25s var(--ease);
+}
+:is(.home-section-link, .book, .game-card-v2, .guide-section, .track, .progress-record, .test-status-card, .continue-card):hover::after { opacity: 1; }
+:is(.book, .track, .continue-card) { transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background-color 0.2s var(--ease); }
+:is(.book, .track, .continue-card):hover { transform: translateY(-2px); }
+.game-card-v2 { transition: border-color 0.2s var(--ease); }
+.game-card-v2:hover { border-color: var(--line-3); }
+
+/* Buttons: soft glow on the primary action, crisp press */
+.button:not(.button-secondary):not(.button-ghost):not(.button-danger):hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(46, 224, 138, 0.25), 0 8px 24px -10px rgba(32, 201, 120, 0.65); }
+.button:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+
+/* Live status dots breathe; only "connected"/recent sources use the positive tone */
+.status-list .status-dot-v2.tone-positive { animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: 0 0 0 6px rgba(63, 214, 139, 0.05); } }
+
+/* ===== Scroll reveal (only when JS runs and motion is allowed) ===== */
+.motion-ok [data-reveal] { transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); transition-delay: var(--reveal-delay, 0ms); }
+.motion-ok [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(18px); }
+
+/* Children of lists cascade in after their container */
+.motion-ok [data-reveal]:is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > *,
+.motion-ok [data-reveal] :is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > * {
+  transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+  transition-delay: calc(var(--reveal-delay, 0ms) + 120ms + var(--i, 0) * 45ms);
+}
+.motion-ok [data-reveal]:not(.is-in):is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > *,
+.motion-ok [data-reveal]:not(.is-in) :is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > * { opacity: 0; transform: translateY(10px); }
+
+/* Figures slide up inside their tile */
+.motion-ok [data-reveal] .metric-value { transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transition-delay: calc(var(--reveal-delay, 0ms) + 180ms + var(--i, 0) * 45ms); }
+.motion-ok [data-reveal]:not(.is-in) .metric-value { opacity: 0; transform: translateY(40%); }
+
+/* Lines draw, bars grow, calibration points pop — paused until their block is revealed */
+.line-chart path.series:not(.is-dashed) { stroke-dasharray: 1; animation: draw 1.4s var(--ease) 0.15s both; }
+.line-chart path.series.is-dashed { animation: fade-in 0.8s ease 0.5s both; }
+:is(.prob-fill, .exposure-track span, .paired-track span, .stacked-bar span, .three-way-bar span, .inline-prob-track span, .timeline-bar) { transform-origin: left center; animation: grow 0.95s var(--ease) 0.2s both; }
+.stacked-bar span, .three-way-bar span { animation-delay: calc(0.2s + var(--seg, 0) * 0.08s); }
+.rating-track span { animation: pop 0.5s var(--ease) calc(0.2s + var(--i, 0) * 25ms) both; }
+.cal-point circle { transform-box: fill-box; transform-origin: center; animation: pop 0.5s var(--ease) calc(0.35s + var(--i, 0) * 60ms) both; }
+.cal-point line { animation: fade-in 0.6s ease calc(0.35s + var(--i, 0) * 60ms) both; }
+.motion-ok [data-reveal]:not(.is-in) :is(.line-chart path.series, .prob-fill, .exposure-track span, .paired-track span, .stacked-bar span, .three-way-bar span, .inline-prob-track span, .timeline-bar, .rating-track span, .cal-point circle, .cal-point line) { animation-play-state: paused; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes pop { from { transform: scale(0); opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+
+/* Route change: a quick fade so navigation feels continuous */
+.motion-ok .page-enter { animation: fade-in 0.35s ease both; }
+
+/* ===== Scroll progress, floating actions, Sections menu ===== */
+.scroll-progress { position: fixed; z-index: 60; top: 0; left: 0; right: 0; height: 2px; pointer-events: none; }
+.scroll-progress span { display: block; height: 100%; transform-origin: left center; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 12px rgba(32, 201, 120, 0.55); transition: transform 0.08s linear; }
+.float-actions { position: fixed; z-index: 45; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: flex-end; gap: 8px; }
+.float-button {
+  display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px;
+  color: var(--text); font-size: var(--fs-sm); font-weight: 500;
+  background: rgba(14, 24, 19, 0.72); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop);
+  -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease), border-color 0.15s var(--ease);
+}
+.float-button:hover { border-color: var(--accent-line); }
+.float-top { width: 40px; padding: 0; justify-content: center; opacity: 0; transform: translateY(8px); pointer-events: none; }
+.float-top.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.float-top-arrow { display: inline-grid; transform: rotate(90deg); }
+.section-menu { position: relative; }
+.section-menu-panel {
+  position: absolute; right: 0; bottom: 48px; width: min(280px, calc(100vw - 32px)); max-height: min(60vh, 440px); overflow-y: auto;
+  display: grid; gap: 1px; padding: 6px; border-radius: var(--r-lg);
+  background: rgba(10, 17, 14, 0.92); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  animation: pop-in 0.16s var(--ease);
+}
+.section-menu-title { padding: 6px 10px 4px; color: var(--text-3); font-size: var(--fs-xs); }
+.section-menu-panel button { text-align: left; border: 0; background: transparent; color: var(--text-2); padding: 7px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.section-menu-panel button:hover { background: var(--hover); color: var(--text); }
+.section-menu-panel button.is-active { color: var(--text); background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+
+/* ===== Section tabs (tablet and phone, where the sidebar tree is hidden) ===== */
+.section-tabs { display: none; }
+@media (max-width: 1100px) {
+  .section-tabs {
+    position: sticky; top: var(--topbar-h); z-index: 25; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+    padding: 8px var(--gutter); border-bottom: 1px solid var(--line);
+    background: rgba(7, 12, 10, 0.8); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+  .section-tabs::-webkit-scrollbar { display: none; }
+  .section-tabs a { flex-shrink: 0; padding: 7px 12px; border-radius: 999px; color: var(--text-2); font-size: var(--fs-sm); font-weight: 500; border: 1px solid transparent; }
+  .section-tabs a:hover { color: var(--text); background: var(--hover); }
+  .section-tabs a[aria-current="page"] { color: var(--text); background: var(--accent-soft); border-color: var(--accent-line); }
+  .subnav { top: calc(var(--topbar-h) + 56px); }
+}
+
+/* ===== End-of-page wayfinding ===== */
+.continue-nav { display: grid; gap: 22px; margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line); }
+.continue-title { font-size: var(--fs-sm); font-weight: 500; color: var(--text-3); margin-bottom: 10px; }
+.continue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.continue-card { display: grid; gap: 3px; align-content: start; padding: 14px 16px; border-radius: var(--r-lg); border: 1px solid var(--line-2); background: rgba(162, 214, 186, 0.025); }
+.continue-card:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.continue-card strong { font-size: var(--fs-md); }
+.continue-card span:last-child { color: var(--text-3); font-size: var(--fs-xs); }
+.continue-icon { color: var(--accent-2); margin-bottom: 4px; }
+
+/* ===== Accessible tooltips for metric hints ===== */
+.metric { position: relative; }
+.metric-hint { position: static; }
+.metric-hint[data-tip]::after {
+  content: attr(data-tip); position: absolute; z-index: 3; top: 36px; left: 12px; right: 12px;
+  padding: 8px 10px; border-radius: var(--r-md); font-style: normal; font-size: var(--fs-xs); line-height: 1.45; color: var(--text); text-align: left;
+  background: rgba(8, 14, 11, 0.96); border: 1px solid var(--line-3); box-shadow: var(--shadow-pop);
+  opacity: 0; transform: translateY(-3px); pointer-events: none; transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.metric-hint[data-tip]:hover::after, .metric-hint[data-tip]:focus-visible::after { opacity: 1; transform: none; }
+.metric-hint:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+@media (max-width: 760px) {
+  .float-actions { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .float-button span:not(.float-top-arrow) { display: none; }
+  .float-button { width: 40px; padding: 0; justify-content: center; }
+  .continue-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient span, .status-list .status-dot-v2 { animation: none !important; }
+}

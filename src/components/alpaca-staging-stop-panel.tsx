@@ -50,7 +50,7 @@ export function AlpacaStagingStopPanel(){
    <span className="pill">STAGING DATABASE / OWNER-ONLY</span><span className="pill pill-amber">HALTED BY DESIGN</span>
   </div>
   <h2 id="alpaca-staging-stop-title">Paper automation emergency stop</h2>
-  <p>Inspect the separate SportsEdge Staging receipt database, or record another one-way STOP. This does not start, submit, or cancel Alpaca orders. No order writer is connected to this staging gate yet.</p>
+  <p>Inspect the separate SportsEdge Staging receipt database, or record another one-way STOP. This does not start, submit, or cancel Alpaca orders. A separate owner-confirmed one-order path may use the staging gate only after independent checks; recurring automation remains disabled.</p>
   <div className="button-row" style={{marginTop:15}}>
    <button type="button" className="button button-secondary" disabled={working} onClick={()=>void run('inspect')}>
     {working?'Checking…':'Check staging safety status'}
@@ -66,7 +66,7 @@ export function AlpacaStagingStopPanel(){
     <div className="glass panel"><span className="eyebrow">UNRESOLVED RECEIPTS</span><h3>{stage.unresolvedReceiptCount}</h3></div>
     <div className="glass panel"><span className="eyebrow">STOP AUDIT EVENTS</span><h3>{stage.haltAuditEvents}</h3></div>
    </div>
-   <p style={{fontSize:11}}>Only staging controls are shown. A HALTED staging database is not a verified emergency stop for a future deployed Alpaca order service.</p>
+   <p style={{fontSize:11}}>Only staging controls are shown. This is the staging gate status at the time of inspection; it is not proof of future scheduler or broker cancellation controls.</p>
   </div>}
   <p style={{fontSize:11,marginTop:15}}>If the protected Preview has not been configured with a separate staging service credential, this panel remains unavailable and defaults to a non-trading state. Never paste database credentials into the browser.</p>
  </section>;

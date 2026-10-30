@@ -30,7 +30,8 @@ test('Server target is fixed staging DB, never Alpaca or Production',()=>{
 test('Owner dashboard contains no automatic trade button or credential field for staging',()=>{
  assert.ok(dash.includes('<AlpacaStagingStopPanel/>'));
  assert.ok(panel.includes('Record staging emergency STOP'));
- assert.ok(panel.includes('No order writer is connected'));
+ assert.ok(panel.includes('This does not start, submit, or cancel Alpaca orders'));
+ assert.ok(panel.includes('recurring automation remains disabled'));
  assert.ok(panel.includes('HALTED BY DESIGN'));
  assert.ok(!panel.includes('SUPABASE_SERVICE_ROLE_KEY'));
  assert.ok(!panel.includes('SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY'));

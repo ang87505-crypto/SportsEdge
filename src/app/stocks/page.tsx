@@ -1,30 +1,109 @@
 "use client";
-import {useMemo,useState,useSyncExternalStore,type FormEvent} from 'react';
 import Link from 'next/link';
-import {AlpacaAccess} from '@/components/alpaca-access';
-import {StockJournalInsights} from '@/components/stock-journal-insights';
-import {StockJournalBackup} from '@/components/stock-journal-backup';
-import {inspectJournalBackup} from '@/lib/stocks/journal-backup';
-import {PageHeading,Stat,Details,Empty} from '@/components/ui';
-import {EMPTY,ticker,cents,totals,openTrade,closeTrade,parseJournal,type Journal} from '@/lib/stocks/journal';
-const KEY='sportsedge-stock-journal-v1',FALLBACK=JSON.stringify(EMPTY);
-function subscribe(cb:()=>void){window.addEventListener('storage',cb);window.addEventListener('stock-journal',cb);return()=>{window.removeEventListener('storage',cb);window.removeEventListener('stock-journal',cb);};}
-function snapshot(){try{return localStorage.getItem(KEY)??FALLBACK;}catch{return FALLBACK;}}
-const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
-export default function Stocks(){const raw=useSyncExternalStore(subscribe,snapshot,()=>FALLBACK),[message,setMessage]=useState(''),[tab,setTab]=useState('watchlist');
- const parsed=useMemo(()=>{try{return {data:parseJournal(raw),invalid:false};}catch{return {data:EMPTY,invalid:true};}},[raw]);const j=parsed.data,balance=totals(j);
- function save(next:Journal){if(parsed.invalid)throw Error('Saved data could not be read. Export it before making changes.');if(snapshot()!==raw)throw Error('Your journal changed in another tab. Try again.');localStorage.setItem(KEY,JSON.stringify(next));window.dispatchEvent(new Event('stock-journal'));}
- function act(fn:()=>void){try{fn();}catch(e){setMessage(e instanceof Error?e.message:'Could not save to this browser.');}}
- function watch(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget,d=new FormData(form);act(()=>{const s=ticker(String(d.get('symbol')));if(j.watchlist.includes(s))throw Error('That ticker is already on your watchlist.');if(j.watchlist.length>=100)throw Error('The watchlist limit is 100 tickers.');save({...j,watchlist:[...j.watchlist,s]});form.reset();setMessage(`${s} added to your watchlist.`);});}
- function open(e:FormEvent<HTMLFormElement>){e.preventDefault();const form=e.currentTarget,d=new FormData(form);act(()=>{const next=openTrade(j,{id:crypto.randomUUID(),symbol:String(d.get('symbol')),shares:Number(d.get('shares')),entryCents:cents(String(d.get('price'))),openedAt:new Date().toISOString(),note:String(d.get('note')??'').slice(0,500)});save(next);form.reset();setMessage('Virtual position recorded at your manually entered price.');});}
- function close(e:FormEvent<HTMLFormElement>,id:string){e.preventDefault();const d=new FormData(e.currentTarget);act(()=>{save(closeTrade(j,id,cents(String(d.get('exit'))),new Date().toISOString()));setMessage('Position closed. Realized profit/loss updated.');});}
- function download(){const b=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download='sportsedge-stock-journal.json';a.click();URL.revokeObjectURL(url);}
- function restoreBackup(next:Journal,expected:string){
-  if(snapshot()!==expected)throw Error('The local journal changed while the backup was being reviewed. Import again to avoid losing updates.');
-  const verified=inspectJournalBackup(JSON.stringify(next)).journal;
-  localStorage.setItem(KEY,JSON.stringify(verified));
-  window.dispatchEvent(new Event('stock-journal'));
-  setMessage('Validated manual journal backup restored on this device. Nothing was sent to Alpaca.');
+import {PageHeading,Panel,Metric,MetricGrid,Evidence,Badge,Callout,Empty,KeyValues,OperatorStates,Skeleton} from '@/components/ui';
+import protocol from '../../../research/stock_audit_20261012/protocol.json';
+import {StockEvidenceTracks} from '@/components/stock-evidence';
+import {PAPER_AUTOMATION_RELEASE} from '@/lib/stocks/paper-automation-release';
+import {usePaperSnapshotSummary,type PaperSnapshot} from '@/lib/stocks/paper-snapshot';
+import {useJournal} from '@/lib/stocks/journal-store';
+import {totals} from '@/lib/stocks/journal';
+import {dateTime,pct,usdCents,usdString} from '@/lib/format';
+
+const costs=protocol.execution.primary_costs;
+const oneWayBps=costs.half_spread_bps+costs.additional_slippage_bps;
+
+export default function Stocks(){
+ const paper=usePaperSnapshotSummary();
+ const {journal,invalid}=useJournal();
+ const local=totals(journal);
+ return <>
+  <PageHeading title="Stocks" description="A frozen momentum strategy under audit, an Alpaca PAPER account for simulated orders, and a manual practice journal. Three separate books; none uses real money."
+   action={<><Link href="/stocks/research" className="button button-secondary">Quant research</Link><Link href="/stocks/alpaca" className="button">Paper account</Link></>}/>
+
+  <div className="book-strip" role="list" aria-label="Separate stock books">
+   <Link role="listitem" href="/stocks/alpaca" className="book"><Evidence kind="broker"/><strong>Alpaca PAPER account</strong><span>Simulated fills reported by the broker. Owner-only.</span></Link>
+   <Link role="listitem" href="/stocks/research" className="book"><Evidence kind="unverified"/><strong>Strategy research</strong><span>Frozen rules and evidence gates. No returns yet.</span></Link>
+   <Link role="listitem" href="/stocks/journal" className="book"><Evidence kind="local"/><strong>Practice journal</strong><span>Your manual trades, stored in this browser.</span></Link>
+  </div>
+
+  <div className="stocks-top">
+   <PaperPortfolio view={paper}/>
+   <Panel title="Paper automation" description="Recurring Alpaca PAPER operator state" className="automation-panel">
+    <OperatorStates current={null} note="This summary does not read the experiment ledger, so no operator state is shown here. The owner-only automation page reports the recorded state; the UI never implies automation is running."/>
+    <KeyValues items={[
+     ['Scheduled paper orders',<Badge key="s" tone="neutral">{PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled?'Released':'Off'}</Badge>],
+     ['Model-driven broker writes',<Badge key="w" tone="neutral">{PAPER_AUTOMATION_RELEASE.placeOrdersEnabled?'Released':'Off'}</Badge>],
+     ['Verified live signal source',<Badge key="v" tone={PAPER_AUTOMATION_RELEASE.verifiedLiveSignalSource?'positive':'neutral'}>{PAPER_AUTOMATION_RELEASE.verifiedLiveSignalSource?'Verified':'Not verified'}</Badge>],
+     ['Broker reconciliation',<Badge key="r" tone={PAPER_AUTOMATION_RELEASE.brokerReconciliationComplete?'positive':'neutral'}>{PAPER_AUTOMATION_RELEASE.brokerReconciliationComplete?'Complete':'Incomplete'}</Badge>],
+     ['Real-money trading',<Badge key="m" tone="neutral">Never</Badge>],
+    ]}/>
+    <Link href="/stocks/paper-auto" className="text-link">Automation status and STOP (owner)</Link>
+    <Link href="/stocks/alpaca#alpaca-staging-stop-title" className="estop-link"><span className="estop-icon" aria-hidden="true"/><span><strong>Emergency stop</strong><small>Owner-only staging STOP on the paper account page</small></span></Link>
+   </Panel>
+  </div>
+
+  <Panel title="Research evidence" description="Four kinds of evidence, kept apart so a test balance is never read as a return." actions={<Link href="/stocks/research" className="text-link">Open quant research</Link>}>
+   <StockEvidenceTracks/>
+   <div className="panel-foot">
+    <span>Baseline <code>{protocol.baseline}</code></span>
+    <span>Cost assumption {oneWayBps} bps one way, {usdCents(costs.fee_cents_per_order)} per order</span>
+    <span>Protocol {protocol.version}</span>
+   </div>
+  </Panel>
+
+  <Panel title="Practice journal" description="Your manual virtual trades in this browser" actions={<Link href="/stocks/journal" className="text-link">Open journal</Link>}>
+   {invalid?<Callout tone="negative" title="Saved journal could not be read">Open the journal to export the raw data.</Callout>:
+    <MetricGrid columns={4}>
+     <Metric size="sm" label="Virtual cash" value={usdCents(local.cash)} evidence="local"/>
+     <Metric size="sm" label="Open at cost" value={usdCents(local.cost)} detail={`${local.open} open`}/>
+     <Metric size="sm" label="Realized P&L" value={usdCents(local.realized,{signed:true})} tone={local.realized>0?'positive':local.realized<0?'negative':undefined} detail={`${local.closed} closed`}/>
+     <Metric size="sm" label="Watchlist" value={journal.watchlist.length} detail="Tickers saved"/>
+    </MetricGrid>}
+  </Panel>
+ </>;
+}
+
+function PaperPortfolio({view}:{view:ReturnType<typeof usePaperSnapshotSummary>}){
+ const actions=<Evidence kind="broker"/>;
+ if(view.status==='checking')return <Panel title="Paper portfolio" description="Alpaca PAPER account" actions={actions}><Skeleton lines={4}/></Panel>;
+ if(view.status!=='ready'){
+  const copy={login:{t:'Owner sign-in required',b:'Balances and positions are private. Sign in with the owner key on the paper account page to see them here.'},
+   unconfigured:{t:'Not connected on this deployment',b:'The owner key or Alpaca PAPER credentials are not configured here, so no account data exists to show.'},
+   error:{t:'Broker snapshot unavailable',b:'The read-only account viewer did not return a verifiable snapshot. Nothing is shown in its place.'}}[view.status];
+  return <Panel title="Paper portfolio" description="Alpaca PAPER account" actions={actions}>
+   <Empty title={copy.t} action={<Link href="/stocks/alpaca" className="button button-secondary">{view.status==='login'?'Sign in on paper account':'Open paper account'}</Link>}>{copy.b}</Empty>
+  </Panel>;
  }
- return <><PageHeading eyebrow="STOCK WORKSPACE" title="Give every idea a plan." description="Keep a watchlist and test a stock idea with virtual money. Record your own entry and exit prices, then review the outcome." action={<div className="button-row"><Link href="/stocks/research" className="button">Algorithm research ↗</Link><button className="button button-secondary" onClick={download}>Export journal ↓</button></div>}/><section className="glass panel" aria-labelledby="stock-research-title" style={{marginBottom:24}}><div className="section-title" style={{marginTop:0}}><div><div className="eyebrow">ALGORITHM RESEARCH</div><h2 id="stock-research-title">Follow the real stock research.</h2></div><span className="pill pill-amber">Backtest not verified</span></div><p>View the frozen momentum baseline and hold-rank candidate, registered testing windows, and remaining data/accounting blockers. Results stay unavailable until an audited historical comparison exists.</p><div className="button-row" style={{marginTop:18}}><Link className="button button-secondary" href="/stocks/research">View research readiness →</Link></div></section><AlpacaAccess/><div className="section-title"><h2>Your manual practice journal</h2><span className="pill">Separate from Alpaca</span></div><div className="notice"><strong>Manual practice · saved in this browser.</strong> This manual journal is not synchronized with market prices, trading signals or Alpaca. Prices you enter are unverified assumptions, not actual fills. Export your journal before clearing browser data.</div><div className="stats-grid"><Stat label="Available virtual cash" value={money(balance.cash)} detail="Starts with $10,000 of virtual cash"/><Stat label="Open positions at cost" value={money(balance.cost)} detail={`${balance.open} open · not current market value`}/><Stat label="Realized profit / loss" value={money(balance.realized)} detail={`${balance.closed} closed positions · manual prices`}/><Stat label="Your watchlist" value={j.watchlist.length} detail="Ticker ideas saved on this device"/></div><StockJournalInsights journal={j} invalid={parsed.invalid}/><div className="toolbar"><div className="tabs" role="group" aria-label="Stock workspace section"><button aria-pressed={tab==='watchlist'} onClick={()=>setTab('watchlist')}>Watchlist</button><button aria-pressed={tab==='journal'} onClick={()=>setTab('journal')}>Paper trades</button></div><span className="pill pill-amber">No stock price feed</span></div>{parsed.invalid&&<p className="error" role="alert">Your saved journal could not be read. Export it to keep a copy. Changes are disabled to protect the existing data.</p>}<p className="success" role="status" style={{marginBottom:16}}>{message}</p>{tab==='watchlist'?<div className="two-grid"><section className="glass panel"><h2>Your watchlist</h2><p>Add a ticker you want to research. No prices or recommendations are invented.</p><form onSubmit={watch} className="button-row"><input name="symbol" aria-label="Ticker to watch" placeholder="Ticker, e.g. AAPL" maxLength={10} required/><button className="button" disabled={parsed.invalid}>Add ticker ＋</button></form>{j.watchlist.length?<div style={{marginTop:22}}>{j.watchlist.map(s=><div key={s} className="game-header" style={{padding:'15px 0',borderTop:'1px solid var(--line)'}}><div><h3>{s}</h3><small>Live price not connected</small></div><button className="remove-button" aria-label={`Remove ${s} from watchlist`} onClick={()=>act(()=>{save({...j,watchlist:j.watchlist.filter(x=>x!==s)});setMessage(`${s} removed from watchlist.`);})}>Remove</button></div>)}</div>:<Empty title="Start with one company">Add its stock ticker above. Your list will stay here when you return on this browser.</Empty>}</section><section className="glass panel"><span className="pill">A simple research checklist</span><h2 style={{marginTop:20}}>Know why you’re interested.</h2><p>Before recording a practice trade, answer these three questions.</p><div className="guide-grid">{[['01','What is the idea?','Write down what you expect to change and why.'],['02','What would prove it wrong?','Define a price or event that would make you reconsider.'],['03','How will you measure it?','Record the entry, exit and your reasoning consistently.']].map(([n,h,p])=><div className="how-step" key={n}><span className="step-number">{n}</span><div><h3>{h}</h3><p>{p}</p></div></div>)}</div><button className="button button-secondary" style={{marginTop:25}} onClick={()=>setTab('journal')}>Record a practice trade ↗</button></section></div>:<><section className="glass panel"><h2>Record a virtual position</h2><p>Long positions only, using whole shares and your entered price. No order is sent anywhere.</p><form className="form-grid" onSubmit={open}><label>Ticker<input name="symbol" placeholder="e.g. AAPL" required maxLength={10}/></label><label>Whole shares<input name="shares" type="number" min="1" max="100000" step="1" required placeholder="10"/></label><label>Manual entry price · USD<input name="price" inputMode="decimal" required placeholder="Price you observed"/></label><label>Price source / reason<textarea name="note" maxLength={500} placeholder="Where did this price come from? What is your idea?" required/></label><div className="full"><button className="button" disabled={parsed.invalid}>Record virtual position ＋</button></div></form></section><div className="section-title"><h2>Your trade journal</h2><span className="quiet" style={{fontSize:12}}>All prices manually entered</span></div><section className="glass">{!j.trades.length?<Empty title="No practice trades yet">Record your first virtual position above. Profit or loss appears only after you close it.</Empty>:<div className="table-wrap"><table className="data-table"><thead><tr><th>Position</th><th>Entry</th><th>Status</th><th>Exit / realized P&L</th></tr></thead><tbody>{[...j.trades].reverse().map(t=><tr key={t.id}><td>{t.symbol} · {t.shares} shares<small>{new Date(t.openedAt).toLocaleString()}</small><small>{t.note}</small></td><td>{money(t.entryCents)}<small>Total {money(t.entryCents*t.shares)}</small></td><td><span className="pill">{t.exitCents===undefined?'Open':'Closed'}</span></td><td>{t.exitCents===undefined?<form onSubmit={e=>close(e,t.id)} className="button-row"><input name="exit" aria-label={`Exit price for ${t.symbol}`} placeholder="Exit price" inputMode="decimal" required style={{width:115}}/><button className="button button-secondary" disabled={parsed.invalid}>Close position</button></form>:<>{money(t.exitCents)}<small>Realized {money((t.exitCents-t.entryCents)*t.shares)}</small></>}</td></tr>)}</tbody></table></div>}</section></>}<StockJournalBackup currentRaw={raw} current={j} invalid={parsed.invalid} onRestore={restoreBackup}/><Details title="What the stock workspace measures—and what comes next"><p>This journal calculates cash, open position cost and realized profit/loss from your entries. It does not include live valuations, fees, slippage, dividends, splits, short selling or execution checks. Manual records do not validate an automated trading strategy.</p><p>The separate Alpaca paper-account viewer is under private review; it is not part of this local manual journal. Any future stock automation still requires timestamped prices, strategy tests, execution controls and independently audited simulated fills.</p><p>Local limits: 100 watchlist symbols and 500 positions. Data is specific to this browser and device. It does not sync to Supabase or other users.</p></Details></>;
+ return <PortfolioReady snapshot={view.snapshot}/>;
+}
+
+function PortfolioReady({snapshot}:{snapshot:PaperSnapshot}){
+ const equity=Number(snapshot.account.equityUsd);
+ const cash=Number(snapshot.account.cashUsd);
+ const positions=snapshot.positions.map(p=>({...p,value:Number(p.marketValueUsd)})).filter(p=>Number.isFinite(p.value)).sort((a,b)=>Math.abs(b.value)-Math.abs(a.value));
+ const invested=positions.reduce((a,p)=>a+Math.abs(p.value),0);
+ const restricted=snapshot.account.tradingBlocked||snapshot.account.accountBlocked;
+ return <Panel title="Paper portfolio" description={`Alpaca PAPER, captured ${dateTime(snapshot.capturedAt)}`} actions={<Evidence kind="broker"/>}>
+  <MetricGrid columns={4}>
+   <Metric size="sm" label="Equity" value={usdString(snapshot.account.equityUsd)}/>
+   <Metric size="sm" label="Cash" value={usdString(snapshot.account.cashUsd)}/>
+   <Metric size="sm" label="Invested" value={Number.isFinite(equity)&&equity>0?pct(invested/equity,1):'—'} detail="Gross position value ÷ equity"/>
+   <Metric size="sm" label="Account" value={snapshot.account.status} tone={restricted?'warning':undefined} detail={restricted?'Trading restrictions present':'Broker-reported status'}/>
+  </MetricGrid>
+  <div className="exposure">
+   <div className="exposure-head"><span>Position concentration</span><span className="quiet">{positions.length} position(s), share of equity</span></div>
+   {positions.length===0?<p className="quiet">No open paper positions. {Number.isFinite(cash)?`${usdString(snapshot.account.cashUsd)} is held as cash.`:''}</p>:
+    <ul className="exposure-list">{positions.slice(0,8).map(p=>{const w=equity>0?Math.abs(p.value)/equity:0;return <li key={p.symbol}>
+     <span className="exposure-symbol">{p.symbol}{p.side==='short'&&<Badge tone="warning">Short</Badge>}</span>
+     <span className="exposure-track"><span style={{width:`${Math.min(1,w)*100}%`}}/></span>
+     <span className="exposure-value">{pct(w,1)}<small>{usdString(p.marketValueUsd)}</small></span>
+    </li>;})}</ul>}
+  </div>
+  <div className="panel-foot">
+   <span>{snapshot.recentOrders.length} recent order(s) reported{snapshot.recentOrders[0]?`, latest ${dateTime(snapshot.recentOrders[0].createdAt)}`:''}</span>
+   <Link href="/stocks/alpaca" className="text-link">Orders and safety checks</Link>
+  </div>
+  {snapshot.warnings.length>0&&<Callout tone="warning" title="Broker reconciliation warnings">{snapshot.warnings.join('; ')}</Callout>}
+  <p className="quiet small-print">A snapshot, not a performance record. Strategy P&amp;L is never inferred from account balances.</p>
+ </Panel>;
 }
