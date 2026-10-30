@@ -191,4 +191,4 @@ Any `uncertain` intent is resolved only by:
 ## Not done and why
 
 - No migration has been applied, no secret has been set, no account registered, and no order or cancel sent: each needs owner authorization.
-- The current-data signal bridge cannot yet source the registered universe faithfully. Alpaca provides no security type or sector, so decisions would be `INPUT_REJECTED` until an authenticated classification source is approved. See the bridge PR.
+- The current-data signal bridge (`docs/STOCK_FORWARD_BRIDGE_V1_2026_10_17.md`) cannot yet source the registered universe faithfully. Alpaca provides no security type, sector or first trading date. Missing bars and unsupported corporate actions reject the whole batch under the frozen rules. Until Astra registers those policies and an authenticated security master, decisions will be `INPUT_REJECTED`.
