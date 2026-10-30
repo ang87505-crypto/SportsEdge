@@ -64,11 +64,16 @@ STOP: **Record owner STOP** on `/stocks/paper-auto` (Preview, owner session). Al
 |---|---|---|
 | 2026-10-30 06:00 | `register` | `NOT_CONFIGURED`: the staging URL secret was missing. Refused before any network call. |
 | 2026-10-30 06:02 | `register` | `REGISTERED`, state `STOPPED`. Staging project `vfyzbliksooljxrlfadp`; $1,000 PAPER account, flat. |
+| 2026-10-30 10:51–12:00 | weekly decision, `initial` (run 41043837193) | Reference capture 10:51; decision capture sealed at 08:00:00 ET. **`TARGETS`**, recorded (decision `664df5df…`). 134 of 136 symbols requested; **32 scored**; 104 skipped: 100 `LAST_CLOSE_ABOVE_CAP` (above $95), CMCSA (spin-off), VZ (cash merger), EA and MMC (not active listed assets). 115 supported corporate actions applied. |
 
 The owner dashboard runs on Vercel **Preview** only (staging settings are Preview-scoped), for example the branch
 alias of `claude/bold-newton-4j0x26`.
 
 ## Known limits
+
+- With a $1,000 account and the $95 cap, about a quarter of the universe is eligible (32 of 136 on the first run), and those are
+  the lower-priced stocks. The picks are biased toward cheaper shares. A larger paper balance or fractional
+  shares would remove this; both are changes for a later, separately registered experiment.
 
 - The paper fills are simulated. There is no spread cost, no market impact and no fees. A weekly cadence would pay noticeably more spread with real money.
 - The universe is survivor-selected today, which is a bias. That is acceptable for an engineering paper run, and it's why nothing here is research evidence.
