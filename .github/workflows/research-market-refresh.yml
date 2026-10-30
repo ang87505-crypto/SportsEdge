@@ -1,0 +1,23 @@
+name: On-demand research market refresh
+on:
+  push:
+    branches: ['fix/nba-market-refresh-20261030', 'main']
+  pull_request:
+    paths:
+      - 'src/app/api/internal/research-cycle/**'
+      - 'src/lib/server/research-cycle-handler*'
+      - '.github/workflows/research-market-refresh.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs
