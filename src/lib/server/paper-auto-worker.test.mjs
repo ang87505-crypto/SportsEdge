@@ -6,7 +6,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const WORKER=fileURLToPath(new URL('../../../scripts/paper-auto-worker.ts',import.meta.url));
-const SETTINGS={SPORTSEDGE_STAGING_SUPABASE_URL:'https://mcaxfaaohyencpspalfe.supabase.co',
+const SETTINGS={SPORTSEDGE_STAGING_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',
  SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY:'synthetic-service-key-for-tests-0001',
  ALPACA_PAPER_AUTO_KEY_ID:'PKSYNTHETIC0000001',ALPACA_PAPER_AUTO_SECRET_KEY:'synthetic-secret-0001'};
 const OWNER={SPORTSEDGE_PAPER_AUTO_OWNER_REF:'owner-'+'a'.repeat(32)};
