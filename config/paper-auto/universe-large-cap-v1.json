@@ -1,0 +1,691 @@
+{
+ "version": "sportsedge-weekly-universe-v1",
+ "source": "SportsEdge maintainer-curated list of large, liquid US-listed common stocks (no ETFs, ADRs, funds or preferreds)",
+ "revision": "large-cap-v1-2026-10-30",
+ "classification": "GICS sector names, assigned by the maintainer from public company descriptions; not licensed GICS data",
+ "first_traded_on_basis": "Declared lower bound: every listed company traded publicly before 2015-01-02. It only requires a complete 253-session window; it is not an IPO date.",
+ "available_at": "2026-10-30T03:00:00Z",
+ "note": "Paper experiment stock-v2-weekly only. Not the frozen research universe and not evidence for it.",
+ "securities": [
+  {
+   "symbol": "AAPL",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ABBV",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ABT",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ACN",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ADBE",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ADI",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AEP",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AMAT",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AMD",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AMGN",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AMT",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AMZN",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "APD",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AVGO",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "AXP",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "BA",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "BAC",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "BKNG",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "BLK",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "BMY",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "C",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CAT",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CB",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CHTR",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CL",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CMCSA",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CMG",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "COF",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "COP",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "COST",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CRM",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CSCO",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CSX",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CVS",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "CVX",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "D",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "DE",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "DHR",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "DIS",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "DUK",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "EA",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ECL",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "EMR",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "EOG",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "EQIX",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ETN",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "EXC",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "F",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "FCX",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "FDX",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GD",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GE",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GILD",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GIS",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GM",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GOOGL",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "GS",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "HD",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "HON",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "IBM",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "INTC",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "INTU",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ISRG",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ITW",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "JNJ",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "JPM",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "KMB",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "KMI",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "KO",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "LLY",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "LMT",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "LOW",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "LRCX",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MA",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MAR",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MCD",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MDLZ",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MDT",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "META",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MMC",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MMM",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MO",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MPC",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MRK",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MS",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MSFT",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MU",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NEE",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NEM",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NFLX",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NKE",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NOW",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NSC",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NUE",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "NVDA",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "O",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ORCL",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "ORLY",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "OXY",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PEP",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PFE",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PG",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PGR",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PLD",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PM",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PSA",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "PSX",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "QCOM",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "REGN",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "RTX",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SBUX",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SCHW",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SHW",
+   "sector": "Materials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SLB",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SO",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SPG",
+   "sector": "Real Estate",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SPGI",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "SRE",
+   "sector": "Utilities",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "T",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "TJX",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "TMO",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "TMUS",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "TSLA",
+   "sector": "Consumer Discretionary",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "TXN",
+   "sector": "Information Technology",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "UNH",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "UNP",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "UPS",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "USB",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "V",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "VRTX",
+   "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "VZ",
+   "sector": "Communication Services",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "WFC",
+   "sector": "Financials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "WM",
+   "sector": "Industrials",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "WMB",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "WMT",
+   "sector": "Consumer Staples",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "XOM",
+   "sector": "Energy",
+   "first_traded_on": "2015-01-02"
+  }
+ ]
+}

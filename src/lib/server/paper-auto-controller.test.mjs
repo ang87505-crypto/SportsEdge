@@ -540,6 +540,34 @@ print(json.dumps(decide(synthetic_capture(),master(),ATTESTATION,json.loads(sys.
   AND d.decision_id='${record.decisionId}'`),'3');
 });
 
+e2e('weekly chain: a mid-month weekly bridge decision is accepted by the database and traded by the controller',async()=>{
+ const w=world({start:'2026-11-09T11:00:00Z'});
+ await register(w);
+ const registeredAt=sqlValue(DB,`SELECT to_char(registered_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  FROM sportsedge_paper_auto.experiments WHERE experiment_id='${w.experimentId}'`);
+ const script=`import json,sys
+from analytics.test_stock_weekly_v2 import capture,universe
+from analytics.stock_weekly_bridge_v2 import decide
+print(json.dumps(decide(capture('2026-11-09','2026-11-09T13:00:00Z'),universe(),json.loads(sys.argv[1]),[],False)))`;
+ const py=spawnSync('python3',['-c',script,JSON.stringify({experimentId:w.experimentId,registeredAt,
+  modelVersion:BASELINE})],{cwd:fileURLToPath(new URL('../../..',import.meta.url)),encoding:'utf8'});
+ assert.equal(py.status,0,py.stderr);
+ const record=JSON.parse(py.stdout);
+ assert.equal(record.outcome,'TARGETS',py.stdout.slice(0,500));
+ assert.equal(record.signal.variant.rebalance,'weekly-first-session-of-iso-week');
+ w.clock.set('2026-11-09T13:01:00.000Z');
+ const recorded=await recordDecisionSlot(w.deps,record);
+ assert.equal(recorded.reason,'RECORDED',JSON.stringify(recorded));
+ // Quotes at each target's last close from the bridge's prior inputs.
+ const targets=record.signal.targets;
+ for(const t of targets)w.broker.setQuote(t.symbol,Math.round(Number(record.signal.priorInputs[t.securityId].price)*100));
+ await arm(w,'2026-11-09T14:40:00.000Z');
+ const r=await execute(w,'2026-11-09T14:45:00.000Z');
+ assert.equal(r.reason,'ORDERS_COMPLETE',JSON.stringify(r));
+ assert.deepEqual(w.broker.posts.map(p=>p.symbol).sort(),targets.map(t=>t.symbol).sort());
+ assert.ok(w.broker.posts.every(p=>p.shares>=1&&p.side==='buy'));
+});
+
 e2e('the dashboard reads the real ledger: only reconciled, uncontaminated marks count as strategy return',async()=>{
  const w=await armedWithDecision();
  assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
