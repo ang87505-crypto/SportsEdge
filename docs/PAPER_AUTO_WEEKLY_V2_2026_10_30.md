@@ -58,6 +58,16 @@ rebalanced or sold.
 STOP: **Record owner STOP** on `/stocks/paper-auto` (Preview, owner session). Also see
 `docs/PAPER_AUTO_RELEASE_CHECKLIST_2026_10_17.md`.
 
+## Run log
+
+| When (UTC) | What | Result |
+|---|---|---|
+| 2026-10-30 06:00 | `register` | `NOT_CONFIGURED`: the staging URL secret was missing. Refused before any network call. |
+| 2026-10-30 06:02 | `register` | `REGISTERED`, state `STOPPED`. Staging project `vfyzbliksooljxrlfadp`; $1,000 PAPER account, flat. |
+
+The owner dashboard runs on Vercel **Preview** only (staging settings are Preview-scoped), for example the branch
+alias of `claude/bold-newton-4j0x26`.
+
 ## Known limits
 
 - The paper fills are simulated. There is no spread cost, no market impact and no fees. A weekly cadence would pay noticeably more spread with real money.
