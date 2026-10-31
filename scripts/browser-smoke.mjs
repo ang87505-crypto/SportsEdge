@@ -165,9 +165,10 @@ try{
   if(!honest)throw Error('Empty manual stock journal must not display fabricated performance curve');
   console.log('PASS practice journal: empty manual journal shows no fabricated chart');
   await send('Page.navigate',{url:base+'/stocks'});
-  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.operator-states')`),'stocks dashboard');
-  await until(async()=>evaluate(send,`!document.querySelector('.operator-states li.is-current') && document.body.innerText.includes('Not connected on this deployment')`),'stocks dashboard truthful states',12000);
-  console.log('PASS stocks: no operator state claimed and unconfigured broker shows no balances');
+  await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('.automation-panel')`),'stocks dashboard');
+  // Signed out: the Autopilot card claims no status, keeps the emergency stop, and the broker shows no balances.
+  await until(async()=>evaluate(send,`(()=>{const p=document.querySelector('.automation-panel');return !!p&&p.innerText.includes('Owner only')&&!/Running|Trading now/.test(p.innerText)&&!!p.querySelector('a.estop-link')&&!document.querySelector('.autopilot-pill')&&document.body.innerText.includes('Not connected on this deployment');})()`),'stocks dashboard truthful states',12000);
+  console.log('PASS stocks: autopilot claims no status signed out, emergency stop visible, unconfigured broker shows no balances');
  }catch(error){const message='Progress and performance interactions: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
   // Test center: route discovery, mobile tour filters, and owner-only preview disclosure.
  try{
@@ -181,8 +182,8 @@ try{
   })`);
   if(!defaultState.disabled||!defaultState.hasUnverified||!defaultState.menuEntry)
    throw Error('Testing hub must disclose unreleased state, private Preview route, and primary navigation');
-  await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='Blocked');if(!v)throw Error('missing blocked filter');v.click();return true;})()`);
-  await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===1 && document.querySelector('.test-tour-detail')?.innerText?.includes('No paper or live orders')`),'blocked research gate');
+  // Click again on each poll: a click that lands before hydration finishes is dropped.
+  await until(async()=>evaluate(send,`(()=>{const ok=()=>document.querySelectorAll('.test-tour-steps button').length===1 && !!document.querySelector('.test-tour-detail')?.innerText?.includes('No paper or live orders');if(ok())return true;const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='Blocked');if(!v)throw Error('missing blocked filter');v.click();return false;})()`),'blocked research gate');
   await evaluate(send,`(()=>{const v=[...document.querySelectorAll('.test-tour-filters button')].find(e=>e.textContent.trim()==='All');v.click();return true;})()`);
   await until(async()=>evaluate(send,`document.querySelectorAll('.test-tour-steps button').length===6`),'all testing checkpoints restored');
   await evaluate(send,`(()=>{document.querySelectorAll('.test-tour-steps button')[4].click();return true;})()`);

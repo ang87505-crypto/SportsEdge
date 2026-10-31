@@ -7,6 +7,7 @@ import {issueOwnerSession} from './alpaca-owner-session.ts';
 import {PaperAutoStoreError} from './paper-auto-store.ts';
 import {configuredExperiments,handlePaperAutoGet,handlePaperAutoPost,ownerActionCall,ownerRefFor,
  parseOwnerAction} from './paper-auto-owner.ts';
+import {dispatchOwnerResume,startConfigured} from './paper-auto-start.ts';
 
 const SECRET='0123456789abcdef'.repeat(4);
 process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY=SECRET;
@@ -124,6 +125,55 @@ test('database refusals and unknown outcomes are reported, never retried by the 
  assert.equal(lost.calls.length,1,'one attempt only');
 });
 
+test('Start dispatches the owner resume workflow only while stopped, and never touches the gate itself',async()=>{
+ const body=JSON.stringify({action:'start',experimentId:'fwd-2026-baseline'});
+ const sent=[];const ok=async(id)=>{sent.push(id);return {result:'dispatched'};};
+ const s=fakeStore();
+ const r=await handlePaperAutoPost(req({body}),ENV,s.make,ok);
+ assert.equal(r.status,202);assert.equal((await r.json()).status,'started');
+ assert.deepEqual(sent,['fwd-2026-baseline']);
+ assert.deepEqual(s.calls.map(c=>c.fn),['status'],'only a status read; the workflow\'s database resume arms');
+ // Already running: refused before any dispatch.
+ const armed=fakeStore(()=>({...STATUS,gateMode:'ARMED',state:'READY'}));
+ const a=await handlePaperAutoPost(req({body}),ENV,armed.make,ok);
+ assert.equal(a.status,409);assert.equal((await a.json()).code,'ALREADY_RUNNING');assert.equal(sent.length,1);
+ // Owner session, same origin and exact fields still apply.
+ assert.equal((await handlePaperAutoPost(req({body,cookie:undefined}),ENV,s.make,ok)).status,401);
+ assert.equal((await handlePaperAutoPost(req({body,origin:'https://evil.example'}),ENV,s.make,ok)).status,403);
+ assert.equal(parseOwnerAction(JSON.stringify({action:'start',experimentId:'fwd-2026-baseline',x:1}),
+  ['fwd-2026-baseline']),null);
+ assert.equal(sent.length,1);
+ // Not configured and GitHub refusals are reported, not hidden.
+ const nc=await handlePaperAutoPost(req({body}),ENV,s.make,async()=>({result:'not_configured'}));
+ assert.equal(nc.status,503);assert.equal((await nc.json()).status,'start_not_configured');
+ const no=await handlePaperAutoPost(req({body}),ENV,s.make,async()=>({result:'refused',code:'GITHUB_403'}));
+ assert.equal(no.status,409);assert.equal((await no.json()).code,'GITHUB_403');
+});
+
+test('the Start dispatcher sends one fixed workflow_dispatch to this repository only',async()=>{
+ const TOKEN='github_pat_'+'A1'.repeat(20);
+ assert.equal(startConfigured({}),false);assert.equal(startConfigured({SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN}),true);
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{}),{result:'not_configured'});
+ const calls=[];
+ const fetcher=async(url,init)=>{calls.push({url,init});return new Response(null,{status:204});};
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},fetcher),
+  {result:'dispatched'});
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].url,'https://api.github.com/repos/ang87505-crypto/SportsEdge/actions/workflows/paper-auto-owner.yml/dispatches');
+ assert.equal(calls[0].init.method,'POST');assert.equal(calls[0].init.redirect,'error');
+ assert.deepEqual(JSON.parse(calls[0].init.body),{ref:'main',inputs:{action:'resume',experiment:'fwd-2026-baseline'}});
+ const refused=async()=>new Response('{}',{status:403});
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},refused),
+  {result:'refused',code:'GITHUB_403'});
+ let n=0;const lost=async()=>{n++;throw Error('reset');};
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},lost),
+  {result:'unknown',code:'GITHUB_NETWORK'});
+ assert.equal(n,1,'never retried');
+ assert.deepEqual(await dispatchOwnerResume('../x',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},fetcher),
+  {result:'refused',code:'INVALID_EXPERIMENT'});
+ assert.equal(calls.length,1);
+});
+
 test('configured experiments are few, unique and well formed',()=>{
  assert.deepEqual(configuredExperiments({SPORTSEDGE_PAPER_AUTO_EXPERIMENT_IDS:' fwd-a1, fwd-b2 '}),['fwd-a1','fwd-b2']);
  for(const v of [undefined,'','fwd-a1,fwd-a1','Bad_Id','a,b,c,d,e'.split(',').map(x=>'fwd-'+x).join(','),'fwd-a1,'])
@@ -141,5 +191,5 @@ test('the owner API, page and component never reach a broker or expose a credent
  assert.ok(route.includes('await connection();'),'GET must not be prerendered');
  assert.ok(!/export async function (PUT|PATCH|DELETE)/.test(route));
  assert.ok(!ui.includes('Submit order'));
- assert.ok(ui.includes('Record owner STOP'));
+ assert.ok(ui.includes('Stop autopilot')&&ui.includes("action:'stop'"),'Stop must stay on the owner page');
 });

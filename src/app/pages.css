@@ -400,3 +400,45 @@
 .status-page-body { display: grid; gap: 12px; padding: 12px 6px; }
 .status-page-code { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 600; color: var(--accent-2); }
 .status-page p { color: var(--text-2); }
+
+/* Autopilot: one status, two actions, then what happened and what's next. */
+.autopilot-hero { padding: 22px 24px; border-radius: var(--r-lg, 16px); display: grid; gap: 16px; margin-bottom: 14px; }
+.autopilot-status { display: flex; gap: 14px; align-items: flex-start; }
+.autopilot-status .status-dot-v2 { width: 14px; height: 14px; margin-top: 10px; flex: none; }
+.autopilot-status h2 { font-family: var(--font-display, inherit); font-size: 28px; line-height: 1.15; margin: 0 0 4px; }
+.autopilot-status p { margin: 0; color: var(--text-2); }
+.autopilot-reasons { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); }
+.autopilot-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.button-lg { min-height: 46px; padding: 11px 22px; font-size: var(--fs-lg); font-weight: 600; }
+.autopilot-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.autopilot-metrics { margin-bottom: 14px; }
+.unlock-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.unlock-form input { min-height: 40px; min-width: min(320px, 100%); padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--line-3); background: var(--surface-2); color: var(--text); }
+.pick-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pick-chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-3); background: var(--surface-2);
+  font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.next-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.next-list li { display: grid; gap: 2px; }
+.next-list span { color: var(--text-3); font-size: var(--fs-sm); }
+.next-list small { color: var(--text-3); }
+.activity-feed { list-style: none; margin: 0; padding: 0; display: grid; }
+.activity-feed li { display: grid; grid-template-columns: auto minmax(90px, 140px) 1fr auto; gap: 10px; align-items: center;
+  padding: 10px 0; border-top: 1px solid var(--line); }
+.activity-feed li:first-child { border-top: 0; }
+.activity-what { font-weight: 600; }
+.activity-result { color: var(--text-2); }
+.activity-feed time { color: var(--text-3); font-size: var(--fs-sm); white-space: nowrap; }
+@media (max-width: 640px) {
+  .autopilot-hero { padding: 18px 16px; }
+  .autopilot-actions .button { flex: 1 1 100%; }
+  .activity-feed li { grid-template-columns: auto 1fr; }
+  .activity-feed .activity-result, .activity-feed time { grid-column: 2; }
+}
+.autopilot-summary { display: grid; gap: 10px; justify-items: start; }
+.autopilot-summary-head { display: flex; align-items: center; gap: 10px; font-size: var(--fs-lg); }
+.autopilot-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--line-3); background: var(--surface-2); color: var(--text); font-size: var(--fs-sm); font-weight: 600;
+  text-decoration: none; white-space: nowrap; }
+.autopilot-pill:hover { border-color: var(--accent); }
+@media (max-width: 760px) { .autopilot-pill { display: none; } }

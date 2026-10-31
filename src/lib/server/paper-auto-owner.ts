@@ -4,6 +4,8 @@
  * - STOP is always allowed and idempotent, so retrying after an unknown outcome is safe.
  * - RESUME is the database's compare-and-swap on the gate version and needs a fresh,
  *   clean reconcile run. A stale browser view can only make it fail.
+ * - START is the one-click form of resume: it triggers the owner-only GitHub workflow that
+ *   reconciles and then resumes in one job (paper-auto-start.ts). It is refused while armed.
  */
 import {createHmac} from 'node:crypto';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
@@ -11,14 +13,16 @@ import {PaperAutoStoreError,stagingPaperAutoStore,storeCode,type PaperAutoRpc,ty
  from './paper-auto-store.ts';
 import {parseLedger,parseStatus} from '../stocks/paper-auto-ledger.ts';
 import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
+import {dispatchOwnerResume,startConfigured,type Dispatcher} from './paper-auto-start.ts';
 
 const EXPERIMENT=/^[a-z0-9][a-z0-9-]{2,62}$/;
 export type OwnerAction=
  {action:'stop';experimentId:string}|
+ {action:'start';experimentId:string}|
  {action:'pause';experimentId:string}|
  {action:'resume';experimentId:string;expectedGateVersion:number;reconcileRunId:string}|
  {action:'ack_alert';experimentId:string;alertId:number};
-const FIELDS:Record<OwnerAction['action'],readonly string[]>={stop:[],pause:[],
+const FIELDS:Record<OwnerAction['action'],readonly string[]>={stop:[],start:[],pause:[],
  resume:['expectedGateVersion','reconcileRunId'],ack_alert:['alertId']};
 
 /** Opaque, stable attribution for the database (owner-<32 hex>); never the secret itself. */
@@ -57,7 +61,8 @@ export function parseOwnerAction(body:string,experiments:readonly string[]):Owne
  return {action:action as 'stop'|'pause',experimentId};
 }
 /** The single RPC an owner action maps to. */
-export function ownerActionCall(a:OwnerAction,ownerRef:string):{fn:PaperAutoRpc;p:Record<string,unknown>}{
+export function ownerActionCall(a:Exclude<OwnerAction,{action:'start'}>,ownerRef:string)
+ :{fn:PaperAutoRpc;p:Record<string,unknown>}{
  if(!/^owner-[a-f0-9]{32}$/.test(ownerRef))throw Error('INVALID_OWNER_REF');
  const experiment_id=a.experimentId;
  switch(a.action){
@@ -98,12 +103,12 @@ export async function handlePaperAutoGet(req:OwnerRequest,env:Env,make:StoreFact
    if(!ledger||ledger.experimentId!==experimentId)return json({status:'ledger_unverifiable'},502);
    experiments.push(ledger);
   }
-  return json({status:'ok',release:PAPER_AUTO_RELEASE,experiments});
+  return json({status:'ok',release:PAPER_AUTO_RELEASE,start:{oneClick:startConfigured(env)},experiments});
  }catch(e){return json({status:'paper_auto_unavailable',reason:storeCode(e)},503);}
 }
 /** POST: one owner action as one database RPC; never a broker call. */
-export async function handlePaperAutoPost(req:OwnerRequest,env:Env,make:StoreFactory=stagingPaperAutoStore)
- :Promise<Response>{
+export async function handlePaperAutoPost(req:OwnerRequest,env:Env,make:StoreFactory=stagingPaperAutoStore,
+ dispatch:Dispatcher=dispatchOwnerResume):Promise<Response>{
  const secret=session(req);
  if(!secret)return json({status:'owner_access_required'},401);
  if(req.origin!==new URL(req.url).origin)return json({status:'origin_rejected'},403);
@@ -114,6 +119,18 @@ export async function handlePaperAutoPost(req:OwnerRequest,env:Env,make:StoreFac
  let action:OwnerAction|null;
  try{action=parseOwnerAction(await req.text(),ids);}catch{return json({status:'invalid_request'},400);}
  if(!action)return json({status:'invalid_request'},400);
+ if(action.action==='start'){
+  // Start only arms a stopped or paused experiment; the workflow's database resume does the arming.
+  let gateMode:string|undefined;
+  try{gateMode=parseStatus(await db.call('status',{experiment_id:action.experimentId}))?.gateMode;}
+  catch(e){return json({status:'outcome_unknown',action:'start',code:storeCode(e),retrySafe:true},503);}
+  if(gateMode==='ARMED')return json({status:'refused',action:'start',code:'ALREADY_RUNNING'},409);
+  const r=await dispatch(action.experimentId,env);
+  if(r.result==='dispatched')return json({status:'started',action:'start'},202);
+  if(r.result==='not_configured')return json({status:'start_not_configured',action:'start'},503);
+  return json({status:r.result==='refused'?'refused':'outcome_unknown',action:'start',code:r.code},
+   r.result==='refused'?409:503);
+ }
  const {fn,p}=ownerActionCall(action,ownerRefFor(secret));
  try{
   return json({status:'recorded',action:action.action,state:parseStatus(await db.call(fn,p))});
