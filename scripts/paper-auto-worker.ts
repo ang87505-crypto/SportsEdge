@@ -5,6 +5,7 @@
  *            | context --output <path>  (registration and held securities for the signal bridge)
  *     owner: register  (reviewed config/paper-auto/<id>.json; the account must be flat and dedicated)
  *            | confirm-absent --intent <pai-...>  (after the close; lookup and complete history first)
+ *            | resume  (a fresh reconcile, then the database's own resume against that exact run)
  *     Owner kinds need SPORTSEDGE_PAPER_AUTO_OWNER_REF and never run from a schedule.
  * Scheduler-triggered runs are refused before any network call while the release
  * manifest is OFF. Broker writes stay OFF in source, so an execute run with the
@@ -30,11 +31,11 @@ function arg(name:string):string|undefined{
 }
 const kind=process.argv[2];
 const experimentId=arg('experiment')??'';
-const OWNER_KINDS=['register','confirm-absent'];
+const OWNER_KINDS=['register','confirm-absent','resume'];
 if(!['execute','reconcile','monitor','decision','context',...OWNER_KINDS].includes(kind??'')||
  !/^[a-z0-9][a-z0-9-]{2,62}$/.test(experimentId))
  emit({status:'USAGE',usage:'paper-auto-worker.ts <execute|reconcile|monitor|decision|context|register|'+
-  'confirm-absent> --experiment <id>'},2);
+  'confirm-absent|resume> --experiment <id>'},2);
 const ownerRef=process.env.SPORTSEDGE_PAPER_AUTO_OWNER_REF??'';
 if(OWNER_KINDS.includes(kind)){
  if(process.env.GITHUB_EVENT_NAME==='schedule')emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind,experimentId},1);
@@ -70,6 +71,19 @@ try{
   const r=await registerExperiment(deps,{...config,ownerRef});
   if(!r.registered)emit({status:'NOT_REGISTERED',experimentId,blockers:r.blockers},1);
   emit({status:'REGISTERED',experimentId,state:r.status.state,configDigest:r.status.configDigest},0);
+ }
+ else if(kind==='resume'){
+  // Owner one-click arm: reconcile and resume in one job, so the database's 15-minute freshness
+  // window cannot lapse between them. The database still refuses unless the reconcile is clean,
+  // newer than the last gate change, for this account, and nothing is unresolved or alerting.
+  const rec=await runReconcileSlot(deps,experimentId,quarterHourSlot(Date.now()));
+  const runId=rec.reason==='CLEAN'?rec.runId:null;
+  // A reconcile already run in this quarter-hour is SKIPPED here: retry in the next quarter-hour.
+  if(!runId)emit({status:'RECONCILE_NOT_CLEAN',experimentId,outcome:rec.outcome,reason:rec.reason},1);
+  const before=await deps.store.call('status',{experiment_id:experimentId});
+  const after=await deps.store.call('resume',{experiment_id:experimentId,owner_ref:ownerRef,
+   expected_gate_version:before.gateVersion,reconcile_run_id:runId});
+  emit({status:'RESUMED',experimentId,state:after.state,gateMode:after.gateMode,reconcileRunId:runId},0);
  }
  else if(kind==='confirm-absent'){
   const intentId=arg('intent')??'';
