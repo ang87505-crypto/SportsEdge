@@ -47,7 +47,7 @@
 
 /* ===== Scroll reveal (only when JS runs and motion is allowed) ===== */
 .motion-ok [data-reveal] { transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); transition-delay: var(--reveal-delay, 0ms); }
-.motion-ok [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(18px); }
+.motion-ok [data-reveal="pending"] { opacity: 0; transform: translateY(18px); }
 
 /* Children of lists cascade in after their container */
 .motion-ok [data-reveal]:is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > *,
@@ -55,12 +55,12 @@
   transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
   transition-delay: calc(var(--reveal-delay, 0ms) + 120ms + var(--i, 0) * 45ms);
 }
-.motion-ok [data-reveal]:not(.is-in):is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > *,
-.motion-ok [data-reveal]:not(.is-in) :is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > * { opacity: 0; transform: translateY(10px); }
+.motion-ok [data-reveal="pending"]:is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > *,
+.motion-ok [data-reveal="pending"] :is(.metric-grid, .track-grid, .home-sections, .status-list, .activity, .exposure-list, .rating-list, .three-way-list, .evidence-legend, .progress-card-grid, .test-status-grid, .guide-sections, .book-strip) > * { opacity: 0; transform: translateY(10px); }
 
 /* Figures slide up inside their tile */
 .motion-ok [data-reveal] .metric-value { transition: opacity 0.6s var(--ease), transform 0.6s var(--ease); transition-delay: calc(var(--reveal-delay, 0ms) + 180ms + var(--i, 0) * 45ms); }
-.motion-ok [data-reveal]:not(.is-in) .metric-value { opacity: 0; transform: translateY(40%); }
+.motion-ok [data-reveal="pending"] .metric-value { opacity: 0; transform: translateY(40%); }
 
 /* Lines draw, bars grow, calibration points pop — paused until their block is revealed */
 .line-chart path.series:not(.is-dashed) { stroke-dasharray: 1; animation: draw 1.4s var(--ease) 0.15s both; }
@@ -70,7 +70,7 @@
 .rating-track span { animation: pop 0.5s var(--ease) calc(0.2s + var(--i, 0) * 25ms) both; }
 .cal-point circle { transform-box: fill-box; transform-origin: center; animation: pop 0.5s var(--ease) calc(0.35s + var(--i, 0) * 60ms) both; }
 .cal-point line { animation: fade-in 0.6s ease calc(0.35s + var(--i, 0) * 60ms) both; }
-.motion-ok [data-reveal]:not(.is-in) :is(.line-chart path.series, .prob-fill, .exposure-track span, .paired-track span, .stacked-bar span, .three-way-bar span, .inline-prob-track span, .timeline-bar, .rating-track span, .cal-point circle, .cal-point line) { animation-play-state: paused; }
+.motion-ok [data-reveal="pending"] :is(.line-chart path.series, .prob-fill, .exposure-track span, .paired-track span, .stacked-bar span, .three-way-bar span, .inline-prob-track span, .timeline-bar, .rating-track span, .cal-point circle, .cal-point line) { animation-play-state: paused; }
 @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes grow { from { transform: scaleX(0); } }
 @keyframes pop { from { transform: scale(0); opacity: 0; } }

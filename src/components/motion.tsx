@@ -42,23 +42,27 @@ export function MotionLayer(){
   const main=document.getElementById('main-content');
   if(!main)return;
   let order=0;
+  // State lives in data-reveal ("pending" | "in"), never in className: React rewrites className
+  // when a component updates, which would silently drop a revealed state.
   const io=new IntersectionObserver(entries=>{
    for(const e of entries){
     if(!e.isIntersecting)continue;
     const el=e.target as HTMLElement;
     // Elements entering together cascade slightly instead of popping at once.
     el.style.setProperty('--reveal-delay',`${Math.min(order++,6)*55}ms`);
-    el.classList.add('is-in');
+    el.dataset.reveal='in';
     io.unobserve(el);
    }
    order=0;
   },{rootMargin:'0px 0px -6% 0px',threshold:0.06});
   const arm=()=>{
    main.querySelectorAll<HTMLElement>(REVEAL).forEach(el=>{
-    if(el.dataset.reveal)return;
+    if(el.dataset.reveal==='in')return;
     // Nested targets ride along with their parent's reveal instead of animating twice.
     if(el.parentElement?.closest('[data-reveal]'))return;
-    el.dataset.reveal='1';
+    // A block left pending by the previous route's observer (client navigation can insert the
+    // new page before the path changes) is observed again here, so it can never stay hidden.
+    el.dataset.reveal='pending';
     io.observe(el);
    });
    main.querySelectorAll<HTMLElement>(STAGGER).forEach(list=>{

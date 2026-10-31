@@ -239,10 +239,10 @@ try{
   await send('Page.navigate',{url:base+'/stocks/research'});
   await until(async()=>evaluate(send,`document.documentElement.classList.contains('motion-ok') && document.querySelectorAll('[data-reveal]').length>4`),'motion armed');
   await delay(400);
-  const pending=await evaluate(send,`document.querySelectorAll('[data-reveal]:not(.is-in)').length`);
+  const pending=await evaluate(send,`document.querySelectorAll('[data-reveal="pending"]').length`);
   if(!pending)throw Error('Expected below-the-fold blocks to wait for scroll');
   for(let y=0;y<12;y++){await evaluate(send,`window.scrollBy(0,700)`);await delay(160);}
-  await until(async()=>evaluate(send,`document.querySelectorAll('[data-reveal]:not(.is-in)').length===0`),'all blocks revealed after scrolling',8000);
+  await until(async()=>evaluate(send,`document.querySelectorAll('[data-reveal="pending"]').length===0`),'all blocks revealed after scrolling',8000);
   const bar=await evaluate(send,`getComputedStyle(document.querySelector('.scroll-progress span')).transform`);
   if(!/matrix\(0\.9|matrix\(1,/.test(bar))throw Error('Scroll progress should be near full at the bottom: '+bar);
   await evaluate(send,`(()=>{document.querySelector('.section-menu .float-button').click();return true})()`);
@@ -251,6 +251,17 @@ try{
   await evaluate(send,`(()=>{document.querySelectorAll('.section-menu-panel button')[1].click();return true})()`);
   await until(async()=>evaluate(send,`Math.abs(window.scrollY-${before})>300 && !document.querySelector('.section-menu-panel')`),'section jump',6000);
   console.log('PASS motion: reveal on scroll, progress bar, Sections jump menu');
+  // In-app navigation: every block in view on the new page must reveal (regression: 2026-10-31,
+  // pages opened from the sidebar stayed blank after their first second).
+  await evaluate(send,`window.scrollTo(0,0)`);
+  for(const href of ['/stocks/paper-auto','/stocks/journal','/stocks/research','/']){
+   await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Primary"] a[href="${href}"]').click();return true})()`);
+   await until(async()=>evaluate(send,`location.pathname==='${href}' && !!document.querySelector('main h1')`),'client navigation to '+href);
+   await delay(1500);
+   const stuck=await evaluate(send,`[...document.querySelectorAll('#main-content [data-reveal]')].filter(e=>{const r=e.getBoundingClientRect();return r.top<innerHeight&&r.bottom>0&&getComputedStyle(e).opacity==='0'}).length`);
+   if(stuck)throw Error(`${stuck} block(s) in view stayed hidden after navigating to ${href}`);
+  }
+  console.log('PASS navigation: pages opened from the sidebar reveal their content');
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await send('Page.navigate',{url:base+'/stocks/research'});
   await until(async()=>evaluate(send,`document.readyState==='complete' && !!document.querySelector('main h1')`),'reduced motion page');
