@@ -27,6 +27,10 @@ test('owner commands need the owner reference and never run from a schedule',()=
  assert.deepEqual([r.code,r.out.status],[1,'OWNER_REF_REQUIRED']);
  r=run(['confirm-absent','--experiment','fwd-2026-baseline'],{...SETTINGS,...OWNER,GITHUB_EVENT_NAME:'schedule'});
  assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
+ r=run(['resume','--experiment','fwd-2026-baseline'],SETTINGS);
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_REF_REQUIRED']);
+ r=run(['resume','--experiment','fwd-2026-baseline'],{...SETTINGS,...OWNER,GITHUB_EVENT_NAME:'schedule'});
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
  r=run(['register','--experiment','../etc'],{...SETTINGS,...OWNER});
  assert.deepEqual([r.code,r.out.status],[2,'USAGE']);
 });

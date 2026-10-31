@@ -1,6 +1,7 @@
 # Recurring Alpaca PAPER owner actions. Manual dispatch by the repository owner only;
-# there is deliberately no schedule. Neither action places, replaces or cancels an
-# order: register reads the account and records a STOPPED experiment from a reviewed
+# there is deliberately no schedule. No action places or replaces an order:
+# resume runs a fresh reconcile and then the database's resume against that run (the
+# owner's arm handshake; it places nothing). Register reads the account and records a STOPPED experiment from a reviewed
 # config/paper-auto/<experiment>.json, and confirm-absent records that an uncertain
 # submission never reached Alpaca, after the close, only when the client-id lookup
 # misses and a complete order history does not contain it.
@@ -12,7 +13,7 @@ on:
         description: Owner action
         required: true
         type: choice
-        options: [register, confirm-absent]
+        options: [register, confirm-absent, resume]
       experiment:
         description: Experiment id (register reads config/paper-auto/<id>.json)
         required: true
