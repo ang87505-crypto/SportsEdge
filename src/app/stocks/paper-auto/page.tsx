@@ -1,13 +1,12 @@
-import Link from 'next/link';
 import {PageHeading} from '@/components/ui';
 import {PaperAutoOperations} from '@/components/paper-auto-operations';
 
-export const metadata={title:'Recurring Paper Operations · SportsEdge'};
+export const metadata={title:'Autopilot · Stocks · SportsEdge',
+ description:'Start, stop and follow the weekly stock autopilot on the Alpaca paper account.'};
 export default function PaperAutoPage(){
   return <>
-    <PageHeading eyebrow="STOCKS / RECURRING PAPER" title="Paper automation"
-      description="Owner-only status, STOP and forward evidence for the recurring Alpaca PAPER experiments. Broker observations, verified strategy P&L, backtests and research are kept apart."
-      action={<Link className="button button-secondary" href="/stocks">← Stock workspace</Link>}/>
+    <PageHeading title="Autopilot"
+      description="Picks stocks every Monday and trades them on your Alpaca paper account. Paper money only; Stop works at any time."/>
     <PaperAutoOperations/>
   </>;
 }

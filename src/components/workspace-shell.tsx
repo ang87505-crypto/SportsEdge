@@ -4,6 +4,7 @@ import {usePathname} from 'next/navigation';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {NavIcon} from '@/components/nav-icon';
 import {CommandMenu} from '@/components/command-menu';
+import {AutopilotBadge} from '@/components/autopilot-summary';
 import {MotionLayer} from '@/components/motion';
 import {SECTIONS,PLATFORM,sectionFor,crumbsFor,parentFor} from '@/lib/navigation';
 
@@ -109,6 +110,7 @@ export default function WorkspaceShell({children,previewFixtures=false}:{childre
     </nav>
     <div className="topbar-actions">
      <CommandMenu/>
+     <AutopilotBadge/>
      <span className="env-badge" title="Paper betting and Alpaca PAPER use virtual money only."><span className="env-badge-dot" aria-hidden="true"/>Paper only</span>
     </div>
    </header>

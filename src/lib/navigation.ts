@@ -21,9 +21,9 @@ export const SECTIONS:NavSection[]=[
  {id:'stocks',href:'/stocks',label:'Stocks',shortLabel:'Stocks',icon:'stocks',description:'Paper portfolio, research and automation status',
   match:['/stocks'],
   children:[
-   {href:'/stocks/research',label:'Quant research',description:'Frozen strategy, evidence gates and costs'},
+   {href:'/stocks/paper-auto',label:'Autopilot',description:'Start, stop and follow the weekly stock autopilot'},
    {href:'/stocks/alpaca',label:'Paper account & orders',description:'Alpaca PAPER owner dashboard'},
-   {href:'/stocks/paper-auto',label:'Paper automation',description:'Recurring PAPER status, STOP and forward evidence'},
+   {href:'/stocks/research',label:'Quant research',description:'Frozen strategy, evidence gates and costs'},
    {href:'/stocks/journal',label:'Practice journal',description:'Manual virtual trades in this browser'},
   ]},
 ];
