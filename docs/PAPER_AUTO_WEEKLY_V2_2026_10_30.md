@@ -45,6 +45,20 @@ completed close is above $95 is skipped as unaffordable, and named in the diagno
 A stock the experiment already holds is never skipped for price, so it can still be
 rebalanced or sold.
 
+## Schedule (owner-approved 2026-10-31)
+
+`scheduledRunsEnabled` is on. Broker writes and real money stay off until a separate release.
+
+| Workflow | When (UTC, weekdays) | What |
+|---|---|---|
+| Weekly decision | 11:20, which is 07:20 EDT or 06:20 EST | It waits for 08:00 ET and decides on the first session of each ISO week. Other days exit with `NO_DECISION_THIS_SESSION`. |
+| Worker `execute` | 13:50 or 14:50 (09:50 ET), then hourly 15:20–18:20 | Trades only while the gate is **ARMED**. With writes off it records a shadow plan and prints its legs. |
+| Worker `monitor` | 20:35 and 21:35 | Records the after-close daily mark. The run that lands before 16:15 ET skips. |
+
+A schedule can never arm the gate: `resume` and the other owner actions refuse scheduled runs. After any STOP,
+nothing trades until the owner runs **Recurring PAPER owner action → resume**. GitHub can delay scheduled runs.
+A decision run that starts after 08:00 ET records `MISSED` for that week.
+
 ## Running it
 
 1. **Register** (owner): Actions → *Recurring PAPER owner action (manual)* → `register`, `stock-v2-weekly-1`.

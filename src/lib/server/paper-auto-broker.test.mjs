@@ -24,8 +24,8 @@ function recorder(routes){
  return {calls,fetcher};
 }
 
-test('the recurring release manifest is OFF in source',()=>{
- assert.deepEqual(PAPER_AUTO_RELEASE,{paperOnly:true,brokerWritesEnabled:false,scheduledRunsEnabled:false,
+test('the recurring release manifest: schedules on; broker writes and real money off',()=>{
+ assert.deepEqual(PAPER_AUTO_RELEASE,{paperOnly:true,brokerWritesEnabled:false,scheduledRunsEnabled:true,
   realMoneyEnabled:false});
 });
 

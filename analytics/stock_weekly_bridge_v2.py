@@ -403,8 +403,15 @@ def main():
         if a.output.exists():
             p.error('output exists; refusing to overwrite')
         source = Source(os.getenv('ALPACA_PAPER_AUTO_KEY_ID', ''), os.getenv('ALPACA_PAPER_AUTO_SECRET_KEY', ''))
-        reference = capture_reference(session=a.session, universe=load(a.universe), source=source,
-                                      initial=a.initial)
+        try:
+            reference = capture_reference(session=a.session, universe=load(a.universe), source=source,
+                                          initial=a.initial)
+        except Rejected as e:
+            if e.reasons != ['NOT_A_DECISION_SESSION']:
+                raise
+            # A scheduled run on any other weekday (or a holiday) is a quiet no-op: no capture file.
+            print(json.dumps({'status': 'NO_DECISION_THIS_SESSION', 'session': a.session}))
+            return
         sealed = reference
         if 'capture_failure' not in reference:
             point = decision_point(parse_calendar(reference['calendar']['rows']), a.session, a.initial)
