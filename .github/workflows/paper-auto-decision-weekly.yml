@@ -1,11 +1,16 @@
 # Weekly decision for the separately registered PAPER experiment stock-v2-weekly-*.
-# Manual dispatch only (no schedule). Dispatch before 07:55 New York on the first
+# Scheduled (owner-approved 2026-10-31) at 11:20 UTC on weekdays: 07:20 EDT or 06:20 EST,
+# so the job always starts before 08:00 New York and waits for it (well inside the 120-minute
+# timeout). On any weekday that is not the first session of its ISO week the bridge exits
+# quietly with NO_DECISION_THIS_SESSION. Manual dispatch also works: before 07:55 New York on the first
 # exchange session of an ISO week, or on the experiment's first session with
 # initial=true. The reference capture runs at once; the decision capture starts at
 # 08:00:00 and must seal within 60 seconds, otherwise the session is recorded MISSED.
 # The frozen monthly model keeps its own workflow (paper-auto-decision.yml).
 name: Recurring PAPER weekly decision (manual)
 on:
+  schedule:
+    - cron: '20 11 * * 1-5'
   workflow_dispatch:
     inputs:
       experiment:
@@ -14,8 +19,8 @@ on:
         type: string
         default: stock-v2-weekly-1
       session:
-        description: Exchange session to decide (YYYY-MM-DD, New York)
-        required: true
+        description: Exchange session to decide (YYYY-MM-DD, New York); blank means today
+        required: false
         type: string
       initial:
         description: First session of the experiment (allowed on any weekday, once)
@@ -25,15 +30,15 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: paper-auto-decision-${{ inputs.experiment }}
+  group: paper-auto-decision-${{ inputs.experiment || 'stock-v2-weekly-1' }}
   cancel-in-progress: false
 jobs:
   decide:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      EXPERIMENT: ${{ inputs.experiment }}
-      SESSION: ${{ inputs.session }}
+      EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
+      SESSION_INPUT: ${{ inputs.session }}
       UNIVERSE: config/paper-auto/universe-large-cap-v1.json
       SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
       SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
@@ -47,6 +52,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Session (today in New York unless given)
+        run: |
+          s="${SESSION_INPUT:-$(TZ=America/New_York date +%F)}"
+          [[ "$s" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid session"; exit 2; }
+          echo "SESSION=$s" >> "$GITHUB_ENV"
       - name: Registration and reconciled holdings (read-only)
         run: node --experimental-strip-types scripts/paper-auto-worker.ts context --experiment "$EXPERIMENT" --output "$RUNNER_TEMP/registration.json"
       - name: Reference capture now, decision capture from 08:00:00 New York (read-only market data)
@@ -58,7 +68,10 @@ jobs:
           flag=""; if [ "$INITIAL" = "true" ]; then flag="--initial"; fi
           python -m analytics.stock_weekly_bridge_v2 capture --session "$SESSION" --universe "$UNIVERSE" $flag --output "$RUNNER_TEMP/capture.json" --execute-network
       - name: Weekly signal from the sealed capture (no network)
-        run: python -m analytics.stock_weekly_bridge_v2 decide --capture "$RUNNER_TEMP/capture.json" --universe "$UNIVERSE" --registration "$RUNNER_TEMP/registration.json" --output "$RUNNER_TEMP/decision.json"
+        run: |
+          if [ -f "$RUNNER_TEMP/capture.json" ]; then
+            python -m analytics.stock_weekly_bridge_v2 decide --capture "$RUNNER_TEMP/capture.json" --universe "$UNIVERSE" --registration "$RUNNER_TEMP/registration.json" --output "$RUNNER_TEMP/decision.json"
+          fi
       - name: Record TARGETS, HOLD, MISSED or INPUT_REJECTED
         run: |
           if [ -f "$RUNNER_TEMP/decision.json" ]; then
@@ -70,7 +83,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: paper-auto-weekly-decision-${{ inputs.experiment }}-${{ inputs.session }}
+          name: paper-auto-weekly-decision-${{ env.EXPERIMENT }}-${{ env.SESSION }}
           path: |
             ${{ runner.temp }}/capture.json.gz
             ${{ runner.temp }}/decision.json

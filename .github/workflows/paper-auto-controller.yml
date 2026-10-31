@@ -61,8 +61,8 @@ jobs:
         run: python -m unittest analytics.test_stock_forward_bridge_v1 -v
       - name: Controller end to end against a fake broker and the real schema (includes the Python bridge chain)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-controller.test.mjs
-      - name: Broker writes and scheduled runs stay released OFF
+      - name: Scheduled runs on; broker writes and real money released OFF; owner and frozen monthly decision never scheduled
         run: |
-          node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['brokerWritesEnabled:false','scheduledRunsEnabled:false','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
-          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-worker.yml .github/workflows/paper-auto-decision.yml .github/workflows/paper-auto-owner.yml
+          node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['paperOnly:true','brokerWritesEnabled:false','scheduledRunsEnabled:true','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
+          ! grep -nE '^\s*schedule:' .github/workflows/paper-auto-decision.yml .github/workflows/paper-auto-owner.yml
           grep -q 'if: github.actor == github.repository_owner' .github/workflows/paper-auto-owner.yml

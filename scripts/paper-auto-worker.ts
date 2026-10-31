@@ -116,5 +116,7 @@ try{
   error:e instanceof PaperAutoStoreError?e.code:e instanceof Error?e.name:'unknown'},1);
 }
 if(result.outcome==='BLOCKED')process.stdout.write(`::warning::paper-auto ${kind} blocked: ${result.reason}\n`);
+// Execute runs also print their planned legs (symbol, side, shares, limit): no account or credential data.
+const rounds=kind==='execute'&&Array.isArray(result.detail?.rounds)?{rounds:result.detail.rounds}:{};
 emit({status:'DONE',kind,experimentId,outcome:result.outcome,reason:result.reason,runId:result.runId,
- slot:result.slot,posts:result.posts,cancels:result.cancels},['STOPPED','FAILED'].includes(result.outcome)?1:0);
+ slot:result.slot,posts:result.posts,cancels:result.cancels,...rounds},['STOPPED','FAILED'].includes(result.outcome)?1:0);

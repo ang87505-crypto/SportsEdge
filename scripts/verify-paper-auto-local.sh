@@ -130,10 +130,10 @@ printf '\nChecking the existing release switches\n'
 node <<'JS'
 const fs = require('node:fs');
 const release = fs.readFileSync('src/lib/stocks/paper-auto-release.ts', 'utf8');
-for (const flag of ['brokerWritesEnabled:false', 'scheduledRunsEnabled:false', 'realMoneyEnabled:false']) {
+for (const flag of ['brokerWritesEnabled:false', 'scheduledRunsEnabled:true', 'realMoneyEnabled:false']) {
   if (!release.includes(flag)) throw Error('Unexpected release flag: ' + flag);
 }
-for (const kind of ['worker', 'decision', 'owner']) {
+for (const kind of ['decision', 'owner']) {
   const workflow = fs.readFileSync('.github/workflows/paper-auto-' + kind + '.yml', 'utf8');
   if (/^\s*schedule:/m.test(workflow)) throw Error('Unexpected schedule: ' + kind);
   if (kind === 'owner' && !workflow.includes('if: github.actor == github.repository_owner')) {

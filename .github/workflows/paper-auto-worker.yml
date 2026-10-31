@@ -1,8 +1,15 @@
-# Recurring Alpaca PAPER worker. Manual dispatch only: there is deliberately no
-# schedule here. Scheduled runs and broker writes are also released OFF in
-# src/lib/stocks/paper-auto-release.ts; see docs/PAPER_AUTO_RELEASE_CHECKLIST_2026_10_17.md.
+# Recurring Alpaca PAPER worker. Manual dispatch, plus a schedule (owner-approved
+# 2026-10-31) for stock-v2-weekly-1. Scheduled execute runs trade only while the owner has
+# armed the gate and broker writes are released; otherwise they block or record a shadow plan.
+# Times are UTC and cover both New York offsets; the worker re-checks every session and window.
+#   execute: 09:50 ET (13:50 / 14:50 UTC), then 15:20-18:20 UTC to re-plan resting residuals
+#   monitor: after the close (20:35 / 21:35 UTC; an early one skips as BEFORE_CLOSE)
 name: Recurring PAPER worker (manual)
 on:
+  schedule:
+    - cron: '50 13,14 * * 1-5'
+    - cron: '20 15,16,17,18 * * 1-5'
+    - cron: '35 20,21 * * 1-5'
   workflow_dispatch:
     inputs:
       kind:
@@ -17,7 +24,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: paper-auto-${{ inputs.experiment }}
+  group: paper-auto-${{ inputs.experiment || 'stock-v2-weekly-1' }}
   cancel-in-progress: false
 jobs:
   run:
@@ -32,8 +39,8 @@ jobs:
           node-version: '24'
       - name: Run one slot
         env:
-          KIND: ${{ inputs.kind }}
-          EXPERIMENT: ${{ inputs.experiment }}
+          KIND: ${{ inputs.kind || (github.event.schedule == '35 20,21 * * 1-5' && 'monitor' || 'execute') }}
+          EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
           SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
           SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
