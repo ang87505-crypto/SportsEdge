@@ -10,12 +10,16 @@
  * Scheduler-triggered runs are refused before any network call while the release
  * manifest is OFF. Broker writes stay OFF in source, so an execute run with the
  * checked-in manifest records a shadow plan and never reserves or sends an order.
+ * Each experiment uses only its own account's key pair (paper-auto-accounts.ts). A scheduled
+ * run for an experiment whose pair is not configured yet, or that is not registered yet, exits
+ * quietly (NOT_CONFIGURED_SKIP / NOT_REGISTERED_SKIP); a manual run reports it as a failure.
  * Output is one JSON line without credentials. Exit 1 when the owner must act.
  */
 import {readFileSync,writeFileSync} from 'node:fs';
 import {PAPER_AUTO_RELEASE} from '../src/lib/stocks/paper-auto-release.ts';
 import {alpacaPaperAutoBroker} from '../src/lib/server/paper-auto-broker.ts';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
+import {paperAutoKeys} from '../src/lib/server/paper-auto-accounts.ts';
 import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,confirmIntentAbsent,
  parseRegistrationConfig,type ControllerDeps,type DecisionInput,type SlotResult} from '../src/lib/server/paper-auto-controller.ts';
 import {PaperAutoStoreError} from '../src/lib/server/paper-auto-store.ts';
@@ -44,7 +48,11 @@ if(OWNER_KINDS.includes(kind)){
 if(process.env.GITHUB_EVENT_NAME==='schedule'&&(PAPER_AUTO_RELEASE.scheduledRunsEnabled as boolean)!==true)
  emit({status:'SCHEDULED_RUNS_RELEASED_OFF',kind,experimentId,brokerCalls:0},0);
 if(!PAPER_AUTO_RELEASE.paperOnly||PAPER_AUTO_RELEASE.realMoneyEnabled)emit({status:'RELEASE_INVALID'},1);
-const keyId=process.env.ALPACA_PAPER_AUTO_KEY_ID??'',secretKey=process.env.ALPACA_PAPER_AUTO_SECRET_KEY??'';
+const scheduled=process.env.GITHUB_EVENT_NAME==='schedule';
+const usesBroker=kind!=='decision'&&kind!=='context';
+const {keyId,secretKey,pair,configured}=paperAutoKeys(experimentId,process.env);
+if(usesBroker&&!configured)emit({status:scheduled?'NOT_CONFIGURED_SKIP':'NOT_CONFIGURED',kind,experimentId,
+ keyPair:pair,brokerCalls:0},scheduled?0:1);
 /** Decision recording never needs the broker; any accidental use fails closed. */
 const noBroker=new Proxy({},{get:(_,k)=>k==='writesEnabled'?false:()=>{throw Error('BROKER_NOT_AVAILABLE');}});
 let deps:ControllerDeps;
@@ -57,6 +65,11 @@ try{
 }catch{emit({status:'NOT_CONFIGURED',kind,experimentId},1);}
 let result:SlotResult;
 try{
+ if(scheduled){
+  // The schedule covers every listed experiment; one not registered yet is skipped before any broker call.
+  const s=await deps.store.call('status',{experiment_id:experimentId});
+  if(s.state==='NOT_REGISTERED')emit({status:'NOT_REGISTERED_SKIP',kind,experimentId,brokerCalls:0},0);
+ }
  const now=Date.now();
  if(kind==='execute')result=await runExecuteSlot(deps,experimentId,quarterHourSlot(now));
  else if(kind==='reconcile')result=await runReconcileSlot(deps,experimentId,quarterHourSlot(now));

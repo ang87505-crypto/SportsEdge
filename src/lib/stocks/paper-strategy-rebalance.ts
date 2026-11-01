@@ -33,7 +33,7 @@ export type ComputedForwardSignal={
 };
 const VERSION='stock-forward-rebalance-v1';
 const MODELS=['stock-mom252-skip21-trend200-v1',
- 'stock-mom252-skip21-trend200-holdrank10-v1'];
+ 'stock-mom252-skip21-trend200-holdrank10-v1','stock-lowvol252-trend200-v1'];
 function requireThat(ok:unknown,code:string):asserts ok {if(!ok)throw Error(code);}
 function money(n:number){return Number.isSafeInteger(n)&&n>=0&&n<=1_000_000_000;}
 function text(s:string){return typeof s==='string'&&s.length>0&&s.length<=160&&s.trim()===s;}
