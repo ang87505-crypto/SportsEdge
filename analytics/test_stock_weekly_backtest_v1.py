@@ -150,3 +150,38 @@ class BacktestTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Round2Tests(unittest.TestCase):
+    def _one(self, level, spec):
+        days = [r['date'] for r in calendar_rows(date(2026, 11, 30))]
+        up = [level + 0.01 * i for i in range(len(days))]
+        b = {'d': days, 'o': up, 'c': up, 'v': [5e6] * len(days), 'ao': up, 'ac': up}
+        uni = {'max_last_close': '95', 'securities': [{'symbol': 'AAA', 'sector': 'X', 'first_traded_on': '2015-01-02'}]}
+        sessions, series = bt.align({'sessions': days, 'bars': {'AAA': b}})
+        k = next(i for i in range(bt.WINDOW, len(sessions)) if bt.is_decision(sessions, i, 'weekly'))
+        return bt.replay(sessions, series, uni, spec, start=sessions[k], end=sessions[k]), up[k]
+
+    def test_the_price_cap_skips_expensive_stocks_unless_it_is_dropped(self):
+        capped, _ = self._one(200.0, bt.ROUND2['momentum'])
+        self.assertEqual(capped['traded'], 0.0, 'a $200 stock is above the $95 cap')
+        uncapped, _ = self._one(200.0, bt.ROUND2['momentum-nocap'])
+        self.assertAlmostEqual(uncapped['traded'], 0.10 * bt.STARTING)
+
+    def test_full_investment_buys_twenty_percent_per_pick(self):
+        r, _ = self._one(10.0, bt.ROUND2['momentum-full'])
+        self.assertAlmostEqual(r['traded'], 0.20 * bt.STARTING)
+
+    def test_round_one_variants_are_unchanged(self):
+        for name in ('momentum', 'steady'):
+            self.assertEqual({k: v for k, v in bt.ROUND2[name].items()}, bt.VARIANTS[name])
+        self.assertNotIn('weight', bt.VARIANTS['momentum-6m'])
+
+    def test_round_two_runs_with_both_verdict_rules(self):
+        data = fixture_data('2026-12-28')
+        data['bars']['SPY'] = dict(data['bars']['S10'])
+        out = bt.evaluate(data, universe() | {'max_last_close': '95'}, end=data['sessions'][-1], round_=2)
+        self.assertEqual(set(out['verdicts']), {'vs_live', 'vs_spy'})
+        self.assertEqual(set(out['verdicts']['vs_live']), set(bt.ROUND2) - {'momentum', 'steady'})
+        self.assertIn('combined-nocap-full', out['verdicts']['vs_spy'])
+        self.assertIn('vs_spy', bt.markdown(out))

@@ -54,6 +54,24 @@ VARIANTS = {
 }
 BASELINE_OF = {k: v['model'] for k, v in VARIANTS.items()}
 
+# Round 2 (docs/STOCK_WEEKLY_BACKTEST_ROUND2_PLAN_2026_11_01.md, committed before its run): the two
+# account-size limits. `weight` is the share of equity per pick (0.10 live, so at most 50% invested;
+# 0.20 means fully invested with five picks); `price_cap` False drops the $95 cap (a larger account).
+_LIVE = {'cadence': 'weekly', 'buffer': 0, 'lookback': 252}
+ROUND2 = {
+    'momentum':                     {'model': 'momentum', **_LIVE},
+    'steady':                       {'model': 'steady', **_LIVE},
+    'momentum-nocap':               {'model': 'momentum', **_LIVE, 'price_cap': False},
+    'steady-nocap':                 {'model': 'steady', **_LIVE, 'price_cap': False},
+    'momentum-full':                {'model': 'momentum', **_LIVE, 'weight': 0.20},
+    'steady-full':                  {'model': 'steady', **_LIVE, 'weight': 0.20},
+    'momentum-nocap-full':          {'model': 'momentum', **_LIVE, 'price_cap': False, 'weight': 0.20},
+    'steady-nocap-full':            {'model': 'steady', **_LIVE, 'price_cap': False, 'weight': 0.20},
+    'momentum-buffer10-nocap-full': {'model': 'momentum', **_LIVE, 'buffer': 10, 'price_cap': False, 'weight': 0.20},
+    'momentum-6m-nocap-full':       {'model': 'momentum', **_LIVE, 'lookback': 126, 'price_cap': False, 'weight': 0.20},
+}
+ROUNDS = {1: VARIANTS, 2: ROUND2}
+
 
 # ---------------------------------------------------------------- data
 
@@ -127,7 +145,8 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
            cost_bps: float = COST_BPS):
     sectors = {u['symbol']: u['sector'] for u in universe['securities']}
     members = [s for s in sorted(sectors) if s in series]
-    cap = float(universe['max_last_close']) if 'max_last_close' in universe else None
+    cap = float(universe['max_last_close']) if 'max_last_close' in universe and spec.get('price_cap', True) else None
+    weight = spec.get('weight', WEIGHT)
     units: dict[str, float] = {}
     cash = STARTING
     last_px: dict[str, float] = {}
@@ -158,7 +177,7 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
                 equity = cash + sum(u * px(s, k, 'ao') for s, u in units.items())
                 for s in sorted(held | picks):
                     p = px(s, k, 'ao')
-                    target = WEIGHT * equity if s in picks else 0.0
+                    target = weight * equity if s in picks else 0.0
                     delta = target - units.get(s, 0.0) * p
                     if s in picks and s in held and abs(delta) < series[s]['o'][k]:
                         continue  # under one whole share: the live planner would not trade it
@@ -218,15 +237,16 @@ def combine(a: list, b: list) -> list:
     return [(d, x + y) for (d, x), (_, y) in zip(a, b)]
 
 
-def evaluate(data: dict, universe: dict, end: str | None = None) -> dict:
+def evaluate(data: dict, universe: dict, end: str | None = None, round_: int = 1) -> dict:
+    variants = ROUNDS[round_]
     sessions, series = align(data)
     end = end or sessions[-1]
     periods = {'dev': DEV, 'holdout': (HOLDOUT_START, end), 'full': (DEV[0], end)}
-    out = {'variants': {}, 'benchmarks': {}, 'periods': {k: list(v) for k, v in periods.items()},
+    out = {'round': round_, 'variants': {}, 'benchmarks': {}, 'periods': {k: list(v) for k, v in periods.items()},
            'sessions': [sessions[0], sessions[-1]], 'members_with_data': len([s for s in universe['securities']
                                                                               if s['symbol'] in series])}
     curves = {}
-    for name, spec in VARIANTS.items():
+    for name, spec in variants.items():
         r = replay(sessions, series, universe, spec, start=DEV[0], end=end)
         curves[name] = r['curve']
         years = len(r['curve']) / 252
@@ -236,6 +256,10 @@ def evaluate(data: dict, universe: dict, end: str | None = None) -> dict:
                                  **{p: metrics(r['curve'], *rng) for p, rng in periods.items()}}
     curves['combined'] = combine(curves['momentum'], curves['steady'])
     out['variants']['combined'] = {p: metrics(curves['combined'], *rng) for p, rng in periods.items()}
+    if round_ == 2:
+        curves['combined-nocap-full'] = combine(curves['momentum-nocap-full'], curves['steady-nocap-full'])
+        out['variants']['combined-nocap-full'] = {p: metrics(curves['combined-nocap-full'], *rng)
+                                                  for p, rng in periods.items()}
     if 'SPY' in series:
         for label, weight in (('spy', 1.0), ('spy-50', 0.5)):
             c = benchmark(sessions, series['SPY'], start=DEV[0], end=end, weight=weight)['curve']
@@ -244,7 +268,7 @@ def evaluate(data: dict, universe: dict, end: str | None = None) -> dict:
     for name in ('momentum', 'steady'):
         r = replay(sessions, series, universe, VARIANTS[name], start=DEV[0], end=end, cost_bps=25)
         out['variants'][name]['full_at_25bps'] = metrics(r['curve'], *periods['full'])
-    out['verdicts'] = verdicts(out)
+    out['verdicts'] = verdicts(out) if round_ == 1 else verdicts_round2(out)
     return out
 
 
@@ -261,6 +285,30 @@ def verdicts(out: dict) -> dict:
             and a['holdout']['max_drawdown'] >= b['holdout']['max_drawdown'] - 0.05
         v[name] = 'PROMISING' if ok else 'NOT_BETTER'
     return v
+
+
+def verdicts_round2(out: dict) -> dict:
+    """Round 2 rules. vs_live: the round-1 rule against the live strategy of the same model.
+    vs_spy: Sharpe above the exposure-matched benchmark (SPY 50% + cash for 10% picks, SPY 100% for
+    20% picks) in BOTH periods."""
+    sharpe = lambda r, p: r[p].get('sharpe') if r[p].get('sharpe') is not None else -math.inf
+    vs_live, vs_spy = {}, {}
+    for name, spec in ROUND2.items():
+        a = out['variants'][name]
+        bench = out['benchmarks'].get('spy' if spec.get('weight', WEIGHT) > WEIGHT else 'spy-50')
+        if bench:
+            vs_spy[name] = 'BEATS_SPY' if all(sharpe(a, p) > sharpe(bench, p) for p in ('dev', 'holdout')) else 'BELOW_SPY'
+        if name in ('momentum', 'steady'):
+            continue
+        b = out['variants'][spec['model']]
+        ok = all(sharpe(a, p) > sharpe(b, p) for p in ('dev', 'holdout')) \
+            and a['holdout']['max_drawdown'] >= b['holdout']['max_drawdown'] - 0.05
+        vs_live[name] = 'PROMISING' if ok else 'NOT_BETTER'
+    for name, bench in (('combined', 'spy-50'), ('combined-nocap-full', 'spy')):
+        if name in out['variants'] and bench in out['benchmarks']:
+            vs_spy[name] = 'BEATS_SPY' if all(sharpe(out['variants'][name], p) > sharpe(out['benchmarks'][bench], p)
+                                              for p in ('dev', 'holdout')) else 'BELOW_SPY'
+    return {'vs_live': vs_live, 'vs_spy': vs_spy}
 
 
 def markdown(out: dict) -> str:
@@ -288,7 +336,12 @@ def markdown(out: dict) -> str:
             continue
         lines.append(f"| {name} | {r['decisions']} | {r['rejected']} | {r['turnover_per_year']:.1f}× | "
                      f"{r['avg_exposure'] * 100:.0f}% | {pct(r.get('full_at_25bps', {}).get('total'))} |")
-    lines += ['', '### Pre-registered verdicts', ''] + [f'- {k}: **{v}**' for k, v in out['verdicts'].items()]
+    lines += ['', '### Pre-registered verdicts', '']
+    if out.get('round', 1) == 1:
+        lines += [f'- {k}: **{v}**' for k, v in out['verdicts'].items()]
+    else:
+        for rule, items in out['verdicts'].items():
+            lines += [f'**{rule}**', ''] + [f'- {k}: **{v}**' for k, v in items.items()] + ['']
     return '\n'.join(lines) + '\n'
 
 
@@ -334,6 +387,7 @@ def main():
     r.add_argument('--data', type=Path, required=True)
     r.add_argument('--output', type=Path, required=True)
     r.add_argument('--markdown', type=Path, required=True)
+    r.add_argument('--round', type=int, choices=sorted(ROUNDS), default=1)
     a = p.parse_args()
     universe = json.loads(a.universe.read_text(encoding='utf-8'))
     if a.command == 'fetch':
@@ -348,7 +402,7 @@ def main():
         return
     with gzip.open(a.data, 'rt', encoding='utf-8') as fh:
         data = json.load(fh)
-    out = evaluate(data, universe)
+    out = evaluate(data, universe, round_=a.round)
     a.output.write_text(json.dumps(out, indent=1), encoding='utf-8')
     a.markdown.write_text(markdown(out), encoding='utf-8')
     print(markdown(out))
