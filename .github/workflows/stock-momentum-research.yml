@@ -1,0 +1,61 @@
+# Research only. One named branch push or explicit manual dispatch; no schedule,
+# broker orders, database access, account management, purchases or release changes.
+name: Cost-aware momentum research (read-only)
+on:
+  push:
+    branches: [research/stock-cost-aware-momentum-20261101]
+    paths:
+      - analytics/stock_weekly_backtest_v2.py
+      - analytics/test_stock_weekly_backtest_v2.py
+      - docs/STOCK_MOMENTUM_COST_AWARE_PLAN_2026_11_01.md
+      - .github/workflows/stock-momentum-research.yml
+  workflow_dispatch:
+    inputs:
+      end:
+        description: Last completed session, YYYY-MM-DD
+        required: true
+        type: string
+        default: '2026-10-30'
+permissions:
+  contents: read
+concurrency:
+  group: stock-cost-aware-research
+  cancel-in-progress: false
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      END: ${{ inputs.end || '2026-10-30' }}
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate requested date and test accounting before any data access
+        run: |
+          python -c 'import os; from datetime import date; d=date.fromisoformat(os.environ["END"]); assert date(2023,1,1) <= d < date.today()'
+          python -m unittest analytics.test_stock_weekly_backtest_v1 analytics.test_stock_weekly_backtest_v2 -q
+      - name: Read existing entitled historical data, with no broker writes
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          python -m analytics.stock_weekly_backtest_v2 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/momentum-bars.json.gz" --execute-network
+      - name: Evaluate every frozen hypothesis and cost scenario, offline
+        run: |
+          python -m analytics.stock_weekly_backtest_v2 run --universe "$UNIVERSE" --data "$RUNNER_TEMP/momentum-bars.json.gz" --output "$RUNNER_TEMP/momentum-results.json" --markdown "$RUNNER_TEMP/momentum-results.md" --source-sha "$GITHUB_SHA"
+          cat "$RUNNER_TEMP/momentum-results.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain aggregate results only; provider bars stay runner-local
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-cost-aware-${{ env.END }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/momentum-results.json
+            ${{ runner.temp }}/momentum-results.md
+          if-no-files-found: ignore
+          retention-days: 30
