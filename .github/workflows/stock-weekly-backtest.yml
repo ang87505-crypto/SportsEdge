@@ -1,0 +1,49 @@
+# Historical replay of the weekly PAPER strategies (research only; docs/STOCK_WEEKLY_BACKTEST_PLAN_2026_11_01.md).
+# Manual dispatch only, never scheduled. Read-only market-data GETs with the first paper account's keys;
+# no orders, no database, no account data. Results are printed to the log and the run summary.
+name: Stock weekly backtest (research, manual)
+on:
+  workflow_dispatch:
+    inputs:
+      end:
+        description: Last session to include (YYYY-MM-DD)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: stock-weekly-backtest
+  cancel-in-progress: false
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      END: ${{ inputs.end }}
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate input
+        run: '[[ "$END" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid end date"; exit 2; }'
+      - name: Download daily bars, raw and adjusted, 2016 onward (read-only)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_weekly_backtest_v1 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/bars.json.gz"
+      - name: Replay strategies and pre-registered variants (no network)
+        run: |
+          python -m analytics.stock_weekly_backtest_v1 run --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/results.json" --markdown "$RUNNER_TEMP/results.md"
+          cat "$RUNNER_TEMP/results.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "RESULTS_JSON_BEGIN"; python -c "import json,sys;d=json.load(open(sys.argv[1]));[v.pop('spec',None) for v in d['variants'].values()];print(json.dumps(d,separators=(',',':')))" "$RUNNER_TEMP/results.json"; echo "RESULTS_JSON_END"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-weekly-backtest-${{ inputs.end }}
+          path: ${{ runner.temp }}/results.*
+          if-no-files-found: ignore
+          retention-days: 30
