@@ -72,6 +72,11 @@ test('account and strategy identities bind plan hash',()=>{
  f.accountId='second-account';assert.notEqual(plan(f).planId,id);
  f.accountId='synthetic-account';f.modelVersion='stock-mom252-skip21-trend200-holdrank10-v1';
  assert.notEqual(plan(f).planId,id);
+ f.modelVersion='stock-lowvol252-trend200-v1';
+ const steady=plan(f);assert.notEqual(steady.planId,id);
+ assert.deepEqual(steady.legs.map(l=>[l.symbol,l.shares]),plan(fixture()).legs.map(l=>[l.symbol,l.shares]),
+  'same sizing rules for every registered model');
+ f.modelVersion='stock-lowvol252-trend200-v2';assert.throws(()=>plan(f),/UNREGISTERED_MODEL/);
 });
 test('uncertain, open, incomplete and live accounts block',()=>{
  for(const [key,value] of Object.entries({accountType:'live',openOrderCount:1,

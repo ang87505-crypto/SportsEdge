@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
+import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,Segmented,StatusDot} from '@/components/ui';
 import {OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
-import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
+import {activity,combined,headline,holdings,latestPicks,nextRuns,strategy,type CombinedRow} from '@/lib/stocks/autopilot-view';
 
 type View='checking'|'login'|'unconfigured'|'error'|'ready';
 type Release={paperOnly:true;brokerWritesEnabled:boolean;scheduledRunsEnabled:boolean;realMoneyEnabled:false};
@@ -19,6 +19,7 @@ const pct=(r:number|null)=>r===null?'—':`${r>=0?'+':''}${(r*100).toFixed(2)}%`
 const dd=(r:number|null)=>r===null?'—':`${(r*100).toFixed(2)}%`;
 const when=(iso:string|null)=>iso?new Date(iso).toLocaleString():'—';
 const trim=(v:string)=>v.includes('.')?v.replace(/\.?0+$/,''):v;
+const toneOf=(t:string)=>t==='positive'?'positive':t==='warning'?'warning':t==='info'?'info':'neutral';
 const VERDICT_TEXT:Record<MarkVerdict,string>={VERIFIED:'Verified',UNRECONCILED_SKIPPED:'Unreconciled (skipped)',
  CONTAMINATED:'Contaminated (chain ends)',AFTER_CONTAMINATION:'After contamination'};
 function nyTime(t:number){
@@ -45,11 +46,12 @@ export function PaperAutoOperations(){
  const [ledgers,setLedgers]=useState<Ledger[]>([]);
  const [notice,setNotice]=useState<{tone:'positive'|'warning'|'info';text:string}|null>(null);
  const [working,setWorking]=useState(false);
- const [starting,setStarting]=useState(false);
+ const [starting,setStarting]=useState<string|null>(null);
+ const [selected,setSelected]=useState<string|null>(null);
  const poll=useRef<number|null>(null);
  const refresh=useCallback(async():Promise<Ledger[]>=>{
   // The top-bar badge caches the status for a minute; a fresh read here replaces it.
-  try{sessionStorage.removeItem('sportsedge-autopilot-summary');}catch{/* optional cache */}
+  try{sessionStorage.removeItem('sportsedge-autopilot-summary-v2');}catch{/* optional cache */}
   try{
    const res=await fetch('/api/internal/paper-auto',{method:'GET',cache:'no-store',credentials:'same-origin'});
    const data:unknown=await res.json();
@@ -66,7 +68,7 @@ export function PaperAutoOperations(){
 
  // After Start, re-read every 8 s for up to 3 minutes until the database reports the gate armed.
  const watchStart=(id:string)=>{
-  setStarting(true);let tries=0;
+  setStarting(id);let tries=0;
   if(poll.current)window.clearInterval(poll.current);
   poll.current=window.setInterval(async()=>{
    tries++;
@@ -74,7 +76,7 @@ export function PaperAutoOperations(){
    const l=ls.find(x=>x.experimentId===id);
    const armed=!!l&&l.registered&&l.status.gateMode==='ARMED';
    if(armed||tries>=22){
-    if(poll.current)window.clearInterval(poll.current);poll.current=null;setStarting(false);
+    if(poll.current)window.clearInterval(poll.current);poll.current=null;setStarting(null);
     setNotice(armed?{tone:'positive',text:'Autopilot is on.'}:{tone:'warning',text:
      'Start did not finish within 3 minutes. Open the GitHub run to see why. Nothing was traded.'});
    }
@@ -99,6 +101,22 @@ export function PaperAutoOperations(){
   }catch{setNotice({tone:'warning',text:'The result is unknown. The status below was re-read; check it before trying again. Stop can always be pressed again.'});}
   finally{setWorking(false);await refresh();}
  };
+ // Emergency stop for every strategy: one confirmation, then STOP for each in turn (always allowed, idempotent).
+ const stopAll=async(ids:string[])=>{
+  if(working||!window.confirm(`Stop all ${ids.length} strategies? No new orders will be placed. Stocks they already hold stay in the accounts.`))return;
+  setWorking(true);setNotice(null);const failed:string[]=[];
+  for(const id of ids){
+   try{
+    const res=await fetch('/api/internal/paper-auto',{method:'POST',credentials:'same-origin',cache:'no-store',
+     headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'stop',experimentId:id})});
+    const data=await res.json() as {status?:string};
+    if(data.status!=='recorded')failed.push(id);
+   }catch{failed.push(id);}
+  }
+  setNotice(failed.length?{tone:'warning',text:`Not confirmed for ${failed.join(', ')}. Press Stop again; it is always allowed.`}:
+   {tone:'positive',text:'All strategies stopped. No new orders will be placed.'});
+  setWorking(false);await refresh();
+ };
 
  if(view==='checking')return <Panel><p className="quiet" aria-busy="true">Checking the autopilot…</p></Panel>;
  if(view==='login')return <Unlock onDone={()=>void refresh()}/>;
@@ -108,13 +126,59 @@ export function PaperAutoOperations(){
  if(view==='error')return <Panel><Empty title="Couldn't load the autopilot"
   action={<button type="button" className="button button-secondary" onClick={()=>void refresh()}>Try again</button>}>
   The records couldn&apos;t be read just now. Nothing is placed from this page.</Empty></Panel>;
+ const registered=ledgers.filter((l):l is PaperAutoLedger=>l.registered);
+ const pending=ledgers.filter(l=>!l.registered);
+ const shown=registered.find(l=>l.experimentId===selected)??registered[0];
  return <>
   {notice&&<Callout tone={notice.tone} role="status">{notice.text}</Callout>}
-  {ledgers.map(l=>l.registered?<Autopilot key={l.experimentId} l={l} release={release} act={act} working={working}
-    starting={starting} oneClick={oneClick}/>:
-   <Panel key={l.experimentId}><Empty title={`${l.experimentId} is not set up yet`}>Registration is a one-time owner step;
-    until then there is nothing to run.</Empty></Panel>)}
+  {registered.length>1&&<Strategies ledgers={registered} selected={shown?.experimentId??null}
+   onSelect={setSelected} onStopAll={()=>void stopAll(registered.map(l=>l.experimentId))} working={working}/>}
+  {shown&&<Autopilot key={shown.experimentId} l={shown} release={release} act={act} working={working}
+   starting={starting===shown.experimentId} oneClick={oneClick}/>}
+  {!registered.length&&<Panel><Empty title="No strategy is set up yet">Registration is a one-time owner step;
+   until then there is nothing to run.</Empty></Panel>}
+  {pending.length>0&&<p className="quiet small-print">Not set up yet: {pending.map(l=>l.experimentId).join(', ')}. It joins
+   this page after its one-time registration.</p>}
  </>;
+}
+
+function Strategies({ledgers,selected,onSelect,onStopAll,working}:{ledgers:PaperAutoLedger[];selected:string|null;
+ onSelect:(id:string)=>void;onStopAll:()=>void;working:boolean}){
+ const rows:CombinedRow[]=ledgers.map(l=>{
+  const h=headline(l),perf=forwardPerformance(l.experiment.startingEquityCents,l.experiment.registeredAt,l.daily);
+  const last=perf.marks.at(-1)??null,v=perf.verified;
+  return {experimentId:l.experimentId,name:strategy(l.status.modelVersion).name,label:h.label,tone:h.tone,
+   valueCents:last?last.equityCents:l.experiment.startingEquityCents,startingCents:l.experiment.startingEquityCents,
+   valueSession:last?.session??null,returnPct:v.state==='MEASURING'||v.state==='ENDED'?v.cumulativeReturn:null};
+ });
+ const c=combined(rows);
+ return <Panel title="Your strategies" description="Each one trades its own paper account; together they work like a 50/50 mix"
+  actions={<button type="button" className="button button-danger" disabled={working} onClick={onStopAll}>Stop all</button>}
+  className="strategies-panel" flush>
+  <div className="table-wrap"><table className="data-table strategies-table">
+   <thead><tr><th>Strategy</th><th>Status</th><th>Value</th><th>Return</th></tr></thead>
+   <tbody>
+    {rows.map(r=><tr key={r.experimentId} aria-current={r.experimentId===selected?'true':undefined}>
+     <th scope="row">{r.name}</th>
+     <td><StatusDot tone={toneOf(r.tone)}/> {r.label}</td>
+     <td>{money(r.valueCents)}<small>{r.valueSession?`after ${r.valueSession}`:'starting balance'}</small></td>
+     <td className={r.returnPct===null?undefined:r.returnPct>=0?'tone-text-positive':'tone-text-negative'}>{pct(r.returnPct)}</td>
+    </tr>)}
+    <tr className="strategies-total">
+     <th scope="row">Combined</th>
+     <td>{c.running} of {rows.length} running</td>
+     <td>{money(c.valueCents)}<small>of {money(c.startingCents)} to start</small></td>
+     <td className={c.returnPct===null?undefined:c.returnPct>=0?'tone-text-positive':'tone-text-negative'}>{pct(c.returnPct)}</td>
+    </tr>
+   </tbody>
+  </table></div>
+  <div className="strategies-foot">
+   <p className="quiet">{c.leader?`${c.leader} is ahead so far.`:c.returnPct===null?
+    'Returns appear after each strategy has a full trading day.':'Both are level so far.'} Paper money only.</p>
+   <Segmented label="Show strategy" value={selected??rows[0].experimentId} onChange={onSelect}
+    options={rows.map(r=>({value:r.experimentId,label:r.name}))}/>
+  </div>
+ </Panel>;
 }
 
 function Unlock({onDone}:{onDone:()=>void}){
@@ -154,6 +218,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
   practice?' Practice mode: it will plan trades but not send any orders yet.':''}`;
  return <>
   <section className="autopilot-hero glass" aria-labelledby={'ap-'+id}>
+   <p className="autopilot-strategy"><strong>{strategy(s.modelVersion).name}</strong>
+    <span>{strategy(s.modelVersion).about}</span></p>
    <div className="autopilot-status">
     <StatusDot tone={starting?'info':h.tone==='positive'?'positive':h.tone==='warning'?'warning':'neutral'} label={h.label}/>
     <div>

@@ -246,6 +246,17 @@ BEGIN
  r:=paper_auto_test.rpc('register',paper_auto_test.experiment('fwd-2026-holdrank','stock-mom252-skip21-trend200-holdrank10-v1',
   '22222222-3333-4444-5555-666666666666','PA0SECOND',2,100,1000,6,50000,1));
  PERFORM paper_auto_test.eq(r->>'state','STOPPED','second experiment state');
+ -- The steady-stocks model registers only on its own account, and only under its exact name.
+ PERFORM paper_auto_test.raises(paper_auto_test.call('register',paper_auto_test.experiment('fwd-2026-steady',
+  'stock-lowvol252-trend200-v2','5a5a5a5a-6b6b-4c4c-8d8d-9e9e9e9e9e9e','PA0STEADY',2,100,1000,6,50000,1)),
+  'PAPER_AUTO_INVALID_MODEL_VERSION');
+ PERFORM paper_auto_test.raises(paper_auto_test.call('register',paper_auto_test.experiment('fwd-2026-steady',
+  'stock-lowvol252-trend200-v1','22222222-3333-4444-5555-666666666666','PA0SECOND',2,100,1000,6,50000,1)),
+  'experiments_broker_account_id_key');
+ r:=paper_auto_test.rpc('register',paper_auto_test.experiment('fwd-2026-steady','stock-lowvol252-trend200-v1',
+  '5a5a5a5a-6b6b-4c4c-8d8d-9e9e9e9e9e9e','PA0STEADY',2,100,1000,6,50000,1));
+ PERFORM paper_auto_test.eq(r->>'state','STOPPED','steady-stocks experiment state');
+ PERFORM paper_auto_test.eq(r->>'modelVersion','stock-lowvol252-trend200-v1','steady-stocks model');
 END $$;
 
 -- 3. Clock rules, including the November 1 2026 DST change.

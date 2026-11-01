@@ -1,6 +1,9 @@
 # Recurring Alpaca PAPER worker. Manual dispatch, plus a schedule (owner-approved
-# 2026-10-31) for stock-v2-weekly-1. Scheduled execute runs trade only while the owner has
-# armed the gate and broker writes are released; otherwise they block or record a shadow plan.
+# 2026-10-31) for stock-v2-weekly-1 and, side by side on its own paper account (owner-approved
+# 2026-11-01), stock-v3-steady-weekly-1. Each experiment uses only its own key pair; one whose
+# keys or registration are not set up yet is skipped quietly. Scheduled execute runs trade only
+# while the owner has armed that experiment's gate and broker writes are released; otherwise
+# they block or record a shadow plan.
 # Times are UTC and cover both New York offsets; the worker re-checks every session and window.
 #   execute: 09:50 ET (13:50 / 14:50 UTC), then 15:20-18:20 UTC to re-plan resting residuals
 #   monitor: after the close (20:35 / 21:35 UTC; an early one skips as BEFORE_CLOSE)
@@ -23,11 +26,15 @@ on:
         type: string
 permissions:
   contents: read
-concurrency:
-  group: paper-auto-${{ inputs.experiment || 'stock-v2-weekly-1' }}
-  cancel-in-progress: false
 jobs:
   run:
+    strategy:
+      fail-fast: false
+      matrix:
+        experiment: ${{ fromJSON(inputs.experiment && format('["{0}"]', inputs.experiment) || '["stock-v2-weekly-1","stock-v3-steady-weekly-1"]') }}
+    concurrency:
+      group: paper-auto-${{ matrix.experiment }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,9 +47,11 @@ jobs:
       - name: Run one slot
         env:
           KIND: ${{ inputs.kind || (github.event.schedule == '35 20,21 * * 1-5' && 'monitor' || 'execute') }}
-          EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
+          EXPERIMENT: ${{ matrix.experiment }}
           SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
           SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+          ALPACA_PAPER_AUTO_2_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_2_KEY_ID }}
+          ALPACA_PAPER_AUTO_2_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_2_SECRET_KEY }}
         run: node --experimental-strip-types scripts/paper-auto-worker.ts "$KIND" --experiment "$EXPERIMENT"
