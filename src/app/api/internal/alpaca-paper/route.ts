@@ -1,39 +1,11 @@
-import {timingSafeEqual} from 'node:crypto';
-import {getAlpacaPaperSnapshot,PaperConnectionError} from '@/lib/server/alpaca-paper-reader';
+import {connection} from 'next/server';
+import {handleDiagnosticRequest} from '@/lib/server/alpaca-paper-diagnostic';
 
 // Admin-only bearer, not an owner browser login. Do not import this endpoint into
 // client components or put the bearer in NEXT_PUBLIC_* / browser localStorage.
-const NO_STORE={'Cache-Control':'private, no-store','Pragma':'no-cache','X-Content-Type-Options':'nosniff'};
-function isAuthorized(request:Request) {
-  const expected=process.env.SPORTSEDGE_ALPACA_PAPER_READ_TOKEN;
-  if(!expected||expected.length<32)return false;
-  const got=Buffer.from(request.headers.get('authorization')??'');
-  const known=Buffer.from('Bearer '+expected);
-  return got.length===known.length && timingSafeEqual(got,known);
-}
 export async function GET(request:Request) {
-  if(!isAuthorized(request))return Response.json({error:'Not found'},{
-    status:404,headers:NO_STORE
-  });
-  if(new URL(request.url).search) {
-    return Response.json({error:'Parameters not supported'},{status:400,headers:NO_STORE});
-  }
-  const keyId=process.env.ALPACA_PAPER_KEY_ID;
-  const secretKey=process.env.ALPACA_PAPER_SECRET_KEY;
-  if(!keyId||!secretKey)return Response.json({status:'not_configured'},{
-    status:503,headers:NO_STORE
-  });
-  try{
-    const snapshot=await getAlpacaPaperSnapshot({keyId,secretKey});
-    return Response.json(snapshot,{headers:NO_STORE});
-  } catch(error) {
-    // Only fixed, bounded diagnostic codes leave the server. Never echo
-    // upstream error bodies, credentials, request headers or account IDs.
-    const diagnostic=error instanceof PaperConnectionError
-      ? {reason:error.reason,stage:error.stage}
-      : {reason:'PAPER_UNEXPECTED_ERROR',stage:'unknown'};
-    return Response.json({
-      status:'paper_broker_unavailable_or_unverified',...diagnostic
-    },{status:503,headers:NO_STORE});
-  }
+  // Reading headers from the Request argument is not a Request-time API under
+  // Cache Components, so without this the 404 is prerendered at build time.
+  await connection();
+  return handleDiagnosticRequest(request,process.env);
 }
