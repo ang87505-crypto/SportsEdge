@@ -136,7 +136,8 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
    const inserted=await d.store.insert<ObsRow>('props_observations',rows,
     {onConflict:'platform,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true,select:OBS_COLS});
    inserted.forEach(o=>observed.push({obs:o,event:e}));
-   const reasons:Record<string,number>={};for(const x of norm.rejected)reasons[x.reason]=(reasons[x.reason]??0)+1;
+   // Keyed platform:reason so one-sided or special lines can be traced to the platform that published them.
+   const reasons:Record<string,number>={};for(const x of norm.rejected){const k=(x.platform??'unknown')+':'+x.reason;reasons[k]=(reasons[k]??0)+1;}
    perEvent.push({event:e.id,outcome:'stored',accepted:norm.observations.length,inserted:inserted.length,rejected:reasons,
     usage:r.reply.usage,byPlatform:Object.fromEntries(PLATFORMS.map(p=>[p,norm.observations.filter(o=>o.platform===p).length]))});
   }

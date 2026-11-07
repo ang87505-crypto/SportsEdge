@@ -7,6 +7,10 @@ LANGUAGE sql VOLATILE SET search_path=pg_catalog AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.props_now() TO service_role;
 ALTER ROLE service_role BYPASSRLS;  -- as on Supabase
+-- Test-only: the v1 policy row is stamped with the real load time; backdate it so pinned test clocks see it.
+ALTER TABLE public.props_budget_policy DISABLE TRIGGER props_append_only;
+UPDATE public.props_budget_policy SET active_from='2026-01-01T00:00:00Z' WHERE version='props-budget-v1';
+ALTER TABLE public.props_budget_policy ENABLE TRIGGER props_append_only;
 CREATE SCHEMA props_test;
 GRANT USAGE,CREATE ON SCHEMA props_test TO service_role;
 GRANT USAGE ON SCHEMA props_test TO anon;

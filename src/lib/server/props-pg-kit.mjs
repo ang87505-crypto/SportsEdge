@@ -26,7 +26,12 @@ export const testClockSql=`
 CREATE OR REPLACE FUNCTION public.props_now() RETURNS timestamptz LANGUAGE sql VOLATILE SET search_path=pg_catalog AS $$
  SELECT coalesce(nullif(current_setting('props_test.now',true),'')::timestamptz,clock_timestamp()) $$;
 GRANT EXECUTE ON FUNCTION public.props_now() TO service_role;
-ALTER ROLE service_role BYPASSRLS;`;
+ALTER ROLE service_role BYPASSRLS;
+-- Test-only: the v1 policy row is stamped with the real load time; backdate it so pinned test clocks see it.
+ALTER TABLE public.props_budget_policy DISABLE TRIGGER props_append_only;
+UPDATE public.props_budget_policy SET active_from='2026-01-01T00:00:00Z' WHERE version='props-budget-v1';
+ALTER TABLE public.props_budget_policy ENABLE TRIGGER props_append_only;
+`;
 
 function filters(params){
  const where=[];
