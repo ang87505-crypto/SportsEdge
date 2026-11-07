@@ -17,7 +17,10 @@ export const SECTIONS:NavSection[]=[
    {href:'/research/epl',label:'Soccer model',description:'EPL three-way forecast archive'},
    {href:'/research/backtest',label:'Soccer accuracy history',description:'Six-month retrospective by league'},
   ]},
- {id:'paper',href:'/paper-betting',label:'Paper Betting',shortLabel:'Bets',icon:'paper',description:'Virtual-money NBA ledger and performance',match:['/paper-betting'],children:[]},
+ {id:'paper',href:'/paper-betting',label:'Paper Betting',shortLabel:'Bets',icon:'paper',description:'Virtual-money NBA ledger and performance',match:['/paper-betting'],
+  children:[
+   {href:'/paper-betting/props',label:'NBA player props',description:'PrizePicks and Pick6 paper test'},
+  ]},
  {id:'stocks',href:'/stocks',label:'Stocks',shortLabel:'Stocks',icon:'stocks',description:'Paper portfolio, research and automation status',
   match:['/stocks'],
   children:[

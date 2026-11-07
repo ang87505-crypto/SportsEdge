@@ -1,0 +1,63 @@
+# NBA player-prop PAPER cycle (PrizePicks + DraftKings Pick6 lines via The Odds API).
+# Virtual entries only: no DFS account, no deposits, no real-money entries.
+# Scheduled firings exit before any network call while PROPS_RELEASE.scheduledRunsEnabled
+# is false in src/lib/props/schedule.ts (the crons below must match PROPS_SCHEDULE there).
+# Rollback: set scheduledRunsEnabled back to false (or dispatch `pause`/`stop`); ledgers are append-only.
+name: NBA props paper cycle
+on:
+  schedule:
+    - cron: '20 9 * * *'
+    - cron: '20 15 * * *'
+    - cron: '10 19 * * *'
+    - cron: '10 22 * * *'
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Run kind
+        required: true
+        type: choice
+        options: [status, collect, settle, backfill, pause, resume, stop]
+      from:
+        description: backfill start date (YYYY-MM-DD)
+        required: false
+        type: string
+      to:
+        description: backfill end date (YYYY-MM-DD)
+        required: false
+        type: string
+      reason:
+        description: reason for pause/resume/stop
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: props-paper
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run one props slot
+        env:
+          KIND: ${{ inputs.kind || (contains(fromJSON('["20 9 * * *","20 15 * * *"]'), github.event.schedule) && 'settle' || 'collect') }}
+          SCHEDULE_CRON: ${{ github.event.schedule }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+          REASON: ${{ inputs.reason }}
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          set -euo pipefail
+          args=("$KIND")
+          if [ "$KIND" = backfill ]; then args+=(--from "$FROM" --to "$TO"); fi
+          if [ "$KIND" = pause ] || [ "$KIND" = resume ] || [ "$KIND" = stop ]; then args+=(--reason "$REASON"); fi
+          node --experimental-strip-types scripts/props-worker.ts "${args[@]}"
