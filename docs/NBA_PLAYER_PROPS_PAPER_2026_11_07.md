@@ -278,3 +278,43 @@ Owner steps:
 1. Run `database/props/props_budget_v2.sql` in the staging SQL editor. It is re-runnable and prints the policy rows.
 2. Merge the release PR after the Saturday collect and Sunday settle receipts are verified.
 3. Rollback: set `scheduledRunsEnabled` back to false, or dispatch `pause`/`stop`.
+
+## Two-season historical check (2026-11-07)
+
+`scripts/props-model-fit.ts backtest` refits only the league per-minute rates and
+NB dispersion, on the prior season alone. It then predicts every
+regular-season player-game of the next season from strictly earlier games and
+applies the frozen `props-select-v1` rule. No platform lines exist for this
+period: historical DFS odds are paid-only and were not purchased. Lines are
+proxies (recent median + 0.5), so there are **no dollar results**.
+
+Outputs:
+
+- full results: `research/props_backtest_20261107/backtest_{2024-25,2025-26}.json`
+- compact summary for the site: `src/data/props/backtest_v1.json`
+- prior-season source: 2023-24 file `player_box_2024.csv`, sha256 `c52a708a…9ae2`
+
+| Season (prior) | Lines | Model Brier P/R/A | Best baseline P/R/A | Picks recorded (share) | Hit 0.60–0.65 / 0.65–0.70 / 0.70–0.80 | Skipped >0.80 hit |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2024-25 (2023-24) | 70,137 | 0.2459 / 0.2367 / 0.2328 | 0.2489 / 0.2427 / 0.2367 | 32,600 (46%) | 60.7% / 65.1% / 69.5% | 69.3% of 3,044 |
+| 2025-26 (2024-25) | 71,595 | 0.2463 / 0.2357 / 0.2313 | 0.2495 / 0.2418 / 0.2369 | 33,977 (47%) | 60.3% / 64.8% / 70.0% | 72.4% of 2,781 |
+
+Both seasons agree. The model beats both simple baselines on every stat, and
+hit rates in each confidence band match the stated confidence. Points remain
+overconfident above about 0.80.
+
+The frozen rule's >0.80 skip would have hit about 70% against proxy lines.
+The rule is unchanged: it guards against injury and role news that move real
+lines, and proxy lines do not capture that. Revisiting it is a candidate for a
+future, separately versioned rule after forward data.
+
+Proxy lines are easier than professional projections, so none of this is
+evidence of profit on PrizePicks or Pick6.
+
+The dashboard (`/paper-betting/props`) now shows:
+
+- this historical check, with a per-stat calibration chart
+- the daily cycle in UTC and New Mexico time
+- the active budget
+
+The moneyline paper page links to it.

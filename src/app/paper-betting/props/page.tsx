@@ -8,6 +8,15 @@ import {buildView,type PropsView} from '@/lib/props/dashboard-view';
 import {PLATFORMS,PLATFORM_LABEL,MODEL_VERSION,SELECTION_VERSION,type Platform} from '@/lib/props/contract';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
 import {dateTimeUtc,pct,usdCents} from '@/lib/format';
+import {CalibrationChart} from '@/components/charts';
+import {calibrationBins,brierEdge,type BacktestSummary} from '@/lib/props/backtest-view';
+import {ACTIVE_BUDGET_POLICY} from '@/lib/props/budget';
+import {PROPS_SCHEDULE} from '@/lib/props/schedule';
+import backtestJson from '@/data/props/backtest_v1.json';
+import type {Stat} from '@/lib/props/contract';
+
+const BACKTEST=backtestJson as BacktestSummary;
+const STAT_TABS:Stat[]=['points','rebounds','assists'];
 
 export const metadata={title:'NBA Player Props · SportsEdge',description:'Virtual paper test of NBA player-stat picks on PrizePicks and DraftKings Pick6 lines.'};
 
@@ -26,16 +35,17 @@ export default function Page({searchParams}:{searchParams:Search}){
 
 async function Body({searchParams}:{searchParams:Search}){
  await connection();
- const raw=(await searchParams).platform;
- const platform:Platform=raw==='pick6'?'pick6':'prizepicks';
+ const sp=await searchParams;
+ const platform:Platform=sp.platform==='pick6'?'pick6':'prizepicks';
+ const cal:Stat=STAT_TABS.includes(sp.cal as Stat)?sp.cal as Stat:'points';
  const tabs=<nav className="tabs props-tabs" aria-label="Platform" style={{marginBottom:12}}>
   {PLATFORMS.map(p=><Link key={p} href={`/paper-betting/props?platform=${p}`} aria-current={p===platform?'page':undefined}>{PLATFORM_LABEL[p]}</Link>)}
  </nav>;
- if(!propsDashboardConfigured())return <>{tabs}<NotConnected/></>;
+ if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
  let view:PropsView|null=null;
  try{view=buildView(await loadPropsDashboard(),platform);}catch{view=null;}
  if(!view)return <>{tabs}<Panel><Empty title="The props ledger did not respond" action={<a className="button button-secondary" href={`/paper-betting/props?platform=${platform}`}>Reload</a>}>No line, pick or result has been substituted.</Empty></Panel><Limits/></>;
- return <>{tabs}<Automation v={view}/><Performance v={view}/><Lines v={view}/><Entries v={view}/><Limits/></>;
+ return <>{tabs}<Automation v={view}/><Performance v={view}/><Lines v={view}/><Entries v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }
 
 function NotConnected(){
@@ -44,7 +54,7 @@ function NotConnected(){
    <p className="quiet">This deployment has no props ledger configured, so there are no observed lines, model estimates or simulated results to show. Nothing has been filled in with examples.</p>
    <KeyValues items={[['Scheduled runs',PROPS_RELEASE.scheduledRunsEnabled?'Released':'Released OFF in source'],['Model',MODEL_VERSION],['Selection rule',SELECTION_VERSION]]}/>
   </Panel>
-  <Limits/>
+  <Schedule/>
  </>;
 }
 
@@ -59,6 +69,7 @@ function Automation({v}:{v:PropsView}){
    <Metric size="sm" label="Last successful settlement" value={a.lastSettle?dateTimeUtc(a.lastSettle.finished_at):'None yet'}/>
    <Metric size="sm" label="Next planned run" value={PROPS_RELEASE.scheduledRunsEnabled&&next[0]?`${next[0].kind} ${dateTimeUtc(next[0].at)}`:'Schedule released OFF'} detail={PROPS_RELEASE.scheduledRunsEnabled?'GitHub schedules can start late; late runs never relabel post-lock lines':'Manual runs only until the owner releases the schedule'}/>
   </MetricGrid>
+  <Schedule embedded/>
   {a.lastFailure&&<p className="game-card-warning" style={{marginTop:10}}>Last failure: {a.lastFailure.kind} run {a.lastFailure.slot_key} ended {a.lastFailure.status} ({a.lastFailure.outcome}).</p>}
   <div style={{marginTop:12}}><KeyValues items={[
    ['Provider credits reserved (24 h)',`${b.used24h} of ${b.daily}`],['Provider credits reserved (30 days)',`${b.used30d} of ${b.monthly}`],
@@ -136,6 +147,65 @@ function Entries({v}:{v:PropsView}){
      <span className={e.settlement.profitCents>0?'tone-text-positive':e.settlement.profitCents<0?'tone-text-negative':undefined}>{e.settlement.outcome} {usdCents(e.settlement.profitCents,{signed:true})}<small>returned {usdCents(e.settlement.returnCents)}</small></span>}</td>
    </tr>)}</tbody>
   </table></div>:<div className="panel-pad"><p className="quiet">No simulated {PLATFORM_LABEL[v.platform]} entries yet.</p></div>}
+ </Panel>;
+}
+
+const nmTime=(hour:number,minute:number)=>{
+ const d=new Date();d.setUTCHours(hour,minute,0,0);
+ return new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',hour:'numeric',minute:'2-digit'}).format(d);
+};
+function Schedule({embedded=false}:{embedded?:boolean}){
+ const b=ACTIVE_BUDGET_POLICY;
+ const rows=[...PROPS_SCHEDULE].sort((x,y)=>x.hour*60+x.minute-(y.hour*60+y.minute));
+ const body=<>
+  <ol className="props-schedule">{rows.map(r=><li key={r.cron}>
+   <Badge tone={r.kind==='collect'?'info':'accent'}>{r.kind==='collect'?'Collect lines':'Grade and settle'}</Badge>
+   <span><strong>{String(r.hour).padStart(2,'0')}:{String(r.minute).padStart(2,'0')} UTC</strong><small>{nmTime(r.hour,r.minute)} New Mexico time today</small></span>
+  </li>)}</ol>
+  <p className="quiet" style={{marginTop:8}}>{PROPS_RELEASE.scheduledRunsEnabled?'Daily schedule released. ':'Daily schedule released OFF: runs happen only when started by hand. '}
+   Budget {b.version}: up to {b.maxEventsPerRun} games per collection, {b.dailyCredits} provider credits per rolling 24 hours, {b.monthlyCredits} per 30 days, and a stop when the provider reports fewer than {b.providerFloor} credits left. The later collect only spends if the earlier one could not.</p>
+ </>;
+ return embedded?<div style={{marginTop:12}}><h3 className="props-subhead">Daily cycle</h3>{body}</div>
+  :<Panel title="Daily cycle" description="Fixed UTC slots; local times shift with daylight saving." actions={<Evidence kind="recorded" label="Planned"/>} className="mt-12">{body}</Panel>;
+}
+
+function HistoricalCheck({platform,cal}:{platform:Platform;cal:Stat}){
+ const seasons=BACKTEST.seasons;const latest=seasons[seasons.length-1];
+ const band=(k:string,s=latest)=>s.selection.byBand[k];
+ const statLabel={points:'Points',rebounds:'Rebounds',assists:'Assists'};
+ return <Panel title="Historical check" description="Two seasons the model never saw: parameters fit on the prior season, every game predicted from earlier games only. Lines are proxies (each player's recent median + 0.5), not PrizePicks or Pick6 lines, so this measures calibration, not profit." actions={<Evidence kind="historical"/>} className="mt-12" flush>
+  <div className="panel-pad">
+   <MetricGrid columns={4}>
+    <Metric size="sm" label="Lines checked" value={seasons.reduce((a,s)=>a+s.scoredLines,0).toLocaleString()} detail={seasons.map(s=>s.label).join(' and ')}/>
+    <Metric size="sm" label="Picks that qualify" value={pct(latest.selection.qualifyingShare,0)} detail={`${latest.label}: rule ${BACKTEST.selectionVersion} (60–80% model probability)`}/>
+    <Metric size="sm" label="Pick hit rate (proxy lines)" value={pct(latest.selection.recorded.hitRate,1)} detail={`${latest.selection.recorded.n.toLocaleString()} picks; 2-pick break-even ${pct(latest.selection.breakEven,1)}`}/>
+    <Metric size="sm" label="Beats simple baselines" value={STAT_TABS.every(s=>seasons.every(x=>brierEdge(x.brier,s)>0))?'All 3 stats':'Not on every stat'} hint="Brier score (lower is better) against a season-average and a last-10-game Poisson baseline." detail="Both seasons"/>
+   </MetricGrid>
+  </div>
+  <div className="table-wrap"><table className="data-table ledger-table">
+   <thead><tr><th scope="col">Season</th><th scope="col" className="num">Model Brier</th><th scope="col" className="num">Last-10 baseline</th><th scope="col" className="num">Season-average baseline</th></tr></thead>
+   <tbody>{seasons.flatMap(s=>STAT_TABS.map(st=><tr key={s.label+st}>
+    <td data-label="Season"><strong>{s.label}</strong><small>{statLabel[st]}</small></td>
+    <td data-label="Model Brier" className="num tone-text-positive">{s.brier.model[st].toFixed(4)}</td>
+    <td data-label="Last-10 baseline" className="num">{s.brier.last10Poisson[st].toFixed(4)}</td>
+    <td data-label="Season-average baseline" className="num">{s.brier.seasonMeanPoisson[st].toFixed(4)}</td>
+   </tr>))}</tbody>
+  </table></div>
+  <div className="panel-pad two-grid">
+   <div>
+    <h3 className="props-subhead">Pick hit rate by model confidence</h3>
+    <KeyValues items={[...seasons.flatMap(s=>['0.60-0.65','0.65-0.70','0.70-0.80'].map(k=>[`${s.label} · ${k.replace('-','–')}`,
+     `${pct(band(k,s).hitRate,1)} of ${band(k,s).n.toLocaleString()}`] as [string,string])),
+     ...seasons.map(s=>[`${s.label} · skipped above 80%`,`${pct(s.selection.skipped.extreme_disagreement.hitRate,1)} of ${s.selection.skipped.extreme_disagreement.n.toLocaleString()} (not recorded)`] as [string,string])]}/>
+    <p className="quiet" style={{marginTop:8}}>Hit rates track the stated confidence. Real platform lines come from professional projections and will be harder than these proxies; forward paper results are the real test.</p>
+   </div>
+   <div>
+    <h3 className="props-subhead">Calibration, {latest.label}</h3>
+    <nav className="tabs" aria-label="Stat" style={{marginBottom:8}}>{STAT_TABS.map(s=><Link key={s} href={`/paper-betting/props?platform=${platform}&cal=${s}`} aria-current={s===cal?'page':undefined} scroll={false}>{statLabel[s]}</Link>)}</nav>
+    <CalibrationChart bins={calibrationBins(latest.reliability[cal])} xTitle="Model probability of More" outcome="Went over" unit="lines" observedLabel="Observed share over the line (95% interval)"
+     label={`Reliability of P(More) for ${statLabel[cal].toLowerCase()} in ${latest.label}: predicted against observed share over the proxy line, bins with at least 30 lines.`}/>
+   </div>
+  </div>
  </Panel>;
 }
 

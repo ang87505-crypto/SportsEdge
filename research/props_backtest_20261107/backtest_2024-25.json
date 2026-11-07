@@ -1,0 +1,796 @@
+{
+ "generatedBy": "scripts/props-model-fit.ts backtest",
+ "label": "2024-25",
+ "modelVersion": "props-nb-minutes-rate-v1",
+ "selectionVersion": "props-select-v1",
+ "design": "Parameters (league per-minute rates, NB dispersion) fit on the prior season only; every regular-season player-game of the target season is predicted from strictly earlier games; conditional on playing. PROXY lines: floor(median of last 10 played)+0.5. Not platform lines; no dollar results.",
+ "sources": {
+  "prior": {
+   "file": "player_box_2024.csv",
+   "sha256": "c52a708ac80542baa0711f166154e0a647543036854e29aa903bd2fc27b49ae2"
+  },
+  "season": {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+  },
+  "license": "CC BY 4.0, SportsDataverse (ESPN NBA player box scores)"
+ },
+ "params": {
+  "leagueRate": {
+   "points": 0.473072,
+   "rebounds": 0.180344,
+   "assists": 0.110473
+  },
+  "dispersion": {
+   "points": 7.7428,
+   "rebounds": 15.3434,
+   "assists": 14.4743
+  }
+ },
+ "scoredLines": 70137,
+ "unscorable": {
+  "no_proxy_line": 5058,
+  "insufficient_history": 2439,
+  "stale_history": 1359
+ },
+ "results": {
+  "model": {
+   "points": {
+    "n": 23379,
+    "brier": 0.24592,
+    "logloss": 0.69275,
+    "meanNegLogPmf": 3.1693,
+    "directionalAccuracy": 0.5847,
+    "meanPMore": 0.5135,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 7,
+      "meanPredicted": 0.087,
+      "observedMore": 0.2857
+     },
+     {
+      "bin": 1,
+      "n": 107,
+      "meanPredicted": 0.1656,
+      "observedMore": 0.1869
+     },
+     {
+      "bin": 2,
+      "n": 1165,
+      "meanPredicted": 0.2646,
+      "observedMore": 0.291
+     },
+     {
+      "bin": 3,
+      "n": 4297,
+      "meanPredicted": 0.3573,
+      "observedMore": 0.3649
+     },
+     {
+      "bin": 4,
+      "n": 6914,
+      "meanPredicted": 0.4499,
+      "observedMore": 0.4583
+     },
+     {
+      "bin": 5,
+      "n": 5019,
+      "meanPredicted": 0.5457,
+      "observedMore": 0.5425
+     },
+     {
+      "bin": 6,
+      "n": 2849,
+      "meanPredicted": 0.6445,
+      "observedMore": 0.5876
+     },
+     {
+      "bin": 7,
+      "n": 1492,
+      "meanPredicted": 0.744,
+      "observedMore": 0.6233
+     },
+     {
+      "bin": 8,
+      "n": 927,
+      "meanPredicted": 0.8471,
+      "observedMore": 0.617
+     },
+     {
+      "bin": 9,
+      "n": 602,
+      "meanPredicted": 0.9344,
+      "observedMore": 0.6279
+     }
+    ]
+   },
+   "rebounds": {
+    "n": 23379,
+    "brier": 0.23671,
+    "logloss": 0.66685,
+    "meanNegLogPmf": 2.2238,
+    "directionalAccuracy": 0.5991,
+    "meanPMore": 0.4654,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 16,
+      "meanPredicted": 0.0783,
+      "observedMore": 0.0625
+     },
+     {
+      "bin": 1,
+      "n": 242,
+      "meanPredicted": 0.1714,
+      "observedMore": 0.2645
+     },
+     {
+      "bin": 2,
+      "n": 2020,
+      "meanPredicted": 0.261,
+      "observedMore": 0.2609
+     },
+     {
+      "bin": 3,
+      "n": 5459,
+      "meanPredicted": 0.3551,
+      "observedMore": 0.3535
+     },
+     {
+      "bin": 4,
+      "n": 7178,
+      "meanPredicted": 0.4483,
+      "observedMore": 0.4457
+     },
+     {
+      "bin": 5,
+      "n": 4717,
+      "meanPredicted": 0.5448,
+      "observedMore": 0.5285
+     },
+     {
+      "bin": 6,
+      "n": 2377,
+      "meanPredicted": 0.6408,
+      "observedMore": 0.6066
+     },
+     {
+      "bin": 7,
+      "n": 947,
+      "meanPredicted": 0.7432,
+      "observedMore": 0.6241
+     },
+     {
+      "bin": 8,
+      "n": 388,
+      "meanPredicted": 0.8407,
+      "observedMore": 0.6675
+     },
+     {
+      "bin": 9,
+      "n": 35,
+      "meanPredicted": 0.9202,
+      "observedMore": 0.7714
+     }
+    ]
+   },
+   "assists": {
+    "n": 23379,
+    "brier": 0.23276,
+    "logloss": 0.65763,
+    "meanNegLogPmf": 1.8138,
+    "directionalAccuracy": 0.6081,
+    "meanPMore": 0.4399,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 28,
+      "meanPredicted": 0.0802,
+      "observedMore": 0.1071
+     },
+     {
+      "bin": 1,
+      "n": 579,
+      "meanPredicted": 0.1705,
+      "observedMore": 0.1813
+     },
+     {
+      "bin": 2,
+      "n": 3042,
+      "meanPredicted": 0.2587,
+      "observedMore": 0.2745
+     },
+     {
+      "bin": 3,
+      "n": 5961,
+      "meanPredicted": 0.3531,
+      "observedMore": 0.3578
+     },
+     {
+      "bin": 4,
+      "n": 6323,
+      "meanPredicted": 0.4481,
+      "observedMore": 0.4343
+     },
+     {
+      "bin": 5,
+      "n": 4342,
+      "meanPredicted": 0.546,
+      "observedMore": 0.5138
+     },
+     {
+      "bin": 6,
+      "n": 2230,
+      "meanPredicted": 0.6425,
+      "observedMore": 0.5758
+     },
+     {
+      "bin": 7,
+      "n": 761,
+      "meanPredicted": 0.7377,
+      "observedMore": 0.6583
+     },
+     {
+      "bin": 8,
+      "n": 113,
+      "meanPredicted": 0.8314,
+      "observedMore": 0.7876
+     }
+    ]
+   }
+  },
+  "seasonMeanPoisson": {
+   "points": {
+    "n": 23379,
+    "brier": 0.26115,
+    "logloss": 0.7476,
+    "meanNegLogPmf": 3.8962,
+    "directionalAccuracy": 0.5764,
+    "meanPMore": 0.4816,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 1052,
+      "meanPredicted": 0.055,
+      "observedMore": 0.3346
+     },
+     {
+      "bin": 1,
+      "n": 1791,
+      "meanPredicted": 0.1525,
+      "observedMore": 0.3674
+     },
+     {
+      "bin": 2,
+      "n": 2637,
+      "meanPredicted": 0.2529,
+      "observedMore": 0.3773
+     },
+     {
+      "bin": 3,
+      "n": 3407,
+      "meanPredicted": 0.3514,
+      "observedMore": 0.4356
+     },
+     {
+      "bin": 4,
+      "n": 3744,
+      "meanPredicted": 0.4505,
+      "observedMore": 0.4744
+     },
+     {
+      "bin": 5,
+      "n": 3464,
+      "meanPredicted": 0.5501,
+      "observedMore": 0.5113
+     },
+     {
+      "bin": 6,
+      "n": 2901,
+      "meanPredicted": 0.6481,
+      "observedMore": 0.5605
+     },
+     {
+      "bin": 7,
+      "n": 2079,
+      "meanPredicted": 0.7485,
+      "observedMore": 0.6065
+     },
+     {
+      "bin": 8,
+      "n": 1417,
+      "meanPredicted": 0.8461,
+      "observedMore": 0.6097
+     },
+     {
+      "bin": 9,
+      "n": 887,
+      "meanPredicted": 0.9445,
+      "observedMore": 0.6629
+     }
+    ]
+   },
+   "rebounds": {
+    "n": 23379,
+    "brier": 0.24332,
+    "logloss": 0.68497,
+    "meanNegLogPmf": 2.3203,
+    "directionalAccuracy": 0.5916,
+    "meanPMore": 0.442,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 268,
+      "meanPredicted": 0.0656,
+      "observedMore": 0.2724
+     },
+     {
+      "bin": 1,
+      "n": 1269,
+      "meanPredicted": 0.1587,
+      "observedMore": 0.305
+     },
+     {
+      "bin": 2,
+      "n": 3188,
+      "meanPredicted": 0.254,
+      "observedMore": 0.3356
+     },
+     {
+      "bin": 3,
+      "n": 5036,
+      "meanPredicted": 0.3517,
+      "observedMore": 0.3938
+     },
+     {
+      "bin": 4,
+      "n": 5519,
+      "meanPredicted": 0.4489,
+      "observedMore": 0.449
+     },
+     {
+      "bin": 5,
+      "n": 3970,
+      "meanPredicted": 0.5471,
+      "observedMore": 0.5108
+     },
+     {
+      "bin": 6,
+      "n": 2475,
+      "meanPredicted": 0.6462,
+      "observedMore": 0.5915
+     },
+     {
+      "bin": 7,
+      "n": 1158,
+      "meanPredicted": 0.7439,
+      "observedMore": 0.6252
+     },
+     {
+      "bin": 8,
+      "n": 431,
+      "meanPredicted": 0.8415,
+      "observedMore": 0.6636
+     },
+     {
+      "bin": 9,
+      "n": 65,
+      "meanPredicted": 0.9391,
+      "observedMore": 0.6154
+     }
+    ]
+   },
+   "assists": {
+    "n": 23379,
+    "brier": 0.23674,
+    "logloss": 0.67081,
+    "meanNegLogPmf": 1.8655,
+    "directionalAccuracy": 0.6126,
+    "meanPMore": 0.3949,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 455,
+      "meanPredicted": 0.0709,
+      "observedMore": 0.2593
+     },
+     {
+      "bin": 1,
+      "n": 2161,
+      "meanPredicted": 0.1599,
+      "observedMore": 0.2851
+     },
+     {
+      "bin": 2,
+      "n": 4538,
+      "meanPredicted": 0.2523,
+      "observedMore": 0.3171
+     },
+     {
+      "bin": 3,
+      "n": 5322,
+      "meanPredicted": 0.3522,
+      "observedMore": 0.3869
+     },
+     {
+      "bin": 4,
+      "n": 4960,
+      "meanPredicted": 0.4491,
+      "observedMore": 0.4613
+     },
+     {
+      "bin": 5,
+      "n": 3279,
+      "meanPredicted": 0.5457,
+      "observedMore": 0.538
+     },
+     {
+      "bin": 6,
+      "n": 1768,
+      "meanPredicted": 0.6433,
+      "observedMore": 0.5894
+     },
+     {
+      "bin": 7,
+      "n": 732,
+      "meanPredicted": 0.7403,
+      "observedMore": 0.668
+     },
+     {
+      "bin": 8,
+      "n": 138,
+      "meanPredicted": 0.8354,
+      "observedMore": 0.7029
+     },
+     {
+      "bin": 9,
+      "n": 26,
+      "meanPredicted": 0.9271,
+      "observedMore": 0.5769
+     }
+    ]
+   }
+  },
+  "last10Poisson": {
+   "points": {
+    "n": 23379,
+    "brier": 0.2489,
+    "logloss": 0.69468,
+    "meanNegLogPmf": 3.8823,
+    "directionalAccuracy": 0.5627,
+    "meanPMore": 0.5135,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 18,
+      "meanPredicted": 0.0734,
+      "observedMore": 0.1667
+     },
+     {
+      "bin": 1,
+      "n": 243,
+      "meanPredicted": 0.1655,
+      "observedMore": 0.3004
+     },
+     {
+      "bin": 2,
+      "n": 1442,
+      "meanPredicted": 0.263,
+      "observedMore": 0.3315
+     },
+     {
+      "bin": 3,
+      "n": 3746,
+      "meanPredicted": 0.3562,
+      "observedMore": 0.4031
+     },
+     {
+      "bin": 4,
+      "n": 5915,
+      "meanPredicted": 0.4502,
+      "observedMore": 0.4612
+     },
+     {
+      "bin": 5,
+      "n": 5674,
+      "meanPredicted": 0.5461,
+      "observedMore": 0.5
+     },
+     {
+      "bin": 6,
+      "n": 3547,
+      "meanPredicted": 0.6464,
+      "observedMore": 0.5627
+     },
+     {
+      "bin": 7,
+      "n": 1820,
+      "meanPredicted": 0.7454,
+      "observedMore": 0.6088
+     },
+     {
+      "bin": 8,
+      "n": 766,
+      "meanPredicted": 0.8419,
+      "observedMore": 0.6371
+     },
+     {
+      "bin": 9,
+      "n": 208,
+      "meanPredicted": 0.9348,
+      "observedMore": 0.7404
+     }
+    ]
+   },
+   "rebounds": {
+    "n": 23379,
+    "brier": 0.24266,
+    "logloss": 0.67921,
+    "meanNegLogPmf": 2.3273,
+    "directionalAccuracy": 0.5795,
+    "meanPMore": 0.4518,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 14,
+      "meanPredicted": 0.0852,
+      "observedMore": 0.6429
+     },
+     {
+      "bin": 1,
+      "n": 267,
+      "meanPredicted": 0.1733,
+      "observedMore": 0.3558
+     },
+     {
+      "bin": 2,
+      "n": 1939,
+      "meanPredicted": 0.2625,
+      "observedMore": 0.31
+     },
+     {
+      "bin": 3,
+      "n": 5757,
+      "meanPredicted": 0.3553,
+      "observedMore": 0.3811
+     },
+     {
+      "bin": 4,
+      "n": 7401,
+      "meanPredicted": 0.4468,
+      "observedMore": 0.4436
+     },
+     {
+      "bin": 5,
+      "n": 5511,
+      "meanPredicted": 0.5421,
+      "observedMore": 0.5235
+     },
+     {
+      "bin": 6,
+      "n": 1914,
+      "meanPredicted": 0.6427,
+      "observedMore": 0.5773
+     },
+     {
+      "bin": 7,
+      "n": 479,
+      "meanPredicted": 0.7408,
+      "observedMore": 0.618
+     },
+     {
+      "bin": 8,
+      "n": 94,
+      "meanPredicted": 0.8335,
+      "observedMore": 0.6596
+     },
+     {
+      "bin": 9,
+      "n": 3,
+      "meanPredicted": 0.9184,
+      "observedMore": 1
+     }
+    ]
+   },
+   "assists": {
+    "n": 23379,
+    "brier": 0.23921,
+    "logloss": 0.67392,
+    "meanNegLogPmf": 1.8762,
+    "directionalAccuracy": 0.5995,
+    "meanPMore": 0.4086,
+    "reliability": [
+     {
+      "bin": 0,
+      "n": 275,
+      "meanPredicted": 0.0753,
+      "observedMore": 0.3055
+     },
+     {
+      "bin": 1,
+      "n": 996,
+      "meanPredicted": 0.1704,
+      "observedMore": 0.2952
+     },
+     {
+      "bin": 2,
+      "n": 3352,
+      "meanPredicted": 0.2594,
+      "observedMore": 0.3222
+     },
+     {
+      "bin": 3,
+      "n": 6472,
+      "meanPredicted": 0.3511,
+      "observedMore": 0.382
+     },
+     {
+      "bin": 4,
+      "n": 6312,
+      "meanPredicted": 0.4447,
+      "observedMore": 0.4324
+     },
+     {
+      "bin": 5,
+      "n": 4539,
+      "meanPredicted": 0.5415,
+      "observedMore": 0.5246
+     },
+     {
+      "bin": 6,
+      "n": 1151,
+      "meanPredicted": 0.6449,
+      "observedMore": 0.5969
+     },
+     {
+      "bin": 7,
+      "n": 251,
+      "meanPredicted": 0.7446,
+      "observedMore": 0.6972
+     },
+     {
+      "bin": 8,
+      "n": 30,
+      "meanPredicted": 0.8359,
+      "observedMore": 0.8
+     },
+     {
+      "bin": 9,
+      "n": 1,
+      "meanPredicted": 0.9004,
+      "observedMore": 1
+     }
+    ]
+   }
+  }
+ },
+ "selection": {
+  "rule": {
+   "version": "props-select-v1",
+   "minSideProbability": 0.6,
+   "maxSideProbability": 0.8,
+   "maxTieProbability": 0.05
+  },
+  "recorded": {
+   "n": 32600,
+   "hitRate": 0.6452
+  },
+  "qualifyingShare": 0.4648,
+  "byBand": {
+   "0.60-0.65": {
+    "n": 13612,
+    "hitRate": 0.6073
+   },
+   "0.65-0.70": {
+    "n": 9561,
+    "hitRate": 0.6506
+   },
+   "0.70-0.80": {
+    "n": 9427,
+    "hitRate": 0.6946
+   }
+  },
+  "byStat": {
+   "points": {
+    "n": 9803,
+    "hitRate": 0.6283
+   },
+   "rebounds": {
+    "n": 10803,
+    "hitRate": 0.6531
+   },
+   "assists": {
+    "n": 11994,
+    "hitRate": 0.652
+   }
+  },
+  "skipped": {
+   "below_threshold": {
+    "n": 34493,
+    "hitRate": 0.5435
+   },
+   "extreme_disagreement": {
+    "n": 3044,
+    "hitRate": 0.6928
+   },
+   "tie_risk": {
+    "n": 0,
+    "hitRate": null
+   }
+  },
+  "breakEvenTwoPickPower": 0.5774
+ },
+ "monthly": [
+  {
+   "month": "2024-10",
+   "lines": 1113,
+   "modelBrier": 0.2194,
+   "last10Brier": 0.2369,
+   "picks": {
+    "n": 590,
+    "hitRate": 0.6864
+   }
+  },
+  {
+   "month": "2024-11",
+   "lines": 12513,
+   "modelBrier": 0.2361,
+   "last10Brier": 0.2419,
+   "picks": {
+    "n": 6013,
+    "hitRate": 0.6478
+   }
+  },
+  {
+   "month": "2024-12",
+   "lines": 11415,
+   "modelBrier": 0.2384,
+   "last10Brier": 0.2425,
+   "picks": {
+    "n": 5217,
+    "hitRate": 0.649
+   }
+  },
+  {
+   "month": "2025-01",
+   "lines": 13620,
+   "modelBrier": 0.2398,
+   "last10Brier": 0.2421,
+   "picks": {
+    "n": 6263,
+    "hitRate": 0.6455
+   }
+  },
+  {
+   "month": "2025-02",
+   "lines": 10461,
+   "modelBrier": 0.24,
+   "last10Brier": 0.2452,
+   "picks": {
+    "n": 4770,
+    "hitRate": 0.6421
+   }
+  },
+  {
+   "month": "2025-03",
+   "lines": 14637,
+   "modelBrier": 0.238,
+   "last10Brier": 0.246,
+   "picks": {
+    "n": 6769,
+    "hitRate": 0.646
+   }
+  },
+  {
+   "month": "2025-04",
+   "lines": 6378,
+   "modelBrier": 0.2422,
+   "last10Brier": 0.245,
+   "picks": {
+    "n": 2978,
+    "hitRate": 0.6276
+   }
+  }
+ ]
+}

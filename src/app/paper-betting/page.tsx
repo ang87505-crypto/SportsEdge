@@ -22,6 +22,7 @@ export default function Page(){
    <span className="virtual-banner-icon"><NavIcon name="shield" size={18}/></span>
    <div><strong>Virtual money only.</strong> No sportsbook account is connected and nothing on this page can place a real wager. Balances are research records.</div>
   </div>
+  <div className="callout tone-info" style={{marginBottom:12}}><span className="callout-bar" aria-hidden="true"/><div><strong className="callout-title">New: NBA player props</strong><div className="callout-body">A separate daily paper test on PrizePicks and DraftKings Pick6 lines, with its own model, rules and records. <Link href="/paper-betting/props">Open the player-props paper test</Link>.</div></div></div>
   <Suspense fallback={<Loading label="Loading the paper ledger"/>}><Ledger/></Suspense>
  </>;
 }
