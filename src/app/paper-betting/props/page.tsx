@@ -88,8 +88,11 @@ function Automation({v}:{v:PropsView}){
 function receipt(s:Record<string,unknown>){
  const r=s?.receipt as {observations?:number;predictions?:number;picks?:number}|undefined;
  const g=s?.grading as {newResults?:number}|undefined;
+ const box=s?.boxScores as {newRows?:number;games?:number}|undefined;
+ const st=s?.settlement as {settled?:number}|undefined;
  if(r)return `${r.observations??0} lines, ${r.predictions??0} estimates, ${r.picks??0} decisions`;
- if(g)return `${g.newResults??0} results graded`;
+ if(g||box)return [box?`${(box.newRows??0).toLocaleString()} box-score rows saved`:null,g?`${g.newResults??0} lines graded`:null,
+  st?.settled?`${st.settled} entries settled`:null].filter(Boolean).join(', ');
  return typeof s?.reason==='string'?s.reason.replace(/_/g,' '):'—';
 }
 
