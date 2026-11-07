@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'database/staging/alpaca_paper_first_order_v6.sql'
-      - 'database/tests/alpaca_paper_first_order_v6.sql'
+      - 'database/tests/alpaca_paper_first_order_v6*'
       - '.github/workflows/alpaca-owner-one-order-postgres.yml'
 permissions:
   contents: read
@@ -43,3 +43,13 @@ jobs:
           done
       - name: Prove approval uniqueness, stop, CAS, no rearm, RLS
         run: psql -X -v ON_ERROR_STOP=1 -f database/tests/alpaca_paper_first_order_v6.sql
+      - name: Independent adversarial and two-connection race checks on fresh databases
+        run: |
+          for db in sportsedge_one_shot_adversarial sportsedge_one_shot_race; do
+            createdb "$db"
+            for f in database/staging/alpaca_paper_outbox_staging_v1.sql database/staging/alpaca_paper_staging_halt_v2.sql database/staging/alpaca_paper_staging_owner_rpc_v3.sql database/staging/alpaca_paper_manual_preview_v4.sql database/staging/alpaca_paper_stage_draft_review_v5.sql database/staging/alpaca_paper_first_order_v6.sql; do
+              psql -X -q -v ON_ERROR_STOP=1 -d "$db" -f "$f" || exit 1
+            done
+          done
+          psql -X -v ON_ERROR_STOP=1 -d sportsedge_one_shot_adversarial -f database/tests/alpaca_paper_first_order_v6_adversarial.sql
+          PGDATABASE=sportsedge_one_shot_race bash database/tests/alpaca_paper_first_order_v6_race.sh
