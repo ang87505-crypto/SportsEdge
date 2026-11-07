@@ -252,3 +252,29 @@ Firecrawl research index (abstracts), and Firecrawl page reads for the provider
 and platform documentation. Context7 failed to connect, and the Consensus and
 OpenAlex connectors were not available. Seeing the same paper in several search
 tools is not treated as independent confirmation.
+
+## Release and budget v2 (owner-approved 2026-11-07; merge only after a verified real cycle)
+
+Setup verified by the owner on 2026-11-06 (America/Denver):
+
+- `props_v1.sql` is applied on staging (`vfyzbliksooljxrlfadp`), and the secrets are set.
+- Control is RUNNING.
+- [Backfill](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42329922101) saved 3,271 player-game rows; 1 incomplete summary was skipped.
+- The [first collect](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42332792446) listed 13 upcoming events and priced none. Two were within the lock margin and 11 were beyond the horizon, so it did not test DFS coverage.
+
+This release changes:
+
+- `src/lib/props/schedule.ts`: `scheduledRunsEnabled: true`, with the same four UTC slots.
+  - The 22:10 collect is kept as a no-spend fallback. The 24 h credit window is rolling, so a 19:10 run can be refused when the previous day's collect started late. When the day's credits are already used, the 22:10 run exits before any provider call.
+- `src/lib/props/budget.ts` and `database/props/props_budget_v2.sql`: `props-budget-v2`.
+  - 7 credits per rolling 24 h (event list 1 + 2 games x 3).
+  - 200 per 30 days, floor 60, at most 2 games per collect.
+  - About 200 a month alongside the moneyline refresh's 240, within a 500 quota whether or not the keys are shared.
+  - The SQL row takes effect at 2026-11-08 16:00 UTC, so it can be applied before merging without affecting the first verified cycle.
+- Unchanged: model `props-nb-minutes-rate-v1`, selection `props-select-v1`, pause/stop, idempotency, leases, append-only evidence, paper-only flags.
+
+Owner steps:
+
+1. Run `database/props/props_budget_v2.sql` in the staging SQL editor. It is re-runnable and prints the policy rows.
+2. Merge the release PR after the Saturday collect and Sunday settle receipts are verified.
+3. Rollback: set `scheduledRunsEnabled` back to false, or dispatch `pause`/`stop`.

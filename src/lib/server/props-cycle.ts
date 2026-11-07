@@ -12,7 +12,7 @@ import type {PropsOddsClient} from './props-odds-client.ts';
 import {ProviderError} from './props-odds-client.ts';
 import {trimSummary,type EspnClient} from './props-espn-client.ts';
 import {parseEventList,normalizePropEvent,sha256,canonicalJson,type ListedEvent} from '../props/normalize.ts';
-import {chooseEvents,BUDGET_POLICY_V1,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,type BudgetState} from '../props/budget.ts';
+import {chooseEvents,ACTIVE_BUDGET_POLICY,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,type BudgetState} from '../props/budget.ts';
 import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../props/model.ts';
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
@@ -101,7 +101,7 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   if(!d.odds){await finish(d,runId,false,'ODDS_NOT_CONFIGURED',s);return {kind:'collect',outcome:'ODDS_NOT_CONFIGURED',runId,summary:s};}
   const odds=d.odds;
   const state=await budgetState(d);s.budgetBefore=state;
-  if(!canSpend(BUDGET_POLICY_V1,state,EVENTS_LIST_COST+eventOddsWorstCost()).allowed){
+  if(!canSpend(ACTIVE_BUDGET_POLICY,state,EVENTS_LIST_COST+eventOddsWorstCost()).allowed){
    s.reason='budget_exhausted_before_start';await finish(d,runId,true,'BUDGET_EXHAUSTED',s);
    return {kind:'collect',outcome:'BUDGET_EXHAUSTED',runId,summary:s};
   }
@@ -117,7 +117,7 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
    '&received_at=gt.'+q(ago(d.now(),20*3600_000))+'&limit=2000');
   const after=await budgetState(d);
   const plan=chooseEvents({events:listed.events,alreadyCollected:new Set(done.map(r=>r.external_id)),nowIso:d.now(),
-   lockBufferMs:COLLECT_LOCK_MARGIN_MS,horizonMs:COLLECT_HORIZON_MS,policy:BUDGET_POLICY_V1,state:after});
+   lockBufferMs:COLLECT_LOCK_MARGIN_MS,horizonMs:COLLECT_HORIZON_MS,policy:ACTIVE_BUDGET_POLICY,state:after});
   s.plan={chosen:plan.chosen.map(e=>e.id),skipped:plan.skipped};
   const observed:{obs:ObsRow;event:ListedEvent}[]=[];
   const perEvent:Record<string,unknown>[]=[];

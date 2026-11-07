@@ -4,7 +4,7 @@
  * Individual pick accuracy and entry performance are computed separately.
  */
 import type {Platform,Stat} from './contract.ts';
-import {BUDGET_POLICY_V1} from './budget.ts';
+import {ACTIVE_BUDGET_POLICY} from './budget.ts';
 
 export type Raw={
  nowIso:string;
@@ -84,6 +84,6 @@ export function buildView(r:Raw,platform:Platform){
    allLegsHit:settled.filter(e=>e.settlement!.losses===0&&e.settlement!.wins>0).length,payoutUnknown:unknownPayout.length},
   bankroll,account,
   automation:{control:r.control,runs:runs.slice(0,12),lastCollect:lastOk('collect'),lastSettle:lastOk('settle'),lastFailure,
-   budget:{used24h,used30d,daily:BUDGET_POLICY_V1.dailyCredits,monthly:BUDGET_POLICY_V1.monthlyCredits,floor:BUDGET_POLICY_V1.providerFloor,providerRemaining:r.providerRemaining}}};
+   budget:{used24h,used30d,daily:ACTIVE_BUDGET_POLICY.dailyCredits,monthly:ACTIVE_BUDGET_POLICY.monthlyCredits,floor:ACTIVE_BUDGET_POLICY.providerFloor,providerRemaining:r.providerRemaining}}};
 }
 export type PropsView=ReturnType<typeof buildView>;
