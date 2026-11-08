@@ -6,6 +6,7 @@ import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/c
 import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
+import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
 
 type View='checking'|'login'|'unconfigured'|'error'|'ready';
 type Release={paperOnly:true;brokerWritesEnabled:boolean;scheduledRunsEnabled:boolean;realMoneyEnabled:false};
@@ -131,28 +132,29 @@ export function PaperAutoOperations(){
 function Unlock({onDone}:{onDone:()=>void}){
  const [key,setKey]=useState('');const [msg,setMsg]=useState('');const [busy,setBusy]=useState(false);
  const submit=async(e:FormEvent)=>{
-  e.preventDefault();if(busy||!key)return;setBusy(true);setMsg('');
+  e.preventDefault();if(busy)return;
+  const ownerKey=ownerKeyInput(key);
+  if(!ownerKey){setMsg(OWNER_KEY_HINT);return;}
+  setBusy(true);setMsg('');
   try{
    const r=await fetch('/api/internal/alpaca-paper/session',{method:'POST',credentials:'same-origin',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerKey:key})});
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerKey})});
    if(r.ok){setKey('');onDone();}
-   else if(r.status===401)setMsg('That password is not right.');
    else{
-    const reason=((await r.json().catch(()=>null)) as {reason?:string}|null)?.reason;
-    setMsg(reason==='missing'?'Owner sign-in is not set up on this site: the owner key is missing from this deployment.'
-     :reason==='malformed'?'Owner sign-in is not set up on this site: the owner key in Vercel is not 64 characters of 0-9 and a-f.'
-     :'Owner sign-in is not set up on this site.');
+    const data=await r.json().catch(()=>null) as {reason?:unknown}|null;
+    setMsg(ownerSignInError(r.status,data?.reason));
    }
   }catch{setMsg('Could not reach the site. Try again.');}
   finally{setBusy(false);}
  };
- return <Panel title="Owner sign-in" description="The autopilot is private. Enter your owner password to see it and to start or stop it.">
+ return <Panel title="Owner sign-in" description="Use your 64-character SportsEdge owner key to view the private autopilot and its controls.">
   <form className="unlock-form" onSubmit={e=>void submit(e)}>
-   <label><span className="sr-only">Owner password</span>
-    <input type="password" autoComplete="current-password" placeholder="Owner password" value={key}
+   <label><span className="sr-only">SportsEdge owner key</span>
+    <input type="password" autoComplete="off" spellCheck={false} placeholder="64-character owner key" value={key}
      onChange={e=>setKey(e.target.value)}/></label>
    <button type="submit" className="button" disabled={busy||!key}>{busy?'Checking…':'Unlock'}</button>
   </form>
+  <p className="quiet small-print">{OWNER_KEY_HINT} Surrounding spaces are ignored.</p>
   {msg&&<p className="tone-text-negative" role="alert">{msg}</p>}
  </Panel>;
 }

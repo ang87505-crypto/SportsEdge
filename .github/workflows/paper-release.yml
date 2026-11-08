@@ -1,0 +1,88 @@
+name: Independent PAPER release checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/paper-release*'
+      - 'config/paper-auto/release-watch-*.json'
+      - '.github/workflows/paper-release.yml'
+  schedule:
+    - cron: '43 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Check only, or release after all existing real-evidence requirements pass
+        type: choice
+        options: [check, release]
+        default: check
+        required: true
+  pull_request:
+    paths:
+      - 'scripts/paper-release*'
+      - 'config/paper-auto/release-watch-*.json'
+      - '.github/workflows/paper-release.yml'
+permissions:
+  contents: read
+concurrency:
+  group: independent-paper-release
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test scripts/paper-release.test.mjs
+  release:
+    if: >-
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      github.repository == 'ang87505-crypto/SportsEdge' &&
+      (github.event_name == 'schedule' || github.event_name == 'push' || github.actor == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      statuses: read
+      actions: read
+    outputs:
+      terminal: ${{ steps.check.outputs.terminal }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Recheck the releaser before providing any service credentials
+        run: node --experimental-strip-types --test scripts/paper-release.test.mjs
+      - name: Read real receipts and conditionally release only the pinned PAPER PRs
+        id: check
+        env:
+          MODE: ${{ inputs.mode || (github.event_name == 'push' && 'check' || 'release') }}
+          GH_TOKEN: ${{ github.token }}
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
+          SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+        run: node --experimental-strip-types scripts/paper-release.mjs "$MODE"
+  retire:
+    needs: release
+    if: always() && needs.release.outputs.terminal == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+    steps:
+      - name: Stop this one-time watcher after both releases, or when its release window ends
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT repos/ang87505-crypto/SportsEdge/actions/workflows/paper-release.yml/disable

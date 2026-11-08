@@ -42,3 +42,5 @@ jobs:
         run: npm run lint
       - name: Production build
         run: npm run build
+      - name: Owner sign-in HTTP flow (isolated synthetic key, no broker or database)
+        run: node scripts/owner-sign-in-smoke.mjs
