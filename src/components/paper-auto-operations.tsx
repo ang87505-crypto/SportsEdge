@@ -136,7 +136,13 @@ function Unlock({onDone}:{onDone:()=>void}){
    const r=await fetch('/api/internal/alpaca-paper/session',{method:'POST',credentials:'same-origin',
     headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerKey:key})});
    if(r.ok){setKey('');onDone();}
-   else setMsg(r.status===401?'That password is not right.':'Owner sign-in is not set up on this site.');
+   else if(r.status===401)setMsg('That password is not right.');
+   else{
+    const reason=((await r.json().catch(()=>null)) as {reason?:string}|null)?.reason;
+    setMsg(reason==='missing'?'Owner sign-in is not set up on this site: the owner key is missing from this deployment.'
+     :reason==='malformed'?'Owner sign-in is not set up on this site: the owner key in Vercel is not 64 characters of 0-9 and a-f.'
+     :'Owner sign-in is not set up on this site.');
+   }
   }catch{setMsg('Could not reach the site. Try again.');}
   finally{setBusy(false);}
  };
