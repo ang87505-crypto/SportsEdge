@@ -10,6 +10,7 @@ import {propsStore} from './props-store.ts';
 import {runCollect,runSettle} from './props-cycle.ts';
 
 const enabled=process.env.PROPS_PG_TEST==='1';
+const schema=name=>new URL('../../../database/props/'+name,import.meta.url).pathname;
 const DB='props_it';
 let clock='2026-11-05T12:00:00.000Z';
 const now=()=>clock;
@@ -47,13 +48,17 @@ const odds={
   const book=(key,shift)=>({key,markets:[['player_points',2],['player_rebounds',3],['player_assists',4]].map(([m,idx])=>({key:m,last_update:clock,
    outcomes:[...PLAYERS[h],...PLAYERS[a]].flatMap(pl=>{const line=Math.max(0.5,Math.floor(pl[idx]*0.8)+0.5+shift);
     return [{name:'Over',description:pl[1],price:-137,point:line,...(key==='pick6'?{multiplier:1}:{})},{name:'Under',description:pl[1],price:-137,point:line}];})}))});
-  return {ok:true,httpStatus:200,body:{...e,bookmakers:[book('prizepicks',0),book('pick6',1)]},receivedAt:clock,usage:{remaining:400-oddsCalls*3,used:100+oddsCalls*3,last:3}};},
+  const sportsbook=(key,shift,over,under)=>({key,markets:[['player_points',2],['player_rebounds',3],['player_assists',4]].map(([m,idx])=>({key:m,last_update:clock,
+   outcomes:[...PLAYERS[h],...PLAYERS[a]].flatMap(pl=>{const line=Math.max(0.5,Math.floor(pl[idx]*0.8)+0.5+shift);
+    return [{name:'Over',description:pl[1],price:over,point:line},{name:'Under',description:pl[1],price:under,point:line}];})}))});
+  return {ok:true,httpStatus:200,body:{...e,bookmakers:[book('prizepicks',0),book('pick6',1),sportsbook('draftkings',0,-150,130),sportsbook('fanduel',1,-110,-110)]},
+   receivedAt:clock,usage:{remaining:400-oddsCalls*3,used:100+oddsCalls*3,last:3}};},
 };
 
 test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
  const dir=mkdtempSync(join(tmpdir(),'props-it-'));
  const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
- resetDb(DB,[new URL('../../../database/props/props_v1.sql',import.meta.url).pathname,clockFile]);
+ resetDb(DB,[schema('props_v1.sql'),schema('props_market_v1.sql'),clockFile]);
  const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
  const store=propsStore(env,pgFetch(DB,now));
  const deps={store,odds,espn,model,now,worker:'test:1',seasonStart:'2026-10-01T00:00:00Z'};
@@ -78,6 +83,13 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  assert.equal(c.summary.receipt.observations,48);               // 8 players x 3 stats x 2 platforms
  assert.equal(c.summary.receipt.predictions,48);
  assert.equal(c.summary.predictions.scored,48,JSON.stringify(c.summary.predictions));
+ // Sportsbook reference quotes ride in the same reply: no extra credits, and no platform line is lost.
+ assert.deepEqual(c.summary.bookQuotes,{inserted:48,byBook:{draftkings:24,fanduel:24,betmgm:0,williamhill_us:0}}); // 2 games x 4 players x 3 stats per book
+ assert.equal(psql(DB,'SELECT count(*) FROM props_book_quotes').out,'48');
+ assert.equal(psql(DB,'SELECT count(*) FROM props_market_views').out,'48');
+ assert.equal(c.summary.marketViews.withBooks,48);
+ assert.equal(psql(DB,`SELECT count(*) FROM props_market_views WHERE books_at_same_line>0 AND p_more_books IS NOT NULL`).out,'48');
+ assert.equal(psql(DB,`SELECT sum(credits) FROM props_credit_reservations WHERE run_id=${c.runId}`).out,'7');
  const pp=c.summary.entries.prizepicks,p6=c.summary.entries.pick6;
  assert.ok(pp.entries.length>=1&&p6.entries.length>=1,JSON.stringify(c.summary.entries));
  const legs=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT e.id,count(DISTINCT o.provider_event_id) g,count(*) n FROM props_entries e
@@ -123,4 +135,25 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  const next=await runCollect(deps,'collect-2026-11-08T15',null);
  assert.equal(next.summary.abandonedRecovered,1);
  assert.equal(psql(DB,`SELECT status FROM props_runs WHERE slot_key='collect-zombie'`).out,'abandoned');
+});
+
+test('collect still records lines and picks when the market tables are not migrated yet',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const db='props_it_nomarket';
+ const dir=mkdtempSync(join(tmpdir(),'props-it-'));
+ const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+ resetDb(db,[schema('props_v1.sql'),clockFile]);
+ const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+ clock='2026-11-05T12:00:00.000Z';
+ const store=propsStore(env,pgFetch(db,now));
+ const deps={store,odds,espn,model,now,worker:'test:2',seasonStart:'2026-10-01T00:00:00Z'};
+ await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'integration test',p_actor:'owner-test'});
+ for(const day of [1,2,3,4])finals['202611'+String(day).padStart(2,'0')]=day;
+ assert.equal((await runSettle(deps,'backfill-test',null,{kind:'backfill',dates:['2026-11-01','2026-11-02','2026-11-03','2026-11-04']})).outcome,'COMPLETED');
+ clock='2026-11-07T19:00:00.000Z';
+ const c=await runCollect(deps,'collect-2026-11-07T19',null);
+ assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+ assert.equal(c.summary.receipt.observations,48);
+ assert.equal(c.summary.receipt.predictions,48);
+ assert.match(c.summary.bookQuotes.error,/^[A-Z0-9_]+$/);
+ assert.match(c.summary.marketViews.error,/^[A-Z0-9_]+$/);
 });

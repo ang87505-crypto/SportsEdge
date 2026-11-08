@@ -1,7 +1,8 @@
 /**
  * Daily NBA player-prop PAPER cycle (worker side). Two run kinds:
- *  collect: events -> choose (budget) -> event odds (us_dfs: prizepicks, pick6) -> validate
- *           -> predict (frozen model) -> record pick/skip -> virtual entries, all before lock.
+ *  collect: events -> choose (budget) -> event odds (prizepicks, pick6 + sportsbook references) -> validate
+ *           -> predict (frozen model) -> record pick/skip -> market views -> virtual entries, all before lock.
+ *           Sportsbook quotes and market views are best-effort: a failure there never loses a line or pick.
  *  settle:  ESPN scoreboard/summary -> box scores (append revisions) -> link events
  *           -> grade lines -> settle entries (PrizePicks captured table; Pick6 unknown).
  * Every provider request is reserved first and never retried. A successful exit is
@@ -11,13 +12,14 @@ import {PropsStoreError,type PropsStore} from './props-store.ts';
 import type {PropsOddsClient} from './props-odds-client.ts';
 import {ProviderError} from './props-odds-client.ts';
 import {trimSummary,type EspnClient} from './props-espn-client.ts';
-import {parseEventList,normalizePropEvent,sha256,canonicalJson,type ListedEvent} from '../props/normalize.ts';
+import {parseEventList,normalizePropEvent,normalizeBookQuotes,sha256,canonicalJson,type ListedEvent,type BookQuote} from '../props/normalize.ts';
+import {marketView} from '../props/market.ts';
 import {chooseEvents,ACTIVE_BUDGET_POLICY,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,type BudgetState} from '../props/budget.ts';
 import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../props/model.ts';
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
 import {gradeLine,decidePick,buildEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
-import {MODEL_VERSION,SELECTION_VERSION,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,type Platform,type Stat} from '../props/contract.ts';
+import {MODEL_VERSION,SELECTION_VERSION,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,SPORTSBOOKS,type Platform,type Stat} from '../props/contract.ts';
 
 export type ModelArtifact={modelVersion:string;params:ModelParams;
  players:Record<string,{name:string;lastTeam:string;games:number;minutes:number;points:number;rebounds:number;assists:number}>};
@@ -121,6 +123,8 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   s.plan={chosen:plan.chosen.map(e=>e.id),skipped:plan.skipped};
   const observed:{obs:ObsRow;event:ListedEvent}[]=[];
   const perEvent:Record<string,unknown>[]=[];
+  const quotes:BookQuote[]=[];
+  const bookQuotes:{inserted:number;byBook:Record<string,number>;error?:string}={inserted:0,byBook:Object.fromEntries(SPORTSBOOKS.map(b=>[b,0]))};
   for(const e of plan.chosen){
    await heartbeat(d,runId);
    const r=await paidCall(d,runId,'event_odds',e.id,eventOddsWorstCost(),()=>odds.eventOdds(e.id));
@@ -136,14 +140,27 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
    const inserted=await d.store.insert<ObsRow>('props_observations',rows,
     {onConflict:'platform,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true,select:OBS_COLS});
    inserted.forEach(o=>observed.push({obs:o,event:e}));
+   if(!bookQuotes.error)try{
+    const bq=normalizeBookQuotes(r.reply.body,e,r.reply.receivedAt);
+    const qrows=bq.quotes.map(x=>({run_id:runId,raw_response_id:r.rawId,bookmaker_key:x.bookmakerKey,provider_event_id:x.providerEventId,
+     player_name:x.playerName,stat:x.stat,market_key:x.marketKey,line:x.line,over_price:x.overPrice,under_price:x.underPrice,
+     provider_last_update:x.providerLastUpdate,ingested_at:x.ingestedAt,lock_at:x.lockAt,response_sha256:x.responseSha256}));
+    for(const part of chunk(qrows,200))await d.store.insert('props_book_quotes',part,
+     {onConflict:'bookmaker_key,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true});
+    quotes.push(...bq.quotes);bookQuotes.inserted+=qrows.length;
+    for(const x of bq.quotes)bookQuotes.byBook[x.bookmakerKey]++;
+   }catch(err){bookQuotes.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
    // Keyed platform:reason so one-sided or special lines can be traced to the platform that published them.
    const reasons:Record<string,number>={};for(const x of norm.rejected){const k=(x.platform??'unknown')+':'+x.reason;reasons[k]=(reasons[k]??0)+1;}
    perEvent.push({event:e.id,outcome:'stored',accepted:norm.observations.length,inserted:inserted.length,rejected:reasons,
     usage:r.reply.usage,byPlatform:Object.fromEntries(PLATFORMS.map(p=>[p,norm.observations.filter(o=>o.platform===p).length]))});
   }
   s.collection=perEvent;
+  s.bookQuotes=bookQuotes;
   await heartbeat(d,runId);
-  s.predictions=await predictAndPick(d,runId,observed);
+  const picked=await predictAndPick(d,runId,observed);
+  s.predictions=picked.out;
+  s.marketViews=await recordMarketViews(d,runId,observed,quotes,picked.sideByObs);
   s.entries=await recordEntries(d,runId);
   // Read back what was durably recorded in this run (the receipt, not the exit code).
   const [o,p,k]=await Promise.all(['props_observations','props_predictions','props_picks'].map(t=>
@@ -162,9 +179,27 @@ type ObsRow={id:number;platform:Platform;provider_event_id:string;home_team:stri
  player_name:string;stat:Stat;line:number;ingested_at:string};
 const OBS_COLS='id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,ingested_at';
 
+/** One market view per new observation, against this run's sportsbook quotes. Best-effort. */
+async function recordMarketViews(d:CycleDeps,runId:number,observed:{obs:ObsRow}[],quotes:BookQuote[],
+ sideByObs:Map<number,'more'|'less'>):Promise<{withBooks:number;without:number;flags:Record<string,number>;error?:string}>{
+ const out:{withBooks:number;without:number;flags:Record<string,number>;error?:string}={withBooks:0,without:0,flags:{}};
+ const rows=observed.map(({obs})=>{
+  const v=marketView({providerEventId:obs.provider_event_id,playerName:obs.player_name,stat:obs.stat,line:Number(obs.line)},
+   quotes,sideByObs.get(obs.id)??null);
+  if(v.booksAtSameLine)out.withBooks++;else out.without++;
+  for(const f of v.flags)out.flags[f]=(out.flags[f]??0)+1;
+  return {observation_id:obs.id,run_id:runId,books_at_same_line:v.booksAtSameLine,p_more_books:v.pMoreBooks,
+   nearest_book_line:v.nearestBookLine,line_gap:v.lineGap,flags:v.flags};
+ });
+ try{for(const part of chunk(rows,200))await d.store.insert('props_market_views',part,{onConflict:'observation_id',ignoreDuplicates:true});}
+ catch(err){out.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
+ return out;
+}
+
 async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[]){
  const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>};
- if(!observed.length)return out;
+ const sideByObs=new Map<number,'more'|'less'>();
+ if(!observed.length)return {out,sideByObs};
  const teams=[...new Set(observed.flatMap(x=>[teamAbbr(x.event.homeTeam),teamAbbr(x.event.awayTeam)]).filter((t):t is string=>!!t))];
  const roster=teams.length?latest(await d.store.select<PG>('props_player_games','select='+PG_COLS+'&team_abbr='+inList(teams)+
   '&game_start=gte.'+q(d.seasonStart)+'&order=game_start.asc&limit=10000')):[];
@@ -203,10 +238,10 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
   {onConflict:'observation_id,model_version',ignoreDuplicates:true,select:'id,observation_id,status,p_more,p_less,p_tie'}));
  const pickRows=preds.map(p=>{const dec=decidePick({status:p.status,pMore:p.p_more===null?null:Number(p.p_more),
   pLess:p.p_less===null?null:Number(p.p_less),pTie:p.p_tie===null?null:Number(p.p_tie)});
-  if(dec.status==='recorded')out.recorded++;else out.skipped[dec.reason]=(out.skipped[dec.reason]??0)+1;
+  if(dec.status==='recorded'){out.recorded++;sideByObs.set(p.observation_id,dec.side);}else out.skipped[dec.reason]=(out.skipped[dec.reason]??0)+1;
   return {prediction_id:p.id,run_id:runId,selection_version:SELECTION_VERSION,status:dec.status,side:dec.side,reason:dec.reason};});
  for(const part of chunk(pickRows,200))await d.store.insert('props_picks',part,{onConflict:'prediction_id,selection_version',ignoreDuplicates:true});
- return out;
+ return {out,sideByObs};
 }
 
 async function recordEntries(d:CycleDeps,runId:number){
