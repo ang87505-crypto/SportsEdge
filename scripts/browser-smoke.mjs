@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/automation','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props-research','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));

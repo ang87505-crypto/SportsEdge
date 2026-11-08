@@ -1,0 +1,472 @@
+{
+  "protocolId": "props-calibration-study-20261108-v1",
+  "generatedBy": "scripts/props-calibration-study.ts",
+  "design": "Proxy thresholds, not archived DFS lines. The baseline's aggregate results on this season have already been inspected. This is retrospective confirmation, not a new untouched holdout or profit test.",
+  "sourceHashes": {
+    "prior": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+    "season": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+  },
+  "chronologyChecks": 15894,
+  "fitThrough": "2025-12-31",
+  "params": {
+    "version": "props-nb-minutes-rate-v1",
+    "minMinutesForRate": 6,
+    "minCurrentGames": 3,
+    "maxGapDays": 21,
+    "minutesHalfLife": 4,
+    "rateHalfLife": 8,
+    "maxGames": 20,
+    "priorStrengthMinutes": 120,
+    "priorMinMinutes": 300,
+    "maxMinutes": 53,
+    "leagueRate": {
+      "points": 0.471442,
+      "rebounds": 0.182739,
+      "assists": 0.109956
+    },
+    "dispersion": {
+      "points": 8.5613,
+      "rebounds": 24.6497,
+      "assists": 23.1022
+    }
+  },
+  "calibration": {
+    "points": {
+      "n": 4809,
+      "grid": [
+        {
+          "temperature": 1,
+          "logLoss": 0.7053568269829591
+        },
+        {
+          "temperature": 1.25,
+          "logLoss": 0.6932540471856656
+        },
+        {
+          "temperature": 1.5,
+          "logLoss": 0.687429610243641
+        },
+        {
+          "temperature": 2,
+          "logLoss": 0.6830363662516366
+        },
+        {
+          "temperature": 3,
+          "logLoss": 0.6822596456216468
+        }
+      ],
+      "selected": 3
+    },
+    "rebounds": {
+      "n": 4809,
+      "grid": [
+        {
+          "temperature": 1,
+          "logLoss": 0.6717841429869211
+        },
+        {
+          "temperature": 1.25,
+          "logLoss": 0.6694822108028468
+        },
+        {
+          "temperature": 1.5,
+          "logLoss": 0.6696482132234476
+        },
+        {
+          "temperature": 2,
+          "logLoss": 0.6718880918710021
+        },
+        {
+          "temperature": 3,
+          "logLoss": 0.676494769428445
+        }
+      ],
+      "selected": 1.25
+    },
+    "assists": {
+      "n": 4809,
+      "grid": [
+        {
+          "temperature": 1,
+          "logLoss": 0.6550378636550632
+        },
+        {
+          "temperature": 1.25,
+          "logLoss": 0.655117444502108
+        },
+        {
+          "temperature": 1.5,
+          "logLoss": 0.6571183066611936
+        },
+        {
+          "temperature": 2,
+          "logLoss": 0.6619510748605424
+        },
+        {
+          "temperature": 3,
+          "logLoss": 0.6695015094068592
+        }
+      ],
+      "selected": 1
+    }
+  },
+  "confirmation": {
+    "from": "2026-02-01",
+    "through": "2026-04-13",
+    "games": 506,
+    "dates": 65,
+    "baseline": {
+      "n": 30789,
+      "directional": 30789,
+      "correct": 18255,
+      "hitRate": 0.5929065575367826,
+      "brier": 0.2388955312416098,
+      "logLoss": 0.6732202057487124,
+      "decisions": 14856,
+      "decisionsCorrect": 9501,
+      "decisionHitRate": 0.6395395799676898,
+      "reliability": [
+        {
+          "from": 0.5,
+          "n": 14599,
+          "meanConfidence": 0.5485560841564471,
+          "hitRate": 0.5348311528186862
+        },
+        {
+          "from": 0.6,
+          "n": 10533,
+          "meanConfidence": 0.6449661640180414,
+          "hitRate": 0.6200512674451724
+        },
+        {
+          "from": 0.7,
+          "n": 4323,
+          "meanConfidence": 0.7411792967210266,
+          "hitRate": 0.6870229007633588
+        },
+        {
+          "from": 0.8,
+          "n": 1007,
+          "meanConfidence": 0.835584317262165,
+          "hitRate": 0.7140019860973188
+        },
+        {
+          "from": 0.9,
+          "n": 327,
+          "meanConfidence": 0.9363431976024456,
+          "hitRate": 0.6941896024464832
+        }
+      ]
+    },
+    "candidate": {
+      "n": 30789,
+      "directional": 30789,
+      "correct": 18255,
+      "hitRate": 0.5929065575367826,
+      "brier": 0.23750490256276727,
+      "logLoss": 0.6676565273208934,
+      "decisions": 10353,
+      "decisionsCorrect": 6781,
+      "decisionHitRate": 0.6549792330725394,
+      "reliability": [
+        {
+          "from": 0.5,
+          "n": 20006,
+          "meanConfidence": 0.5422182651111154,
+          "hitRate": 0.5567829651104669
+        },
+        {
+          "from": 0.6,
+          "n": 7718,
+          "meanConfidence": 0.6422076380975753,
+          "hitRate": 0.6383778180875874
+        },
+        {
+          "from": 0.7,
+          "n": 2635,
+          "meanConfidence": 0.738214893856617,
+          "hitRate": 0.7036053130929791
+        },
+        {
+          "from": 0.8,
+          "n": 409,
+          "meanConfidence": 0.8290785777603129,
+          "hitRate": 0.7726161369193154
+        },
+        {
+          "from": 0.9,
+          "n": 21,
+          "meanConfidence": 0.9250532248718196,
+          "hitRate": 0.9047619047619048
+        }
+      ]
+    },
+    "byStat": {
+      "points": {
+        "baseline": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 5901,
+          "hitRate": 0.5749780765857936,
+          "brier": 0.24651948956595446,
+          "logLoss": 0.6939589718460721,
+          "decisions": 4700,
+          "decisionsCorrect": 2897,
+          "decisionHitRate": 0.6163829787234043,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 4837,
+              "meanConfidence": 0.5486493326433726,
+              "hitRate": 0.5211908207566673
+            },
+            {
+              "from": 0.6,
+              "n": 3382,
+              "meanConfidence": 0.6441566276138385,
+              "hitRate": 0.6067415730337079
+            },
+            {
+              "from": 0.7,
+              "n": 1318,
+              "meanConfidence": 0.7428846567701071,
+              "hitRate": 0.641122913505311
+            },
+            {
+              "from": 0.8,
+              "n": 441,
+              "meanConfidence": 0.8411209002154191,
+              "hitRate": 0.6666666666666666
+            },
+            {
+              "from": 0.9,
+              "n": 285,
+              "meanConfidence": 0.9381802910982451,
+              "hitRate": 0.6631578947368421
+            }
+          ]
+        },
+        "candidate": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 5901,
+          "hitRate": 0.5749780765857936,
+          "brier": 0.24274680852994918,
+          "logLoss": 0.6785582770767427,
+          "decisions": 996,
+          "decisionsCorrect": 648,
+          "decisionHitRate": 0.6506024096385542,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 9266,
+              "meanConfidence": 0.5359583178970619,
+              "hitRate": 0.5668033671487157
+            },
+            {
+              "from": 0.6,
+              "n": 797,
+              "meanConfidence": 0.6319473969117343,
+              "hitRate": 0.6549560853199499
+            },
+            {
+              "from": 0.7,
+              "n": 199,
+              "meanConfidence": 0.7260828745305326,
+              "hitRate": 0.6331658291457286
+            },
+            {
+              "from": 0.8,
+              "n": 1,
+              "meanConfidence": 0.8059597517187594,
+              "hitRate": 1
+            }
+          ]
+        }
+      },
+      "rebounds": {
+        "baseline": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 6110,
+          "hitRate": 0.5953424924486018,
+          "brier": 0.23669617153824826,
+          "logLoss": 0.666487179948316,
+          "decisions": 4666,
+          "decisionsCorrect": 3063,
+          "decisionHitRate": 0.6564509215602229,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 5316,
+              "meanConfidence": 0.5477708317509408,
+              "hitRate": 0.5348006019563581
+            },
+            {
+              "from": 0.6,
+              "n": 3395,
+              "meanConfidence": 0.6451550994032402,
+              "hitRate": 0.6382916053019145
+            },
+            {
+              "from": 0.7,
+              "n": 1271,
+              "meanConfidence": 0.739477961077104,
+              "hitRate": 0.7049567269866247
+            },
+            {
+              "from": 0.8,
+              "n": 252,
+              "meanConfidence": 0.8356883443928583,
+              "hitRate": 0.7023809523809523
+            },
+            {
+              "from": 0.9,
+              "n": 29,
+              "meanConfidence": 0.9282708428275863,
+              "hitRate": 0.9310344827586207
+            }
+          ]
+        },
+        "candidate": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 6110,
+          "hitRate": 0.5953424924486018,
+          "brier": 0.2362969665377209,
+          "logLoss": 0.6651968394341837,
+          "decisions": 3867,
+          "decisionsCorrect": 2592,
+          "decisionHitRate": 0.6702870442203258,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 6294,
+              "meanConfidence": 0.546365606794214,
+              "hitRate": 0.5470289164283445
+            },
+            {
+              "from": 0.6,
+              "n": 3165,
+              "meanConfidence": 0.6408553386920811,
+              "hitRate": 0.6612954186413902
+            },
+            {
+              "from": 0.7,
+              "n": 702,
+              "meanConfidence": 0.7344531619766468,
+              "hitRate": 0.7108262108262108
+            },
+            {
+              "from": 0.8,
+              "n": 94,
+              "meanConfidence": 0.8338462856515895,
+              "hitRate": 0.7127659574468085
+            },
+            {
+              "from": 0.9,
+              "n": 8,
+              "meanConfidence": 0.9428911889135259,
+              "hitRate": 1
+            }
+          ]
+        }
+      },
+      "assists": {
+        "baseline": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 6244,
+          "hitRate": 0.6083991035759525,
+          "brier": 0.23347093262062799,
+          "logLoss": 0.6592144654517441,
+          "decisions": 5490,
+          "decisionsCorrect": 3541,
+          "decisionHitRate": 0.6449908925318761,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 4446,
+              "meanConfidence": 0.5493935467872231,
+              "hitRate": 0.5497076023391813
+            },
+            {
+              "from": 0.6,
+              "n": 3756,
+              "meanConfidence": 0.645524315372205,
+              "hitRate": 0.6155484558040468
+            },
+            {
+              "from": 0.7,
+              "n": 1734,
+              "meanConfidence": 0.7411301231678191,
+              "hitRate": 0.7087658592848904
+            },
+            {
+              "from": 0.8,
+              "n": 314,
+              "meanConfidence": 0.8277249289840761,
+              "hitRate": 0.7898089171974523
+            },
+            {
+              "from": 0.9,
+              "n": 13,
+              "meanConfidence": 0.9140760162307693,
+              "hitRate": 0.8461538461538461
+            }
+          ]
+        },
+        "candidate": {
+          "n": 10263,
+          "directional": 10263,
+          "correct": 6244,
+          "hitRate": 0.6083991035759525,
+          "brier": 0.23347093262062799,
+          "logLoss": 0.6592144654517441,
+          "decisions": 5490,
+          "decisionsCorrect": 3541,
+          "decisionHitRate": 0.6449908925318761,
+          "reliability": [
+            {
+              "from": 0.5,
+              "n": 4446,
+              "meanConfidence": 0.5493935467872231,
+              "hitRate": 0.5497076023391813
+            },
+            {
+              "from": 0.6,
+              "n": 3756,
+              "meanConfidence": 0.645524315372205,
+              "hitRate": 0.6155484558040468
+            },
+            {
+              "from": 0.7,
+              "n": 1734,
+              "meanConfidence": 0.7411301231678191,
+              "hitRate": 0.7087658592848904
+            },
+            {
+              "from": 0.8,
+              "n": 314,
+              "meanConfidence": 0.8277249289840761,
+              "hitRate": 0.7898089171974523
+            },
+            {
+              "from": 0.9,
+              "n": 13,
+              "meanConfidence": 0.9140760162307693,
+              "hitRate": 0.8461538461538461
+            }
+          ]
+        }
+      }
+    },
+    "pairedBrierInterval": {
+      "lower95": -0.0020737058308910993,
+      "upper95": -0.0006819886607373313,
+      "games": 506
+    }
+  },
+  "promotionEnabled": false,
+  "profitabilityDemonstrated": false
+}
