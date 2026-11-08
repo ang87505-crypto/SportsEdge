@@ -121,11 +121,12 @@ export async function handlePaperAutoPost(req:OwnerRequest,env:Env,make:StoreFac
  if(!action)return json({status:'invalid_request'},400);
  if(action.action==='start'){
   // Start only arms a stopped or paused experiment; the workflow's database resume does the arming.
-  let gateMode:string|undefined;
-  try{gateMode=parseStatus(await db.call('status',{experiment_id:action.experimentId}))?.gateMode;}
+  let current;
+  try{current=parseStatus(await db.call('status',{experiment_id:action.experimentId}));}
   catch(e){return json({status:'outcome_unknown',action:'start',code:storeCode(e),retrySafe:true},503);}
-  if(gateMode==='ARMED')return json({status:'refused',action:'start',code:'ALREADY_RUNNING'},409);
-  const r=await dispatch(action.experimentId,env);
+  if(!current)return json({status:'refused',action:'start',code:'STATUS_UNVERIFIABLE'},409);
+  if(current.gateMode==='ARMED')return json({status:'refused',action:'start',code:'ALREADY_RUNNING'},409);
+  const r=await dispatch(action.experimentId,env,current.gateVersion);
   if(r.result==='dispatched')return json({status:'started',action:'start'},202);
   if(r.result==='not_configured')return json({status:'start_not_configured',action:'start'},503);
   return json({status:r.result==='refused'?'refused':'outcome_unknown',action:'start',code:r.code},

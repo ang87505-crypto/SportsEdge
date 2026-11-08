@@ -9,6 +9,7 @@ import {createDatabase,dropDatabase,psqlStore,fakeClock,FakeBroker,e2eDatabaseAv
 import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,registerExperiment,proceedsCents,
  confirmIntentAbsent,parseRegistrationConfig} from './paper-auto-controller.ts';
 import {quarterHourSlot} from './paper-auto-time.ts';
+import {resumeAfterOwnerCheck} from './paper-auto-resume.ts';
 import {parseLedger,resumeCandidate} from '../stocks/paper-auto-ledger.ts';
 import {forwardPerformance} from '../stocks/paper-auto-performance.ts';
 import {spawnSync} from 'node:child_process';
@@ -89,6 +90,24 @@ async function armedWithDecision(opts={},limits={}){
  return w;
 }
 const positions=(w)=>Object.fromEntries([...w.broker.positionsBySymbol].filter(([,q])=>q));
+
+e2e('queued or in-progress owner Start cannot undo a later STOP (real schema)',async()=>{
+ for(const timing of ['queued','checking']){
+  const w=world();await register(w);
+  const expected=(await status(w)).gateVersion;
+  const stop=()=>w.store.call('stop',{experiment_id:w.experimentId,reason:'OWNER_STOP',actor:OWNER});
+  w.clock.advance(60_000);
+  if(timing==='queued')await stop();
+  else{
+   const account=w.broker.account.bind(w.broker);
+   w.broker.account=async()=>{await stop();return account();};
+  }
+  await assert.rejects(resumeAfterOwnerCheck(w.deps,w.experimentId,OWNER,expected),
+   e=>e.code==='PAPER_AUTO_RESUME_STALE_VERSION');
+  assert.equal((await status(w)).gateMode,'STOPPED',timing);
+  assert.equal(w.broker.posts.length,0);
+ }
+});
 
 e2e('happy path: one decision, three limit BUYs, idempotent slots, HOLD, and an after-close mark',async()=>{
  const w=world();

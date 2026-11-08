@@ -20,6 +20,7 @@ import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,regist
  parseRegistrationConfig,type ControllerDeps,type DecisionInput,type SlotResult} from '../src/lib/server/paper-auto-controller.ts';
 import {PaperAutoStoreError} from '../src/lib/server/paper-auto-store.ts';
 import {nyDate,quarterHourSlot} from '../src/lib/server/paper-auto-time.ts';
+import {resumeAfterOwnerCheck} from '../src/lib/server/paper-auto-resume.ts';
 
 function emit(v:Record<string,unknown>,code:number):never{
  process.stdout.write(JSON.stringify(v)+'\n');
@@ -76,14 +77,11 @@ try{
   // Owner one-click arm: reconcile and resume in one job, so the database's 15-minute freshness
   // window cannot lapse between them. The database still refuses unless the reconcile is clean,
   // newer than the last gate change, for this account, and nothing is unresolved or alerting.
-  const rec=await runReconcileSlot(deps,experimentId,quarterHourSlot(Date.now()));
-  const runId=rec.reason==='CLEAN'?rec.runId:null;
-  // A reconcile already run in this quarter-hour is SKIPPED here: retry in the next quarter-hour.
-  if(!runId)emit({status:'RECONCILE_NOT_CLEAN',experimentId,outcome:rec.outcome,reason:rec.reason},1);
-  const before=await deps.store.call('status',{experiment_id:experimentId});
-  const after=await deps.store.call('resume',{experiment_id:experimentId,owner_ref:ownerRef,
-   expected_gate_version:before.gateVersion,reconcile_run_id:runId});
-  emit({status:'RESUMED',experimentId,state:after.state,gateMode:after.gateMode,reconcileRunId:runId},0);
+  const input=arg('expected-gate-version');
+  if(input!==undefined&&(!/^[1-9]\d{0,15}$/.test(input)||!Number.isSafeInteger(Number(input))))
+   emit({status:'INVALID_GATE_VERSION',experimentId},2);
+  const resumed=await resumeAfterOwnerCheck(deps,experimentId,ownerRef,input===undefined?undefined:Number(input));
+  emit({...resumed,experimentId},resumed.status==='RESUMED'?0:1);
  }
  else if(kind==='confirm-absent'){
   const intentId=arg('intent')??'';

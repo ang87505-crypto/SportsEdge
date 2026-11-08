@@ -442,3 +442,23 @@
   text-decoration: none; white-space: nowrap; }
 .autopilot-pill:hover { border-color: var(--accent); }
 @media (max-width: 760px) { .autopilot-pill { display: none; } }
+
+/* Shared paper automation overview. */
+.automation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; margin-top: 16px; }
+.automation-grid > * { min-width: 0; margin-top: 0 !important; }
+.automation-card-body { display: grid; gap: 18px; }
+.automation-state { display: grid; gap: 8px; justify-items: start; }
+.automation-state p { margin: 0; color: var(--text-2); }
+.automation-next-action { display: grid; gap: 5px; padding: 14px; background: var(--accent-soft); border-left: 2px solid var(--accent); border-radius: var(--r-sm); }
+.automation-next-action > span { font-size: var(--fs-sm); color: var(--text-2); }
+.automation-next-action strong { font-size: var(--fs-md); font-weight: 500; }
+.automation-facts { margin: 0; display: grid; }
+.automation-facts > div { display: grid; grid-template-columns: minmax(100px, .9fr) minmax(0, 1.3fr); gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+.automation-facts dt { color: var(--text-3); }
+.automation-facts dd { margin: 0; overflow-wrap: anywhere; }
+.automation-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.automation-guide h3 { margin: 0 0 8px; font-size: var(--fs-lg); }
+.automation-guide p { margin: 0; color: var(--text-2); }
+.autopilot-release-note { margin: 0; color: var(--text-2); }
+@media (max-width: 1000px) { .automation-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .automation-guide { grid-template-columns: 1fr; gap: 18px; } }

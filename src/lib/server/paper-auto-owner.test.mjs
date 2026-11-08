@@ -127,11 +127,11 @@ test('database refusals and unknown outcomes are reported, never retried by the 
 
 test('Start dispatches the owner resume workflow only while stopped, and never touches the gate itself',async()=>{
  const body=JSON.stringify({action:'start',experimentId:'fwd-2026-baseline'});
- const sent=[];const ok=async(id)=>{sent.push(id);return {result:'dispatched'};};
+ const sent=[];const ok=async(id,_env,version)=>{sent.push({id,version});return {result:'dispatched'};};
  const s=fakeStore();
  const r=await handlePaperAutoPost(req({body}),ENV,s.make,ok);
  assert.equal(r.status,202);assert.equal((await r.json()).status,'started');
- assert.deepEqual(sent,['fwd-2026-baseline']);
+ assert.deepEqual(sent,[{id:'fwd-2026-baseline',version:STATUS.gateVersion}]);
  assert.deepEqual(s.calls.map(c=>c.fn),['status'],'only a status read; the workflow\'s database resume arms');
  // Already running: refused before any dispatch.
  const armed=fakeStore(()=>({...STATUS,gateMode:'ARMED',state:'READY'}));
@@ -153,23 +153,23 @@ test('Start dispatches the owner resume workflow only while stopped, and never t
 test('the Start dispatcher sends one fixed workflow_dispatch to this repository only',async()=>{
  const TOKEN='github_pat_'+'A1'.repeat(20);
  assert.equal(startConfigured({}),false);assert.equal(startConfigured({SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN}),true);
- assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{}),{result:'not_configured'});
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{},2),{result:'not_configured'});
  const calls=[];
  const fetcher=async(url,init)=>{calls.push({url,init});return new Response(null,{status:204});};
- assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},fetcher),
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},2,fetcher),
   {result:'dispatched'});
  assert.equal(calls.length,1);
  assert.equal(calls[0].url,'https://api.github.com/repos/ang87505-crypto/SportsEdge/actions/workflows/paper-auto-owner.yml/dispatches');
  assert.equal(calls[0].init.method,'POST');assert.equal(calls[0].init.redirect,'error');
- assert.deepEqual(JSON.parse(calls[0].init.body),{ref:'main',inputs:{action:'resume',experiment:'fwd-2026-baseline'}});
+ assert.deepEqual(JSON.parse(calls[0].init.body),{ref:'main',inputs:{action:'resume',experiment:'fwd-2026-baseline',expected_gate_version:'2'}});
  const refused=async()=>new Response('{}',{status:403});
- assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},refused),
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},2,refused),
   {result:'refused',code:'GITHUB_403'});
  let n=0;const lost=async()=>{n++;throw Error('reset');};
- assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},lost),
+ assert.deepEqual(await dispatchOwnerResume('fwd-2026-baseline',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},2,lost),
   {result:'unknown',code:'GITHUB_NETWORK'});
  assert.equal(n,1,'never retried');
- assert.deepEqual(await dispatchOwnerResume('../x',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},fetcher),
+ assert.deepEqual(await dispatchOwnerResume('../x',{SPORTSEDGE_GITHUB_DISPATCH_TOKEN:TOKEN},2,fetcher),
   {result:'refused',code:'INVALID_EXPERIMENT'});
  assert.equal(calls.length,1);
 });
