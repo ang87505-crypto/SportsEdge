@@ -22,6 +22,10 @@ on:
         description: confirm-absent only, the uncertain intent id (pai-...)
         required: false
         type: string
+      expected_gate_version:
+        description: Start request gate version (blank reads it before the account check)
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -44,6 +48,7 @@ jobs:
           ACTION: ${{ inputs.action }}
           EXPERIMENT: ${{ inputs.experiment }}
           INTENT: ${{ inputs.intent }}
+          EXPECTED_GATE_VERSION: ${{ inputs.expected_gate_version }}
           SPORTSEDGE_PAPER_AUTO_OWNER_REF: ${{ secrets.SPORTSEDGE_PAPER_AUTO_OWNER_REF }}
           SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
           SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
@@ -52,4 +57,5 @@ jobs:
         run: |
           args=("$ACTION" --experiment "$EXPERIMENT")
           if [ -n "$INTENT" ]; then args+=(--intent "$INTENT"); fi
+          if [ "$ACTION" = resume ] && [ -n "$EXPECTED_GATE_VERSION" ]; then args+=(--expected-gate-version "$EXPECTED_GATE_VERSION"); fi
           node --experimental-strip-types scripts/paper-auto-worker.ts "${args[@]}"

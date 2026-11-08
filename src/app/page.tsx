@@ -7,7 +7,7 @@ import {LineChart} from '@/components/charts';
 import summary from '@/data/research/nba_recent_summary.json';
 import protocol from '../../research/stock_audit_20261012/protocol.json';
 import stockStudy from '@/data/research/stock_1000_forward_study.json';
-import {PAPER_AUTOMATION_RELEASE} from '@/lib/stocks/paper-automation-release';
+import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {useNow} from '@/lib/use-now';
 import {useResearch,useSportsFeed} from '@/lib/use-live-data';
 import {latestQuote} from '@/lib/dashboard-snapshot';
@@ -44,8 +44,9 @@ export default function Home(){
     {value:`${paper.pending_bets} open`,tone:'neutral',detail:`${paper.settled_bets} settled virtual bets`})},
   {label:'Stock historical backtest',href:'/stocks/research',
    value:protocol.release.historical_performance_measured?'See report':'Not measured',tone:'neutral',detail:'Gated on point-in-time data and accounting audits'},
-  {label:'Stock paper automation',href:'/stocks',
-   value:PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled?'Released':'Off in this build',tone:PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled?'warning':'neutral',detail:'Scheduled PAPER orders are not released'},
+  {label:'Stock paper automation',href:'/automation',
+   value:PAPER_AUTO_RELEASE.brokerWritesEnabled?'See owner status':'Plans only',tone:PAPER_AUTO_RELEASE.brokerWritesEnabled?'info':'warning',
+   detail:PAPER_AUTO_RELEASE.brokerWritesEnabled?'Order release is on; the owner gate and account checks still apply':'Weekday schedule on; paper orders are still off'},
   {label:'Real-money execution',href:'/guide#limits',value:'Not available',tone:'neutral',detail:'No sportsbook or live brokerage connection exists'},
  ];
 
@@ -83,7 +84,8 @@ export default function Home(){
   <section className="home-intro" aria-labelledby="home-title">
    <div className="home-intro-copy">
     <h1 id="home-title">Research desk</h1>
-    <p>SportsEdge tests sports models against the betting market, tracks a virtual-money NBA ledger, and audits a frozen stock strategy before any automation runs. Every figure carries its source. Nothing here moves real money.</p>
+    <p>SportsEdge tests sports models, tracks virtual NBA entries, and runs a stock strategy on a paper account. Follow both systems and their results in one place.</p>
+    <Link href="/automation" className="button" style={{marginTop:14}}>Sports + stocks automation</Link>
     <div className="home-sections" role="list">
      {[{href:'/sports',icon:'sports' as const,title:'Sports AI',text:'Model probabilities next to market prices'},
        {href:'/paper-betting',icon:'paper' as const,title:'Paper Betting',text:'Virtual bankroll, open and settled bets'},
@@ -137,7 +139,7 @@ export default function Home(){
      <li><span>Historical backtest</span><Badge tone="neutral">{protocol.release.historical_performance_measured?'Report available':'Not measured'}</Badge></li>
      <li><span>Forward paper results</span><Badge tone="neutral">{stockStudy.events.length?`${stockStudy.events.length} events`:'None recorded'}</Badge></li>
      <li><span>Synthetic engineering tests</span><Badge tone="warning">Not returns</Badge></li>
-     <li><span>Scheduled paper orders</span><Badge tone="neutral">{PAPER_AUTOMATION_RELEASE.scheduledOrdersEnabled?'Released':'Off'}</Badge></li>
+     <li><span>Recurring paper orders</span><Badge tone={PAPER_AUTO_RELEASE.brokerWritesEnabled?'info':'warning'}>{PAPER_AUTO_RELEASE.brokerWritesEnabled?'Released; check owner status':'Off — plans only'}</Badge></li>
     </ul>
     <p className="home-panel-note">Baseline <code>{protocol.baseline}</code> and one candidate are registered. Returns stay unreported until a verified point-in-time backtest exists.</p>
     <div className="home-panel-foot"><span>Alpaca PAPER is owner-only</span><Link href="/stocks" className="text-link">Open stocks</Link></div>

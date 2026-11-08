@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
-import {OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
+import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 
@@ -33,6 +33,7 @@ function viewOk(data:unknown):data is {release:Release;start?:{oneClick:boolean}
  if(!data||typeof data!=='object')return false;
  const x=data as Record<string,unknown>,r=x.release as Record<string,unknown>|undefined;
  return x.status==='ok'&&!!r&&r.paperOnly===true&&r.realMoneyEnabled===false&&Array.isArray(x.experiments)&&
+  typeof r.brokerWritesEnabled==='boolean'&&typeof r.scheduledRunsEnabled==='boolean'&&
   x.experiments.every(e=>!!e&&typeof e==='object'&&((e as Ledger).registered===false||
    ((e as PaperAutoLedger).registered===true&&
     (OPERATOR_STATES as readonly string[]).includes((e as PaperAutoLedger).status?.state))));
@@ -49,7 +50,7 @@ export function PaperAutoOperations(){
  const poll=useRef<number|null>(null);
  const refresh=useCallback(async():Promise<Ledger[]>=>{
   // The top-bar badge caches the status for a minute; a fresh read here replaces it.
-  try{sessionStorage.removeItem('sportsedge-autopilot-summary');}catch{/* optional cache */}
+  try{sessionStorage.removeItem('sportsedge-autopilot-summary-v2');}catch{/* optional cache */}
   try{
    const res=await fetch('/api/internal/paper-auto',{method:'GET',cache:'no-store',credentials:'same-origin'});
    const data:unknown=await res.json();
@@ -61,8 +62,13 @@ export function PaperAutoOperations(){
    return data.experiments;
   }catch{setView('error');setLedgers([]);return [];}
  },[]);
- useEffect(()=>{const t=window.setTimeout(()=>{void refresh();},0);
-  return()=>{window.clearTimeout(t);if(poll.current)window.clearInterval(poll.current);};},[refresh]);
+ useEffect(()=>{
+  const read=()=>{if(document.visibilityState==='visible')void refresh();};
+  const t=window.setTimeout(read,0),timer=window.setInterval(read,60_000);
+  document.addEventListener('visibilitychange',read);
+  return()=>{window.clearTimeout(t);window.clearInterval(timer);document.removeEventListener('visibilitychange',read);
+   if(poll.current)window.clearInterval(poll.current);};
+ },[refresh]);
 
  // After Start, re-read every 8 s for up to 3 minutes until the database reports the gate armed.
  const watchStart=(id:string)=>{
@@ -75,8 +81,8 @@ export function PaperAutoOperations(){
    const armed=!!l&&l.registered&&l.status.gateMode==='ARMED';
    if(armed||tries>=22){
     if(poll.current)window.clearInterval(poll.current);poll.current=null;setStarting(false);
-    setNotice(armed?{tone:'positive',text:'Autopilot is on.'}:{tone:'warning',text:
-     'Start did not finish within 3 minutes. Open the GitHub run to see why. Nothing was traded.'});
+    setNotice(armed?{tone:'positive',text:'Account check complete. The status below shows whether paper orders are released.'}:{tone:'warning',text:
+     'Start has not been confirmed after 3 minutes. Check the refreshed status and GitHub run before trying again.'});
    }
   },8000);
  };
@@ -90,8 +96,13 @@ export function PaperAutoOperations(){
    if(res.status===401)setNotice({tone:'warning',text:'Your owner session expired. Unlock again below.'});
    else if(data.status==='started'){setNotice({tone:'info',text:'Starting: checking your Alpaca paper account, about a minute.'});
     watchStart(String(body.experimentId));}
-   else if(data.status==='recorded')setNotice({tone:'positive',text:body.action==='stop'?'Stopped. No new orders will be placed.':
-    `Done: ${String(body.action)}.`});
+   else if(data.status==='recorded'){
+    if(body.action==='stop'||body.action==='pause'){
+     if(poll.current)window.clearInterval(poll.current);poll.current=null;setStarting(false);
+    }
+    setNotice({tone:'positive',text:body.action==='stop'?'Stopped. No new orders will be placed.':
+     body.action==='pause'?'Paused. No new orders until you use Start again.':`Done: ${String(body.action)}.`});
+   }
    else if(data.status==='refused')setNotice({tone:'warning',text:data.code==='ALREADY_RUNNING'?'Autopilot is already on.':
     `Not done (${data.code??'refused'}). Nothing changed.`});
    else if(data.status==='start_not_configured')setNotice({tone:'warning',text:'One-click Start is not set up on this site yet. Use "Start on GitHub" instead.'});
@@ -142,11 +153,12 @@ function Unlock({onDone}:{onDone:()=>void}){
 
 function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;release:Release|null;act:Act;
  working:boolean;starting:boolean;oneClick:boolean}){
- const s=l.status,id=l.experimentId,h=headline(l);
+ const s=l.status,id=l.experimentId,h=headline(l,release??{brokerWritesEnabled:false,scheduledRunsEnabled:false});
  const perf=forwardPerformance(l.experiment.startingEquityCents,l.experiment.registeredAt,l.daily);
  const v=perf.verified,b=perf.benchmark,picks=latestPicks(l),held=holdings(l),feed=activity(l);
  const [now,setNow]=useState<number|null>(null);
- useEffect(()=>{const t=window.setTimeout(()=>setNow(Date.now()),0);return()=>window.clearTimeout(t);},[]);
+ useEffect(()=>{const t=window.setTimeout(()=>setNow(Date.now()),0),timer=window.setInterval(()=>setNow(Date.now()),30_000);
+  return()=>{window.clearTimeout(t);window.clearInterval(timer);};},[]);
  const next=now===null?null:nextRuns(now);
  const lastMark=perf.marks.at(-1)??null;
  const practice=release?.brokerWritesEnabled!==true;
@@ -167,15 +179,22 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <button type="button" className="button button-lg" disabled={working||!h.canStart}
       onClick={()=>void act({action:'start',experimentId:id},startText)}>Start</button>:
      <a className="button button-lg" href={START_PAGE} target="_blank" rel="noopener noreferrer">Start on GitHub</a>}
+    <button type="button" className="button button-secondary button-lg" disabled={working||s.gateMode!=='ARMED'}
+     onClick={()=>void act({action:'pause',experimentId:id},'Pause the stock autopilot? New orders wait until you use Start again.')}>
+     Pause</button>
     <button type="button" className="button button-danger button-lg" disabled={working}
      onClick={()=>void act({action:'stop',experimentId:id},'Stop the autopilot? No new orders will be placed. Stocks it already holds stay in the account.')}>
      Stop autopilot</button>
    </div>
    <div className="autopilot-badges">
-    <Badge tone={practice?'warning':'positive'} dot>{practice?'Practice mode: plans only, no orders':'Paper orders on'}</Badge>
+    <Badge tone={practice?'warning':'info'} dot>{practice?'Paper orders off — plans only':'Paper orders released'}</Badge>
     <Badge tone={release?.scheduledRunsEnabled?'positive':'neutral'} dot>{release?.scheduledRunsEnabled?'Weekly schedule on':'Schedule off'}</Badge>
     <Badge tone="info">Paper money only</Badge>
    </div>
+   <p className="autopilot-release-note"><strong>Next step: </strong>{practice?
+    'The paper-order release must be enabled before this can send orders. Start alone does not enable that release.':
+    s.gateMode==='ARMED'?'No daily click needed. Check the next run and review any alerts.':
+    'Press Start once. It checks the paper account and resumes automatically if the check is clean.'}</p>
    {!oneClick&&s.gateMode!=='ARMED'&&<p className="quiet small-print">On GitHub: press <strong>Run workflow</strong>, choose
     <strong> resume</strong>, keep <strong>{id}</strong>, then Run. This page shows the result about a minute later.</p>}
   </section>
@@ -199,11 +218,11 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
       {picks.targets.length>0&&<div className="pick-chips">{picks.targets.map(t=><span key={t} className="pick-chip">{t}</span>)}</div>}
       {picks.reasons.length>0&&<p className="quiet small-print">{picks.reasons.slice(0,3).join(' · ')}</p>}</>}
    </Panel>
-   <Panel title="Coming up" description="Runs by itself on weekdays">
+   <Panel title="Coming up" description={release?.scheduledRunsEnabled?'Planned times; jobs can start late and market holidays are skipped':'The automatic schedule is off'}>
     <ol className="next-list">
      <li><span>Weekly pick</span><strong>{next?nyTime(next.pick):'…'}</strong></li>
      <li><span>Trade run</span><strong>{next?nyTime(next.trade):'…'}</strong>
-      <small>{s.gateMode==='ARMED'?practice?'Plans trades only (practice mode)':'Places paper orders for the latest pick':'Skipped while stopped'}</small></li>
+      <small>{!release?.scheduledRunsEnabled?'Automatic runs are off':s.gateMode==='ARMED'?practice?'Plans trades only (orders off)':'Can place paper orders for a valid pick':'Skipped while paused or stopped'}</small></li>
      <li><span>Daily result</span><strong>{next?nyTime(next.close):'…'}</strong></li>
     </ol>
    </Panel>
@@ -227,8 +246,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <td>{trim(i.filledQty)}{i.filledAvgPrice?` at $${trim(i.filledAvgPrice)}`:''}</td></tr>)}</tbody>
    </table></div></Panel>}
 
-  {l.alerts.some(a=>!a.acknowledgedAt)&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
-   <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt).map(a=><li key={a.alertId}>
+  {l.alerts.some(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code))&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
+   <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code)).map(a=><li key={a.alertId}>
     <StatusDot tone={a.severity==='critical'?'negative':'warning'}/><span className="activity-what">{a.code}</span>
     <span className="activity-result">{a.severity}</span>
     <button type="button" className="button button-secondary button-sm" disabled={working}

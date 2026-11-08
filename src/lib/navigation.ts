@@ -32,6 +32,7 @@ export const SECTIONS:NavSection[]=[
 ];
 
 export const PLATFORM:(NavLeaf&{icon:NavIconName})[]=[
+ {href:'/automation',label:'Paper automation',description:'Sports and stocks: status, next steps and results',icon:'pulse'},
  {href:'/progress',label:'Research status',description:'Evidence gates and milestones',icon:'pulse'},
  {href:'/testing',label:'Test center',description:'Owner acceptance walkthrough',icon:'shield'},
  {href:'/guide',label:'Guide & methodology',description:'Terms, data sources and limits',icon:'book'},
