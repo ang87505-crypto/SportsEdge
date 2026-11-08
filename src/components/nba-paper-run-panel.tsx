@@ -1,5 +1,6 @@
 'use client';
 import {useState} from 'react';
+import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
 type C={gameId:number;forecastId:number;quoteId:number;selection:string;
  opponent:string;sportsbook:string;americanOdds:number;expectedValue:number;
  modelProbability:number;noVigProbability:number;startsAt:string;
@@ -34,13 +35,17 @@ export function NbaPaperRunPanel(){
   finally{setBusy(false);}
  }
  async function unlock(){
-  if(!key)return;
+  const ownerKey=ownerKeyInput(key);
+  if(!ownerKey){setMessage(OWNER_KEY_HINT);return;}
   setBusy(true);setMessage('');
   try{
    const r=await fetch('/api/internal/alpaca-paper/session',{
     method:'POST',credentials:'same-origin',cache:'no-store',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerKey:key})});
-   if(!r.ok){setMessage('Owner key not accepted.');return;}
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({ownerKey})});
+   if(!r.ok){
+    const data=await r.json().catch(()=>null) as {reason?:unknown}|null;
+    setMessage(ownerSignInError(r.status,data?.reason));return;
+   }
    setKey('');
    setMessage('Owner session unlocked. You can check eligible NBA bets.');
   }catch{setMessage('Owner access could not be verified.');}

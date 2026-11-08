@@ -8,9 +8,18 @@ export const OWNER_COOKIE='__Host-sportsedge-alpaca-owner';
 export const OWNER_SESSION_SECONDS=30*60;
 const MAX_SESSION_MS=OWNER_SESSION_SECONDS*1000;
 
+const OWNER_KEY_PATTERN=/^[a-f0-9]{64}$/i;
+/** Surrounding whitespace is ignored: dashboards and clipboards (Windows PowerShell's
+ * Set-Clipboard) can add a trailing line break that would otherwise reject a good key. */
 export function ownerSecret():string|null {
-  const value=process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY;
-  return typeof value==='string'&&/^[a-f0-9]{64}$/i.test(value)?value:null;
+  const value=process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY?.trim();
+  return value&&OWNER_KEY_PATTERN.test(value)?value:null;
+}
+/** Why owner sign-in is unavailable, without revealing anything about the value. */
+export function ownerSecretProblem():'missing'|'malformed'|null {
+  const value=process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY?.trim();
+  if(!value)return 'missing';
+  return OWNER_KEY_PATTERN.test(value)?null:'malformed';
 }
 export function secureTextEquals(a:string,b:string):boolean {
   const left=Buffer.from(a),right=Buffer.from(b);
