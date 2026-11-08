@@ -43,3 +43,23 @@ test('registration reads only the reviewed config for that experiment, before an
  const s=run(['register','--experiment','fwd-2026-baseline'],OWNER);
  assert.deepEqual([s.code,s.out.status],[1,'NOT_CONFIGURED']);
 });
+
+test('each experiment uses only its own account keys, with no fallback to another pair',async()=>{
+ const {paperAutoKeys}=await import('./paper-auto-accounts.ts');
+ const env={ALPACA_PAPER_AUTO_KEY_ID:'PK1',ALPACA_PAPER_AUTO_SECRET_KEY:'s1'};
+ assert.deepEqual(paperAutoKeys('stock-v2-weekly-1',env),{pair:1,keyId:'PK1',secretKey:'s1',configured:true});
+ assert.deepEqual(paperAutoKeys('stock-v3-steady-weekly-1',env),{pair:2,keyId:'',secretKey:'',configured:false});
+ const both={...env,ALPACA_PAPER_AUTO_2_KEY_ID:'PK2',ALPACA_PAPER_AUTO_2_SECRET_KEY:'s2'};
+ assert.deepEqual(paperAutoKeys('stock-v3-steady-weekly-1',both),{pair:2,keyId:'PK2',secretKey:'s2',configured:true});
+ assert.equal(paperAutoKeys('stock-v2-weekly-1',both).keyId,'PK1');
+ assert.equal(paperAutoKeys('constructor',both).pair,1,'only listed experiments use pair 2');
+});
+
+test('a second account that is not set up yet: manual runs fail, scheduled runs skip quietly',()=>{
+ let r=run(['execute','--experiment','stock-v3-steady-weekly-1'],SETTINGS);
+ assert.deepEqual([r.code,r.out.status,r.out.keyPair,r.out.brokerCalls],[1,'NOT_CONFIGURED',2,0]);
+ r=run(['monitor','--experiment','stock-v3-steady-weekly-1'],{...SETTINGS,GITHUB_EVENT_NAME:'schedule'});
+ assert.deepEqual([r.code,r.out.status],[0,'NOT_CONFIGURED_SKIP']);
+ r=run(['resume','--experiment','stock-v3-steady-weekly-1'],{...SETTINGS,...OWNER});
+ assert.deepEqual([r.code,r.out.status],[1,'NOT_CONFIGURED'],'owner actions never borrow the first account');
+});

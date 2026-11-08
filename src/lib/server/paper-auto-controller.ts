@@ -674,6 +674,9 @@ export async function registerExperiment(deps:Pick<ControllerDeps,'store'|'broke
 const REGISTRATION_KEYS=['experimentId','modelVersion','decisionWindowStart','decisionWindowEnd','capitalLimitCents',
  'maxOrderNotionalCents','maxDailyNotionalCents','maxOrdersPerDay','maxOpenOrders','maxAttemptsPerLeg',
  'drawdownStopBps','feeReserveCents'] as const;
+/** Models the database accepts (its experiments.model_version check and register RPC). */
+export const REGISTERED_MODELS:readonly string[]=['stock-mom252-skip21-trend200-v1',
+ 'stock-mom252-skip21-trend200-holdrank10-v1','stock-lowvol252-trend200-v1'];
 /** A reviewed registration file (config/paper-auto/<id>.json): exact keys, the database's ranges; else null. */
 export function parseRegistrationConfig(raw:unknown,experimentId:string):Omit<Registration,'ownerRef'>|null{
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
@@ -683,7 +686,7 @@ export function parseRegistrationConfig(raw:unknown,experimentId:string):Omit<Re
  const day=(k:string)=>typeof x[k]==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x[k] as string)&&
   new Date((x[k] as string)+'T12:00:00Z').toISOString().slice(0,10)===x[k];
  if(x.experimentId!==experimentId||!/^[a-z0-9][a-z0-9-]{2,62}$/.test(experimentId)||
-  (x.modelVersion!=='stock-mom252-skip21-trend200-v1'&&x.modelVersion!=='stock-mom252-skip21-trend200-holdrank10-v1')||
+  !REGISTERED_MODELS.includes(x.modelVersion as string)||
   !day('decisionWindowStart')||!day('decisionWindowEnd')||
   (x.decisionWindowEnd as string)<(x.decisionWindowStart as string)||
   !n('capitalLimitCents',1,100_000_000_000)||!n('maxOrderNotionalCents',1,100_000_000_000)||

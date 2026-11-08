@@ -47,8 +47,11 @@ jobs:
           SPORTSEDGE_PAPER_AUTO_OWNER_REF: ${{ secrets.SPORTSEDGE_PAPER_AUTO_OWNER_REF }}
           SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
           SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+          # The worker uses only this experiment's own pair (src/lib/server/paper-auto-accounts.ts).
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+          ALPACA_PAPER_AUTO_2_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_2_KEY_ID }}
+          ALPACA_PAPER_AUTO_2_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_2_SECRET_KEY }}
         run: |
           args=("$ACTION" --experiment "$EXPERIMENT")
           if [ -n "$INTENT" ]; then args+=(--intent "$INTENT"); fi

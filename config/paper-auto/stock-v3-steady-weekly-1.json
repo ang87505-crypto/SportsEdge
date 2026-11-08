@@ -1,0 +1,14 @@
+{
+  "experimentId": "stock-v3-steady-weekly-1",
+  "modelVersion": "stock-lowvol252-trend200-v1",
+  "decisionWindowStart": "2026-11-02",
+  "decisionWindowEnd": "2027-12-31",
+  "capitalLimitCents": 125000,
+  "maxOrderNotionalCents": 15000,
+  "maxDailyNotionalCents": 120000,
+  "maxOrdersPerDay": 20,
+  "maxOpenOrders": 10,
+  "maxAttemptsPerLeg": 3,
+  "drawdownStopBps": 2500,
+  "feeReserveCents": 0
+}

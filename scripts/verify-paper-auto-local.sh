@@ -49,7 +49,8 @@ git -C "$repo" show "$previous:database/staging/paper_auto_v1.sql" > "$run_dir/p
 cd "$run_dir/source"
 cp database/staging/paper_auto_v1.sql "$run_dir/fresh.sql"
 cat "$run_dir/previous.sql" database/staging/paper_auto_risk_v2.sql \
-  database/staging/paper_auto_risk_v2.sql > "$run_dir/upgraded.sql"
+  database/staging/paper_auto_risk_v2.sql database/staging/paper_auto_models_v3.sql \
+  database/staging/paper_auto_models_v3.sql > "$run_dir/upgraded.sql"
 
 printf 'Starting an isolated PostgreSQL 17 container (first run may download the image).\n'
 container_id=$(docker run -d --network none --label sportsedge.test=paper-auto-native \

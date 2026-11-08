@@ -60,3 +60,35 @@ test('holdings, picks and activity read the ledger in plain words',()=>{
  assert.match(a[0].result,/practice mode/);assert.equal(a[1].result,'Picks recorded');
  assert.equal(latestPicks(ledger()),null);
 });
+
+test('strategies have plain names; unknown models fall back to their id',async()=>{
+ const {strategy}=await import('./autopilot-view.ts');
+ assert.equal(strategy('stock-mom252-skip21-trend200-v1').name,'Momentum');
+ assert.equal(strategy('stock-lowvol252-trend200-v1').name,'Steady stocks');
+ assert.equal(strategy('other-model').name,'other-model');
+});
+
+test('the combined total adds the accounts and never estimates a missing return',async()=>{
+ const {combined}=await import('./autopilot-view.ts');
+ const row=(name,valueCents,returnPct,label='Running')=>({experimentId:name,name,label,tone:'positive',valueCents,
+  startingCents:100000,valueSession:'2026-11-03',returnPct});
+ let c=combined([row('Momentum',103000,0.03),row('Steady stocks',101000,0.01)]);
+ assert.equal(c.valueCents,204000);assert.equal(c.startingCents,200000);
+ assert.ok(Math.abs(c.returnPct-0.02)<1e-12);assert.equal(c.leader,'Momentum');assert.equal(c.running,2);
+ c=combined([row('Momentum',103000,0.03),row('Steady stocks',100000,null,'Stopped')]);
+ assert.equal(c.returnPct,null,'one strategy has no verified result yet');assert.equal(c.leader,null);
+ assert.equal(c.valueCents,203000);assert.equal(c.running,1);
+ c=combined([row('Momentum',101000,0.01),row('Steady stocks',101000,0.01)]);
+ assert.equal(c.leader,null,'a tie has no leader');
+});
+
+test('one overall status for the top bar',async()=>{
+ const {overall}=await import('./autopilot-view.ts');
+ assert.deepEqual(overall([]),{label:'Not set up',tone:'neutral'});
+ assert.deepEqual(overall(['Running']),{label:'Running',tone:'positive'});
+ assert.deepEqual(overall(['Stopped']),{label:'Stopped',tone:'neutral'});
+ assert.deepEqual(overall(['Running','Running']),{label:'Running',tone:'positive'});
+ assert.deepEqual(overall(['Running','Stopped']),{label:'1 of 2 running',tone:'info'});
+ assert.deepEqual(overall(['Running','Needs attention']),{label:'Needs attention',tone:'warning'});
+ assert.deepEqual(overall(['Paused','Stopped']),{label:'Stopped',tone:'neutral'});
+});

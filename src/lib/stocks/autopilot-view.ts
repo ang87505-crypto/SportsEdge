@@ -101,3 +101,44 @@ export function nextRuns(now:number){
  const weekdays=['Mon','Tue','Wed','Thu','Fri'];
  return {pick:nextAt(now,8,0,['Mon']),trade:nextAt(now,9,50,weekdays),close:nextAt(now,16,35,weekdays)};
 }
+
+// ---------------------------------------------------------------- strategies side by side
+const STRATEGIES:Record<string,{name:string;about:string}>={
+ 'stock-mom252-skip21-trend200-v1':{name:'Momentum',about:'Buys the stocks that rose the most over the past year.'},
+ 'stock-mom252-skip21-trend200-holdrank10-v1':{name:'Momentum (hold buffer)',
+  about:'Momentum, keeping a holding while it stays in the top ten.'},
+ 'stock-lowvol252-trend200-v1':{name:'Steady stocks',about:'Buys the calmest stocks that are still trending up.'},
+};
+/** Plain name and one-line description of a registered model. */
+export function strategy(modelVersion:string){
+ return STRATEGIES[modelVersion]??{name:modelVersion,about:''};
+}
+
+export type CombinedRow={experimentId:string;name:string;label:AutopilotHeadline['label'];tone:AutopilotTone;
+ valueCents:number;startingCents:number;valueSession:string|null;returnPct:number|null};
+/**
+ * The strategies side by side and their combined total. Values are each account's latest after-close
+ * mark (its starting balance before the first one). A return is shown only from verified results,
+ * and the combined return only when every strategy has one: nothing is estimated or filled in.
+ */
+export function combined(rows:CombinedRow[]){
+ const valueCents=rows.reduce((t,r)=>t+r.valueCents,0),startingCents=rows.reduce((t,r)=>t+r.startingCents,0);
+ const allMeasured=rows.length>0&&rows.every(r=>r.returnPct!==null);
+ const measured=rows.filter(r=>r.returnPct!==null).sort((a,b)=>(b.returnPct as number)-(a.returnPct as number));
+ const leader=allMeasured&&rows.length>1&&measured[0].returnPct!==measured[1].returnPct?measured[0].name:null;
+ const running=rows.filter(r=>r.label==='Running'||r.label==='Trading now').length;
+ // Weighted by each account's starting balance, from each strategy's own verified return.
+ const weighted=rows.reduce((t,r)=>t+r.startingCents*(r.returnPct??0),0);
+ return {valueCents,startingCents,returnPct:allMeasured&&startingCents>0?weighted/startingCents:null,
+  leader,running,attention:rows.some(r=>r.label==='Needs attention')};
+}
+
+/** One short status for every registered strategy together (top-bar pill, Stocks card). */
+export function overall(labels:AutopilotHeadline['label'][]):{label:string;tone:AutopilotTone}{
+ if(!labels.length)return {label:'Not set up',tone:'neutral'};
+ if(labels.includes('Needs attention'))return {label:'Needs attention',tone:'warning'};
+ const on=labels.filter(l=>l==='Running'||l==='Trading now').length;
+ if(labels.length===1)return {label:labels[0],tone:on?'positive':'neutral'};
+ if(on===labels.length)return {label:labels.includes('Trading now')?'Trading now':'Running',tone:'positive'};
+ return on?{label:`${on} of ${labels.length} running`,tone:'info'}:{label:'Stopped',tone:'neutral'};
+}

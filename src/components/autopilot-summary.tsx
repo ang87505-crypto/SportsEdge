@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import {useEffect,useState} from 'react';
 import {Badge,Empty,StatusDot,type Tone} from '@/components/ui';
-import {headline,latestPicks} from '@/lib/stocks/autopilot-view';
+import {headline,latestPicks,overall,strategy} from '@/lib/stocks/autopilot-view';
 import type {PaperAutoLedger} from '@/lib/stocks/paper-auto-ledger';
 
-type Summary={state:'owner';label:string;tone:Tone;practice:boolean;picks:string[];session:string|null}|
+type Line={name:string;label:string;tone:Tone;picks:string[];session:string|null};
+type Summary={state:'owner';label:string;tone:Tone;practice:boolean;lines:Line[]}|
  {state:'signed-out'}|{state:'unavailable'};
-const CACHE='sportsedge-autopilot-summary';
+const CACHE='sportsedge-autopilot-summary-v2';
+const tone=(t:string):Tone=>t==='positive'?'positive':t==='warning'?'warning':t==='info'?'info':'neutral';
 
 /** Owner-only read of the autopilot; anyone else gets 'signed-out' and sees nothing private. */
 async function readSummary():Promise<Summary>{
@@ -22,12 +24,14 @@ async function readSummary():Promise<Summary>{
   if(res.status===401)s={state:'signed-out'};
   else{
    const data=await res.json() as {status?:string;release?:{brokerWritesEnabled?:boolean};experiments?:PaperAutoLedger[]};
-   const l=data.status==='ok'?data.experiments?.find(e=>e.registered):undefined;
-   if(!l)s={state:'unavailable'};
+   const ls=data.status==='ok'?(data.experiments??[]).filter(e=>e.registered):[];
+   if(!ls.length)s={state:'unavailable'};
    else{
-    const h=headline(l),p=latestPicks(l);
-    s={state:'owner',label:h.label,tone:h.tone==='positive'?'positive':h.tone==='warning'?'warning':h.tone==='info'?'info':'neutral',
-     practice:data.release?.brokerWritesEnabled!==true,picks:p?.targets??[],session:p?.session??null};
+    const lines=ls.map(l=>{const h=headline(l),p=latestPicks(l);
+     return {name:strategy(l.status.modelVersion).name,label:h.label,tone:tone(h.tone),picks:p?.targets??[],
+      session:p?.session??null};});
+    const o=overall(ls.map(l=>headline(l).label));
+    s={state:'owner',label:o.label,tone:tone(o.tone),practice:data.release?.brokerWritesEnabled!==true,lines};
    }
   }
  }catch{s={state:'unavailable'};}
@@ -59,7 +63,11 @@ export function AutopilotSummary(){
  return <div className="autopilot-summary">
   <div className="autopilot-summary-head"><StatusDot tone={s.tone}/><strong>{s.label}</strong>
    {s.practice&&<Badge tone="warning">Practice mode</Badge>}</div>
-  <p className="quiet">{s.picks.length?`Picks for ${s.session}: ${s.picks.join(', ')}`:'No picks yet; the next weekly pick is Monday at 8:00 AM ET.'}</p>
+  <ul className="autopilot-summary-lines">{s.lines.map(x=><li key={x.name}>
+   {s.lines.length>1&&<><StatusDot tone={x.tone}/><strong>{x.name}</strong> · {x.label}: </>}
+   <span className="quiet">{x.picks.length?`${s.lines.length>1?'p':'P'}icks for ${x.session}: ${x.picks.join(', ')}`:
+    `${s.lines.length>1?'n':'N'}o picks yet; the next weekly pick is Monday at 8:00 AM ET.`}</span>
+  </li>)}</ul>
   <Link className="button" href="/stocks/paper-auto">Open Autopilot</Link>
  </div>;
 }

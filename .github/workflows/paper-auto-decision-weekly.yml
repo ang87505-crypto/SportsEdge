@@ -7,6 +7,11 @@
 # initial=true. The reference capture runs at once; the decision capture starts at
 # 08:00:00 and must seal within 60 seconds, otherwise the session is recorded MISSED.
 # The frozen monthly model keeps its own workflow (paper-auto-decision.yml).
+# Scheduled runs decide for every listed weekly experiment that is registered
+# (stock-v2-weekly-1 momentum and stock-v3-steady-weekly-1 steady stocks, owner-approved
+# 2026-11-01) from ONE shared sealed capture: same universe, bars and timing, so the two
+# models differ only in their ranking. Market data is read with the first account's keys
+# (read-only GETs); a manual dispatch decides for the one experiment given.
 name: Recurring PAPER weekly decision (manual)
 on:
   schedule:
@@ -30,14 +35,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: paper-auto-decision-${{ inputs.experiment || 'stock-v2-weekly-1' }}
+  group: paper-auto-decision-${{ inputs.experiment || 'weekly-scheduled' }}
   cancel-in-progress: false
 jobs:
   decide:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
+      EXPERIMENTS: ${{ inputs.experiment || 'stock-v2-weekly-1 stock-v3-steady-weekly-1' }}
       SESSION_INPUT: ${{ inputs.session }}
       UNIVERSE: config/paper-auto/universe-large-cap-v1.json
       SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
@@ -57,35 +62,59 @@ jobs:
           s="${SESSION_INPUT:-$(TZ=America/New_York date +%F)}"
           [[ "$s" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid session"; exit 2; }
           echo "SESSION=$s" >> "$GITHUB_ENV"
-      - name: Registration and reconciled holdings (read-only)
-        run: node --experimental-strip-types scripts/paper-auto-worker.ts context --experiment "$EXPERIMENT" --output "$RUNNER_TEMP/registration.json"
+      - name: Registration and reconciled holdings for each experiment (read-only)
+        run: |
+          registered=""; failed=""
+          for e in $EXPERIMENTS; do
+            [[ "$e" =~ ^[a-z0-9][a-z0-9-]{2,62}$ ]] || { echo "invalid experiment"; exit 2; }
+            # A scheduled run skips an experiment that is not registered yet (exit 0, no file).
+            node --experimental-strip-types scripts/paper-auto-worker.ts context --experiment "$e" --output "$RUNNER_TEMP/registration-$e.json" || failed="$failed $e"
+            if [ -f "$RUNNER_TEMP/registration-$e.json" ]; then registered="$registered $e"; fi
+          done
+          echo "REGISTERED=${registered# }" >> "$GITHUB_ENV"
+          # One experiment's failure never stops the other's decision; the job still fails at the end.
+          echo "CONTEXT_FAILED=${failed# }" >> "$GITHUB_ENV"
       - name: Reference capture now, decision capture from 08:00:00 New York (read-only market data)
         env:
           INITIAL: ${{ inputs.initial }}
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
         run: |
+          if [ -z "$REGISTERED" ]; then echo '{"status":"NO_REGISTERED_EXPERIMENT"}'; exit 0; fi
           flag=""; if [ "$INITIAL" = "true" ]; then flag="--initial"; fi
           python -m analytics.stock_weekly_bridge_v2 capture --session "$SESSION" --universe "$UNIVERSE" $flag --output "$RUNNER_TEMP/capture.json" --execute-network
-      - name: Weekly signal from the sealed capture (no network)
+      - name: Each experiment's signal from the same sealed capture (no network)
         run: |
+          status=0
           if [ -f "$RUNNER_TEMP/capture.json" ]; then
-            python -m analytics.stock_weekly_bridge_v2 decide --capture "$RUNNER_TEMP/capture.json" --universe "$UNIVERSE" --registration "$RUNNER_TEMP/registration.json" --output "$RUNNER_TEMP/decision.json"
+            for e in $REGISTERED; do
+              # One experiment's failure never stops the other's decision.
+              python -m analytics.stock_weekly_bridge_v2 decide --capture "$RUNNER_TEMP/capture.json" --universe "$UNIVERSE" --registration "$RUNNER_TEMP/registration-$e.json" --output "$RUNNER_TEMP/decision-$e.json" || status=1
+            done
           fi
-      - name: Record TARGETS, HOLD, MISSED or INPUT_REJECTED
+          exit $status
+      - name: Record TARGETS, HOLD, MISSED or INPUT_REJECTED for each experiment
+        if: ${{ !cancelled() }}
         run: |
-          if [ -f "$RUNNER_TEMP/decision.json" ]; then
-            node --experimental-strip-types scripts/paper-auto-worker.ts decision --experiment "$EXPERIMENT" --decision-file "$RUNNER_TEMP/decision.json"
-          fi
+          status=0
+          for e in $REGISTERED; do
+            if [ -f "$RUNNER_TEMP/decision-$e.json" ]; then
+              node --experimental-strip-types scripts/paper-auto-worker.ts decision --experiment "$e" --decision-file "$RUNNER_TEMP/decision-$e.json" || status=1
+            fi
+          done
+          exit $status
+      - name: Fail the run if any experiment's registration could not be read
+        if: ${{ !cancelled() }}
+        run: if [ -n "$CONTEXT_FAILED" ]; then echo "::error::context failed for $CONTEXT_FAILED"; exit 1; fi
       - name: Compress the sealed capture for audit
         if: always()
         run: if [ -f "$RUNNER_TEMP/capture.json" ]; then gzip -9 "$RUNNER_TEMP/capture.json"; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: paper-auto-weekly-decision-${{ env.EXPERIMENT }}-${{ env.SESSION }}
+          name: paper-auto-weekly-decision-${{ inputs.experiment || 'scheduled' }}-${{ env.SESSION }}
           path: |
             ${{ runner.temp }}/capture.json.gz
-            ${{ runner.temp }}/decision.json
+            ${{ runner.temp }}/decision-*.json
           if-no-files-found: ignore
           retention-days: 30

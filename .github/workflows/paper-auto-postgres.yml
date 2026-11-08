@@ -4,6 +4,7 @@ on:
     paths:
       - 'database/staging/paper_auto_v1.sql'
       - 'database/staging/paper_auto_risk_v2.sql'
+      - 'database/staging/paper_auto_models_v3.sql'
       - 'database/tests/paper_auto_v1*'
       - '.github/workflows/paper-auto-postgres.yml'
 permissions:
@@ -48,7 +49,16 @@ jobs:
           PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/paper_auto_previous_v1.sql"
           PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_risk_v2.sql
           PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_risk_v2.sql
+          PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_models_v3.sql
           PGDATABASE=sportsedge_paper_auto_upgrade psql -X -q -v ON_ERROR_STOP=1 -f database/tests/paper_auto_v1.sql
+      - name: Upgrade the installed staging schema (main before the steady-stocks model) twice and rerun the contract
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE sportsedge_paper_auto_models"
+          git show 5a5df00fa860394516ee3ce4a7d498a543c7e5c1:database/staging/paper_auto_v1.sql > "$RUNNER_TEMP/paper_auto_installed_v1.sql"
+          PGDATABASE=sportsedge_paper_auto_models psql -X -q -v ON_ERROR_STOP=1 -f "$RUNNER_TEMP/paper_auto_installed_v1.sql"
+          PGDATABASE=sportsedge_paper_auto_models psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_models_v3.sql
+          PGDATABASE=sportsedge_paper_auto_models psql -X -q -v ON_ERROR_STOP=1 -f database/staging/paper_auto_models_v3.sql
+          PGDATABASE=sportsedge_paper_auto_models psql -X -q -v ON_ERROR_STOP=1 -f database/tests/paper_auto_v1.sql
       - name: Race RPCs across independent connections
         run: |
           psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE sportsedge_paper_auto_race"

@@ -644,4 +644,7 @@ test('registration files are reviewed configs with exact keys and the database r
  const missing={...good};delete missing.maxOpenOrders;
  assert.equal(parseRegistrationConfig(missing,'fwd-2026-baseline'),null);
  assert.equal(parseRegistrationConfig([good],'fwd-2026-baseline'),null);
+ const steady={...good,experimentId:'fwd-2026-steady',modelVersion:'stock-lowvol252-trend200-v1'};
+ assert.deepEqual(parseRegistrationConfig(steady,'fwd-2026-steady'),steady,'the steady-stocks model is registrable');
+ assert.equal(parseRegistrationConfig({...steady,modelVersion:'stock-lowvol252-trend200-v2'},'fwd-2026-steady'),null);
 });
