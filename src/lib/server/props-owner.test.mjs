@@ -76,3 +76,68 @@ test('a database refusal is 409; an unknown outcome is 503 and marked safe to re
  assert.equal(r.status,503);
  assert.equal((await r.json()).retrySafe,true);
 });
+
+// ---- learning controls (fake store; synthetic TEST-ONLY model rows)
+const MODEL={active_model_version:'props-learn-v1',previous_model_version:'props-nb-minutes-rate-v1',learning_enabled:true,auto_switch_enabled:false};
+const EVENTS=[{id:3,version:'props-learn-v2',event:'eligible',reason:'gate passed',detail:{lines:512},at:'2026-12-06T10:00:00Z'},
+ {id:2,version:'props-learn-v2',event:'shadow_start',reason:'ok',detail:{},at:'2026-11-29T10:00:00Z'},
+ {id:1,version:'props-learn-v1',event:'promoted',reason:'ok',detail:{},at:'2026-11-20T10:00:00Z'}];
+function learnStore(rpc=async(fn,p)=>({ok:true,fn,p})){
+ const calls=[];
+ return {calls,make:()=>({
+  async select(t){calls.push({t});if(t==='props_control')return [CONTROL];if(t==='props_model_control')return [MODEL];if(t==='props_model_events')return EVENTS;return [];},
+  async rpc(fn,p){calls.push({fn,p});return rpc(fn,p);},
+  async insert(){throw Error('never');}})};
+}
+const body=o=>JSON.stringify(o);
+
+test('GET also reports the model, learning switches and challengers',async()=>{
+ const s=learnStore();
+ const j=await (await handlePropsOwnerGet(req(),{},s.make)).json();
+ assert.deepEqual(j.model,{active:'props-learn-v1',previous:'props-nb-minutes-rate-v1',learningEnabled:true,autoSwitchEnabled:false,
+  challengers:[{version:'props-learn-v2',state:'eligible',reason:'gate passed',detail:{lines:512},at:'2026-12-06T10:00:00Z'},
+   {version:'props-learn-v1',state:'promoted',reason:'ok',detail:{},at:'2026-11-20T10:00:00Z'}]});
+});
+
+test('GET still works when the learning tables are not migrated (model is null)',async()=>{
+ const make=()=>({async select(t){if(t==='props_control')return [CONTROL];throw new PropsStoreError('STORE_HTTP_404',false);},async rpc(){},async insert(){}});
+ const j=await (await handlePropsOwnerGet(req(),{},make)).json();
+ assert.equal(j.status,'ok');assert.equal(j.model,null);
+});
+
+test('learning switches map to one props_set_learning call keeping the other switch',async()=>{
+ for(const [action,learning,auto] of [['learning_off',false,false],['learning_on',true,false],['auto_on',true,true],['auto_off',true,false]]){
+  const s=learnStore();
+  const r=await handlePropsOwnerPost(req({body:body({action,reason:'owner test'})}),{},s.make);
+  assert.equal(r.status,200,action);
+  assert.deepEqual(s.calls.filter(c=>c.fn),[{fn:'props_set_learning',p:{p_learning:learning,p_auto:auto,p_actor:PROPS_OWNER_ACTOR,p_reason:'owner test'}}]);
+ }
+});
+
+test('approve and roll back are one RPC each; approve validates the version first',async()=>{
+ const s=learnStore();
+ assert.equal((await handlePropsOwnerPost(req({body:body({action:'approve',version:'props-learn-v2',reason:'looks good'})}),{},s.make)).status,200);
+ assert.equal((await handlePropsOwnerPost(req({body:body({action:'rollback',reason:'undo it'})}),{},s.make)).status,200);
+ assert.deepEqual(s.calls.filter(c=>c.fn).map(c=>c.fn),['props_promote_model','props_rollback_model']);
+ const bad=learnStore();
+ for(const b of [{action:'approve',reason:'x y z'},{action:'approve',version:'props-learn-v2; drop',reason:'x y z'},{action:'rollback',reason:'abc',version:'props-learn-v1'}])
+  assert.equal((await handlePropsOwnerPost(req({body:body(b)}),{},bad.make)).status,400,JSON.stringify(b));
+ assert.equal(bad.calls.length,0);
+});
+
+test('database refusals reach the owner as 409 with their code',async()=>{
+ for(const [action,code,extra] of [['approve','PROPS_MODEL_NOT_ELIGIBLE',{version:'props-learn-v2'}],['rollback','PROPS_NO_PREVIOUS_MODEL',{}]]){
+  const s=learnStore(async()=>{throw new PropsStoreError(code,true);});
+  const r=await handlePropsOwnerPost(req({body:body({action,reason:'owner test',...extra})}),{},s.make);
+  assert.equal(r.status,409);assert.equal((await r.json()).code,code);
+ }
+});
+
+test('retrain dispatches the learning workflow, or says it is not configured',async()=>{
+ const s=learnStore();
+ const off=await handlePropsOwnerPost(req({body:body({action:'retrain',reason:'try now'})}),{},s.make,async()=>({result:'not_configured'}));
+ assert.equal(off.status,503);assert.equal((await off.json()).status,'learn_dispatch_not_configured');
+ const on=await handlePropsOwnerPost(req({body:body({action:'retrain',reason:'try now'})}),{},s.make,async()=>({result:'dispatched'}));
+ assert.equal(on.status,202);assert.equal((await on.json()).status,'started');
+ assert.equal(s.calls.filter(c=>c.fn).length,0,'retrain never writes to the database itself');
+});
