@@ -1,0 +1,72 @@
+# NBA player-prop LEARNING loop (paper only). Weekly: retrain a challenger, evaluate shadowing
+# challengers under the registered gate (auto-switch only if the owner left it on), and write the
+# weekly mistake review. Owner controls are manual dispatches and are refused from the schedule.
+# Never collects lines, places entries, or contacts any account. No AI service is used.
+name: NBA props learning loop
+on:
+  schedule:
+    - cron: '0 10 * * 0'
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: What to run
+        required: true
+        type: choice
+        options: [train, evaluate, review, learning_on, learning_off, auto_on, auto_off, approve, rollback]
+      version:
+        description: approve only (props-learn-vN)
+        required: false
+        type: string
+      reason:
+        description: reason for owner actions
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: props-paper
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+      SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+      KIND: ${{ inputs.kind || 'weekly' }}
+      VERSION: ${{ inputs.version }}
+      REASON: ${{ inputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download the pinned box-score history (hash-checked)
+        if: env.KIND == 'weekly' || env.KIND == 'train'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/box"
+          for f in player_box_2025.csv player_box_2026.csv; do
+            curl -fsSL -o "$RUNNER_TEMP/box/$f" "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/$f"
+          done
+          cd "$RUNNER_TEMP/box"
+          printf '%s  %s\n' \
+            8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7 player_box_2025.csv \
+            7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89 player_box_2026.csv | sha256sum -c -
+          echo "PROPS_HISTORY_PRIOR=$RUNNER_TEMP/box/player_box_2025.csv" >> "$GITHUB_ENV"
+          echo "PROPS_HISTORY_SEASON=$RUNNER_TEMP/box/player_box_2026.csv" >> "$GITHUB_ENV"
+      - name: Run
+        run: |
+          set -euo pipefail
+          learn() { node --experimental-strip-types scripts/props-learn.ts "$@"; }
+          if [ "$KIND" = weekly ]; then
+            learn train; learn evaluate; learn review
+          elif [ "$KIND" = approve ]; then
+            learn approve --version "$VERSION" --reason "$REASON"
+          elif [ "$KIND" = train ] || [ "$KIND" = evaluate ] || [ "$KIND" = review ]; then
+            learn "$KIND"
+          else
+            learn "$KIND" --reason "$REASON"
+          fi

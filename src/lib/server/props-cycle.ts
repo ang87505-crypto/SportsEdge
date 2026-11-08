@@ -19,9 +19,11 @@ import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../pr
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
 import {gradeLine,decidePick,decidePickV2,buildEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
-import {matchupFeatures,type TeamGameRow} from '../props/features.ts';
+import {matchupFeatures} from '../props/features.ts';
 import {predictLearn} from '../props/learn.ts';
 import {loadActiveModel,type ActiveModel} from './props-active-model.ts';
+import {loadTeamRows} from './props-learn-data.ts';
+import {checkSafetyBrake} from './props-learn-worker.ts';
 import {MODEL_VERSION,SELECTION_VERSION,SELECTION_VERSION_V2,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,SPORTSBOOKS,type Platform,type Stat} from '../props/contract.ts';
 
 export type ModelArtifact={modelVersion:string;params:ModelParams;
@@ -198,22 +200,6 @@ async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:
  return out;
 }
 
-/** Recent final player rows for matchup features (paged; PostgREST may cap a page). */
-async function recentTeamRows(d:CycleDeps):Promise<TeamGameRow[]>{
- const cols='espn_event_id,athlete_id,team_abbr,opponent_abbr,game_start,game_status,did_not_play,minutes,points,rebounds,assists,revision';
- const since=q(ago(d.now(),95*86400_000));
- const rows:(PG&{opponent_abbr:string})[]=[];
- for(let page=0;page<40;page++){
-  const got=await d.store.select<PG&{opponent_abbr:string}>('props_player_games','select='+cols+'&game_start=gte.'+since+
-   '&order=id.asc&limit=1000&offset='+page*1000);
-  rows.push(...got);if(got.length<1000)break;
- }
- const opp=new Map(rows.map(r=>[r.espn_event_id+'|'+r.athlete_id,r.opponent_abbr]));
- return latest(rows).filter(r=>r.game_status==='final').map(r=>({espnEventId:r.espn_event_id,teamAbbr:r.team_abbr,
-  opponentAbbr:opp.get(r.espn_event_id+'|'+r.athlete_id)!,gameStart:r.game_start,minutes:r.minutes===null?null:Number(r.minutes),
-  points:r.points,rebounds:r.rebounds,assists:r.assists,didNotPlay:r.did_not_play}));
-}
-
 async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[],quotes:BookQuote[],active:ActiveModel){
  const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>,
   learn:{} as Record<string,number>,selectionVersion:active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION};
@@ -266,7 +252,7 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
  const learners=[...(active.artifact?[{version:active.version,artifact:active.artifact}]:[]),...active.shadows];
  const learnPreds=new Map<number,PredRow>();
  if(learners.length){
-  const teamRows=await recentTeamRows(d);
+  const teamRows=await loadTeamRows(d.store,ago(d.now(),95*86400_000));
   const learnRows:Record<string,unknown>[]=[];
   for(const p of preds){
    const x=byObs.get(p.observation_id);const m=meta.get(p.observation_id);
@@ -448,6 +434,9 @@ export async function runSettle(d:CycleDeps,slot:string,scheduledFor:string|null
   for(const part of chunk(newResults,200))await d.store.insert('props_line_results',part,{onConflict:'observation_id,revision',ignoreDuplicates:true});
   s.grading={pendingLines:pending.length,newResults:newResults.length,graded,waiting,newLinks:newLinks.length};
   s.settlement=await settleEntries(d);
+  // Safety brake: best-effort; a failure here never fails grading or settlement.
+  try{s.safetyBrake=await checkSafetyBrake(d.store,d.now());}
+  catch(err){s.safetyBrake={error:err instanceof PropsStoreError?err.code:'UNEXPECTED'};}
   await finish(d,runId,true,'COMPLETED',s);
   return {kind,outcome:'COMPLETED',runId,summary:s};
  }catch(e){

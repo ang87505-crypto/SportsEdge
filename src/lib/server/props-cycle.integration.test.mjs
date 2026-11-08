@@ -214,3 +214,69 @@ test('a tampered active artifact falls back to the stats model and its accounts'
  const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
  assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v1')),accounts);
 });
+
+test('weekly learning loop: settle brake, train, evaluate, auto-switch, review and owner actions',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {runTrain,runEvaluate,runReview,runOwnerAction}=await import('./props-learn-worker.ts');
+ const {verifiedArtifact}=await import('./props-active-model.ts');
+ const db='props_it_loop';
+ const {store,deps,add,event}=await learningDb(db);
+ await add('props-learn-v1');await event('props-learn-v1','shadow_start');
+ clock='2026-11-07T19:00:00.000Z';
+ assert.equal((await runCollect(deps,'collect-2026-11-07T19',null)).outcome,'COMPLETED');
+ finals['20261107']=7;
+ clock='2026-11-08T07:00:00.000Z';
+ const s=await runSettle(deps,'settle-2026-11-08T07',null);
+ assert.equal(s.outcome,'COMPLETED',JSON.stringify(s.summary));
+ assert.equal(s.summary.safetyBrake.trip,false);
+ assert.ok(s.summary.safetyBrake.n>0&&s.summary.safetyBrake.n<50,JSON.stringify(s.summary.safetyBrake));
+ assert.equal(s.summary.safetyBrake.model,'props-nb-minutes-rate-v1');
+
+ const learn={store,now,historical:[]};
+ // Learning off: nothing is trained or written.
+ await runOwnerAction(store,'learning_off',{reason:'integration test',actor:'owner:test'});
+ assert.deepEqual(await runTrain(learn),{status:'LEARNING_DISABLED'});
+ assert.equal(psql(db,'SELECT count(*) FROM props_model_artifacts').out,'1');
+ await runOwnerAction(store,'learning_on',{reason:'integration test',actor:'owner:test'});
+
+ // Synthetic history (TEST-ONLY) plus the graded forward lines.
+ let seed=11;const r=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
+ const historical=Array.from({length:900},(_,i)=>{const p=0.35+r()*0.3;return {stat:['points','rebounds','assists'][i%3],
+  input:{base:{pMore:p,pLess:1-p,pTie:0},market:null,matchup:{oppAllowedRatio:0.9+r()*0.2,home:i%2,restDays:i%4,backToBack:i%4===0?1:0}},
+  y:r()<p?1:0,at:new Date(Date.UTC(2026,0,1)+i*3600_000).toISOString(),key:'h'+i,eventId:'h'+(i%60),date:'2026-01-01'};});
+ const t=await runTrain({...learn,historical});
+ assert.ok(['SHADOWING','DROPPED'].includes(t.status),JSON.stringify(t));
+ assert.equal(t.version,'props-learn-v2');
+ assert.equal(t.marketWeightsActive,false);
+ const row=JSON.parse(psql(db,`SELECT json_build_object('version',version,'sha256',sha256,'artifact',artifact) FROM props_model_artifacts WHERE version='props-learn-v2'`).out);
+ assert.ok(verifiedArtifact(row),'stored artifact verifies');
+ const evs=psql(db,`SELECT string_agg(event,',' ORDER BY id) FROM props_model_events WHERE version='props-learn-v2'`).out;
+ assert.ok(evs==='created,shadow_start'||evs==='created,dropped',evs);
+
+ // A broken fit writes nothing.
+ const bad=historical.map((h,i)=>i===0?{...h,input:{...h.input,base:{pMore:NaN,pLess:NaN,pTie:0}}}:h);
+ assert.equal((await runTrain({...learn,historical:bad})).status,'FAILED_INVALID_ARTIFACT');
+ assert.equal(psql(db,'SELECT count(*) FROM props_model_artifacts').out,'2');
+
+ // The registered gate needs far more evidence than one night.
+ const strict=await runEvaluate({store,now});
+ assert.ok(strict.challengers.find(c=>c.version==='props-learn-v1').failed.includes('min_lines'));
+ assert.equal(strict.promoted,null);
+ // A relaxed TEST gate: auto-switch off records eligibility only; on, it promotes.
+ const relaxed={minGradedLines:1,minDates:1,minGames:1,minCandidateDecisions:0,maxBrierDifferenceUpper95:1,bootstrapReplicates:50,bootstrapSeed:1,requireNoWorseLogLoss:false};
+ await runOwnerAction(store,'auto_off',{reason:'integration test',actor:'owner:test'});
+ const held=await runEvaluate({store,now},relaxed);
+ assert.equal(held.promoted,null);
+ assert.equal(psql(db,`SELECT event FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out,'eligible');
+ await runOwnerAction(store,'auto_on',{reason:'integration test',actor:'owner:test'});
+ const auto=await runEvaluate({store,now},relaxed);
+ assert.equal(auto.promoted,'props-learn-v1');
+ assert.equal(psql(db,'SELECT active_model_version FROM props_model_control').out,'props-learn-v1');
+
+ // Weekly review stored; owner roll back restores the stats model.
+ const rv=await runReview({store,now});
+ assert.equal(rv.status,'OK');
+ assert.equal(psql(db,'SELECT count(*) FROM props_learning_reports').out,'1');
+ await runOwnerAction(store,'rollback',{reason:'integration test',actor:'owner:test'});
+ assert.equal(psql(db,'SELECT active_model_version FROM props_model_control').out,'props-nb-minutes-rate-v1');
+ await assert.rejects(runOwnerAction(store,'approve',{version:'v1; drop table',reason:'x',actor:'owner:test'}),/PROPS_INVALID_VERSION/);
+});
