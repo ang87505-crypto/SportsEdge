@@ -43,7 +43,6 @@ export function trainDecision(candidateBrier:number,activeBrier:number):'shadow'
  return candidateBrier>activeBrier?'drop':'shadow';
 }
 
-const favoured=(p:Probs)=>p.pMore>=p.pLess?'more' as const:'less' as const;
 function matchupFor(l:ForwardLine,teamRows:TeamGameRow[]):Matchup|null{
  const home=teamAbbr(l.homeTeam),away=teamAbbr(l.awayTeam);
  if(!l.team||!home||!away||(l.team!==home&&l.team!==away))return null;
