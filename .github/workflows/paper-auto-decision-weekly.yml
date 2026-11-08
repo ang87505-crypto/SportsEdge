@@ -35,7 +35,9 @@ concurrency:
 jobs:
   decide:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # Vercel also dispatches this workflow at 09:00-09:59 UTC, early enough to avoid
+    # the delayed GitHub cron. Wait for the same 08:00 ET capture; no later prices.
+    timeout-minutes: 270
     env:
       EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
       SESSION_INPUT: ${{ inputs.session }}

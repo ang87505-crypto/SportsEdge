@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {"path": "/api/internal/paper-auto/kickoff", "schedule": "0 9 * * *"}
+  ],
   "git": {
     "deploymentEnabled": {
       "claude/**": false

@@ -5,6 +5,7 @@ on:
       - 'src/lib/server/paper-auto-*'
       - 'src/lib/stocks/paper-auto-*'
       - 'src/app/api/internal/paper-auto/**'
+      - 'vercel.json'
       - 'src/app/stocks/paper-auto/**'
       - 'src/components/paper-auto-*'
       - 'src/lib/stocks/paper-strategy-rebalance.ts'
@@ -59,6 +60,8 @@ jobs:
           python-version: '3.13'
       - name: Signal bridge (synthetic captures, no network)
         run: python -m unittest analytics.test_stock_forward_bridge_v1 -v
+      - name: Authenticated early kickoff (fixed paper workflows; no real network)
+        run: node --experimental-strip-types --test src/lib/server/paper-auto-kickoff.test.mjs
       - name: Controller end to end against a fake broker and the real schema (includes the Python bridge chain)
         run: node --experimental-strip-types --test src/lib/server/paper-auto-controller.test.mjs
       - name: Scheduled runs on; broker writes and real money released OFF; owner and frozen monthly decision never scheduled
