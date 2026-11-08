@@ -42,6 +42,26 @@ test('the headline says plainly whether the autopilot is on, off or needs attent
  h=headline(ledger({gateMode:'PAUSED',state:'PAUSED'}));assert.equal(h.label,'Paused');assert.equal(h.canStart,true);
 });
 
+test('a ready or executing gate never claims to trade when paper orders or the schedule are off',()=>{
+ const planning={brokerWritesEnabled:false,scheduledRunsEnabled:true};
+ const l=ledger({gateMode:'ARMED',state:'READY'});
+ assert.equal(headline(l,planning).label,'Planning only');
+ assert.equal(headline(l,planning).tone,'warning');
+ assert.equal(headline(ledger({gateMode:'ARMED',state:'EXECUTING'}),planning).label,'Planning now');
+ assert.equal(headline(l,{brokerWritesEnabled:true,scheduledRunsEnabled:false}).label,'Schedule off');
+ assert.equal(headline(l,{brokerWritesEnabled:true,scheduledRunsEnabled:true}).label,'Running');
+ assert.equal(headline(ledger(),planning).label,'Stopped','release never overrides the owner gate');
+ assert.equal(headline(ledger({gateMode:'PAUSED',state:'PAUSED'}),planning).label,'Paused');
+ assert.equal(headline(ledger({gateMode:'ARMED',state:'BLOCKED'}),planning).label,'Needs attention');
+});
+
+test('an owner Stop remains Stopped and can be explicitly started again; risk alerts still block Start',()=>{
+ const l=ledger({unacknowledgedCriticalAlerts:1},{alerts:[{alertId:1,severity:'critical',
+  code:'OWNER_STOP_'+'A'.repeat(32),acknowledgedAt:null}]});
+ assert.equal(headline(l).label,'Stopped');assert.equal(headline(l).canStart,true);
+ assert.equal(headline(ledger({unacknowledgedCriticalAlerts:2},{alerts:l.alerts})).canStart,false);
+});
+
 test('holdings, picks and activity read the ledger in plain words',()=>{
  const l=ledger({},{
   intents:[{intentId:'a',symbol:'F',side:'buy',phase:'BUY',attempt:1,shares:8,limitCents:1200,status:'filled',

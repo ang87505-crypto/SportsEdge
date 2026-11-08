@@ -1,8 +1,10 @@
 /** Plain-language view of the recurring PAPER autopilot for the owner page. Pure; no I/O. */
 import type {PaperAutoLedger} from './paper-auto-ledger.ts';
+import {isOwnerStopAlert} from './paper-auto-ledger.ts';
 
 export type AutopilotTone='positive'|'warning'|'neutral'|'info';
-export type AutopilotHeadline={label:'Running'|'Trading now'|'Stopped'|'Paused'|'Needs attention';tone:AutopilotTone;
+export type AutopilotRelease={brokerWritesEnabled:boolean;scheduledRunsEnabled:boolean};
+export type AutopilotHeadline={label:'Running'|'Trading now'|'Planning only'|'Planning now'|'Schedule off'|'Stopped'|'Paused'|'Needs attention';tone:AutopilotTone;
  explanation:string;canStart:boolean;reasons:string[]};
 
 const BLOCKERS:Record<string,string>={UNRESOLVED_SUBMISSION:'An order is waiting to be confirmed.',
@@ -11,17 +13,26 @@ const BLOCKERS:Record<string,string>={UNRESOLVED_SUBMISSION:'An order is waiting
  ACCOUNT_MISMATCH:'The keys point at a different Alpaca account.',LEASE_HELD:'Another run is in progress.'};
 
 /** The one status the owner sees first, with the reason behind it. */
-export function headline(l:PaperAutoLedger):AutopilotHeadline{
+export function headline(l:PaperAutoLedger,release?:AutopilotRelease):AutopilotHeadline{
  const s=l.status,reasons:string[]=[];
- if(s.unacknowledgedCriticalAlerts>0)reasons.push(`${s.unacknowledgedCriticalAlerts} critical alert${s.unacknowledgedCriticalAlerts===1?'':'s'} to review.`);
+ const stops=l.alerts.filter(a=>!a.acknowledgedAt&&a.severity==='critical'&&isOwnerStopAlert(a.code)).length;
+ const critical=Math.max(0,s.unacknowledgedCriticalAlerts-stops);
+ if(critical>0)reasons.push(`${critical} critical alert${critical===1?'':'s'} to review.`);
  if(s.unresolvedIntents>0)reasons.push('An order is waiting to be confirmed with Alpaca.');
  for(const b of s.lastCheckBlockers.slice(0,3))reasons.push(BLOCKERS[b.split(':')[0]]??`Last check: ${b}.`);
- const blockedStart=s.unacknowledgedCriticalAlerts>0||s.unresolvedIntents>0;
+ const blockedStart=critical>0||s.unresolvedIntents>0;
  if(s.gateMode==='ARMED'){
+  if(s.state==='READY'||s.state==='EXECUTING'){
+   if(release?.brokerWritesEnabled===false)return {label:s.state==='EXECUTING'?'Planning now':'Planning only',
+    tone:'warning',reasons,canStart:false,
+    explanation:'The account is enabled for planning. Paper orders are still switched off in the release.'};
+   if(release?.scheduledRunsEnabled===false)return {label:'Schedule off',tone:'warning',reasons,canStart:false,
+    explanation:'Paper orders are released, but automatic runs are switched off.'};
+  }
   if(s.state==='EXECUTING')return {label:'Trading now',tone:'info',reasons,canStart:false,
    explanation:'A trade run is working right now.'};
   if(s.state==='READY')return {label:'Running',tone:'positive',reasons,canStart:false,
-   explanation:'Autopilot is on. It picks stocks every Monday morning and trades them the same day.'};
+   explanation:'Scheduled runs can place paper orders. Stocks are picked on the first market day of each week.'};
   return {label:'Needs attention',tone:'warning',reasons:reasons.length?reasons:['The last account check is missing or out of date.'],
    canStart:false,explanation:'Autopilot is on, but it will not trade until this is cleared.'};
  }
