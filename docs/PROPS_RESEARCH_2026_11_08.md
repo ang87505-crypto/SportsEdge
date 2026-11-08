@@ -136,3 +136,9 @@ deduplication, timestamps, latest corrections, stale/locked/paused refusal,
 game-level uncertainty, review-only gates, artifact fingerprints and bounded
 read-only pagination. A saturated snapshot fails rather than silently reporting
 partial evidence. Database schema and original worker code are unchanged.
+
+The existing disposable SQL fixtures also backdate their synthetic v1 budget
+policy to January 1, 2026, before the pinned November test clock. Otherwise the
+policy's real schema-load timestamp becomes invisible to yesterday's test clock.
+This is the same test-only correction already reviewed on #99; no production
+policy, budget value, assertion or release head is changed.
