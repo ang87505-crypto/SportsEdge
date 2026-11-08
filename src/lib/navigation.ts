@@ -2,7 +2,7 @@ import type {NavIconName} from '@/components/nav-icon';
 
 /*
  * Single source of truth for the information architecture.
- * Three primary sections (Sports AI, Paper Betting, Stocks) plus Overview,
+ * Three primary sections (Sports AI, PrizePicks paper picks, Stocks) plus Overview,
  * and a small platform group. Every href here must be a real route.
  */
 export type NavLeaf={href:string;label:string;description:string};
@@ -17,10 +17,10 @@ export const SECTIONS:NavSection[]=[
    {href:'/research/epl',label:'Soccer model',description:'EPL three-way forecast archive'},
    {href:'/research/backtest',label:'Soccer accuracy history',description:'Six-month retrospective by league'},
   ]},
- {id:'paper',href:'/paper-betting',label:'Paper Betting',shortLabel:'Bets',icon:'paper',description:'Virtual-money NBA ledger and performance',match:['/paper-betting'],
+ {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting'],
   children:[
-   {href:'/paper-betting/props',label:'NBA player props',description:'PrizePicks and Pick6 paper test'},
-   {href:'/paper-betting/props-research',label:'Props research & picks',description:'Ranked paper picks and model comparison'},
+   {href:'/paper-betting/props-research',label:'Ranked picks & research',description:'Top qualifying picks and the model comparison'},
+   {href:'/paper-betting',label:'Moneyline ledger (older test)',description:'The earlier NBA moneyline virtual bankroll'},
   ]},
  {id:'stocks',href:'/stocks',label:'Stocks',shortLabel:'Stocks',icon:'stocks',description:'Paper portfolio, research and automation status',
   match:['/stocks'],
@@ -45,11 +45,22 @@ export function sectionFor(path:string):NavSection|null{
 }
 
 export type Crumb={href:string;label:string};
+/**
+ * The child page the path belongs to: the longest matching child, never one when the path is
+ * the section's own landing page (a child such as /paper-betting can be a prefix of it).
+ */
+export function activeChild(section:NavSection,path:string):NavLeaf|null{
+ const under=(href:string)=>path===href||path.startsWith(href+'/');
+ const child=section.children.filter(c=>under(c.href)).sort((a,b)=>b.href.length-a.href.length)[0]??null;
+ if(!child)return null;
+ // The landing page wins when it is the more specific match (/paper-betting/props over /paper-betting).
+ return under(section.href)&&section.href.length>child.href.length?null:child;
+}
 export function crumbsFor(path:string):Crumb[]{
  const section=sectionFor(path);
  if(section&&section.id!=='overview'){
   const crumbs:Crumb[]=[{href:section.href,label:section.label}];
-  const leaf=section.children.find(c=>path===c.href||path.startsWith(c.href+'/'));
+  const leaf=activeChild(section,path);
   if(leaf)crumbs.push({href:leaf.href,label:leaf.label});
   return crumbs;
  }
