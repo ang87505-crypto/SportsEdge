@@ -5,7 +5,7 @@
  * Provider calls are NEVER retried automatically: each attempt can cost credits,
  * and every attempt is reserved before it is sent.
  */
-import {PROPS_SPORT_KEY,PROPS_REGION,PLATFORMS,PLATFORM_BOOKMAKER,STATS,STAT_MARKET} from '../props/contract.ts';
+import {PROPS_SPORT_KEY,PROPS_REGION,PLATFORMS,PLATFORM_BOOKMAKER,SPORTSBOOKS,STATS,STAT_MARKET} from '../props/contract.ts';
 import {providerUsage} from '../props/budget.ts';
 
 export type ProviderReply={ok:boolean;httpStatus:number;body:unknown;receivedAt:string;
@@ -20,9 +20,9 @@ export class ProviderError extends Error{
 }
 const BASE='https://api.the-odds-api.com/v4/sports/'+PROPS_SPORT_KEY;
 
-/** Exact request parameters (without the key) for audit records and tests. */
+/** Exact request parameters (without the key) for audit records and tests. Up to 10 bookmakers cost one region. */
 export function eventOddsParams(){
- return {regions:PROPS_REGION,bookmakers:PLATFORMS.map(p=>PLATFORM_BOOKMAKER[p]).join(','),
+ return {regions:PROPS_REGION,bookmakers:[...PLATFORMS.map(p=>PLATFORM_BOOKMAKER[p]),...SPORTSBOOKS].join(','),
   markets:STATS.map(s=>STAT_MARKET[s]).join(','),oddsFormat:'american',dateFormat:'iso',includeMultipliers:'true'};
 }
 

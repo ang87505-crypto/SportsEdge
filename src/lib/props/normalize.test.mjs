@@ -84,3 +84,14 @@ test('event list excludes started games and invalid ids without relabelling',()=
  assert.equal(r.invalid,2);
  assert.throws(()=>parseEventList({},now));
 });
+
+test('eventOddsParams lists platforms then sportsbooks, at most 10 books, one region worth of cost',async()=>{
+ const {eventOddsParams}=await import('../server/props-odds-client.ts');
+ const {eventOddsWorstCost}=await import('./budget.ts');
+ const p=eventOddsParams();
+ const books=p.bookmakers.split(',');
+ assert.deepEqual(books,['prizepicks','pick6','draftkings','fanduel','betmgm','williamhill_us']);
+ assert.ok(books.length<=10);
+ assert.equal(p.regions,'us_dfs');
+ assert.equal(eventOddsWorstCost(),3);
+});
