@@ -20,6 +20,7 @@ export const SECTIONS:NavSection[]=[
  {id:'paper',href:'/paper-betting',label:'Paper Betting',shortLabel:'Bets',icon:'paper',description:'Virtual-money NBA ledger and performance',match:['/paper-betting'],
   children:[
    {href:'/paper-betting/props',label:'NBA player props',description:'PrizePicks and Pick6 paper test'},
+   {href:'/paper-betting/props-research',label:'Props research & picks',description:'Ranked paper picks and model comparison'},
   ]},
  {id:'stocks',href:'/stocks',label:'Stocks',shortLabel:'Stocks',icon:'stocks',description:'Paper portfolio, research and automation status',
   match:['/stocks'],
