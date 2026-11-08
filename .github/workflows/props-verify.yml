@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '24'
       - name: Unit tests (normalizer, budget, model, grading, entries, schedule)
-        run: node --experimental-strip-types --test src/lib/props/*.test.mjs src/lib/server/props-owner.test.mjs src/lib/paper-automation-view.test.mjs
+        run: node --experimental-strip-types --test src/lib/props/*.test.mjs scripts/box-csv.test.mjs src/lib/server/props-owner.test.mjs src/lib/paper-automation-view.test.mjs
       - name: SQL contract and end-to-end tests on disposable PostgreSQL
         run: |
           sudo systemctl start postgresql.service
