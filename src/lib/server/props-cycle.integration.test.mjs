@@ -74,10 +74,10 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  const c=await runCollect(deps,'collect-2026-11-07T16',`2026-11-07T16:00:00.000Z`);
  assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
  assert.equal(c.summary.startDelaySeconds,10800);
- assert.equal(c.summary.plan.chosen.length,3);                  // 1 + 3x3 = 10 credits <= 12/day
- assert.equal(c.summary.receipt.observations,72);               // 12 players x 3 stats x 2 platforms
- assert.equal(c.summary.receipt.predictions,72);
- assert.equal(c.summary.predictions.scored,72,JSON.stringify(c.summary.predictions));
+ assert.equal(c.summary.plan.chosen.length,2);                  // v2 plan: 1 + 2x3 = 7 credits
+ assert.equal(c.summary.receipt.observations,48);               // 8 players x 3 stats x 2 platforms
+ assert.equal(c.summary.receipt.predictions,48);
+ assert.equal(c.summary.predictions.scored,48,JSON.stringify(c.summary.predictions));
  const pp=c.summary.entries.prizepicks,p6=c.summary.entries.pick6;
  assert.ok(pp.entries.length>=1&&p6.entries.length>=1,JSON.stringify(c.summary.entries));
  const legs=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT e.id,count(DISTINCT o.provider_event_id) g,count(*) n FROM props_entries e
@@ -90,7 +90,7 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  const before=oddsCalls;
  clock='2026-11-07T21:00:00.000Z';
  const again=await runCollect(deps,'collect-2026-11-07T21',null);
- assert.equal(again.outcome,'BUDGET_EXHAUSTED');                // 10 used; 1+3 more would exceed 12
+ assert.equal(again.outcome,'BUDGET_EXHAUSTED');                // 7 used; the fallback slot spends nothing
  assert.equal(oddsCalls,before);
 
  // Settle after the games, with one DNP and one later stat correction.
@@ -98,7 +98,7 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  clock='2026-11-08T07:00:00.000Z';
  const s=await runSettle(deps,'settle-2026-11-08T07',null);
  assert.equal(s.outcome,'COMPLETED',JSON.stringify(s.summary));
- assert.equal(s.summary.grading.newResults,72);
+ assert.equal(s.summary.grading.newResults,48);
  assert.ok((s.summary.grading.graded.void_dnp??0)===6,'one DNP player voids his 3 stats on both platforms');
  const st=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT a.platform,s.outcome,s.return_cents,s.profit_cents,s.wins,s.losses,s.voids
   FROM props_entry_settlements s JOIN props_entries e ON e.id=s.entry_id JOIN props_accounts a ON a.id=e.account_id) x`).out);

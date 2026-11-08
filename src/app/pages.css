@@ -462,3 +462,10 @@
 .autopilot-release-note { margin: 0; color: var(--text-2); }
 @media (max-width: 1000px) { .automation-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .automation-guide { grid-template-columns: 1fr; gap: 18px; } }
+
+/* NBA player props: daily cycle list and sub-headings */
+.props-schedule { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+.props-schedule li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2, transparent); }
+.props-schedule li span { display: grid; }
+.props-schedule small { color: var(--text-3); }
+.props-subhead { font-size: 0.95rem; margin: 0 0 8px; }
