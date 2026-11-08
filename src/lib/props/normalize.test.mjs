@@ -95,3 +95,44 @@ test('eventOddsParams lists platforms then sportsbooks, at most 10 books, one re
  assert.equal(p.regions,'us_dfs');
  assert.equal(eventOddsWorstCost(),3);
 });
+
+// ---- sportsbook quotes (synthetic TEST-ONLY fixtures)
+const priced=(player,point,over=-120,under=100)=>[
+ {name:'Over',description:player,price:over,point},{name:'Under',description:player,price:under,point}];
+const mixed=()=>event([
+ book('prizepicks',[market('player_points',pair('Player A',24.5))]),
+ book('draftkings',[market('player_points',priced('Player A',24.5))]),
+ book('fanduel',[market('player_points',priced('Player A',25.5,-105,-115))])]);
+
+test('sportsbooks are not rejected by the platform normalizer',()=>{
+ const r=normalizePropEvent(mixed(),listed,now);
+ assert.equal(r.observations.length,1);
+ assert.deepEqual(r.rejected,[]);
+});
+
+test('normalizeBookQuotes keeps complete over/under pairs with American prices',async()=>{
+ const {normalizeBookQuotes}=await import('./normalize.ts');
+ const r=normalizeBookQuotes(mixed(),listed,now);
+ assert.equal(r.quotes.length,2);
+ const dk=r.quotes.find(q=>q.bookmakerKey==='draftkings');
+ assert.deepEqual([dk.playerName,dk.stat,dk.line,dk.overPrice,dk.underPrice],['Player A','points',24.5,-120,100]);
+ assert.equal(dk.lockAt,'2026-11-08T00:00:00.000Z');
+ assert.equal(dk.providerEventId,listed.id);
+ assert.match(dk.responseSha256,/^[a-f0-9]{64}$/);
+ assert.ok(r.quotes.every(q=>q.bookmakerKey!=='prizepicks'));
+});
+
+test('normalizeBookQuotes rejects stale, future, missing-price, duplicate and ambiguous pairs',async()=>{
+ const {normalizeBookQuotes}=await import('./normalize.ts');
+ const raw=event([
+  book('draftkings',[market('player_points',priced('Stale P',20.5),'2026-11-07T16:00:00Z')]),
+  book('fanduel',[market('player_points',[{name:'Over',description:'Half P',price:-110,point:10.5}])]),
+  book('betmgm',[market('player_points',[...priced('Dup P',12.5),...priced('Dup P',12.5)])]),
+  book('williamhill_us',[market('player_points',[...priced('Amb P',12.5),...priced('Amb P',13.5)])])]);
+ const reasons=normalizeBookQuotes(raw,listed,now).rejected.map(x=>x.reason).sort();
+ assert.deepEqual(reasons,['ambiguous_line','ambiguous_line','duplicate','incomplete_pair','stale_quote']);
+ const future=event([book('draftkings',[market('player_points',priced('Late P',20.5),'2026-11-07T23:00:00Z')])]);
+ assert.deepEqual(normalizeBookQuotes(future,listed,now).rejected.map(x=>x.reason),['future_quote']);
+ const noPrice=event([book('draftkings',[market('player_points',[{name:'Over',description:'NP',point:9.5},{name:'Under',description:'NP',price:-110,point:9.5}])])]);
+ assert.deepEqual(normalizeBookQuotes(noPrice,listed,now).rejected.map(x=>x.reason),['invalid_outcome']);
+});

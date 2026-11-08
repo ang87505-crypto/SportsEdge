@@ -1,13 +1,13 @@
 /**
- * Pure adapter: The Odds API event-odds response (region us_dfs) -> admitted
- * PrizePicks / Pick6 standard player-stat lines, plus explicit rejections.
+ * Pure adapter: The Odds API event-odds response -> admitted PrizePicks / Pick6
+ * standard player-stat lines and sportsbook reference quotes, plus explicit rejections.
  * No network, database, or wall-clock reads. The caller supplies ingestedAt
  * (our receipt time) and the event as listed by the events endpoint.
  */
 import {createHash} from 'node:crypto';
 import {
- PROPS_PROVIDER,PROPS_SPORT_KEY,PLATFORMS,PLATFORM_BOOKMAKER,MARKET_STAT,OBSERVATION_RULES,
- type Platform,type PropObservation,type RejectedObservation,type ObservationReject,
+ PROPS_PROVIDER,PROPS_SPORT_KEY,PLATFORMS,PLATFORM_BOOKMAKER,SPORTSBOOKS,MARKET_STAT,OBSERVATION_RULES,
+ type Platform,type Sportsbook,type Stat,type PropObservation,type RejectedObservation,type ObservationReject,
 } from './contract.ts';
 
 type Obj=Record<string,unknown>;
@@ -44,45 +44,49 @@ export type PropNormalization={
 };
 
 const bookToPlatform=new Map<string,Platform>(PLATFORMS.map(p=>[PLATFORM_BOOKMAKER[p],p]));
+const SPORTSBOOK_KEYS=new Set<string>(SPORTSBOOKS);
 
-export function normalizePropEvent(raw:unknown,listed:ListedEvent,ingestedAt:string):PropNormalization{
- const now=Date.parse(ingestedAt);
- if(!Number.isFinite(now))throw new Error('PROPS_INVALID_INGESTION_TIME');
- const responseSha256=sha256(canonicalJson(raw));
- const rejected:RejectedObservation[]=[];
- const reject=(reason:ObservationReject,x:Partial<RejectedObservation>={})=>rejected.push({
-  platform:null,bookmakerKey:null,marketKey:null,playerName:null,line:null,...x,reason});
- const event=obj(raw);
+type Side={price:number|null;multiplier:number|null;raw:Obj};
+type Group={book:string;market:string;player:string;line:number;updated:string;over?:Side;under?:Side;bad?:ObservationReject};
+type Reject=(reason:ObservationReject,x?:Partial<RejectedObservation>)=>void;
+type Prepared={ok:false;eventLocked:boolean}|{ok:true;event:Obj;id:string;home:string;away:string;start:string;lockMs:number;lockAt:string};
+
+/** Event-level checks shared by platform lines and sportsbook quotes. */
+function prepareEvent(event:Obj|null,listed:ListedEvent,now:number,reject:Reject):Prepared{
  const listedStart=iso(listed.commenceTime);
- if(!event||!listedStart){reject('invalid_event');return {observations:[],rejected,responseSha256,eventLocked:false};}
+ if(!event||!listedStart){reject('invalid_event');return {ok:false,eventLocked:false};}
  const id=name(event.id),home=name(event.home_team),away=name(event.away_team),start=iso(event.commence_time);
  if(id!==listed.id||event.sport_key!==PROPS_SPORT_KEY||!home||!away||!start||
   home!==listed.homeTeam||away!==listed.awayTeam||home===away){
-  reject('event_mismatch');return {observations:[],rejected,responseSha256,eventLocked:false};
+  reject('event_mismatch');return {ok:false,eventLocked:false};
  }
  // Lock at the earlier of the listed and the returned start; never extend a deadline.
  const lockMs=Math.min(Date.parse(start),Date.parse(listedStart));
- const lockAt=new Date(lockMs).toISOString();
- if(lockMs-now<=OBSERVATION_RULES.lockBufferMs){
-  reject('event_locked');return {observations:[],rejected,responseSha256,eventLocked:true};
- }
- type Side={price:number|null;multiplier:number|null;raw:Obj};
- type Group={platform:Platform;book:string;market:string;player:string;line:number;updated:string;
-  over?:Side;under?:Side;bad?:ObservationReject};
+ if(lockMs-now<=OBSERVATION_RULES.lockBufferMs){reject('event_locked');return {ok:false,eventLocked:true};}
+ return {ok:true,event,id,home,away,start,lockMs,lockAt:new Date(lockMs).toISOString()};
+}
+
+/**
+ * Over/Under pairs for the bookmakers `accept` admits, with freshness and line checks.
+ * `classify` returns 'accept', 'skip' (silently ignored) or 'reject' (counted as unknown_bookmaker).
+ * Groups are finished: duplicate, ambiguous and incomplete pairs are rejected here.
+ */
+function collectPairs(event:Obj,now:number,lockMs:number,classify:(key:string)=>'accept'|'skip'|'reject',
+ reject:Reject,ctx:(key:string)=>Partial<RejectedObservation>):(Group&{over:Side;under:Side})[]{
  const groups=new Map<string,Group>();
  const linesPerPlayer=new Map<string,Set<number>>();
- const books=Array.isArray(event.bookmakers)?event.bookmakers:[];
- for(const b of books){
+ for(const b of Array.isArray(event.bookmakers)?event.bookmakers:[]){
   const book=obj(b);const key=book?name(book.key):null;
   if(!book||!key)continue;
-  const platform=bookToPlatform.get(key);
-  if(!platform){reject('unknown_bookmaker',{bookmakerKey:key});continue;}
+  const kind=classify(key);
+  if(kind==='skip')continue;
+  if(kind==='reject'){reject('unknown_bookmaker',{bookmakerKey:key});continue;}
   for(const m of Array.isArray(book.markets)?book.markets:[]){
    const market=obj(m);const mkey=market?name(market.key):null;
    if(!market||!mkey)continue;
-   if(!MARKET_STAT[mkey]){reject('unsupported_market',{platform,bookmakerKey:key,marketKey:mkey});continue;}
+   const base={...ctx(key),bookmakerKey:key,marketKey:mkey};
+   if(!MARKET_STAT[mkey]){reject('unsupported_market',base);continue;}
    const updated=iso(market.last_update);
-   const base={platform,bookmakerKey:key,marketKey:mkey};
    if(!updated){reject('missing_last_update',base);continue;}
    const u=Date.parse(updated);
    if(u>now+OBSERVATION_RULES.maxClockSkewMs){reject('future_quote',base);continue;}
@@ -105,7 +109,7 @@ export function normalizePropEvent(raw:unknown,listed:ListedEvent,ingestedAt:str
      multiplier=mult;
     }
     const gkey=[key,mkey,player.toLowerCase(),point].join('\u0000');
-    const g=groups.get(gkey)??{platform,book:key,market:mkey,player,line:point,updated};
+    const g=groups.get(gkey)??{book:key,market:mkey,player,line:point,updated};
     const entry:Side={price:american(out.price),multiplier,raw:out};
     if(side==='over'){if(g.over)g.bad='duplicate';g.over=entry;}else{if(g.under)g.bad='duplicate';g.under=entry;}
     if(updated>g.updated)g.updated=updated;
@@ -115,19 +119,42 @@ export function normalizePropEvent(raw:unknown,listed:ListedEvent,ingestedAt:str
    }
   }
  }
- const observations:PropObservation[]=[];
+ const done:(Group&{over:Side;under:Side})[]=[];
  for(const g of groups.values()){
-  const info={platform:g.platform,bookmakerKey:g.book,marketKey:g.market,playerName:g.player,line:g.line};
+  const info={...ctx(g.book),bookmakerKey:g.book,marketKey:g.market,playerName:g.player,line:g.line};
   if(g.bad){reject(g.bad,info);continue;}
-  // Two different standard lines for one player/stat/platform: which one is offered is ambiguous.
+  // Two different standard lines for one player/stat/book: which one is offered is ambiguous.
   if((linesPerPlayer.get([g.book,g.market,g.player.toLowerCase()].join('\u0000'))?.size??0)>1){
    reject('ambiguous_line',info);continue;
   }
   if(!g.over||!g.under){reject('incomplete_pair',info);continue;}
-  if([g.over.multiplier,g.under.multiplier].some(m=>m!==null&&m!==1)){reject('special_multiplier',info);continue;}
+  done.push(g as Group&{over:Side;under:Side});
+ }
+ return done;
+}
+
+export function normalizePropEvent(raw:unknown,listed:ListedEvent,ingestedAt:string):PropNormalization{
+ const now=Date.parse(ingestedAt);
+ if(!Number.isFinite(now))throw new Error('PROPS_INVALID_INGESTION_TIME');
+ const responseSha256=sha256(canonicalJson(raw));
+ const rejected:RejectedObservation[]=[];
+ const reject:Reject=(reason,x={})=>rejected.push({
+  platform:null,bookmakerKey:null,marketKey:null,playerName:null,line:null,...x,reason});
+ const ev=prepareEvent(obj(raw),listed,now,reject);
+ if(!ev.ok)return {observations:[],rejected,responseSha256,eventLocked:ev.eventLocked};
+ // Sportsbook quotes in the same reply are handled by normalizeBookQuotes, not rejected here.
+ const pairs=collectPairs(ev.event,now,ev.lockMs,
+  k=>bookToPlatform.has(k)?'accept':SPORTSBOOK_KEYS.has(k)?'skip':'reject',reject,
+  k=>({platform:bookToPlatform.get(k)??null}));
+ const observations:PropObservation[]=[];
+ for(const g of pairs){
+  const platform=bookToPlatform.get(g.book)!;
+  if([g.over.multiplier,g.under.multiplier].some(m=>m!==null&&m!==1)){
+   reject('special_multiplier',{platform,bookmakerKey:g.book,marketKey:g.market,playerName:g.player,line:g.line});continue;
+  }
   observations.push({
-   provider:PROPS_PROVIDER,platform:g.platform,bookmakerKey:g.book,providerEventId:id,
-   homeTeam:home,awayTeam:away,commenceTime:start,lockAt,playerName:g.player,
+   provider:PROPS_PROVIDER,platform,bookmakerKey:g.book,providerEventId:ev.id,
+   homeTeam:ev.home,awayTeam:ev.away,commenceTime:ev.start,lockAt:ev.lockAt,playerName:g.player,
    stat:MARKET_STAT[g.market],marketKey:g.market,period:'full_game',line:g.line,
    overPrice:g.over.price,underPrice:g.under.price,
    overMultiplier:g.over.multiplier,underMultiplier:g.under.multiplier,
@@ -139,6 +166,33 @@ export function normalizePropEvent(raw:unknown,listed:ListedEvent,ingestedAt:str
  observations.sort((a,b)=>a.platform.localeCompare(b.platform)||a.playerName.localeCompare(b.playerName)||
   a.stat.localeCompare(b.stat));
  return {observations,rejected,responseSha256,eventLocked:false};
+}
+
+/** A sportsbook's standard Over/Under for one player stat: a professional-market reference, never an entry. */
+export type BookQuote={bookmakerKey:Sportsbook;providerEventId:string;playerName:string;stat:Stat;marketKey:string;line:number;
+ overPrice:number;underPrice:number;providerLastUpdate:string;ingestedAt:string;lockAt:string;responseSha256:string};
+
+/** Sportsbook quotes from the same event reply, under the same freshness and lock rules as platform lines. */
+export function normalizeBookQuotes(raw:unknown,listed:ListedEvent,ingestedAt:string)
+ :{quotes:BookQuote[];rejected:{bookmakerKey:string|null;reason:ObservationReject}[]}{
+ const now=Date.parse(ingestedAt);
+ if(!Number.isFinite(now))throw new Error('PROPS_INVALID_INGESTION_TIME');
+ const responseSha256=sha256(canonicalJson(raw));
+ const rejected:{bookmakerKey:string|null;reason:ObservationReject}[]=[];
+ const reject:Reject=(reason,x={})=>rejected.push({bookmakerKey:x.bookmakerKey??null,reason});
+ const ev=prepareEvent(obj(raw),listed,now,reject);
+ if(!ev.ok)return {quotes:[],rejected};
+ const pairs=collectPairs(ev.event,now,ev.lockMs,k=>SPORTSBOOK_KEYS.has(k)?'accept':'skip',reject,()=>({}));
+ const quotes:BookQuote[]=[];
+ for(const g of pairs){
+  // A reference price must be a real two-sided American price.
+  if(g.over.price===null||g.under.price===null){reject('invalid_outcome',{bookmakerKey:g.book});continue;}
+  quotes.push({bookmakerKey:g.book as Sportsbook,providerEventId:ev.id,playerName:g.player,stat:MARKET_STAT[g.market],
+   marketKey:g.market,line:g.line,overPrice:g.over.price,underPrice:g.under.price,providerLastUpdate:g.updated,
+   ingestedAt:new Date(now).toISOString(),lockAt:ev.lockAt,responseSha256});
+ }
+ quotes.sort((a,b)=>a.bookmakerKey.localeCompare(b.bookmakerKey)||a.playerName.localeCompare(b.playerName)||a.stat.localeCompare(b.stat));
+ return {quotes,rejected};
 }
 
 /** Parse the events endpoint into upcoming listed events (live/past are excluded, not relabelled). */
