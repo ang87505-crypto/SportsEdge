@@ -8,6 +8,8 @@ on:
       - 'src/data/props/**'
       - 'database/props/**'
       - 'scripts/props-*'
+      - 'scripts/lib/**'
+      - 'scripts/box-csv.test.mjs'
       - '.github/workflows/props-*.yml'
 permissions:
   contents: read
