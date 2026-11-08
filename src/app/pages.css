@@ -469,3 +469,17 @@
 .props-schedule li span { display: grid; }
 .props-schedule small { color: var(--text-3); }
 .props-subhead { font-size: 0.95rem; margin: 0 0 8px; }
+
+/* NBA player props: owner controls, plain steps, today's picks, home card */
+.props-control-state { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.props-unlock { display: grid; gap: 10px; max-width: 420px; }
+.props-unlock p { margin: 0; }
+.props-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--text-2); }
+.props-steps code { font-size: 0.85em; }
+.props-status-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.props-status-line p { margin: 0; color: var(--text-2); }
+.props-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.props-picks li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.props-picks li span { display: grid; min-width: 0; }
+.props-picks small { color: var(--text-3); }
+.props-picks strong.prob { font-variant-numeric: tabular-nums; white-space: nowrap; }

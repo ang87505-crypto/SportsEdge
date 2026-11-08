@@ -1,9 +1,11 @@
 # NBA player-prop paper testing: PrizePicks and DraftKings Pick6 (2026-11-07)
 
-Status: **implemented and locally verified; not yet connected or running.** No
-genuine line, prediction, entry or settlement exists yet. Scheduled runs are
-released OFF in source (`src/lib/props/schedule.ts`), and the ledger schema has
-not been applied to any Supabase project.
+Status (updated 2026-11-08): **released and running daily.** The schedule was
+released in PR #99 after a verified real collect-and-settle cycle, and the active
+data budget is `props-budget-v2` (at most 2 games per collection; see
+`src/lib/props/budget.ts`). The original 2026-11-07 notes below describe the first
+build, when nothing had run yet and budget v1 applied. Day-to-day operation without
+an AI assistant: `docs/OWNER_RUNBOOK.md`.
 
 The daily cycle is collect, validate, predict, record picks and entries before
 lock, collect final box scores, grade, reconcile, and show the results on the

@@ -9,17 +9,18 @@ import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
 import {buildView} from '@/lib/props/dashboard-view';
 import {mountainTime,propsAutomationStatus} from '@/lib/paper-automation-view';
-import {usdCents} from '@/lib/format';
+import {pct,usdCents} from '@/lib/format';
+import {propsSummary} from '@/lib/props/summary';
 
-export const metadata={title:'Paper automation · SportsEdge',description:'One place to follow NBA props and stock paper automation.'};
+export const metadata={title:'Paper automation · SportsEdge',description:'One place to follow PrizePicks props and stock paper automation.'};
 
 export default function AutomationPage(){
  return <>
   <PageHeading title="Paper automation" description="See what runs by itself, what needs you, and what happened last. All money here is virtual."
    action={<AutomationRefresh/>}/>
-  <p className="quiet small-print">Times below are New Mexico time. Status refreshes every minute while this page is open.</p>
+  <p className="quiet small-print">Times below are New Mexico time. Status refreshes every minute while this page is open. Nothing here needs Claude or ChatGPT: the jobs run on GitHub, the records live in Supabase, and the controls are on this site.</p>
   <div className="automation-grid">
-   <Suspense fallback={<Panel title="NBA props"><Loading label="Reading sports records…"/></Panel>}><SportsStatus/></Suspense>
+   <Suspense fallback={<Panel title="PrizePicks props"><Loading label="Reading sports records…"/></Panel>}><SportsStatus/></Suspense>
    <Panel title="Stocks" description="Alpaca paper account · weekly stock picks" actions={<Badge tone="info">Paper account</Badge>}>
     <div className="automation-card-body">
      <AutopilotSummary autoRefresh/>
@@ -36,9 +37,9 @@ export default function AutomationPage(){
   </div>
   <Panel title="What the controls mean" className="mt-12">
    <div className="automation-guide">
-    <div><h3>Start once</h3><p>Stocks checks the paper account before enabling orders. Sports needs its first real collection and settlement verified before the daily schedule is released.</p></div>
-    <div><h3>Follow the results</h3><p>Sports grades picks after final scores. Stocks records its account after each close. A scheduled run may produce no qualifying pick or order.</p></div>
-    <div><h3>Pause or stop</h3><p>Stock controls are on its Autopilot page. Sports controls are in its owner workflow. Stopping stocks blocks new orders; existing holdings stay in the account.</p></div>
+    <div><h3>Already running</h3><p>PrizePicks collects lines twice each afternoon and grades results overnight and again in the morning, every day, with no click needed. Stocks needs one owner Start after checking the paper account.</p></div>
+    <div><h3>Follow the results</h3><p>PrizePicks grades picks after final box scores. Stocks records its account after each close. A scheduled run may find no qualifying pick or order; that is normal.</p></div>
+    <div><h3>Pause or stop</h3><p>PrizePicks: sign in on its page and press Pause, Resume or Stop. Stocks: use its Autopilot page. Stopping stocks blocks new orders; existing holdings stay in the account.</p></div>
    </div>
   </Panel>
   <Details title="Schedules and evidence">
@@ -52,18 +53,19 @@ export default function AutomationPage(){
 
 async function SportsStatus(){
  await connection();
- if(!propsDashboardConfigured())return <Panel title="NBA props"><Empty title="Sports records unavailable"
-  action={<Link className="button button-secondary" href="/paper-betting/props">Open sports paper</Link>}>The props ledger is not connected on this deployment.</Empty></Panel>;
+ if(!propsDashboardConfigured())return <Panel title="PrizePicks props"><Empty title="Sports records unavailable"
+  action={<Link className="button button-secondary" href="/paper-betting/props">Open PrizePicks</Link>}>The props ledger is not connected on this deployment.</Empty></Panel>;
  let raw;
- try{raw=await loadPropsDashboard();}catch{return <Panel title="NBA props"><Empty title="Could not read sports status"
+ try{raw=await loadPropsDashboard();}catch{return <Panel title="PrizePicks props"><Empty title="Could not read sports status"
   action={<Link className="button button-secondary" href="/paper-betting/props">Try the props ledger</Link>}>Refresh to check again. The last status is not assumed to be current.</Empty></Panel>;}
  const status=propsAutomationStatus(raw,PROPS_RELEASE.scheduledRunsEnabled);
  const pp=buildView(raw,'prizepicks'),p6=buildView(raw,'pick6');
+ const sum=propsSummary(pp);
  const next=nextPlannedRuns(raw.nowIso,4);
  const collect=next.find(r=>r.kind==='collect'),settle=next.find(r=>r.kind==='settle');
  const last=pp.automation.lastCollect;
  const open=pp.entryStats.open+p6.entryStats.open,settled=pp.entryStats.settled+p6.entryStats.settled;
- return <Panel title="NBA props" description="PrizePicks + Pick6 · daily virtual entries" actions={<Badge tone="info">$5 virtual entries</Badge>}>
+ return <Panel title="PrizePicks props" description="NBA player props · daily virtual entries (Pick6 tracked alongside)" actions={<Badge tone="info">$5 virtual entries</Badge>}>
   <div className="automation-card-body">
    <div className="automation-state"><Badge tone={status.tone} dot>{status.label}</Badge><p>{status.explanation}</p></div>
    <div className="automation-next-action"><span>Next step</span><strong>{status.nextAction}</strong></div>
@@ -76,12 +78,13 @@ async function SportsStatus(){
     <div><dt>Lines saved</dt><dd>{pp.lines.length} PrizePicks · {p6.lines.length} Pick6</dd></div>
     <div><dt>Next collection slot</dt><dd>{PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING'&&collect?mountainTime(collect.at):'Waiting until automation is on'}</dd></div>
     <div><dt>Next settlement slot</dt><dd>{PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING'&&settle?mountainTime(settle.at):'Manual settlement while testing'}</dd></div>
-    <div><dt>PrizePicks realized result</dt><dd>{pp.bankroll&&pp.bankroll.settledKnown?usdCents(pp.bankroll.realizedProfitCents,{signed:true}):'Not measured yet'}</dd></div>
+    <div><dt>PrizePicks balance</dt><dd>{usdCents(sum.balanceCents)} ({pp.bankroll&&pp.bankroll.settledKnown?`${usdCents(sum.netCents,{signed:true})}, ${sum.record.won}–${sum.record.lost}`:'no settled entries yet'})</dd></div>
+    <div><dt>PrizePicks pick hit rate</dt><dd>{sum.hitRate===null?'Not measured yet':`${pct(sum.hitRate,1)} of ${sum.graded} graded`}</dd></div>
     <div><dt>Pick6 returns</dt><dd>Unknown — payout depends on its pool</dd></div>
    </dl>
    <div className="button-row">
-    <Link href="/paper-betting/props" className="button">Open sports paper</Link>
-    <a href="https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml" className="button button-secondary" target="_blank" rel="noopener noreferrer">Sports controls</a>
+    <Link href="/paper-betting/props" className="button">Open PrizePicks and controls</Link>
+    <a href="https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml" className="button button-secondary" target="_blank" rel="noopener noreferrer">Run history on GitHub</a>
    </div>
    <p className="quiet small-print">{raw.accounts.length?`Up to ${raw.accounts.reduce((sum,a)=>sum+a.max_entries_per_day,0)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
