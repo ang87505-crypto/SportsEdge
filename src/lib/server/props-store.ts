@@ -6,7 +6,8 @@
 const ALLOWED_HOSTS=new Set(['fzyjazhvkstvwwzjhlrr.supabase.co','vfyzbliksooljxrlfadp.supabase.co']);
 const MAX_REPLY_BYTES=4_000_000;
 const RPCS=['props_begin_run','props_heartbeat','props_finish_run','props_reserve_credits','props_record_usage',
- 'props_set_control','props_record_entry','props_record_settlement'] as const;
+ 'props_set_control','props_record_entry','props_record_settlement',
+ 'props_set_learning','props_promote_model','props_rollback_model'] as const;
 export type PropsRpc=typeof RPCS[number];
 const TABLE=/^props_[a-z_]{3,40}$/;
 

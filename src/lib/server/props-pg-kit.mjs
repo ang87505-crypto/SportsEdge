@@ -36,7 +36,7 @@ ALTER TABLE public.props_budget_policy ENABLE TRIGGER props_append_only;
 function filters(params){
  const where=[];
  for(const [k,raw] of params){
-  if(['select','order','limit','on_conflict'].includes(k))continue;
+  if(['select','order','limit','offset','on_conflict'].includes(k))continue;
   const col=ident(k);
   const m=/^(not\.)?(eq|gt|gte|lt|lte|in|is)\.(.*)$/s.exec(raw);if(!m)throw new Error('unsupported filter '+raw);
   const [,neg,op,val]=m;let expr;
@@ -69,10 +69,10 @@ export function pgFetch(db,clock){
    if(!sel)sql=sql.replace(/SELECT coalesce\(json_agg\(ins\),'\[\]'\) FROM ins;$/,"SELECT '' FROM (SELECT count(*) FROM ins) z;");
   }else{
    const t=ident(path);const sel=url.searchParams.get('select')??'*';
-   const order=url.searchParams.get('order');const limit=url.searchParams.get('limit');
+   const order=url.searchParams.get('order');const limit=url.searchParams.get('limit');const offset=url.searchParams.get('offset');
    sql=`SELECT coalesce(json_agg(q),'[]') FROM (SELECT ${sel.split(',').map(ident).join(',')} FROM public.${t}${filters([...url.searchParams])}`+
     (order?' ORDER BY '+order.split(',').map(o=>{const [c,dir]=o.split('.');return ident(c)+(dir==='desc'?' DESC':' ASC');}).join(','):'')+
-    (limit?' LIMIT '+Number(limit):'')+') q;';
+    (limit?' LIMIT '+Number(limit):'')+(offset?' OFFSET '+Number(offset):'')+') q;';
   }
   const r=psql(db,prefix+sql);
   if(!r.ok){

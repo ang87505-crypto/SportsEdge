@@ -38,6 +38,8 @@ export const MARKET_STAT:Record<string,Stat>=Object.fromEntries(
 
 export const MODEL_VERSION='props-nb-minutes-rate-v1' as const;
 export const SELECTION_VERSION='props-select-v1' as const;
+/** v1 bands on the active (learning) model's probabilities, plus: skip when the sportsbooks clearly disagree. */
+export const SELECTION_VERSION_V2='props-select-v2' as const;
 export const NORMALIZER_VERSION='props-normalize-v1' as const;
 
 /** Observation admission rules (frozen for v1). */

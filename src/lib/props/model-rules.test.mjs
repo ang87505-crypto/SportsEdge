@@ -151,3 +151,16 @@ test('Pick6 returns stay unknown even for losing sets (peer-to-peer pool)',()=>{
   assert.equal(s.outcome,'payout_unknown');assert.equal(s.returnCents,null);assert.equal(s.profitCents,null);
  }
 });
+
+test('props-select-v2 skips a pick the sportsbooks clearly disagree with and otherwise matches v1',async()=>{
+ const {decidePick,decidePickV2}=await import('./rules.ts');
+ const {SELECTION_VERSION_V2}=await import('./contract.ts');
+ assert.equal(SELECTION_VERSION_V2,'props-select-v2');
+ const p={status:'scored',pMore:0.68,pLess:0.3,pTie:0.02};
+ const view=flags=>({booksAtSameLine:1,pMoreBooks:0.4,nearestBookLine:20.5,lineGap:0,flags});
+ assert.deepEqual(decidePickV2(p,view(['pros_disagree'])),{status:'skipped',side:null,probability:0.68,reason:'pros_disagree'});
+ assert.deepEqual(decidePickV2(p,view(['lagging_line'])),decidePick(p));
+ assert.deepEqual(decidePickV2(p,null),decidePick(p));
+ const low={status:'scored',pMore:0.52,pLess:0.46,pTie:0.02};
+ assert.deepEqual(decidePickV2(low,view(['pros_disagree'])),decidePick(low));
+});

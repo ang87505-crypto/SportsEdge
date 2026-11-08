@@ -26,7 +26,7 @@ const LEAGUE_WINDOW_MS=60*86400_000;
 
 function pinned(path:string){
  const f=loadBoxCsv(path);
- if(protocol.sourceHashes[f.file]!==f.sha256)throw new Error('SOURCE_HASH_MISMATCH: '+f.file);
+ if(!f.file||protocol.sourceHashes[f.file]!==f.sha256)throw new Error('SOURCE_HASH_MISMATCH: '+f.file);
  return f;
 }
 const prior=pinned(arg('prior')!),season=pinned(arg('season')!),out=arg('out')!;
