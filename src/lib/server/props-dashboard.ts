@@ -2,6 +2,7 @@ import 'server-only';
 /** Read-only loader for the player-prop paper dashboard (last 14 days). */
 import {propsStore,propsStoreConfig} from './props-store';
 import type {Raw} from '@/lib/props/dashboard-view';
+import type {Stat} from '@/lib/props/contract';
 
 export function propsDashboardConfigured(){
  // Synthetic Preview deployments never read a real ledger.
@@ -27,7 +28,7 @@ export async function loadPropsDashboard():Promise<Raw>{
  ]);
  const obsIds=observations.map(o=>o.id);
  const predictions=obsIds.length?await store.select<Raw['predictions'][number]>('props_predictions',
-  'select=id,observation_id,model_version,status,reason,p_more,p_less,p_tie,mean&observation_id='+ids(obsIds)+'&limit=5000'):[];
+  'select=id,observation_id,model_version,status,reason,p_more,p_less,p_tie,mean,inputs&observation_id='+ids(obsIds)+'&limit=5000'):[];
  const [picks,results]=await Promise.all([
   predictions.length?store.select<Raw['picks'][number]>('props_picks','select=id,prediction_id,status,side,reason,selection_version&prediction_id='+ids(predictions.map(p=>p.id))+'&limit=5000'):Promise.resolve([]),
   obsIds.length?store.select<Raw['results'][number]>('props_line_results','select=observation_id,revision,outcome,actual&observation_id='+ids(obsIds)+'&limit=10000'):Promise.resolve([]),
@@ -37,6 +38,36 @@ export async function loadPropsDashboard():Promise<Raw>{
   entryIds.length?store.select<Raw['legs'][number]>('props_entry_legs','select=entry_id,pick_id&entry_id='+ids(entryIds)+'&limit=5000'):Promise.resolve([]),
   entryIds.length?store.select<Raw['settlements'][number]>('props_entry_settlements','select=entry_id,outcome,wins,losses,voids,return_cents,profit_cents,settled_at&entry_id='+ids(entryIds)+'&limit=5000'):Promise.resolve([]),
  ]);
+ const [model,views,report]=await Promise.all([loadModel(store),
+  obsIds.length?optional(()=>byIds<NonNullable<Raw['views']>[number]>(store,'props_market_views',
+   'observation_id,books_at_same_line,p_more_books,line_gap,nearest_book_line,flags',obsIds),[]):Promise.resolve([]),
+  optional(async()=>(await store.select<NonNullable<Raw['report']>>('props_learning_reports',
+   'select=period_from,period_to,model_version,at,report&order=id.desc&limit=1'))[0]??null,null)]);
  return {nowIso,control:control[0]??null,runs,credits,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
-  observations,predictions,picks,results,accounts,entries,legs,settlements};
+  observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report};
+}
+
+/** Tables from later migrations may be absent; the dashboard then shows them as not set up, never as zero. */
+async function optional<T>(f:()=>Promise<T>,fallback:T):Promise<T>{try{return await f();}catch{return fallback;}}
+async function byIds<T>(store:ReturnType<typeof propsStore>,table:string,select:string,ids:number[]):Promise<T[]>{
+ const out:T[]=[];
+ for(let i=0;i<ids.length;i+=150)out.push(...await store.select<T>(table,'select='+select+'&observation_id='+'in.('+ids.slice(i,i+150).join(',')+')&limit=5000'));
+ return out;
+}
+async function loadModel(store:ReturnType<typeof propsStore>):Promise<Raw['model']>{
+ return optional(async()=>{
+  const [[c],events]=await Promise.all([
+   store.select<{active_model_version:string;previous_model_version:string|null;learning_enabled:boolean;auto_switch_enabled:boolean}>(
+    'props_model_control','select=active_model_version,previous_model_version,learning_enabled,auto_switch_enabled'),
+   store.select<NonNullable<Raw['model']>['events'][number]>('props_model_events','select=id,version,event,reason,detail,at&order=id.desc&limit=200')]);
+  if(!c)return null;
+  let weights:Record<Stat,number[]>|null=null;
+  if(/^props-learn-v[0-9]+$/.test(c.active_model_version)){
+   const [a]=await store.select<{artifact:{weights?:Record<Stat,number[]>}}>('props_model_artifacts',
+    'select=artifact&version=eq.'+encodeURIComponent(c.active_model_version));
+   weights=a?.artifact?.weights??null;
+  }
+  return {active:c.active_model_version,previous:c.previous_model_version,learningEnabled:c.learning_enabled,
+   autoSwitchEnabled:c.auto_switch_enabled,weights,events};
+ },null);
 }

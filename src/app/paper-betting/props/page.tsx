@@ -5,7 +5,8 @@ import {PageHeading,Panel,Metric,MetricGrid,Evidence,Empty,Details,KeyValues,Loa
 import {NavIcon} from '@/components/nav-icon';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {buildView,type PropsView,type Raw} from '@/lib/props/dashboard-view';
-import {propsSummary,mtShort} from '@/lib/props/summary';
+import {propsSummary,mtShort,whyLine} from '@/lib/props/summary';
+import {PropsModelPanel,PropsReviewCard,SafetyBrakeBanner} from '@/components/props-model-panel';
 import {propsAutomationStatus} from '@/lib/paper-automation-view';
 import {PropsOwnerControls} from '@/components/props-owner-controls';
 import {AutomationRefresh} from '@/components/automation-refresh';
@@ -45,11 +46,12 @@ async function Body({searchParams}:{searchParams:Search}){
  const tabs=<nav className="tabs props-tabs" aria-label="Platform" style={{marginBottom:12}}>
   {PLATFORMS.map(p=><Link key={p} href={`/paper-betting/props?platform=${p}`} aria-current={p===platform?'page':undefined}>{PLATFORM_LABEL[p]}</Link>)}
  </nav>;
- if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
+ if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><PropsModelPanel v={null}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
  let raw:Raw|null=null;let view:PropsView|null=null;
  try{raw=await loadPropsDashboard();view=buildView(raw,platform);}catch{view=null;}
  if(!raw||!view)return <>{tabs}<Panel><Empty title="The props ledger did not respond" action={<a className="button button-secondary" href={`/paper-betting/props?platform=${platform}`}>Reload</a>}>No line, pick or result has been substituted.</Empty></Panel><PropsOwnerControls/><Limits/></>;
- return <>{tabs}<Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/><Entries v={view}/><Lines v={view}/>
+ return <>{tabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/>
+  <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Lines v={view}/>
   <RunHistory v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }
 
@@ -96,7 +98,8 @@ function TodaysPicks({v}:{v:PropsView}){
  const picks=propsSummary(v).upcoming.slice(0,8);
  return <Panel title="Upcoming picks" description="Recorded picks for games that have not started, most confident first. A pick is a model estimate, not a sure thing." actions={<Evidence kind="recorded"/>} className="mt-12">
   {picks.length?<ol className="props-picks">{picks.map(p=><li key={p.id}>
-   <span><strong>{p.player} · {p.side==='more'?'More':'Less'} {p.line} {p.stat}</strong><small>{p.game} · locks {mtShort(p.lockAt)}</small></span>
+   <span><strong>{p.player} · {p.side==='more'?'More':'Less'} {p.line} {p.stat}</strong><small>{p.game} · locks {mtShort(p.lockAt)}</small>
+    {whyLine(p)&&<small className="props-why">{whyLine(p)}</small>}<Flags flags={p.market?.flags??[]}/></span>
    <strong className="prob">{pct(p.probability,0)}</strong>
   </li>)}</ol>:<p className="quiet">No upcoming picks right now. New picks appear after the next line collection if any line passes the selection rule (60–80% model confidence).</p>}
  </Panel>;
@@ -134,6 +137,10 @@ function receipt(s:Record<string,unknown>){
  return typeof s?.reason==='string'?s.reason.replace(/_/g,' '):'—';
 }
 
+function Flags({flags}:{flags:string[]}){
+ if(!flags.length)return null;
+ return <span className="props-flag-row">{flags.map(f=><Badge key={f} tone={f==='pros_disagree'?'warning':'info'}>{f==='pros_disagree'?'Pros disagree':'Lagging line'}</Badge>)}</span>;
+}
 const outcomeText=(l:PropsView['lines'][number])=>{
  if(!l.result)return l.locked?'Unknown, awaiting final':'Not started';
  const o=l.result.outcome;
@@ -149,7 +156,7 @@ function Lines({v}:{v:PropsView}){
     <td data-label="Observed line"><strong>{l.player}</strong><small>{l.stat} {l.line} · quote {l.quoteAgeMinutes} min old at capture</small></td>
     <td data-label="Game">{l.game}<small>Locks {mtShort(l.lockAt)}</small></td>
     <td data-label="Model estimate" className="num">{l.pMore===null?<span className="quiet">Unscorable ({(l.predictionReason??'missing').replace(/_/g,' ')})</span>
-     :<>More {pct(l.pMore,0)} · Less {pct(l.pLess,0)}<small>mean {l.mean?.toFixed(1)} · {l.modelVersion}</small></>}</td>
+     :<>More {pct(l.pMore,0)} · Less {pct(l.pLess,0)}<small>{whyLine(l)||`mean ${l.mean?.toFixed(1)}`} · {l.modelVersion}</small><Flags flags={l.market?.flags??[]}/></>}</td>
     <td data-label="Decision">{l.decision==='recorded'?<Badge tone="info">{l.side==='more'?'More':'Less'}</Badge>:<span className="quiet">Skipped</span>}<small>{(l.decisionReason??'no decision').replace(/_/g,' ')}</small></td>
     <td data-label="Result" className={l.correct===true?'tone-text-positive':l.correct===false?'tone-text-negative':undefined}>{outcomeText(l)}</td>
    </tr>)}</tbody>

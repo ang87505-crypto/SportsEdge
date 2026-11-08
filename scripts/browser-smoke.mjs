@@ -96,6 +96,8 @@ try{
     if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
     if(data.placeholders)issues.push('Placeholder links detected');
+    if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
+     issues.push('Model panel missing');
     if(!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});

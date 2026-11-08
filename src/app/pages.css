@@ -483,3 +483,6 @@
 .props-picks li span { display: grid; min-width: 0; }
 .props-picks small { color: var(--text-3); }
 .props-picks strong.prob { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.props-weights { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
+.props-why { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+.props-flag-row { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; justify-self: start; }

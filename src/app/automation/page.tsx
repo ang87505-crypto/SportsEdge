@@ -10,7 +10,7 @@ import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
 import {buildView} from '@/lib/props/dashboard-view';
 import {mountainTime,propsAutomationStatus} from '@/lib/paper-automation-view';
 import {pct,usdCents} from '@/lib/format';
-import {propsSummary} from '@/lib/props/summary';
+import {propsSummary,learningStatus} from '@/lib/props/summary';
 
 export const metadata={title:'Paper automation · SportsEdge',description:'One place to follow PrizePicks props and stock paper automation.'};
 
@@ -78,6 +78,7 @@ async function SportsStatus(){
     <div><dt>Lines saved</dt><dd>{pp.lines.length} PrizePicks · {p6.lines.length} Pick6</dd></div>
     <div><dt>Next collection slot</dt><dd>{PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING'&&collect?mountainTime(collect.at):'Waiting until automation is on'}</dd></div>
     <div><dt>Next settlement slot</dt><dd>{PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING'&&settle?mountainTime(settle.at):'Manual settlement while testing'}</dd></div>
+    <div><dt>Model</dt><dd>{learningStatus(pp.model)}</dd></div>
     <div><dt>PrizePicks balance</dt><dd>{usdCents(sum.balanceCents)} ({pp.bankroll&&pp.bankroll.settledKnown?`${usdCents(sum.netCents,{signed:true})}, ${sum.record.won}–${sum.record.lost}`:'no settled entries yet'})</dd></div>
     <div><dt>PrizePicks pick hit rate</dt><dd>{sum.hitRate===null?'Not measured yet':`${pct(sum.hitRate,1)} of ${sum.graded} graded`}</dd></div>
     <div><dt>Pick6 returns</dt><dd>Unknown — payout depends on its pool</dd></div>

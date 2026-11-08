@@ -37,6 +37,31 @@ entries per platform per day.
 Pause, resume and stop also work from the GitHub workflow (kinds `pause`,
 `resume`, `stop`, with a short `reason`). Both routes change the same control.
 
+## The learning model
+
+Every line is scored by the stats model and, once set up, by a **learning model** that weighs the
+stats model, the sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, collected free in the same
+request) and the matchup. It retrains every Sunday (GitHub → **NBA props learning loop**), scores
+lines quietly as a challenger, and only becomes the active model after it passes the registered
+test (500 graded lines, 14 game nights, 50 games, and better accuracy than luck explains).
+
+| I want to… | Where | What to do |
+| --- | --- | --- |
+| See which model is active and how challengers are doing | PrizePicks page → **Model** | Active model, switches, weights in words, each challenger's state. |
+| Stop or restart learning | PrizePicks → Controls → **Learning** | Off freezes the current model. |
+| Choose automatic or manual switching | PrizePicks → Controls → **Auto-switch** | Off means a passing challenger waits for **Approve switch**. |
+| Train a new challenger now | PrizePicks → Controls → **Retrain now** | Needs `SPORTSEDGE_GITHUB_DISPATCH_TOKEN` in Vercel; otherwise run kind `train` on the workflow. |
+| Undo a switch | PrizePicks → Controls → **Roll back** | New picks use the previous model at once. |
+| See what went wrong this week | PrizePicks → **This week's mistakes** | Misses grouped by cause. |
+
+All of these also run from GitHub → **NBA props learning loop** → Run workflow (kinds `train`,
+`evaluate`, `review`, `learning_on`, `learning_off`, `auto_on`, `auto_off`, `approve` with a version,
+`rollback`). Owner kinds need a short reason and never run from the schedule.
+
+**One-time setup (owner):** in Supabase → SQL editor, run `database/props/props_market_v1.sql`, then
+`database/props/props_learning_v1.sql`. Until then the site and workers keep working on the stats
+model alone and say "not set up yet".
+
 ## Owner key
 
 Owner sign-in uses `SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY`, a 64-character hex key
@@ -51,6 +76,9 @@ minutes. Never paste the key anywhere except the site's sign-in box.
 | **Needs attention** | The latest run failed. | PrizePicks → Run history: check the outcome. Then run `status` on GitHub. A one-off provider or network error usually clears on the next slot. |
 | **Data budget paused** | The Odds API allowance is nearly used up. | Wait for the monthly allowance to reset. Grading still works. |
 | **Collection overdue** | No scheduled collection in 36 hours. | Check GitHub Actions is enabled and the secrets below are set, then run `collect` by hand. |
+| **Paused by the safety brake** | The active model's last picks hit confidently below 57.7%. | Read *This week's mistakes*; consider **Roll back**; press **Resume** when ready. |
+| A challenger shows **Eligible** | It passed the test; auto-switch is off. | Press **Approve switch**, or leave it shadowing. |
+| A challenger shows **Dropped** | It was worse than the active model on held-out data. | Nothing; next Sunday trains another. |
 | "No upcoming picks" | No line met the 60–80% rule, or no games today. | Normal. Nothing is forced. |
 | Page says "not connected" | Vercel is missing the props database settings. | Check the Vercel variables below. |
 
