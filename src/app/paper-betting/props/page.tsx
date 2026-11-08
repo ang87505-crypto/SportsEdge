@@ -9,6 +9,8 @@ import {propsSummary,mtShort,whyLine} from '@/lib/props/summary';
 import {PropsModelPanel,PropsReviewCard,SafetyBrakeBanner} from '@/components/props-model-panel';
 import {propsAutomationStatus} from '@/lib/paper-automation-view';
 import {PropsOwnerControls} from '@/components/props-owner-controls';
+import {PropsConversation} from '@/components/props-conversation';
+import {propsChatData} from '@/lib/props/conversation-data';
 import {AutomationRefresh} from '@/components/automation-refresh';
 import {PLATFORMS,PLATFORM_LABEL,MODEL_VERSION,SELECTION_VERSION,type Platform} from '@/lib/props/contract';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
@@ -46,11 +48,11 @@ async function Body({searchParams}:{searchParams:Search}){
  const tabs=<nav className="tabs props-tabs" aria-label="Platform" style={{marginBottom:12}}>
   {PLATFORMS.map(p=><Link key={p} href={`/paper-betting/props?platform=${p}`} aria-current={p===platform?'page':undefined}>{PLATFORM_LABEL[p]}</Link>)}
  </nav>;
- if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><PropsModelPanel v={null}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
+ if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><PropsConversation key={platform} data={propsChatData(null)} initialPlatform={platform}/><PropsModelPanel v={null}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
  let raw:Raw|null=null;let view:PropsView|null=null;
  try{raw=await loadPropsDashboard();view=buildView(raw,platform);}catch{view=null;}
- if(!raw||!view)return <>{tabs}<Panel><Empty title="The props ledger did not respond" action={<a className="button button-secondary" href={`/paper-betting/props?platform=${platform}`}>Reload</a>}>No line, pick or result has been substituted.</Empty></Panel><PropsOwnerControls/><Limits/></>;
- return <>{tabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/>
+ if(!raw||!view)return <>{tabs}<Panel><Empty title="The props ledger did not respond" action={<a className="button button-secondary" href={`/paper-betting/props?platform=${platform}`}>Reload</a>}>No line, pick or result has been substituted.</Empty></Panel><PropsConversation key={platform} data={propsChatData(null,'unavailable')} initialPlatform={platform}/><PropsOwnerControls/><Limits/></>;
+ return <>{tabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsConversation key={platform} data={propsChatData(raw)} initialPlatform={platform}/><PropsOwnerControls/>
   <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Lines v={view}/>
   <RunHistory v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }

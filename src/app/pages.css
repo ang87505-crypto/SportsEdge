@@ -486,3 +486,25 @@
 .props-weights { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
 .props-why { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
 .props-flag-row { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; justify-self: start; }
+
+/* Conversation over the saved props ledger. */
+.props-conversation { scroll-margin-top: 24px; }
+.props-chat-log { display: grid; gap: 12px; max-height: 340px; overflow-y: auto; overscroll-behavior: contain; padding: 4px 4px 12px; }
+.props-chat-message { max-width: 90%; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.props-chat-message > strong { color: var(--text-3); font-size: var(--fs-xs); }
+.props-chat-message p { margin: 5px 0 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.6; }
+.props-chat-you { justify-self: end; background: var(--accent-soft); border-color: var(--accent-line); }
+.props-chat-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+.props-chat-suggestions .button { min-height: 40px; white-space: normal; text-align: left; }
+.props-chat-form { display: grid; gap: 6px; margin-top: 12px; }
+.props-chat-form label { font-size: var(--fs-sm); color: var(--text-2); }
+.props-chat-form > div { display: flex; align-items: stretch; gap: 8px; }
+.props-chat-form input { flex: 1; min-width: 0; width: 100%; padding: 12px; border: 1px solid var(--line-3); border-radius: var(--r-md); color: var(--text); background: var(--surface-2); font: inherit; }
+.props-chat-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.props-chat-footer { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.props-chat-footer .text-link { flex-shrink: 0; }
+#props-owner-controls { scroll-margin-top: 24px; }
+@media (max-width: 640px) {
+ .props-chat-message { max-width: 100%; }
+ .props-chat-footer { flex-direction: column; gap: 8px; }
+}

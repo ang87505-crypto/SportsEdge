@@ -98,6 +98,8 @@ try{
     if(data.placeholders)issues.push('Placeholder links detected');
     if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
      issues.push('Model panel missing');
+    if(route==='/paper-betting/props'&&!await evaluate(send,`!!document.querySelector('#props-conversation .props-chat-form input')`))
+     issues.push('Props conversation missing');
     if(!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
@@ -116,7 +118,24 @@ try{
    }catch(error){const reason=`${label}: ${error instanceof Error?error.message:String(error)}`;failures.push(reason);console.error('FAIL '+reason);}
   }
  }
- // Exercise actual navigation, not only anchor presence. No forms or mutations are submitted.
+ // Read-only chat interaction on the uncredentialed CI deployment. No worker or mutation is dispatched.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/paper-betting/props'});
+  await until(async()=>evaluate(send,`!!document.querySelector('#props-chat-input')`),'props conversation');
+  await delay(450);
+  await evaluate(send,`document.querySelector('#props-chat-input').focus()`);
+  await send('Input.insertText',{text:'When is the next collection?'});
+  await evaluate(send,`document.querySelector('.props-chat-form').requestSubmit()`);
+  await until(async()=>evaluate(send,`document.querySelector('.props-chat-log').innerText.includes('Next planned collection:')`),'conversational schedule answer');
+  await send('Input.insertText',{text:'Who should I take tonight?'});
+  await evaluate(send,`document.querySelector('.props-chat-form').requestSubmit()`);
+  await until(async()=>evaluate(send,`/ledger is not connected|ledger did not respond/.test(document.querySelector('.props-chat-log').innerText)`),'honest unconnected pick answer');
+  await evaluate(send,`[...document.querySelectorAll('.props-chat-footer button')].find(b=>b.textContent==='Clear conversation').click()`);
+  await until(async()=>evaluate(send,`document.querySelectorAll('.props-chat-message').length===1 && document.querySelector('#props-chat-input').value===''`),'clear conversation');
+  console.log('PASS props conversation: natural schedule question, honest missing data, clear');
+ }catch(error){const reason='Props conversation interaction: '+(error instanceof Error?error.message:String(error));failures.push(reason);console.error('FAIL '+reason);}
+ // Exercise actual navigation, not only anchor presence. No mutation forms are submitted.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/'});

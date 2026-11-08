@@ -5,6 +5,7 @@ on:
       - 'src/lib/props/**'
       - 'src/lib/server/props-*'
       - 'src/app/paper-betting/props/**'
+      - 'src/components/props-*.tsx'
       - 'src/data/props/**'
       - 'database/props/**'
       - 'scripts/props-*'

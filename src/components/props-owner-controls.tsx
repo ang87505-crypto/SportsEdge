@@ -56,7 +56,7 @@ export function PropsOwnerControls(){
   finally{setBusy(false);await read();startTransition(()=>router.refresh());}
  }
 
- return <Panel title="Controls" description="Pause or resume here. Running a collection or settlement by hand happens on GitHub (steps below)." className="mt-12">
+ return <Panel title="Controls" id="props-owner-controls" description="Pause or resume here. Running a collection or settlement by hand happens on GitHub (steps below)." className="mt-12">
   {view.kind==='checking'&&<p className="quiet">Checking owner access…</p>}
   {view.kind==='login'&&<Unlock onDone={()=>void read()}/>}
   {view.kind==='unconfigured'&&<p className="quiet">This deployment has no props ledger, so there is nothing to control here.</p>}
