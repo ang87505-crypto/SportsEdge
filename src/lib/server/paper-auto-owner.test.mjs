@@ -97,8 +97,12 @@ test('owner actions map to exactly one RPC with an opaque owner reference',async
  const ref=ownerRefFor(SECRET);
  assert.match(ref,/^owner-[a-f0-9]{32}$/);assert.ok(!ref.includes(SECRET.slice(0,32)));
  assert.equal(ref,ownerRefFor(SECRET));assert.notEqual(ref,ownerRefFor('f'.repeat(64)));
- assert.deepEqual(s.calls,[{fn:'stop',p:{experiment_id:'fwd-2026-baseline',reason:'OWNER_STOP',actor:ref,
-  evidence:{source:'owner-dashboard'}}}]);
+ assert.equal(s.calls.length,1);assert.equal(s.calls[0].fn,'stop');
+ const {alert,...stopArgs}=s.calls[0].p;
+ assert.deepEqual(stopArgs,{experiment_id:'fwd-2026-baseline',reason:'OWNER_STOP',actor:ref,evidence:{source:'owner-dashboard'}});
+ assert.match(alert.code,/^OWNER_STOP_[A-F0-9]{32}$/);
+ const nextStop=ownerActionCall({action:'stop',experimentId:'fwd-2026-baseline'},ref);
+ assert.notEqual(nextStop.p.alert.code,alert.code,'each Stop invalidates earlier Starts, including repeated Stops');
  const run='run-'+'b'.repeat(32);
  assert.deepEqual(ownerActionCall(parseOwnerAction(JSON.stringify({action:'resume',experimentId:'fwd-2026-holdrank',
   expectedGateVersion:7,reconcileRunId:run}),['fwd-2026-holdrank']),ref),{fn:'resume',p:{experiment_id:'fwd-2026-holdrank',
@@ -132,9 +136,9 @@ test('Start dispatches the owner resume workflow only while stopped, and never t
  const r=await handlePaperAutoPost(req({body}),ENV,s.make,ok);
  assert.equal(r.status,202);assert.equal((await r.json()).status,'started');
  assert.deepEqual(sent,[{id:'fwd-2026-baseline',version:STATUS.gateVersion}]);
- assert.deepEqual(s.calls.map(c=>c.fn),['status'],'only a status read; the workflow\'s database resume arms');
+ assert.deepEqual(s.calls.map(c=>c.fn),['ledger'],'only a ledger read; the workflow\'s database resume arms');
  // Already running: refused before any dispatch.
- const armed=fakeStore(()=>({...STATUS,gateMode:'ARMED',state:'READY'}));
+ const armed=fakeStore(()=>({...LEDGER,status:{...STATUS,gateMode:'ARMED',state:'READY'}}));
  const a=await handlePaperAutoPost(req({body}),ENV,armed.make,ok);
  assert.equal(a.status,409);assert.equal((await a.json()).code,'ALREADY_RUNNING');assert.equal(sent.length,1);
  // Owner session, same origin and exact fields still apply.

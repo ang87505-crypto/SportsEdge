@@ -1,5 +1,6 @@
 /** Plain-language view of the recurring PAPER autopilot for the owner page. Pure; no I/O. */
 import type {PaperAutoLedger} from './paper-auto-ledger.ts';
+import {isOwnerStopAlert} from './paper-auto-ledger.ts';
 
 export type AutopilotTone='positive'|'warning'|'neutral'|'info';
 export type AutopilotRelease={brokerWritesEnabled:boolean;scheduledRunsEnabled:boolean};
@@ -14,10 +15,12 @@ const BLOCKERS:Record<string,string>={UNRESOLVED_SUBMISSION:'An order is waiting
 /** The one status the owner sees first, with the reason behind it. */
 export function headline(l:PaperAutoLedger,release?:AutopilotRelease):AutopilotHeadline{
  const s=l.status,reasons:string[]=[];
- if(s.unacknowledgedCriticalAlerts>0)reasons.push(`${s.unacknowledgedCriticalAlerts} critical alert${s.unacknowledgedCriticalAlerts===1?'':'s'} to review.`);
+ const stops=l.alerts.filter(a=>!a.acknowledgedAt&&a.severity==='critical'&&isOwnerStopAlert(a.code)).length;
+ const critical=Math.max(0,s.unacknowledgedCriticalAlerts-stops);
+ if(critical>0)reasons.push(`${critical} critical alert${critical===1?'':'s'} to review.`);
  if(s.unresolvedIntents>0)reasons.push('An order is waiting to be confirmed with Alpaca.');
  for(const b of s.lastCheckBlockers.slice(0,3))reasons.push(BLOCKERS[b.split(':')[0]]??`Last check: ${b}.`);
- const blockedStart=s.unacknowledgedCriticalAlerts>0||s.unresolvedIntents>0;
+ const blockedStart=critical>0||s.unresolvedIntents>0;
  if(s.gateMode==='ARMED'){
   if(s.state==='READY'||s.state==='EXECUTING'){
    if(release?.brokerWritesEnabled===false)return {label:s.state==='EXECUTING'?'Planning now':'Planning only',

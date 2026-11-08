@@ -7,11 +7,11 @@
  * - START is the one-click form of resume: it triggers the owner-only GitHub workflow that
  *   reconciles and then resumes in one job (paper-auto-start.ts). It is refused while armed.
  */
-import {createHmac} from 'node:crypto';
+import {createHmac,randomBytes} from 'node:crypto';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {PaperAutoStoreError,stagingPaperAutoStore,storeCode,type PaperAutoRpc,type PaperAutoStore}
  from './paper-auto-store.ts';
-import {parseLedger,parseStatus} from '../stocks/paper-auto-ledger.ts';
+import {isOwnerStopAlert,parseLedger,parseStatus} from '../stocks/paper-auto-ledger.ts';
 import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
 import {dispatchOwnerResume,startConfigured,type Dispatcher} from './paper-auto-start.ts';
 
@@ -67,7 +67,8 @@ export function ownerActionCall(a:Exclude<OwnerAction,{action:'start'}>,ownerRef
  const experiment_id=a.experimentId;
  switch(a.action){
   case 'stop':return {fn:'stop',p:{experiment_id,reason:'OWNER_STOP',actor:ownerRef,
-   evidence:{source:'owner-dashboard'}}};
+   evidence:{source:'owner-dashboard'},alert:{code:'OWNER_STOP_'+randomBytes(16).toString('hex').toUpperCase(),
+    detail:{source:'owner-dashboard',reason:'Invalidate any earlier queued Start'}}}};
   case 'pause':return {fn:'pause',p:{experiment_id,owner_ref:ownerRef}};
   case 'resume':return {fn:'resume',p:{experiment_id,owner_ref:ownerRef,
    expected_gate_version:a.expectedGateVersion,reconcile_run_id:a.reconcileRunId}};
@@ -121,11 +122,22 @@ export async function handlePaperAutoPost(req:OwnerRequest,env:Env,make:StoreFac
  if(!action)return json({status:'invalid_request'},400);
  if(action.action==='start'){
   // Start only arms a stopped or paused experiment; the workflow's database resume does the arming.
-  let current;
-  try{current=parseStatus(await db.call('status',{experiment_id:action.experimentId}));}
+  let ledger;
+  try{ledger=parseLedger(await db.call('ledger',{experiment_id:action.experimentId}));}
   catch(e){return json({status:'outcome_unknown',action:'start',code:storeCode(e),retrySafe:true},503);}
-  if(!current)return json({status:'refused',action:'start',code:'STATUS_UNVERIFIABLE'},409);
+  if(!ledger?.registered)return json({status:'refused',action:'start',code:'STATUS_UNVERIFIABLE'},409);
+  const current=ledger.status;
   if(current.gateMode==='ARMED')return json({status:'refused',action:'start',code:'ALREADY_RUNNING'},409);
+  const stops=ledger.alerts.filter(a=>!a.acknowledgedAt&&a.severity==='critical'&&isOwnerStopAlert(a.code));
+  if(current.unresolvedIntents>0||current.unacknowledgedCriticalAlerts!==stops.length)
+   return json({status:'refused',action:'start',code:'REVIEW_ACCOUNT_ALERTS'},409);
+  // Only this new, authenticated Start can clear the Stop latches it observed.
+  // A later Stop creates a different latch. Queued workers never acknowledge one,
+  // so the database's atomic critical-alert check makes that later Stop win.
+  try{
+   for(const a of stops)await db.call('ack_alert',{experiment_id:action.experimentId,
+    owner_ref:ownerRefFor(secret),alert_id:a.alertId});
+  }catch(e){return json({status:'outcome_unknown',action:'start',code:storeCode(e)},503);}
   const r=await dispatch(action.experimentId,env,current.gateVersion);
   if(r.result==='dispatched')return json({status:'started',action:'start'},202);
   if(r.result==='not_configured')return json({status:'start_not_configured',action:'start'},503);

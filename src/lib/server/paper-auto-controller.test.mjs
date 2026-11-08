@@ -10,6 +10,7 @@ import {runExecuteSlot,runReconcileSlot,runMonitorSlot,recordDecisionSlot,regist
  confirmIntentAbsent,parseRegistrationConfig} from './paper-auto-controller.ts';
 import {quarterHourSlot} from './paper-auto-time.ts';
 import {resumeAfterOwnerCheck} from './paper-auto-resume.ts';
+import {ownerActionCall} from './paper-auto-owner.ts';
 import {parseLedger,resumeCandidate} from '../stocks/paper-auto-ledger.ts';
 import {forwardPerformance} from '../stocks/paper-auto-performance.ts';
 import {spawnSync} from 'node:child_process';
@@ -95,7 +96,7 @@ e2e('queued or in-progress owner Start cannot undo a later STOP (real schema)',a
  for(const timing of ['queued','checking']){
   const w=world();await register(w);
   const expected=(await status(w)).gateVersion;
-  const stop=()=>w.store.call('stop',{experiment_id:w.experimentId,reason:'OWNER_STOP',actor:OWNER});
+  const stop=()=>{const {fn,p}=ownerActionCall({action:'stop',experimentId:w.experimentId},OWNER);return w.store.call(fn,p);};
   w.clock.advance(60_000);
   if(timing==='queued')await stop();
   else{
@@ -103,7 +104,7 @@ e2e('queued or in-progress owner Start cannot undo a later STOP (real schema)',a
    w.broker.account=async()=>{await stop();return account();};
   }
   await assert.rejects(resumeAfterOwnerCheck(w.deps,w.experimentId,OWNER,expected),
-   e=>e.code==='PAPER_AUTO_RESUME_STALE_VERSION');
+   e=>['PAPER_AUTO_RESUME_STALE_VERSION','PAPER_AUTO_RESUME_CRITICAL_ALERT_OPEN'].includes(e.code));
   assert.equal((await status(w)).gateMode,'STOPPED',timing);
   assert.equal(w.broker.posts.length,0);
  }

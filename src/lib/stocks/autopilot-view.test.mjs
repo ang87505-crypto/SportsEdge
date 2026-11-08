@@ -55,6 +55,13 @@ test('a ready or executing gate never claims to trade when paper orders or the s
  assert.equal(headline(ledger({gateMode:'ARMED',state:'BLOCKED'}),planning).label,'Needs attention');
 });
 
+test('an owner Stop remains Stopped and can be explicitly started again; risk alerts still block Start',()=>{
+ const l=ledger({unacknowledgedCriticalAlerts:1},{alerts:[{alertId:1,severity:'critical',
+  code:'OWNER_STOP_'+'A'.repeat(32),acknowledgedAt:null}]});
+ assert.equal(headline(l).label,'Stopped');assert.equal(headline(l).canStart,true);
+ assert.equal(headline(ledger({unacknowledgedCriticalAlerts:2},{alerts:l.alerts})).canStart,false);
+});
+
 test('holdings, picks and activity read the ledger in plain words',()=>{
  const l=ledger({},{
   intents:[{intentId:'a',symbol:'F',side:'buy',phase:'BUY',attempt:1,shares:8,limitCents:1200,status:'filled',

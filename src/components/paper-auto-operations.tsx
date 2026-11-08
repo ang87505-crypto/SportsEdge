@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
-import {OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
+import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 
@@ -246,8 +246,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <td>{trim(i.filledQty)}{i.filledAvgPrice?` at $${trim(i.filledAvgPrice)}`:''}</td></tr>)}</tbody>
    </table></div></Panel>}
 
-  {l.alerts.some(a=>!a.acknowledgedAt)&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
-   <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt).map(a=><li key={a.alertId}>
+  {l.alerts.some(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code))&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
+   <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code)).map(a=><li key={a.alertId}>
     <StatusDot tone={a.severity==='critical'?'negative':'warning'}/><span className="activity-what">{a.code}</span>
     <span className="activity-result">{a.severity}</span>
     <button type="button" className="button button-secondary button-sm" disabled={working}
