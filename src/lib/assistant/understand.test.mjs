@@ -105,3 +105,12 @@ test('dates resolve in New Mexico time',()=>{
  assert.equal(understand('how did last night go',null,PLAYERS,'2026-11-09T07:30:00.000Z').range,'yesterday');
  assert.equal(understand('results nov 7',null,PLAYERS,'2026-01-03T19:00:00.000Z').range,'date:2025-11-07','a future date means last year');
 });
+
+test('ordinary question words are never read as a player name',()=>{
+ const roster=[...PLAYERS,'Last Night Player 1','Last Night Player 2','Will Points','Max Strus'];
+ const p=understand('how did we do last night',null,roster,NOW);
+ assert.equal(p.intent,'results');
+ assert.equal(p.player,null);
+ assert.equal(understand('what will it do tonight',null,roster,NOW).player,null);
+ assert.deepEqual(understand('max strus points',null,roster,NOW).player,{name:'Max Strus'},'a full name still matches');
+});

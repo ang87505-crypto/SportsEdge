@@ -81,9 +81,11 @@ function matchPlayer(text:string,tokens:string[],known:string[]):Parsed['player'
  for(const [nick,name] of Object.entries(NICKNAMES))if(has(text,nick)&&known.includes(name))return {name};
  const full=keys.filter(k=>has(text,k.parts.join(' ')));
  if(full.length)return pick(full.map(k=>k.name));
- const last=keys.filter(k=>tokens.includes(k.parts[k.parts.length-1]));
+ // Single-name matches ignore ordinary question words ("last", "night", "will"), which real names can share.
+ const named=tokens.filter(t=>!VOCAB.has(t));
+ const last=keys.filter(k=>named.includes(k.parts[k.parts.length-1]));
  if(last.length)return pick(last.map(k=>k.name));
- const first=keys.filter(k=>k.parts.length>1&&tokens.includes(k.parts[0]));
+ const first=keys.filter(k=>k.parts.length>1&&named.includes(k.parts[0]));
  if(first.length)return pick(first.map(k=>k.name));
  const loose=tokens.filter(t=>t.length>=4&&!VOCAB.has(t)&&!/\d/.test(t));
  const fuzzy=keys.filter(k=>loose.some(t=>k.parts.some(p=>p.length>=4&&levenshtein(t,p)<=2)));
