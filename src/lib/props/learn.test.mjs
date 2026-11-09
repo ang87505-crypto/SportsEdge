@@ -92,3 +92,13 @@ test('artifact hash is stable under key order',()=>{
  assert.equal(artifactSha256(a),artifactSha256(reordered));
  assert.match(artifactSha256(a),/^[a-f0-9]{64}$/);
 });
+
+test('review fix: the sportsbook line gap reaches the model even when no book posts the same line',async()=>{
+ const {marketView}=await import('./market.ts');
+ const q={bookmakerKey:'draftkings',providerEventId:'evtTEST000001',playerName:'Player A',stat:'points',marketKey:'player_points',line:25.5,
+  overPrice:-110,underPrice:-110,providerLastUpdate:'2026-11-07T19:30:00.000Z',ingestedAt:'2026-11-07T20:00:00.000Z',lockAt:'2026-11-08T00:00:00.000Z',responseSha256:'a'.repeat(64)};
+ const market=marketView({providerEventId:'evtTEST000001',playerName:'Player A',stat:'points',line:24.5},[q],null);
+ const x=featureVector({base,market,matchup});
+ assert.equal(x[4],1,'line_gap_books carries the 1-point gap');
+ assert.deepEqual(x.slice(2,4),[0,0],'no same-line probability, so the books terms stay off');
+});

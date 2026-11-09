@@ -85,3 +85,18 @@ test('the brake pauses a RUNNING control once and never touches a stopped one',a
  assert.equal((await applySafetyBrake(store,losing,'STOPPED')).trip,false);
  assert.equal(calls.length,1);
 });
+
+test('review fix: a line on both platforms trains and counts once; the sportsbook threshold is per stat',async()=>{
+ const {marketFixedByStat,forwardItems}=await import('./props-learn-worker.ts');
+ const books={booksAtSameLine:1,pMoreBooks:0.6,lineGap:0,nearestBookLine:20.5,flags:[]};
+ const dup=[line(1,{market:books}),line(2,{key:'k1',platform:'pick6',market:books})];
+ const r=forwardTrainingRows(dup,[],'2026-11-08T12:00:00.000Z');
+ assert.equal(r.rows.points.length,1);
+ assert.deepEqual(r.counts.points,{forward:1,forwardWithBooks:1});
+ assert.equal(forwardItems(dup,[]).length,1);
+ const items=[...Array.from({length:150},(_,i)=>({stat:'points',input:{market:books}})),...Array.from({length:20},()=>({stat:'rebounds',input:{market:books}}))];
+ const fixed=marketFixedByStat(items);
+ assert.deepEqual(fixed.points,[]);
+ assert.deepEqual(fixed.rebounds,[...MARKET_FEATURES]);
+ assert.deepEqual(fixed.assists,[...MARKET_FEATURES]);
+});

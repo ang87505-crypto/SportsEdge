@@ -36,7 +36,7 @@ export function featureVector(x:LearnInput):number[]{
  const noTie=1-x.base.pTie;
  const statsMore=noTie>0?x.base.pMore/noTie:0.5;
  const books=x.market?.pMoreBooks??null;
- return [1,logit(statsMore),books===null?0:logit(books),books===null?0:1,books===null?0:(x.market?.lineGap??0),
+ return [1,logit(statsMore),books===null?0:logit(books),books===null?0:1,x.market?.lineGap??0,
   x.matchup.oppAllowedRatio-1,x.matchup.home,x.matchup.restDays,x.matchup.backToBack];
 }
 

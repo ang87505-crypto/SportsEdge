@@ -115,13 +115,15 @@ END $$;
 
 CREATE FUNCTION public.props_promote_model(p_version text,p_actor text,p_reason text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE c record; latest text;
+DECLARE c record; latest record;
 BEGIN
  LOCK TABLE public.props_model_control_log IN SHARE ROW EXCLUSIVE MODE;
  SELECT * INTO STRICT c FROM public.props_model_control_log ORDER BY id DESC LIMIT 1;
  IF c.active_model_version=p_version THEN RAISE EXCEPTION 'PROPS_MODEL_ALREADY_ACTIVE'; END IF;
- SELECT event INTO latest FROM public.props_model_events WHERE version=p_version ORDER BY id DESC LIMIT 1;
- IF latest IS DISTINCT FROM 'eligible' THEN RAISE EXCEPTION 'PROPS_MODEL_NOT_ELIGIBLE'; END IF;
+ SELECT event,detail INTO latest FROM public.props_model_events WHERE version=p_version ORDER BY id DESC LIMIT 1;
+ IF latest.event IS DISTINCT FROM 'eligible' THEN RAISE EXCEPTION 'PROPS_MODEL_NOT_ELIGIBLE'; END IF;
+ -- Eligibility is measured against one active model; after a switch it must be measured again.
+ IF latest.detail->>'activeVersion' IS DISTINCT FROM c.active_model_version THEN RAISE EXCEPTION 'PROPS_MODEL_ELIGIBILITY_STALE'; END IF;
  INSERT INTO public.props_model_control_log(active_model_version,previous_model_version,learning_enabled,auto_switch_enabled,changed_by,reason)
   VALUES(p_version,c.active_model_version,c.learning_enabled,c.auto_switch_enabled,p_actor,p_reason);
  INSERT INTO public.props_model_events(version,event,reason,actor) VALUES(p_version,'promoted',p_reason,p_actor);

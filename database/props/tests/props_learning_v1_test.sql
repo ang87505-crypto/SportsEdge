@@ -24,7 +24,10 @@ SELECT props_test.raises($$INSERT INTO public.props_model_events(version,event,r
 SELECT props_test.raises($$SELECT public.props_promote_model('props-learn-v1','system:auto-switch','gate')$$,'PROPS_MODEL_NOT_ELIGIBLE');
 SELECT props_test.eq((SELECT count(*)::text FROM public.props_account_activations a JOIN public.props_accounts c ON c.id=a.account_id
  WHERE c.selection_version='props-select-v2'),'0','v2 inactive before promotion');
-INSERT INTO public.props_model_events(version,event,reason,actor,detail) VALUES('props-learn-v1','eligible','gate passed','system:test','{"lines":512}');
+-- An eligibility measured against a different active model is stale and refused.
+INSERT INTO public.props_model_events(version,event,reason,actor,detail) VALUES('props-learn-v1','eligible','gate passed','system:test','{"lines":512,"activeVersion":"props-learn-v9"}');
+SELECT props_test.raises($$SELECT public.props_promote_model('props-learn-v1','owner:test','stale')$$,'PROPS_MODEL_ELIGIBILITY_STALE');
+INSERT INTO public.props_model_events(version,event,reason,actor,detail) VALUES('props-learn-v1','eligible','gate passed','system:test','{"lines":512,"activeVersion":"props-nb-minutes-rate-v1"}');
 SELECT props_test.eq(public.props_promote_model('props-learn-v1','system:auto-switch','gate passed')->>'active','props-learn-v1','promote');
 SELECT props_test.eq((SELECT active_model_version||'/'||previous_model_version FROM public.props_model_control),
  'props-learn-v1/props-nb-minutes-rate-v1','after promote');
@@ -35,7 +38,7 @@ SELECT props_test.eq((SELECT event FROM public.props_model_events WHERE version=
 
 -- 5. A second promotion does not add activations.
 INSERT INTO public.props_model_artifacts(version,sha256,artifact) VALUES('props-learn-v2',repeat('d',64),'{"modelVersion":"props-learn-v2"}');
-INSERT INTO public.props_model_events(version,event,reason,actor) VALUES('props-learn-v2','eligible','gate passed','system:test');
+INSERT INTO public.props_model_events(version,event,reason,actor,detail) VALUES('props-learn-v2','eligible','gate passed','system:test','{"activeVersion":"props-learn-v1"}');
 SELECT public.props_promote_model('props-learn-v2','owner:test','approve');
 SELECT props_test.eq((SELECT count(*)::text FROM public.props_account_activations a JOIN public.props_accounts c ON c.id=a.account_id
  WHERE c.selection_version='props-select-v2'),'2','still two activations');

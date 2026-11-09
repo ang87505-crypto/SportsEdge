@@ -176,7 +176,8 @@ async function learningDb(db){
   features:[...FEATURES],weights:{points:w,rebounds:w,assists:w},lambda:{points:1,rebounds:1,assists:1},marketWeightsActive:false,
   counts:{points:{historical:1,forward:0,forwardWithBooks:0},rebounds:{historical:1,forward:0,forwardWithBooks:0},assists:{historical:1,forward:0,forwardWithBooks:0}}});
  const add=async(v,sha)=>{const a=artifact(v);await store.insert('props_model_artifacts',[{version:v,sha256:sha??artifactSha256(a),artifact:a}]);};
- const event=(version,ev)=>store.insert('props_model_events',[{version,event:ev,reason:'integration test',actor:'system:test'}]);
+ const event=(version,ev)=>store.insert('props_model_events',[{version,event:ev,reason:'integration test',actor:'system:test',
+  detail:ev==='eligible'?{activeVersion:'props-nb-minutes-rate-v1'}:{}}]);
  return {store,deps,add,event};
 }
 
@@ -232,9 +233,13 @@ test('weekly learning loop: settle brake, train, evaluate, auto-switch, review a
  assert.equal(s.summary.safetyBrake.model,'props-nb-minutes-rate-v1');
 
  const learn={store,now,historical:[]};
- // Learning off: nothing is trained or written.
+ // Learning off: nothing is trained, evaluated or switched.
  await runOwnerAction(store,'learning_off',{reason:'integration test',actor:'owner:test'});
  assert.deepEqual(await runTrain(learn),{status:'LEARNING_DISABLED'});
+ const frozen=await runEvaluate({store,now},{minGradedLines:1,minDates:1,minGames:1,minCandidateDecisions:0,maxBrierDifferenceUpper95:1,bootstrapReplicates:50,bootstrapSeed:1,requireNoWorseLogLoss:false});
+ assert.equal(frozen.status,'LEARNING_DISABLED');
+ assert.equal(frozen.promoted,null);
+ assert.equal(psql(db,`SELECT count(*) FROM props_model_events WHERE event='eligible'`).out,'0');
  assert.equal(psql(db,'SELECT count(*) FROM props_model_artifacts').out,'1');
  await runOwnerAction(store,'learning_on',{reason:'integration test',actor:'owner:test'});
 
@@ -267,6 +272,12 @@ test('weekly learning loop: settle brake, train, evaluate, auto-switch, review a
  const held=await runEvaluate({store,now},relaxed);
  assert.equal(held.promoted,null);
  assert.equal(psql(db,`SELECT event FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out,'eligible');
+ // A later failing check withdraws the eligibility, so a stale pass can never be approved.
+ await runEvaluate({store,now});
+ assert.equal(psql(db,`SELECT event||'|'||reason FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out.split('|')[0],'shadow_start');
+ assert.match(psql(db,`SELECT reason FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out,/^No longer eligible/);
+ await assert.rejects(store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'owner:test',p_reason:'stale'}),/PROPS_MODEL_NOT_ELIGIBLE/);
+ await runEvaluate({store,now},relaxed);
  await runOwnerAction(store,'auto_on',{reason:'integration test',actor:'owner:test'});
  const auto=await runEvaluate({store,now},relaxed);
  assert.equal(auto.promoted,'props-learn-v1');

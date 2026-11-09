@@ -54,14 +54,22 @@ const marketOf=(l:ForwardLine):LearnInput['market']=>l.market?{booksAtSameLine:l
 export type TrainItem={stat:Stat;input:LearnInput;y:0|1;at:string;key:string;eventId:string;date:string};
 /** Graded More/Less forward lines with a layer-1 estimate and a known team, as training items. */
 export function forwardItems(lines:ForwardLine[],teamRows:TeamGameRow[]):TrainItem[]{
- const out:TrainItem[]=[];
+ const out:TrainItem[]=[];const seen=new Set<string>();
  for(const l of lines){
+  // The same line on PrizePicks and Pick6 is one observation of the world, not two.
+  if(seen.has(l.key))continue;
   const base=l.predictions[MODEL_VERSION]?.probs;
   if((l.outcome!=='more'&&l.outcome!=='less')||!base)continue;
   const matchup=matchupFor(l,teamRows);if(!matchup)continue;
+  seen.add(l.key);
   out.push({stat:l.stat,input:{base,market:marketOf(l),matchup},y:l.outcome==='more'?1:0,at:l.lockAt,key:l.key,eventId:l.eventId,date:l.date});
  }
  return out;
+}
+
+/** Sportsbook weights stay at zero per stat until that stat has enough graded real lines with book data. */
+export function marketFixedByStat(items:{stat:Stat;input:{market:{pMoreBooks:number|null}|null}}[]):Record<Stat,number[]>{
+ return Object.fromEntries(STATS.map(s=>[s,marketFixedZero(items.filter(x=>x.stat===s&&x.input.market?.pMoreBooks!=null).length)])) as Record<Stat,number[]>;
 }
 export function forwardTrainingRows(lines:ForwardLine[],teamRows:TeamGameRow[],nowIso:string){
  const rows=Object.fromEntries(STATS.map(s=>[s,[] as {x:number[];y:0|1;w:number;at:string}[]])) as Record<Stat,{x:number[];y:0|1;w:number;at:string}[]>;
@@ -139,21 +147,20 @@ export async function runTrain(d:LearnDeps){
  const train=[...hist.filter(x=>x.at<histCut).map(x=>({...x,w:1})),
   ...fwd.filter(x=>x.at<cut).map(x=>({...x,w:0.5**(Math.max(0,(Date.parse(now)-Date.parse(x.at))/DAY)/RECENCY_HALF_LIFE_DAYS)}))];
  const holdout=[...hist.filter(x=>x.at>=histCut),...fwd.filter(x=>x.at>=cut)];
- const withBooks=train.filter(x=>x.input.market?.pMoreBooks!=null).length;
- const fixed=marketFixedZero(withBooks);
+ const fixedByStat=marketFixedByStat(train);
  const weights={} as Record<Stat,number[]>,lambda={} as Record<Stat,number>;
  try{
   for(const s of STATS){
    const rows=train.filter(x=>x.stat===s).map(x=>({x:featureVector(x.input),y:x.y,w:x.w,at:x.at}));
    if(rows.some(r=>!r.x.every(Number.isFinite)))throw new Error('PROPS_LEARN_NON_FINITE');
-   lambda[s]=rows.length?chooseLambda(rows,fixed):1;
-   weights[s]=rows.length?fitRidgeLogistic(rows,lambda[s],fixed):[0,1,0,0,0,0,0,0,0];
+   lambda[s]=rows.length?chooseLambda(rows,fixedByStat[s]):1;
+   weights[s]=rows.length?fitRidgeLogistic(rows,lambda[s],fixedByStat[s]):[0,1,0,0,0,0,0,0,0];
   }
  }catch{return {status:'FAILED_INVALID_ARTIFACT'};}
  const artifacts=await d.store.select<{version:string}>('props_model_artifacts','select=version&limit=1000');
  const version=nextVersion(artifacts.map(a=>a.version));
  const artifact:LearnArtifact={modelVersion:version,baseModelVersion:MODEL_VERSION,trainedAt:now,dataCutoff:cut,features:[...FEATURES],
-  weights,lambda,marketWeightsActive:fixed.length===0,
+  weights,lambda,marketWeightsActive:STATS.some(s=>fixedByStat[s].length===0),
   counts:Object.fromEntries(STATS.map(s=>[s,{historical:hist.filter(x=>x.stat===s&&x.at<histCut).length,
    forward:fwd.filter(x=>x.stat===s&&x.at<cut).length,forwardWithBooks:fwd.filter(x=>x.stat===s&&x.at<cut&&x.input.market?.pMoreBooks!=null).length}])) as LearnArtifact['counts']};
  const candidate=brier(holdout.map(x=>({p:predictLearn(artifact,x.stat,x.input),y:x.y})));
@@ -173,6 +180,8 @@ export async function runTrain(d:LearnDeps){
 
 export async function runEvaluate(d:Omit<LearnDeps,'historical'>,gate:ReviewGate=REVIEW_GATE){
  const c=await control(d.store);
+ // Learning off freezes the model: no training, no new eligibility, no switch.
+ if(!c.learning_enabled)return {status:'LEARNING_DISABLED',active:c.active_model_version,challengers:[],promoted:null};
  const active=await loadActiveModel(d.store);
  const lines=await loadForwardLines(d.store,ago(d.now(),90));
  const events=await d.store.select<{id:number;version:string;event:string}>('props_model_events','select=id,version,event&order=id.desc&limit=1000');
@@ -183,7 +192,12 @@ export async function runEvaluate(d:Omit<LearnDeps,'historical'>,gate:ReviewGate
   const detail={lines:ev.candidate.n,dates:ev.dates,games:ev.games,decisions:ev.candidate.decisions,upper95:ev.interval?.upper95??null,
    candidateBrier:ev.candidate.brier,activeBrier:ev.baseline.brier,activeVersion:active.version};
   challengers.push({version,eligible:ev.eligible,failed:ev.failed,...detail});
-  if(!ev.eligible)continue;
+  if(!ev.eligible){
+   // A pass that no longer holds is withdrawn, so a stale result can never be approved.
+   if(latest(version)==='eligible')await d.store.insert('props_model_events',[{version,event:'shadow_start',actor:'system:evaluate',
+    reason:'No longer eligible: '+ev.failed.join(', '),detail}]);
+   continue;
+  }
   if(latest(version)!=='eligible')await d.store.insert('props_model_events',[{version,event:'eligible',actor:'system:evaluate',
    reason:'Passed the registered review gate on its own forward predictions',detail}]);
   if(c.auto_switch_enabled&&!promoted){
