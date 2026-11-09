@@ -1,0 +1,61 @@
+# Monthly research evaluation (docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md): refresh sources, run the
+# pre-registered historical replays and the forward ledgers, write the report, and commit append-only to
+# the research-data branch. Read-only market data; no orders, no account data, no activation.
+# Schedules run from the default branch only; on this research branch it runs on push.
+name: Research evaluate (monthly)
+on:
+  schedule:
+    - cron: '23 4 3 * *'   # 04:23 UTC on the 3rd of each month
+  workflow_dispatch:
+  push:
+    branches: [research/stock-strategy-research-20261109]
+    paths:
+      - analytics/research/engine.py
+      - analytics/research/candidates.py
+      - analytics/research/evaluate.py
+      - analytics/research/data.py
+      - analytics/research/cli.py
+      - docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md
+      - docs/STOCK_STRATEGY_RESEARCH_PREREG_AMENDMENT_1_2026_11_09.md
+      - .github/workflows/research-evaluate.yml
+permissions:
+  contents: write   # pushes to the research-data branch only
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Research unit tests (synthetic, no network)
+        run: python -m unittest discover -s analytics/research -t .
+      - name: Check out the research-data branch
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Collect sources (read-only)
+        env:
+          SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+        run: python -m analytics.research.cli collect --data research-data
+      - name: Historical replays (pre-registered)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.research.cli historical --data research-data --end 2026-11-06
+      - name: Forward ledgers
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.research.cli forward --data research-data
+      - name: Report
+        run: python -m analytics.research.cli report --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit append-only to research-data
+        if: always()
+        run: bash .github/scripts/research-data-branch.sh commit "evaluate ${{ github.run_id }}"
