@@ -156,3 +156,30 @@ test('small talk is short and points somewhere useful',()=>{
  assert.equal(r.text,"Happy to help. Ask me about tonight's picks, last night's results, or your record.");
  assert.ok(r.suggestions.length>=2);
 });
+
+// ---- final review fixes
+test('results for one stat say which stat, and say so when there were none',()=>{
+ const pts=answer(P({intent:'results',range:'yesterday',stat:'points'}),makeData());
+ assert.equal(pts.text,'Last night, points picks hit 9 of 14 (64%).');
+ const ast=answer(P({intent:'results',range:'yesterday',stat:'assists'}),makeData());
+ assert.equal(ast.text,'No assists picks last night.');
+ const early=answer(P({intent:'results',range:'yesterday',stat:'points'}),makeData({graded:false}));
+ assert.equal(early.text,"Last night's points picks aren't graded yet. Results usually appear after the morning grading run.");
+});
+
+test("tonight's picks after lock lists them as locked, never 'no line qualified'",()=>{
+ const late='2026-11-10T03:30:00.000Z'; // Mon Nov 9, 8:30 PM MST: both of tonight's games have locked
+ const d=makeData({nowIso:late},{nowIso:late});
+ const r=answer(P({intent:'picks',range:'today'}),d);
+ assert.equal(r.text,"Tonight's picks have locked: Devin Booker More 11.5 rebounds (74%), Trae Young More 9.5 assists (68%), Domantas Sabonis Less 11.5 rebounds (64%). Results come after the morning grading run.");
+ assert.deepEqual(r.context.lastPickIds,[21,22,23]);
+ assert.equal(answer(P({intent:'lineup'}),d).text,"Tonight's picks have locked, so there's no lineup left to enter.");
+});
+
+test('record for a range uses that range, not all time',()=>{
+ const r=answer(P({intent:'record',range:'week'}),makeData());
+ assert.equal(r.text,'This week: entries 2–1 (+$15.00). Picks hit 9 of 14 (64%).');
+ const t=answer(P({intent:'record',range:'today'}),makeData());
+ assert.equal(t.text,'Tonight: no settled entries yet. No graded picks yet.');
+ assert.match(answer(P({intent:'record',range:'all'}),makeData()).text,/^Balance \$515\.00/);
+});

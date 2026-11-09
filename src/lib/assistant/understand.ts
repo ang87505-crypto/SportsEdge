@@ -23,7 +23,8 @@ const RULES:Record<Exclude<Intent,'unknown'>,Rule>={
  picks:{phrases:['who should i take','best pick','best picks','top plays','top picks','what do you like','who do you like','good picks','what are the picks',
   'today is picks','tonight is picks'],keywords:['picks','plays','take','like']},
  why:{phrases:['how come','explain that','what makes you like','why do you like','why that','why is'],keywords:['explain','reason'],weight:2},
- results:{phrases:['how did we do','did my picks hit','how did it go','how did last night','did we win','did they hit','how did the picks'],
+ results:{phrases:['how did we do','did my picks hit','how did it go','how did last night','did we win','did they hit','how did the picks',
+  'how did the games','how did tonight','how did yesterday','how did the night','picks hit'],
   keywords:['results','result','hit','won','win']},
  record:{phrases:['my record','all time record','am i up','how are we doing','how much','hit rate','are we up'],
   keywords:['record','balance','roi','profit','bankroll']},
@@ -86,10 +87,19 @@ function matchPlayer(text:string,tokens:string[],known:string[]):Parsed['player'
  const last=keys.filter(k=>named.includes(k.parts[k.parts.length-1]));
  if(last.length)return pick(last.map(k=>k.name));
  const first=keys.filter(k=>k.parts.length>1&&named.includes(k.parts[0]));
- if(first.length)return pick(first.map(k=>k.name));
+ return pick(first.map(k=>k.name));
+}
+
+/**
+ * Misspelled names ("bookr", "jokc"). Only tried when the question is about a player or has no other intent,
+ * and a token must share the name's first letter and be within one edit (two for 6+ letters), so everyday
+ * words ("games", "money", "whats") never become players.
+ */
+function fuzzyPlayer(tokens:string[],known:string[]):Parsed['player']{
  const loose=tokens.filter(t=>t.length>=4&&!VOCAB.has(t)&&!/\d/.test(t));
- const fuzzy=keys.filter(k=>loose.some(t=>k.parts.some(p=>p.length>=4&&levenshtein(t,p)<=2)));
- return pick(fuzzy.map(k=>k.name));
+ const near=(t:string,p:string)=>p.length>=4&&t[0]===p[0]&&levenshtein(t,p)<=(t.length>=6?2:1);
+ const names=[...new Set(known.filter(name=>loose.some(t=>playerKey(name).split(' ').some(p=>near(t,p)))))];
+ return names.length===1?{name:names[0]}:names.length>1?{ambiguous:names.sort()}:null;
 }
 
 function statOf(tokens:string[]):Stat|null{
@@ -129,7 +139,7 @@ export function understand(message:string,context:AssistantContext|null,knownPla
  if(!message.trim())return {intent:'help',player:null,stat:null,side:null,platform:null,range:null,followUp:false};
  const text=normalize(message);
  const tokens=text.split(' ').filter(Boolean);
- const player=text?matchPlayer(text,tokens,knownPlayers):null;
+ let player=text?matchPlayer(text,tokens,knownPlayers):null;
  const stat=statOf(tokens);
  const side=tokens.some(t=>t==='over'||t==='more')?'more':tokens.some(t=>t==='under'||t==='less')?'less':null;
  const platform=platformOf(text);
@@ -147,8 +157,15 @@ export function understand(message:string,context:AssistantContext|null,knownPla
  let intent:Intent='unknown';let best=0;
  for(const i of INTENT_ORDER){const s=scores.get(i)!;if(s>best){best=s;intent=i;}}
  if(best<MIN_INTENT_SCORE)intent='unknown';
+ if(!player&&(intent==='unknown'||intent==='why'||intent==='player')){
+  player=fuzzyPlayer(tokens,knownPlayers);
+  if(player&&intent==='unknown')intent='player';
+ }
 
- const followUp=!!context?.intent&&(FOLLOW.test(text)||tokens.length<=4)&&
+ // A follow-up needs a link to the last answer: a lead-in ("and", "what about"), "why", or something new to filter by.
+ // Words with neither ("asdf", emoji, markup) get the help reply instead of a repeat of the last answer.
+ const entity=!!(player||stat||side||platform||range);
+ const followUp=!!context?.intent&&(FOLLOW.test(text)||(tokens.length<=4&&(entity||intent==='why')))&&
   (intent==='unknown'||intent==='why'||intent==='player'||FOLLOW.test(text));
  let out:Parsed={intent,player,stat,side,platform,range,followUp:false};
  if(followUp){

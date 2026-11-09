@@ -49,6 +49,17 @@ const ctx=(p:Parsed,extra:Partial<AssistantContext>={}):AssistantContext=>({inte
  player:p.player&&'name' in p.player?p.player.name:undefined,stat:p.stat??undefined,range:p.range??undefined,...extra});
 const reply=(text:string,suggestions:string[],context:AssistantContext,cards:Card[]=[]):Reply=>({text,cards,suggestions:suggestions.slice(0,4),context});
 
+/** "last night", "this week", "on Nov 7": a range label inside a sentence. */
+const inWords=(label:string)=>/^\w+ \d+$/.test(label)?`on ${label}`:label.toLowerCase();
+const possessiveOf=(label:string)=>`${label}'s`;
+const sideProb=(l:Line)=>(l.side==='less'?l.pLess:l.pMore)??0;
+/** Tonight's recorded picks that have already locked, most confident first (optionally one stat). */
+function lockedTonight(v:PropsView,stat:string|null,nowIso:string):Line[]{
+ const today=rangeBounds('today',nowIso);
+ return v.lines.filter(l=>l.decision==='recorded'&&l.locked&&inRange(l.lockAt,today)&&(!stat||l.stat===stat))
+  .sort((a,b)=>sideProb(b)-sideProb(a)||a.id-b.id);
+}
+
 /** Recorded, not-yet-locked picks, most confident first (optionally one stat). */
 function upcoming(v:PropsView,stat:string|null){
  return propsSummary(v).upcoming.filter(u=>!stat||u.stat===stat);
@@ -65,6 +76,10 @@ function picks(p:Parsed,d:AssistantData):Reply{
  const list=upcoming(v,p.stat);
  const sugg=['Why the top pick?','Give me a lineup','How did last night go?'];
  if(!list.length){
+  const locked=lockedTonight(v,p.stat,d.nowIso);
+  if(locked.length)return reply(`Tonight's ${p.stat?`${p.stat} `:''}picks have locked: ${locked.map(l=>`${pickText(l)} (${pct(sideProb(l),0)})`).join(', ')}. Results come after the morning grading run.`,
+   ['How did last night go?',"What's my record?",'Is it running?'],ctx(p,{lastPickIds:locked.map(l=>l.id)}),
+   [{kind:'picks',items:locked.map(l=>({id:l.id,text:`${pickText(l)} · ${pct(sideProb(l),0)}`,detail:`${l.game} · locked ${mtShort(l.lockAt)}`}))}]);
   const today=rangeBounds('today',d.nowIso);
   const collected=v.lines.some(l=>inRange(l.lockAt,today));
   const text=collected?`No line passed the pick rules${p.stat?` for ${p.stat}`:''} tonight (60–80% model confidence).`
@@ -113,10 +128,15 @@ function results(p:Parsed,d:AssistantData):Reply{
  const sugg=["What's my record?","Tonight's picks",'Show my entries'];
  const label=b.label;
  if(!lines.length&&!entries.length)return reply(`I don't have any lines for ${label.toLowerCase()}.`,sugg,ctx(p));
- if(!graded.length&&!settled.length){
-  const possessive=label==='Last night'?"Last night's":label==='Tonight'?"Tonight's":`${label}'s`;
-  return reply(`${possessive} games aren't graded yet. Results usually appear after the morning grading run.`,sugg,ctx(p));
+ const later='Results usually appear after the morning grading run.';
+ // Entries mix stats, so a one-stat question is answered from that stat's picks alone, and says so.
+ if(p.stat){
+  if(!lines.some(l=>l.decision==='recorded'))return reply(`No ${p.stat} picks ${inWords(label)}.`,sugg,ctx(p));
+  if(!graded.length)return reply(`${possessiveOf(label)} ${p.stat} picks aren't graded yet. ${later}`,sugg,ctx(p));
+  const c=graded.filter(l=>l.correct).length;
+  return reply(`${label}, ${p.stat} picks hit ${c} of ${graded.length} (${pct(c/graded.length,0)}).`,sugg,ctx(p));
  }
+ if(!graded.length&&!settled.length)return reply(`${possessiveOf(label)} games aren't graded yet. ${later}`,sugg,ctx(p));
  const won=settled.filter(e=>e.settlement!.outcome==='won').length,lost=settled.filter(e=>e.settlement!.outcome==='lost').length;
  const each=settled.map(e=>{const s=e.settlement!;
   return s.profitCents===null?`#${e.id} ${s.wins} of ${s.wins+s.losses} legs hit (payout unknown)`:
@@ -130,13 +150,24 @@ function results(p:Parsed,d:AssistantData):Reply{
 
 function record(p:Parsed,d:AssistantData):Reply{
  const v=viewFor(p,d);
+ const sugg=['How did last night go?',"Tonight's picks",'Is it running?'];
+ if(p.range&&p.range!=='all'){
+  const b=rangeBounds(p.range,d.nowIso);
+  const settled=v.entries.filter(e=>inRange(e.lockAt,b)&&e.settlement);
+  const graded=v.lines.filter(l=>inRange(l.lockAt,b)&&l.decision==='recorded'&&l.correct!==null);
+  const won=settled.filter(e=>e.settlement!.outcome==='won').length,lost=settled.filter(e=>e.settlement!.outcome==='lost').length;
+  const net=settled.every(e=>e.settlement!.profitCents!==null)?settled.reduce((a,e)=>a+e.settlement!.profitCents!,0):null;
+  const c=graded.filter(l=>l.correct).length;
+  return reply([settled.length?`${b.label}: entries ${won}–${lost}${net===null?'':` (${usdCents(net,{signed:true})})`}.`:`${b.label}: no settled entries yet.`,
+   graded.length?`Picks hit ${c} of ${graded.length} (${pct(c/graded.length,0)}).`:'No graded picks yet.'].join(' '),sugg,ctx(p));
+ }
  const s=propsSummary(v);
  const parts:string[]=[];
  if(s.balanceCents!==null&&v.bankroll)parts.push(`Balance ${usdCents(s.balanceCents)} (${usdCents(s.netCents,{signed:true})} since the ${usdCents(v.bankroll.initialCents)} start).`);
  else parts.push(`${PLATFORM_LABEL[v.platform]} payouts depend on other entrants, so there is no balance.`);
  parts.push(`Entries ${s.record.won}–${s.record.lost}.`);
  parts.push(s.hitRate===null?'No graded picks yet.':`Picks hit ${s.correct} of ${s.graded} (${pct(s.hitRate,1)}) over the last two weeks.`);
- return reply(parts.join(' '),['How did last night go?',"Tonight's picks",'Is it running?'],ctx(p));
+ return reply(parts.join(' '),sugg,ctx(p));
 }
 
 function player(p:Parsed,d:AssistantData):Reply{
@@ -172,6 +203,8 @@ function entries(p:Parsed,d:AssistantData):Reply{
 
 function lineup(p:Parsed,d:AssistantData):Reply{
  const pair=bestPair(upcoming(d.pp,p.stat));
+ if(!pair.length&&lockedTonight(d.pp,p.stat,d.nowIso).length)
+  return reply("Tonight's picks have locked, so there's no lineup left to enter.",['How did last night go?',"What's my record?"],ctx(p));
  if(pair.length<2)return reply('Not enough picks from different games tonight for a two-pick lineup yet.',["Tonight's picks",'Is it running?'],ctx(p));
  const text=pair.map(u=>pickText(u)).join('; ');
  return reply("Here's a two-pick lineup from tonight's top picks. Enter it in PrizePicks yourself:",['Why the top pick?','How did last night go?'],

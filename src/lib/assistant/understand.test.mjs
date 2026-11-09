@@ -114,3 +114,36 @@ test('ordinary question words are never read as a player name',()=>{
  assert.equal(understand('what will it do tonight',null,roster,NOW).player,null);
  assert.deepEqual(understand('max strus points',null,roster,NOW).player,{name:'Max Strus'},'a full name still matches');
 });
+
+// ---- final review fixes
+const ROSTER=[...PLAYERS,'Amen Thompson','James Harden','Desmond Bane','Malik Monk','Tyrese Maxey','Coby White','Derrick White'];
+const askR=(m,ctx=null)=>understand(m,ctx,ROSTER,NOW);
+
+test('ordinary words never fuzzy-match a player on a real roster',()=>{
+ for(const [m,intent] of [['how did the games go last night','results'],['how much money did we make','record'],["what's my balance",'record'],
+  ['whats my balance','record'],['how many picks hit','results'],['whats up',null],['whats the plan',null],['how are the plays looking',null]]){
+  const p=askR(m);
+  assert.equal(p.player,null,m+' → '+JSON.stringify(p.player));
+  if(intent)assert.equal(p.intent,intent,m);
+ }
+});
+
+test('real misspellings of names still match',()=>{
+ assert.deepEqual(askR('bookr rebounds').player,{name:'Devin Booker'});
+ assert.deepEqual(askR('why jokc').player,{name:'Nikola Jokic'});
+ assert.deepEqual(askR('antetokounpo points').player,{name:'Giannis Antetokounmpo'});
+});
+
+test('nonsense after an answer gets help, not a repeat of the last answer',()=>{
+ for(const ctx of [{intent:'results',range:'yesterday'},{intent:'picks',range:'today'}])
+  for(const m of ['🔥🔥','asdf','<script>alert(1)</script>','qwerty zxcv']){
+   const p=askR(m,ctx);
+   assert.equal(p.intent,'unknown',m+' after '+ctx.intent);
+   assert.equal(p.followUp,false,m);
+  }
+ // Real follow-ups still carry on.
+ assert.equal(askR('and assists?',{intent:'results',range:'yesterday'}).intent,'results');
+ assert.equal(askR('and assists?',{intent:'results',range:'yesterday'}).range,'yesterday');
+ assert.equal(askR('last night?',{intent:'results',range:'today'}).intent,'results');
+ assert.equal(askR('what about tonight',{intent:'picks'}).intent,'picks');
+});
