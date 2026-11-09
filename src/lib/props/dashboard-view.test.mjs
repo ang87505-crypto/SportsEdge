@@ -84,3 +84,26 @@ test('the latest weekly review is passed through',()=>{
  assert.equal(buildView(learnRaw(),'prizepicks').report.report.misses.minutes_collapse,1);
  assert.equal(buildView(raw,'prizepicks').report,null);
 });
+
+test('review fix: after a switch the dashboard shows the current (v2) accounts, with v1 one tab away',()=>{
+ const r=learnRaw();
+ r.accounts=[{id:1,slug:'props-prizepicks-v1',platform:'prizepicks',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3},
+  {id:2,slug:'props-prizepicks-v2',platform:'prizepicks',selection_version:'props-select-v2',initial_cents:50000,stake_cents:500,max_entries_per_day:3}];
+ r.entries.push({id:8,account_id:2,stake_cents:500,lock_at:'2026-11-09T00:00:00Z',created_at:'2026-11-08T19:11:00Z',payout_terms_version:'t'});
+ const now=buildView(r,'prizepicks');
+ assert.equal(now.account.slug,'props-prizepicks-v2');
+ assert.deepEqual(now.entries.map(e=>e.id),[8]);
+ assert.equal(now.bankroll.balanceCents,50000);
+ const v1=buildView(r,'prizepicks',{record:'v1'});
+ assert.equal(v1.account.slug,'props-prizepicks-v1');
+ assert.equal(v1.bankroll.balanceCents,50250);
+ assert.equal(buildView(raw,'prizepicks').account.id,1,'without a learning model nothing changes');
+});
+
+test('review fix: the model summary knows when it last trained',()=>{
+ const r=learnRaw();
+ assert.equal(buildView(r,'prizepicks').model.lastTrainedAt,null);
+ r.model.events.push({id:10,version:'props-learn-v3',event:'created',reason:'weekly retrain',detail:{},at:'2026-11-08T10:00:00Z'},
+  {id:2,version:'props-learn-v0',event:'created',reason:'weekly retrain',detail:{},at:'2026-11-01T10:00:00Z'});
+ assert.equal(buildView(r,'prizepicks').model.lastTrainedAt,'2026-11-08T10:00:00Z');
+});

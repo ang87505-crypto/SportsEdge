@@ -6,7 +6,9 @@ import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in
 
 export const PROPS_WORKFLOW='https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml';
 type State='RUNNING'|'PAUSED'|'STOPPED';
-type Model={active:string;previous:string|null;learningEnabled:boolean;autoSwitchEnabled:boolean;challengers:{version:string;state:string}[]}|null;
+type Model={active:string;previous:string|null;learningEnabled:boolean;autoSwitchEnabled:boolean;
+ challengers:{version:string;state:string;detail?:{candidateBrier?:number;activeBrier?:number;lines?:number;upper95?:number|null;activeVersion?:string}}[]}|null;
+const num=(x:unknown,d=4)=>typeof x==='number'?x.toFixed(d):'?';
 type View={kind:'checking'}|{kind:'login'}|{kind:'unconfigured'}|{kind:'error'}|{kind:'ready';state:State;reason:string;model:Model};
 type Body={action:string;reason:string;version?:string};
 const modelName=(v:string)=>v==='props-nb-minutes-rate-v1'?'the stats model':v.replace(/^props-learn-v/,'learning model v');
@@ -99,7 +101,8 @@ function LearningControls({model,busy,send}:{model:NonNullable<Model>;busy:boole
     onClick={()=>void send({action:'retrain',reason:'Retrain requested from the website'},'Start a training run now on GitHub? It takes a few minutes and never changes the active model by itself.',
      'Started: a training run is on its way. Refresh in a few minutes.')}>Retrain now</button>
    {eligible.map(c=><button key={c.version} type="button" className="button" disabled={busy}
-    onClick={()=>void send({action:'approve',version:c.version,reason:'Approved from the website'},`Switch to ${modelName(c.version)}? It passed the test; new picks will use it and go to the v2 virtual accounts.`,
+    onClick={()=>void send({action:'approve',version:c.version,reason:'Approved from the website'},
+     `Switch to ${modelName(c.version)}?\n\nOn ${c.detail?.lines??'?'} graded real lines: Brier ${num(c.detail?.candidateBrier)} vs ${num(c.detail?.activeBrier)} for ${modelName(c.detail?.activeVersion??model.active)} (lower is better; upper 95% of the difference ${num(c.detail?.upper95)}).\n\nNew picks will use it and go to the v2 virtual accounts.`,
      `Done: ${modelName(c.version)} is active.`)}>Approve switch to {modelName(c.version)}</button>)}
    {model.previous&&<button type="button" className="button button-secondary" disabled={busy}
     onClick={()=>void send({action:'rollback',reason:'Rolled back from the website'},`Roll back to ${modelName(model.previous!)}? New picks will use it right away.`,

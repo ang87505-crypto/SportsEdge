@@ -48,9 +48,15 @@ async function Body({searchParams}:{searchParams:Search}){
  </nav>;
  if(!propsDashboardConfigured())return <>{tabs}<NotConnected/><PropsModelPanel v={null}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
  let raw:Raw|null=null;let view:PropsView|null=null;
- try{raw=await loadPropsDashboard();view=buildView(raw,platform);}catch{view=null;}
+ const record=sp.record==='v1'?'v1':'current';
+ try{raw=await loadPropsDashboard();view=buildView(raw,platform,{record});}catch{view=null;}
  if(!raw||!view)return <>{tabs}<Panel><Empty title="The props ledger did not respond" action={<a className="button button-secondary" href={`/paper-betting/props?platform=${platform}`}>Reload</a>}>No line, pick or result has been substituted.</Empty></Panel><PropsOwnerControls/><Limits/></>;
- return <>{tabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/>
+ const learnActive=/^props-learn-v[0-9]+$/.test(view.model?.active??'');
+ const recordTabs=learnActive?<nav className="tabs" aria-label="Record" style={{marginBottom:12}}>
+  <Link href={`/paper-betting/props?platform=${platform}`} aria-current={record==='current'?'page':undefined}>Current record</Link>
+  <Link href={`/paper-betting/props?platform=${platform}&record=v1`} aria-current={record==='v1'?'page':undefined}>Stats-model record (v1)</Link>
+ </nav>:null;
+ return <>{tabs}{recordTabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/>
   <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Lines v={view}/>
   <RunHistory v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }

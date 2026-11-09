@@ -19,7 +19,7 @@ export type Raw={
   inputs?:Record<string,unknown>|null}[];
  picks:{id:number;prediction_id:number;status:string;side:'more'|'less'|null;reason:string;selection_version:string}[];
  results:{observation_id:number;revision:number;outcome:string;actual:number|null}[];
- accounts:{id:number;slug:string;platform:Platform;initial_cents:number;stake_cents:number;max_entries_per_day:number}[];
+ accounts:{id:number;slug:string;platform:Platform;selection_version?:string;initial_cents:number;stake_cents:number;max_entries_per_day:number}[];
  entries:{id:number;account_id:number;stake_cents:number;lock_at:string;created_at:string;payout_terms_version:string|null}[];
  legs:{entry_id:number;pick_id:number}[];
  settlements:{entry_id:number;outcome:string;wins:number;losses:number;voids:number;return_cents:number|null;profit_cents:number|null;settled_at:string}[];
@@ -30,7 +30,7 @@ export type Raw={
  report?:{period_from:string;period_to:string;model_version:string;at:string;report:{misses:Record<string,number>;voidsExcluded:number;overconfidentBands:string[]}&Record<string,unknown>}|null;
 };
 
-export function buildView(r:Raw,platform:Platform){
+export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}={}){
  const now=Date.parse(r.nowIso);
  const latestResult=new Map<number,Raw['results'][number]>();
  for(const x of r.results){const p=latestResult.get(x.observation_id);if(!p||x.revision>p.revision)latestResult.set(x.observation_id,x);}
@@ -68,7 +68,11 @@ export function buildView(r:Raw,platform:Platform){
  const scored=lines.filter(l=>l.pMore!==null&&l.result&&['more','less'].includes(l.result.outcome));
  const brier=scored.length?scored.reduce((a,l)=>a+(l.pMore!-(l.result!.outcome==='more'?1:0))**2,0)/scored.length:null;
 
- const account=r.accounts.find(a=>a.platform===platform)??null;
+ // After a learning model takes over, new entries go to the v2 accounts; the v1 record stays one tab away.
+ const learnActive=/^props-learn-v[0-9]+$/.test(r.model?.active??'');
+ const wanted=opts.record==='v1'||!learnActive?'props-select-v1':'props-select-v2';
+ const account=r.accounts.find(a=>a.platform===platform&&a.selection_version===wanted)??
+  r.accounts.find(a=>a.platform===platform&&!a.selection_version)??null;
  const pickToLine=new Map<number,typeof lines[number]>();
  for(const l of lines){const pred=predByObs.get(l.id);const pk=pred&&pickByPred.get(pred.id);if(pk)pickToLine.set(pk.id,l);}
  const entries=account?r.entries.filter(e=>e.account_id===account.id).map(e=>{
@@ -98,6 +102,7 @@ export function buildView(r:Raw,platform:Platform){
  const keyOf=(id:number)=>{const o=obsById.get(id);return o?[o.provider_event_id,playerKey(o.player_name),o.stat,Number(o.line)].join('|'):null;};
  const round=(x:number|undefined)=>x===undefined?0:Math.round(x*100)/100;
  const model=r.model?{active:r.model.active,previous:r.model.previous,learningEnabled:r.model.learningEnabled,autoSwitchEnabled:r.model.autoSwitchEnabled,
+  lastTrainedAt:[...r.model.events].filter(e=>e.event==='created').sort((a,b)=>b.id-a.id)[0]?.at??null,
   weights:r.model.weights?Object.fromEntries(Object.entries(r.model.weights).map(([s,w])=>[s,{stats:round(w[1]),books:round(w[2]),matchup:round(w[5])}])) as Record<Stat,{stats:number;books:number;matchup:number}>:null,
   challengers:(()=>{const seen=new Set<string>();const out:{version:string;state:string;reason:string;detail:Record<string,unknown>;at:string;gradedLines:number}[]=[];
    for(const e of [...r.model.events].sort((a,b)=>b.id-a.id)){if(seen.has(e.version))continue;seen.add(e.version);

@@ -1,0 +1,71 @@
+/**
+ * Read-only loader for the player-prop paper dashboard (last 14 days). SERVER ONLY by use: imported
+ * from props-dashboard.ts, kept free of `server-only` so it can be tested. Every id list is read in
+ * chunks so no request exceeds the store's query-length cap however busy the fortnight was.
+ */
+import type {PropsStore} from './props-store.ts';
+import type {Raw} from '../props/dashboard-view.ts';
+import type {Stat} from '../props/contract.ts';
+
+const IDS=150;
+async function byIds<T>(store:PropsStore,table:string,select:string,column:string,ids:number[],limit=5000):Promise<T[]>{
+ const out:T[]=[];
+ const unique=[...new Set(ids)];
+ for(let i=0;i<unique.length;i+=IDS)out.push(...await store.select<T>(table,'select='+select+'&'+column+'=in.('+unique.slice(i,i+IDS).join(',')+')&limit='+limit));
+ return out;
+}
+
+export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Promise<Raw>{
+ const now=Date.parse(nowIso);
+ const since=encodeURIComponent(new Date(now-14*86400_000).toISOString());
+ const [control,runs,credits,usage,observations,accounts,entries]=await Promise.all([
+  store.select<Raw['control']&object>('props_control','select=state,reason,changed_at&id=eq.1'),
+  store.select<Raw['runs'][number]>('props_runs','select=id,kind,slot_key,status,outcome,started_at,finished_at,start_delay_seconds,summary&order=id.desc&limit=30'),
+  store.select<Raw['credits'][number]>('props_credit_reservations','select=credits,reserved_at&reserved_at=gt.'+
+   encodeURIComponent(new Date(now-30*86400_000).toISOString())+'&limit=10000'),
+  store.select<{requests_remaining:number}>('props_provider_usage','select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1'),
+  store.select<Raw['observations'][number]>('props_observations','select=id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at'+
+   '&lock_at=gt.'+since+'&order=lock_at.desc&limit=3000'),
+  store.select<Raw['accounts'][number]>('props_accounts','select=id,slug,platform,selection_version,initial_cents,stake_cents,max_entries_per_day&order=id.asc&limit=10'),
+  store.select<Raw['entries'][number]>('props_entries','select=id,account_id,stake_cents,lock_at,created_at,payout_terms_version&order=id.desc&limit=500'),
+ ]);
+ const obsIds=observations.map(o=>o.id);
+ const predictions=await byIds<Raw['predictions'][number]>(store,'props_predictions',
+  'id,observation_id,model_version,status,reason,p_more,p_less,p_tie,mean,inputs','observation_id',obsIds);
+ const [picks,results]=await Promise.all([
+  byIds<Raw['picks'][number]>(store,'props_picks','id,prediction_id,status,side,reason,selection_version','prediction_id',predictions.map(p=>p.id)),
+  byIds<Raw['results'][number]>(store,'props_line_results','observation_id,revision,outcome,actual','observation_id',obsIds,10000),
+ ]);
+ const entryIds=entries.map(e=>e.id);
+ const [legs,settlements]=await Promise.all([
+  byIds<Raw['legs'][number]>(store,'props_entry_legs','entry_id,pick_id','entry_id',entryIds),
+  byIds<Raw['settlements'][number]>(store,'props_entry_settlements','entry_id,outcome,wins,losses,voids,return_cents,profit_cents,settled_at','entry_id',entryIds),
+ ]);
+ const [model,views,report]=await Promise.all([loadModel(store),
+  optional(()=>byIds<NonNullable<Raw['views']>[number]>(store,'props_market_views',
+   'observation_id,books_at_same_line,p_more_books,line_gap,nearest_book_line,flags','observation_id',obsIds),[]),
+  optional(async()=>(await store.select<NonNullable<Raw['report']>>('props_learning_reports',
+   'select=period_from,period_to,model_version,at,report&order=id.desc&limit=1'))[0]??null,null)]);
+ return {nowIso,control:control[0]??null,runs,credits,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
+  observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report};
+}
+
+/** Tables from later migrations may be absent; the dashboard then shows them as not set up, never as zero. */
+async function optional<T>(f:()=>Promise<T>,fallback:T):Promise<T>{try{return await f();}catch{return fallback;}}
+async function loadModel(store:PropsStore):Promise<Raw['model']>{
+ return optional(async()=>{
+  const [[c],events]=await Promise.all([
+   store.select<{active_model_version:string;previous_model_version:string|null;learning_enabled:boolean;auto_switch_enabled:boolean}>(
+    'props_model_control','select=active_model_version,previous_model_version,learning_enabled,auto_switch_enabled'),
+   store.select<NonNullable<Raw['model']>['events'][number]>('props_model_events','select=id,version,event,reason,detail,at&order=id.desc&limit=200')]);
+  if(!c)return null;
+  let weights:Record<Stat,number[]>|null=null;
+  if(/^props-learn-v[0-9]+$/.test(c.active_model_version)){
+   const [a]=await store.select<{artifact:{weights?:Record<Stat,number[]>}}>('props_model_artifacts',
+    'select=artifact&version=eq.'+encodeURIComponent(c.active_model_version));
+   weights=a?.artifact?.weights??null;
+  }
+  return {active:c.active_model_version,previous:c.previous_model_version,learningEnabled:c.learning_enabled,
+   autoSwitchEnabled:c.auto_switch_enabled,weights,events};
+ },null);
+}

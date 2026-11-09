@@ -6,6 +6,24 @@ import {REVIEW_GATE} from '@/lib/props/promotion';
 
 const name=(v:string|null)=>!v?'—':v===MODEL_VERSION?'Stats model':v.replace(/^props-learn-v/,'Learning model v');
 const STAT_LABEL={points:'Points',rebounds:'Rebounds',assists:'Assists'} as const;
+/** Time of the newest training run, from the raw lifecycle events carried in the view. */
+function lastRetrain(v:PropsView):string|null{const t=v.model?.lastTrainedAt;return t?mtShort(t):null;}
+const fmt=(x:unknown,d=3)=>typeof x==='number'?x.toFixed(d):'—';
+/** Layer scorecards from the weekly review: is each layer earning its place? */
+function Scorecards({v}:{v:PropsView}){
+ const sc=(v.report?.report as {scorecards?:Record<string,unknown>}|undefined)?.scorecards as
+  {layer1?:{n:number;brier:number|null;hitRate:number|null};books?:{n:number;brier:number|null;hitRate:number|null}|null;
+   active?:{n:number;brier:number|null;hitRate:number|null};challengers?:Record<string,{n:number;brier:number|null;hitRate:number|null}>}|undefined;
+ if(!sc?.active)return null;
+ const rows:[string,{n:number;brier:number|null;hitRate:number|null}|null|undefined][]=[['Stats model alone',sc.layer1],['Sportsbooks alone',sc.books],
+  [`Active (${name(v.report!.model_version)})`,sc.active],...Object.entries(sc.challengers??{}).map(([k,x])=>[name(k),x] as [string,typeof x])];
+ return <div className="table-wrap table-scroll mt-12"><table className="data-table ledger-table">
+  <caption className="quiet">Layer scorecards, {v.report!.period_from} to {v.report!.period_to}. Brier: lower is better.</caption>
+  <thead><tr><th scope="col">Layer</th><th scope="col" className="num">Lines</th><th scope="col" className="num">Brier</th><th scope="col" className="num">Hit rate</th></tr></thead>
+  <tbody>{rows.map(([label,x])=><tr key={label}><td data-label="Layer">{label}</td><td data-label="Lines" className="num">{x?x.n:'—'}</td>
+   <td data-label="Brier" className="num">{x?fmt(x.brier,4):'No book data'}</td><td data-label="Hit rate" className="num">{x&&typeof x.hitRate==='number'?`${(x.hitRate*100).toFixed(1)}%`:'—'}</td></tr>)}</tbody>
+ </table></div>;
+}
 function state(c:NonNullable<PropsView['model']>['challengers'][number],active:string):{label:string;tone:Tone;note?:string}{
  if(c.version===active)return {label:'Active',tone:'positive'};
  switch(c.state){
@@ -27,6 +45,7 @@ export function PropsModelPanel({v}:{v:PropsView|null}){
  </Panel>;
  return <Panel title="Model" description="The learning layer retrains every Sunday, shadows the active model on real lines, and can only take over after it passes the registered test." className="mt-12" actions={<Evidence kind="recorded"/>}>
   <KeyValues items={[
+   ['Last retrain',lastRetrain(v!)??'Not yet'],
    ['Active model',<span key="a">{name(m.active)}{m.active!==MODEL_VERSION&&<small className="quiet"> · {m.active}</small>}</span>],
    ['Previous model',name(m.previous)],
    ['Learning',m.learningEnabled?'On: retrains every Sunday':'Off: the model stays frozen'],
@@ -40,10 +59,12 @@ export function PropsModelPanel({v}:{v:PropsView|null}){
    <thead><tr><th scope="col">Version</th><th scope="col">State</th><th scope="col">Since</th></tr></thead>
    <tbody>{m.challengers.length?m.challengers.map(c=>{const st=state(c,m.active);return <tr key={c.version}>
     <td data-label="Version"><strong>{name(c.version)}</strong><small>{c.version}</small></td>
-    <td data-label="State"><Badge tone={st.tone}>{st.label}</Badge>{st.note&&<small>{st.note}</small>}</td>
+    <td data-label="State"><Badge tone={st.tone}>{st.label}</Badge>{st.note&&<small>{st.note}</small>}
+     {c.state==='eligible'&&<small>Brier {fmt(c.detail.candidateBrier,4)} vs {fmt(c.detail.activeBrier,4)} active, on {String(c.detail.lines??'—')} lines (upper 95% {fmt(c.detail.upper95,4)})</small>}</td>
     <td data-label="Since">{mtShort(c.at)}</td>
    </tr>;}):<tr><td colSpan={3} className="quiet">No challenger trained yet. The first one appears after the next Sunday run.</td></tr>}</tbody>
   </table></div>
+  <Scorecards v={v!}/>
  </Panel>;
 }
 

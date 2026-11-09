@@ -94,7 +94,7 @@ test('review fix: a line on both platforms trains and counts once; the sportsboo
  assert.equal(r.rows.points.length,1);
  assert.deepEqual(r.counts.points,{forward:1,forwardWithBooks:1});
  assert.equal(forwardItems(dup,[]).length,1);
- const items=[...Array.from({length:150},(_,i)=>({stat:'points',input:{market:books}})),...Array.from({length:20},()=>({stat:'rebounds',input:{market:books}}))];
+ const items=[...Array.from({length:150},()=>({stat:'points',input:{market:books}})),...Array.from({length:20},()=>({stat:'rebounds',input:{market:books}}))];
  const fixed=marketFixedByStat(items);
  assert.deepEqual(fixed.points,[]);
  assert.deepEqual(fixed.rebounds,[...MARKET_FEATURES]);
