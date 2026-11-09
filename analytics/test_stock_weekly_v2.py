@@ -216,7 +216,11 @@ class WeeklyBridgeTests(unittest.TestCase):
     def test_committed_universe_file_is_valid(self):
         path = Path(__file__).resolve().parents[1] / 'config' / 'paper-auto' / 'universe-large-cap-v1.json'
         doc = json.loads(path.read_text())
-        rows = parse_universe(doc, datetime(2026, 10, 30, 12, tzinfo=timezone.utc))
+        # Revision large-cap-v1-2026-11-09 is first usable for the 2026-11-16 decision; point-in-time
+        # rules refuse it for any decision before its available_at.
+        rows = parse_universe(doc, datetime(2026, 11, 16, 12, tzinfo=timezone.utc))
+        with self.assertRaises(Rejected):
+            parse_universe(doc, datetime(2026, 10, 30, 12, tzinfo=timezone.utc))
         self.assertGreaterEqual(len(rows), 100)
         self.assertEqual(doc['max_last_close'], '95')
         self.assertEqual(len({r['sector'] for r in rows}), 11)
@@ -224,3 +228,28 @@ class WeeklyBridgeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UniverseIdentity(unittest.TestCase):
+    """The live weekly universe follows ticker changes and drops delisted members (2026-11-09 audit)."""
+
+    def setUp(self):
+        import json
+        from pathlib import Path
+        self.u = json.loads((Path(__file__).resolve().parents[1] / 'config/paper-auto/universe-large-cap-v1.json')
+                            .read_text(encoding='utf-8'))
+        self.symbols = {r['symbol'] for r in self.u['securities']}
+
+    def test_marsh_trades_as_mrsh_since_2026_01_14(self):
+        self.assertIn('MRSH', self.symbols)
+        self.assertNotIn('MMC', self.symbols)
+        row = next(r for r in self.u['securities'] if r['symbol'] == 'MRSH')
+        self.assertEqual(row['sector'], 'Financials')
+
+    def test_delisted_electronic_arts_is_removed(self):
+        self.assertNotIn('EA', self.symbols)
+
+    def test_revision_is_new_and_still_parses(self):
+        self.assertNotEqual(self.u['revision'], 'large-cap-v1-2026-10-30')
+        rows = parse_universe(self.u, datetime(2026, 11, 16, 13, 0, tzinfo=timezone.utc))
+        self.assertEqual(len(rows), 135)
