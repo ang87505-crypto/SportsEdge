@@ -39,6 +39,8 @@ def load(path: Path = REGISTRY) -> dict:
         if s.get('status') not in STRATEGY_STATUSES:
             raise RegistryError('STRATEGY_STATUS:' + s['id'])
         for f in s.get('code', []) + [s['rules']]:
+            if s['status'] == 'rejected' and s.get('location'):
+                continue  # kept on another branch; recorded, not required here
             if not (ROOT / f).exists():
                 raise RegistryError('STRATEGY_FILE_MISSING:' + s['id'] + ':' + f)
     for e in reg['experiments']:
@@ -54,7 +56,8 @@ def fingerprints(reg: dict) -> dict:
     out = {'registry': hashlib.sha256(REGISTRY.read_bytes()).hexdigest(), 'strategies': {}}
     for s in reg['strategies']:
         files = sorted(set(s.get('code', []) + [s['rules']]))
-        out['strategies'][s['id']] = {f: file_sha256(f) for f in files}
+        out['strategies'][s['id']] = {f: file_sha256(f) if (ROOT / f).exists() else 'at ' + s.get('location', '?')
+                                      for f in files}
     return out
 
 
