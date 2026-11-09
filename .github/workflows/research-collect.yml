@@ -1,0 +1,56 @@
+# Nightly read-only research collection (docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md).
+# Collects QMOM's official holdings, Berkshire's SEC 13F filings (needs the SEC_EDGAR_USER_AGENT secret)
+# and CUSIP mappings, advances the three forward PAPER ledgers, writes a report, and commits everything
+# append-only to the research-data branch. No orders, no account data, no database, no activation.
+# Schedules run from the default branch only; on this research branch it runs on push.
+name: Research collect (nightly)
+on:
+  schedule:
+    - cron: '17 2 * * 2-6'   # 02:17 UTC Tue-Sat, after each US session
+  workflow_dispatch:
+  push:
+    branches: [research/stock-strategy-research-20261109]
+    paths:
+      - analytics/research/qmom.py
+      - analytics/research/sec13f.py
+      - analytics/research/figi.py
+      - analytics/research/store.py
+      - analytics/research/fetch.py
+      - .github/workflows/research-collect.yml
+      - .github/scripts/research-data-branch.sh
+permissions:
+  contents: write   # pushes to the research-data branch only
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Research unit tests (synthetic, no network)
+        run: python -m unittest discover -s analytics/research -t .
+      - name: Check out the research-data branch
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Collect sources (read-only)
+        env:
+          SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+        run: python -m analytics.research.cli collect --data research-data
+      - name: Advance the forward PAPER ledgers (read-only market data)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.research.cli forward --data research-data
+      - name: Report
+        run: python -m analytics.research.cli report --data research-data >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit append-only to research-data
+        if: always()
+        run: bash .github/scripts/research-data-branch.sh commit "collect ${{ github.run_id }}"
