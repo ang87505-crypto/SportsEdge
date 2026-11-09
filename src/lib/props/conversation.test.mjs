@@ -133,7 +133,7 @@ test('entry requests explain the available manual action',()=>{
  const r=ask('place those bets');assert.match(r.text,/cannot submit entries or move money/);assert.equal(r.copyText,undefined);
 });
 test('model answer distinguishes unavailable learning from trained state',()=>{
- assert.match(ask('how does the model learn').text,/not set up/);
+ assert.match(ask('how does the model learn').text,/cannot verify the active model/);
  const d=fixture();d.model={active:'props-learn-v1',learningEnabled:true,autoSwitchEnabled:false,challengers:[]};
  assert.match(ask('model',ctx,d).text,/500 graded lines/);assert.match(ask('model',ctx,d).text,/does not guarantee improvement/);
 });
