@@ -148,12 +148,13 @@ def simulate(sessions: list[str], series: dict, universe: dict, rule: str, *, st
 
 
 def verdicts(out: dict) -> dict:
-    """v1's seven frozen conditions plus correction 3: no unresolved exit at 10 or 25 bps."""
+    """v1's seven frozen conditions plus correction 3: no unresolved exit and no position left
+    unresolved at the end, checked independently at every cost level present (5, 10 and 25 bps)."""
     res = v1.verdicts(out)
     passing = []
     for rule, r in out['rules'].items():
-        clean = not r['bps10'].get('unresolved_exits') and not r['bps25'].get('unresolved_exits') \
-            and not r['bps10'].get('open_unresolved_at_end')
+        levels = [r[k] for k in (f'bps{b}' for b in COSTS_BPS) if k in r]
+        clean = all(not x.get('unresolved_exits') and not x.get('open_unresolved_at_end') for x in levels)
         res[rule]['checks']['no_unresolved_exits'] = clean
         ok = all(res[rule]['checks'].values())
         res[rule]['verdict'] = 'QUALIFIES FOR REVIEW' if ok else 'FAILS'

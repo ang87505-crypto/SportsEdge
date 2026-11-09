@@ -148,3 +148,31 @@ class BreakEven(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UnresolvedEveryCostLevel(unittest.TestCase):
+    """Regression: an unresolved position at any cost level, including 25 bps, blocks qualification."""
+
+    def out(self, where: str, field: str):
+        m = lambda cagr, sharpe=1.2, mdd=-0.2: {'cagr': cagr, 'sharpe': sharpe, 'max_drawdown': mdd}
+        level = lambda: {'full': m(0.15), 'early': m(0.1), 'late': m(0.1), 'years': {str(y): 0.05 for y in range(2017, 2027)},
+                         'unresolved_exits': [], 'open_unresolved_at_end': 0}
+        rules = {'losers5': {'bps5': level(), 'bps10': level(), 'bps25': level()}}
+        rules['losers5']['bps25']['full'] = m(0.05)
+        node = rules['losers5'][where]
+        node[field] = [{'symbol': 'AAA'}] if field == 'unresolved_exits' else 1
+        return {'rules': rules, 'benchmarks': {'spy-hold': {'full': m(0.13, 0.8)},
+                                               'spy-open-close': {'bps10': {'full': m(-0.02, -0.1)}},
+                                               'weekly': {'bps10': {'full': m(0.06, 0.5)}}}}
+
+    def test_open_unresolved_at_end_at_25_bps_blocks(self):
+        self.assertEqual(v2.verdicts(self.out('bps25', 'open_unresolved_at_end'))['overall'], 'NONE QUALIFIES')
+
+    def test_unresolved_at_5_bps_blocks(self):
+        self.assertEqual(v2.verdicts(self.out('bps5', 'unresolved_exits'))['overall'], 'NONE QUALIFIES')
+        self.assertEqual(v2.verdicts(self.out('bps5', 'open_unresolved_at_end'))['overall'], 'NONE QUALIFIES')
+
+    def test_clean_at_every_level_can_qualify(self):
+        out = self.out('bps10', 'open_unresolved_at_end')
+        out['rules']['losers5']['bps10']['open_unresolved_at_end'] = 0
+        self.assertEqual(v2.verdicts(out)['overall'], 'QUALIFIES FOR REVIEW: losers5')
