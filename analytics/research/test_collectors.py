@@ -231,6 +231,26 @@ class Sec13fCollector(unittest.TestCase):
             sec13f.collect(f, store, NOW, user_agent='SportsEdge Research test@example.test')
             self.assertEqual(len(f.calls) - n, 1)  # only the index is re-read; the filing is not fetched again
 
+    def test_text_era_filings_are_skipped_not_retried(self):
+        # Before June 2013 13F filings were plain text with no XML information table (first real run: 150 such
+        # filings from 1999-2013 were PARSE_FAILED and would have been re-fetched every night).
+        sub = {'filings': {'recent': {'accessionNumber': ['0000950123-25-008361', '0001193125-12-064201'],
+                                      'filingDate': ['2025-08-14', '2012-02-14'], 'reportDate': ['2025-03-31', '2011-12-31'],
+                                      'acceptanceDateTime': ['2025-08-14T20:10:02.000Z', '2012-02-14T16:02:11.000Z'],
+                                      'form': ['13F-HR/A', '13F-HR'],
+                                      'primaryDocument': ['xslForm13F_X02/primary_doc.xml', 'd283811d13fhr.txt']}, 'files': []}}
+        base = 'https://www.sec.gov/Archives/edgar/data/1067983/000095012325008361/'
+        routes = {sec13f.SUBMISSIONS.format(cik='0001067983'): json.dumps(sub),
+                  base + 'index.json': (FIX / 'sec' / 'index_000095012325008361.json').read_bytes(),
+                  base + 'primary_doc.xml': (FIX / 'sec' / 'primary_doc_000095012325008361.xml').read_bytes(),
+                  base + '43981.xml': (FIX / 'sec' / 'infotable_000095012325008361.xml').read_bytes()}
+        with tempfile.TemporaryDirectory() as d:
+            f = FakeFetcher(routes)
+            line = sec13f.collect(f, SnapshotStore(Path(d)), NOW, user_agent='SportsEdge Research test@example.test')
+            self.assertEqual(line['status'], 'OK')
+            self.assertEqual(line['summary']['skipped_text_era'], 1)
+            self.assertFalse(any('000119312512064201' in c[1] for c in f.calls))
+
 
 class OpenFigi(unittest.TestCase):
     def test_unique_us_equity_is_mapped_and_class_shares_use_dots(self):

@@ -13,30 +13,34 @@ Everything is committed append-only to the `research-data` branch.
 | Run | What | Result file | Status |
 |---|---|---|---|
 | [42710247709](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42710247709) | First historical replay | `results/historical-2026-11-09T221552Z.json` | **Superseded** by amendment 1 (META/METV ticker reuse). Preserved unchanged. |
-| [42711610908](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42711610908) | Corrected historical replay | `results/historical-2026-11-09T222445Z.json` | **Current.** NONE QUALIFIES |
+| [42711610908](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42711610908) | Corrected historical replay | `results/historical-2026-11-09T222445Z.json` | NONE QUALIFIES (Berkshire not yet collected) |
 | [42711611478](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42711611478) | Nightly collection | snapshots in `manifest.jsonl` | QMOM OK; SEC NOT_CONFIGURED; forward step failed (defect 4) |
 | [42712625737](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42712625737) | Full evaluation after the defect 4 fix (all steps green) | `results/historical-2026-11-09T223137Z.json`, `reports/LATEST.md` | **Reproduced** the same dataset fingerprint and verdict; forward: `NO_FORWARD_SESSIONS_YET` |
+| [42712625737, attempt 2](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42712625737/attempts/2) | Re-run after the owner added `SEC_EDGAR_USER_AGENT` | `results/historical-2026-11-09T223926Z.json` | **Current.** All three candidates assessed: NONE QUALIFIES |
 
 **Fingerprints of the current result:**
 
 | Item | SHA-256 |
 |---|---|
-| Dataset (sessions, bars, applied actions) | `9b53d64da9f5153c0fd000433d9ba386cd97e0635688c2cd45e7c14c99d9ad7e` |
-| Raw corporate-action pages | `739736dfaa92218baacf0764757603809b87e2f76210ae6a9010cf459d8992d6` |
+| Dataset (sessions, bars, applied actions) | `db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938` |
+| Raw corporate-action pages | `5dad2f3905640f09e82bb1165d8e8f4232e019fa4340748d62f45ea6015ab691` |
 | Registry (`config/research/registry.json`) | `498d9977c9672387718958da2b7cff6e8a7bd6ea8bae772854aa0e5bb0565cc0` |
-| Code commit | `8b633865b5a2c632a9ceaeb8eec2ffe0186b119b` (reproduced at `8fcc6bf867bd877e157000ab4355709a5bb32040`) |
+| Code commit | `8fcc6bf867bd877e157000ab4355709a5bb32040` |
 | `analytics/research/engine.py` | `2fb4d4cf0ac623d3587683da47b45d9c86fa87498a38a78ded5837ffc9835adb` |
 | `analytics/research/candidates.py` | `7368af5c0fc208272708178a6a25fe04fc291a1e118a6b6008f210d708b3933a` |
 
-The first, superseded run had dataset `6c31aa06…55db`.
+The dataset grew once the Berkshire tickers were added. The momentum-quality numbers are identical to the
+earlier momentum-only datasets: `9b53d64d…` (runs 42711610908 and 42712625737, attempt 1). The first,
+superseded run had dataset `6c31aa06…55db`.
 
 **Data checks on the current dataset:**
 
-- 140 symbols have bars; none are missing.
-- 5,293 corporate actions were applied.
+- Every requested symbol has bars; none are missing.
 - 0 raw-versus-adjusted integrity mismatches.
 - One rename join: MMC → MRSH on 2026-01-14.
-- 19 actions were dropped by the entity check (see the limitations section).
+- 141 actions were dropped by the entity check: 138 small cash dividends, the META → METV rename, the XOM
+  self-rename and the HON "split". None is on a stock the Berkshire candidate ever held (AAPL, AXP, BAC,
+  CVX, GOOGL, IBM, KHC, KO, WFC). See the limitations section.
 
 ## momentum-quality-paper-v1: FAILS
 
@@ -103,21 +107,39 @@ Old QMOM holdings cannot be reconstructed from today's page, so this candidate h
 needs the pre-registered forward minimum (at least 252 sessions and the decision counts in the
 pre-registration). Current forward sample: **0 sessions**.
 
-## berkshire-13f-top5-paper-v1: blocked on owner setup
+## berkshire-13f-top5-paper-v1: FAILS
 
-SEC EDGAR requires a contact in the User-Agent. That contact comes only from the repository secret
-`SEC_EDGAR_USER_AGENT`, which is not set yet, so every SEC collection is recorded as `NOT_CONFIGURED`.
-No filing has been fetched or guessed.
+**Data:** official SEC EDGAR records for Berkshire Hathaway (CIK 1067983), collected after the owner added
+the contact secret.
 
-The parser is tested on real Berkshire filing records, stored in `analytics/research/fixtures/sec/`:
+- 185 records stored, including every 13F from the XML era (June 2013 on), with acceptance timestamps.
+- 41 decisions. Each executes at the session after the filing's acceptance date (New York time). Amendments
+  follow the pre-registered rules.
+- CUSIPs are mapped to tickers through OpenFIGI.
+- **First decision:** the 2016-09-30 filing (accession `0000950123-16-022377`), executed 2017-02-01.
+  Targets AXP, IBM, KHC, KO and WFC, 20% each.
+- **Latest decision:** the 2026-06-30 filing, accepted 2026-08-14. GOOGL replaced CVX: Berkshire's four
+  Class A lines total about $28.2B. Holdings are grouped by CUSIP, per the pre-registration, so Class A and
+  Class C count separately.
 
-- the submissions JSON (13F rows only);
-- the index;
-- `primary_doc.xml`;
-- the information table for accession `0000950123-25-008361`.
+| Series | CAGR | Total return | Max drawdown | Sharpe | Turnover/yr | Costs paid |
+|---|---|---|---|---|---|---|
+| Continuous, gross (0 bps) | 11.2% | +182% | −41.8% | 0.63 | 0.4× | $0 |
+| Continuous, 5 bps | 11.3% | +183% | −42.0% | 0.63 | 0.3× | $80 |
+| **Continuous, 10 bps (judged)** | **11.3%** | **+183%** | **−42.0%** | **0.63** | 0.3× | $160 |
+| Continuous, 25 bps | 11.2% | +181% | −41.2% | 0.63 | 0.3× | $403 |
+| As-live, 10 bps (halted 2018-02-08) | 0.5% | +4.5% | −10.2% | 0.15 | 0.3× | $84 |
 
-Once the secret exists, the historical replay of this candidate will run on the next evaluation.
-It uses acceptance timestamps, amendment handling and execution at the session after acceptance.
+Continuous 10 bps: early half 7.7% CAGR, late half 16.9%; no unresolved positions; 0 integrity mismatches.
+Calendar years: −15.8% (2018), +40.4%, −1.0%, +28.5%, −5.7%, +11.5%, +27.0%, +17.9%, +9.0% (2026 YTD).
+
+**Failed checks:** CAGR above exposure-matched SPY (11.3% vs 13.9%), Sharpe above SPY (0.63 vs 0.84) and
+max drawdown within 35% (−42.0%). Simply holding BRK.B returned 13.6% over the same dates.
+
+**Collection note:** the first SEC collection marked 150 filings from 1999–2013 as `PARSE_FAILED`. These
+are plain-text 13F filings with no XML information table, outside the replay window. The collector now
+counts and skips filings accepted before June 2013 (`skipped_text_era`), so the nightly run neither re-fetches
+them nor reports `INCOMPLETE`.
 
 ## Defects found by the real runs, and what changed
 
@@ -127,17 +149,20 @@ It uses acceptance timestamps, amendment handling and execution at the session a
 | 2 | First collection | QMOM parser relied on CSS classes added by the page's JavaScript | Parse by visible column headers | None (no data used) |
 | 3 | First evaluation | Forward step asked for same-day SIP bars (free plan refuses, HTTP 403) | End at the last completed day | None |
 | 4 | Run 42711610908 | Forward step sent the disclosed `CASH&OTHER` line as a ticker (HTTP 400) | Request only exchange-style tickers; record the rest in `data.symbols_rejected` | None (forward has no sessions yet) |
+| 5 | Run 42712625737, attempt 2 | SEC collector retried 150 text-era filings nightly | Skip filings accepted before June 2013 | None (outside the window) |
 
 Defect 4 was fixed in commit `8fcc6bf`. It has a regression test in
 `analytics/research/test_data_integrity.py` (`MarketSymbols`).
 
 ## Limitations
 
-- **Small real dividends dropped as unverifiable.** The entity check dropped 13 real NVDA dividends
-  (2020–2024) and one OXY dividend. Their yields (0.003%–0.03%) are smaller than the rounding in Alpaca's
-  adjusted prices, so the footprint test cannot confirm them.
-  - Upper bound on the error: under 0.4% of the NVDA position's value summed over four years, or under
-    0.1% of portfolio value. No verdict is affected.
+- **Small real dividends dropped as unverifiable.** In the current dataset the entity check dropped 138
+  small cash dividends. In the momentum-quality candidate these are 12 NVDA dividends (2020–2024) and one
+  OXY dividend, with yields of 0.003%–0.03%. Such yields are smaller than the rounding in Alpaca's adjusted
+  prices, so the footprint test cannot confirm them.
+  - None of the 138 is on a stock the Berkshire candidate held.
+  - Upper bound on the momentum-quality error: under 0.4% of the NVDA position's value summed over four
+    years, or under 0.1% of portfolio value. No verdict is affected.
   - A tolerance change would be a new amendment, written before any rerun; none is made here.
 - **Other dropped actions:**
   - META → METV rename (correct: it was another company);
@@ -149,20 +174,15 @@ Defect 4 was fixed in commit `8fcc6bf`. It has a regression test in
   index membership, which tends to flatter historical returns.
 - **Cost model:** costs are flat bps per trade, not modelled spread or market impact.
 - **QMOM follower:** forward only, with no historical evidence. 0 forward sessions so far.
-- **Berkshire candidate:** not evaluated until the SEC secret is set.
+- **Berkshire candidate:** 13F filings show quarter-end holdings 45 days late; the replay trades only
+  after acceptance, so it is not backdated, but it cannot see trades Berkshire made in between.
 - **Schedules:** the nightly and monthly schedules only run from the default branch, so they start once
   this branch is merged. Until then the workflows run on pushes to the research branch.
 
 ## Owner steps
 
-1. **Add the SEC secret.** Go to Settings → Secrets and variables → Actions → New repository secret.
-   - Name: `SEC_EDGAR_USER_AGENT`.
-   - Value: a short app name and a contact address, for example `SportsEdge-research you@example.com`.
-   - The value stays in GitHub secrets and is never committed.
-2. **Re-run the evaluation.** Open the latest "Research evaluate (monthly)" run on this branch and
-   choose "Re-run all jobs". A re-run reads secrets fresh. This collects the Berkshire filings and replays
-   that candidate. The "Run workflow" button only appears after merge, because GitHub lists dispatchable
-   workflows from the default branch.
-3. **Review and merge the PR** so the nightly collection and monthly evaluation run on schedule.
+1. ~~Add the `SEC_EDGAR_USER_AGENT` secret.~~ Done 2026-11-09.
+2. **Review and merge the PR** so the nightly collection and monthly evaluation run on schedule. The
+   schedules only run from the default branch.
 
 Nothing else is needed. No paid data plan is used.

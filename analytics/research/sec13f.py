@@ -174,6 +174,11 @@ def known_portfolio(filings: list[dict], as_of_utc: str) -> dict | None:
             'holdings': eligible_holdings(rows)}
 
 
+# 13F filings accepted before this date are plain text without an XML information table. The research window
+# needs filings from late 2016 on, so text-era filings are counted and skipped instead of failing every night.
+XML_ERA_START = '2013-06-01T00:00:00Z'
+
+
 def collect(fetcher, store, now: datetime, cik: str = '0001067983', user_agent: str | None = None) -> dict:
     """Fetch the submissions index (and older pages) and every 13F filing not yet stored."""
     at = now.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -181,7 +186,7 @@ def collect(fetcher, store, now: datetime, cik: str = '0001067983', user_agent: 
     if not user_agent:
         return store.put(source_id=SOURCE_ID, url=url, retrieved_at=at, body=None, status='NOT_CONFIGURED',
                          error='SEC_EDGAR_USER_AGENT_NOT_CONFIGURED')
-    summary = {'new_filings': [], 'errors': []}
+    summary = {'new_filings': [], 'errors': [], 'skipped_text_era': 0}
     try:
         r = fetcher.get(url)
         doc = json.loads(r.body)
@@ -204,6 +209,9 @@ def collect(fetcher, store, now: datetime, cik: str = '0001067983', user_agent: 
     for f in sorted(filings, key=lambda f: f['accepted_at']):
         key = 'filing:' + f['accession']
         if key + ':infotable' in have:
+            continue
+        if f['accepted_at'] < XML_ERA_START:
+            summary['skipped_text_era'] += 1
             continue
         base = ARCHIVE.format(cik_int=cik_int, acc=f['accession'].replace('-', ''))
         try:
