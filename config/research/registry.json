@@ -1,0 +1,26 @@
+{
+ "registry_version": "sportsedge-research-registry-v1",
+ "revision": "2026-11-09-r1",
+ "note": "Research only. Listing a strategy here never activates it. Status values: active (the frozen live paper strategy), challenger (collecting evidence, activation off), rejected (failed its pre-registered test; kept as a permanent negative result), reference (a comparison only).",
+ "strategies": [
+  {"id": "stock-v2-weekly-1", "status": "active", "kind": "live-paper", "description": "Existing weekly momentum PAPER autopilot ($1,000). Frozen; not changed by research.", "code": ["analytics/stock_weekly_bridge_v2.py", "analytics/stock_weekly_scoring_v2.py"], "rules": "docs/PAPER_AUTO_WEEKLY_V2_2026_10_30.md"},
+  {"id": "daily-oc-losers5-v1", "status": "rejected", "kind": "historical-backtest", "description": "Daily open-to-close study, five rules (v1 and corrected v2). NONE QUALIFIES.", "code": ["analytics/stock_daily_oc_backtest_v1.py", "analytics/stock_daily_oc_backtest_v2.py"], "rules": "docs/STOCK_DAILY_OC_BACKTEST_PLAN_2026_11_09.md", "result_ref": "PR #109; runs 42689444342, 42690807640, 42692791862"},
+  {"id": "momentum-quality-paper-v1", "status": "challenger", "kind": "public-method-adaptation", "description": "Transparent adaptation inspired by Alpha Architect's published quantitative momentum process. Not a QMOM replica.", "code": ["analytics/research/candidates.py", "analytics/research/engine.py"], "rules": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "qmom-disclosure-follower-v1", "status": "challenger", "kind": "disclosed-holdings-follower", "description": "Follows QMOM's official daily disclosed holdings, forward only, monthly rebalance, 20% cap.", "code": ["analytics/research/candidates.py", "analytics/research/engine.py", "analytics/research/qmom.py"], "rules": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "berkshire-13f-top5-paper-v1", "status": "challenger", "kind": "delayed-filing-follower", "description": "Equal-weight top five eligible US common stocks from Berkshire Hathaway's public 13F filings, traded after public acceptance. An adaptation, not Berkshire's portfolio.", "code": ["analytics/research/candidates.py", "analytics/research/engine.py", "analytics/research/sec13f.py"], "rules": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"}
+ ],
+ "sources": [
+  {"id": "qmom-holdings", "kind": "official-fund-holdings", "url": "https://funds.alphaarchitect.com/qmom/", "cadence": "nightly", "access": "public web page; robots.txt allows it with Crawl-delay 10", "min_interval_seconds": 10, "stale_after_business_days": 3},
+  {"id": "sec-edgar-13f", "kind": "regulatory-filings", "url": "https://data.sec.gov/submissions/CIK0001067983.json", "cadence": "nightly", "access": "SEC EDGAR fair access: declared User-Agent with contact (repository secret SEC_EDGAR_USER_AGENT), at most 10 requests/second", "min_interval_seconds": 0.25, "cik": "0001067983"},
+  {"id": "openfigi-cusip", "kind": "identifier-mapping", "url": "https://api.openfigi.com/v3/mapping", "cadence": "on new CUSIP", "access": "free OpenFIGI API without a key: 25 requests/minute, 10 jobs per request", "min_interval_seconds": 2.5},
+  {"id": "alpaca-market-data", "kind": "prices-and-corporate-actions", "url": "https://data.alpaca.markets", "cadence": "per evaluation", "access": "existing authorized paper key pair held as GitHub secrets; read-only GETs"}
+ ],
+ "experiments": [
+  {"id": "daily-oc-2026-11-09", "strategy": "daily-oc-losers5-v1", "status": "complete", "verdict": "NONE QUALIFIES", "prereg": "docs/STOCK_DAILY_OC_BACKTEST_PLAN_2026_11_09.md"},
+  {"id": "mq-historical-2026-11", "strategy": "momentum-quality-paper-v1", "status": "registered", "mode": "historical-exploratory", "prereg": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "brk13f-historical-2026-11", "strategy": "berkshire-13f-top5-paper-v1", "status": "registered", "mode": "historical", "prereg": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "qmom-follower-forward", "strategy": "qmom-disclosure-follower-v1", "status": "registered", "mode": "forward", "prereg": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "mq-forward", "strategy": "momentum-quality-paper-v1", "status": "registered", "mode": "forward", "prereg": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"},
+  {"id": "brk13f-forward", "strategy": "berkshire-13f-top5-paper-v1", "status": "registered", "mode": "forward", "prereg": "docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md"}
+ ]
+}
