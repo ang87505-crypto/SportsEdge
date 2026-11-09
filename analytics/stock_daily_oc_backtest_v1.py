@@ -358,6 +358,12 @@ def evaluate(data: dict, universe: dict, end: str = END) -> dict:
         out['benchmarks']['weekly'][f'bps{bps}'] = {**summarize(w['curve'], end), 'avg_exposure': w['avg_exposure']}
     out['benchmarks']['spy-hold'] = summarize(spy_hold(sessions, spy, start=START, end=end)['curve'], end)
     out['verdicts'] = verdicts(out)
+    # Added after the first results were seen (2026-11-09): zero-cost runs show whether any rule
+    # has an edge before costs. Diagnostic only; not part of the pre-registered pass/fail.
+    out['diagnostics_after_results'] = {'zero_cost': {
+        **{rule: metrics(simulate(sessions, series, universe, rule, start=START, end=end, cost_bps=0,
+                                  pause=False)['curve'], START, end) for rule in RULES},
+        'spy-open-close': metrics(spy_open_close(sessions, spy, start=START, end=end, cost_bps=0)['curve'], START, end)}}
     return out
 
 
@@ -420,8 +426,33 @@ def markdown(out: dict) -> str:
           f"- Sessions where raw and adjusted returns differ by over 0.5% (splits, dividends): "
           f"{d['sessions_raw_vs_adjusted_differ_over_0_5pct']}.",
           f"- Members with missing bars in the window: {len(d['missing_bars_by_symbol'])}."]
+    for sym, n in d['missing_bars_by_symbol'].items():
+        L.append(f'  - {sym}: {n} of {d["evaluation_sessions"]} sessions without a bar.')
     unresolved = sum(len(r[f'bps{b}']['unresolved_exits']) for r in out['rules'].values() for b in COSTS_BPS)
     L.append(f'- Unresolved exits across all runs: {unresolved}.')
+    L += ['', '## Orders that did not fill (as-live)', '',
+          '| Rule | Cost/side | Gap above limit | No bar that day | Not enough cash | Under one share (no order) |',
+          '|---|---|---|---|---|---|']
+    for rule, r in out['rules'].items():
+        for bps in COSTS_BPS:
+            x = r[f'bps{bps}']
+            L.append(f"| {rule} | {bps} bps | {x['unfilled_gap']} | {x['unfilled_missing_bar']} | "
+                     f"{x['unfilled_cash']} | {x['skipped_under_one_share']} |")
+    L += ['', '## Without the drawdown pause (diagnostic)', '',
+          '| Rule | Cost/side | End value | CAGR | Sharpe | Max DD | Pauses if enforced |', '|---|---|---|---|---|---|---|']
+    for rule, r in out['rules'].items():
+        for bps in COSTS_BPS:
+            x = r['continuous'][f'bps{bps}']
+            f = x['full']
+            L.append(f"| {rule} | {bps} bps | ${f.get('end_value', 0):,.0f} | {_pct(f.get('cagr'))} | "
+                     f"{_num(f.get('sharpe'))} | {_pct(f.get('max_drawdown'))} | {x['pauses_if_enforced']} |")
+    diag = out.get('diagnostics_after_results', {}).get('zero_cost')
+    if diag:
+        L += ['', '## Before costs (diagnostic added after results; not part of pass/fail)', '',
+              '| Series (0 bps, no pause) | End value | CAGR | Sharpe | Max DD |', '|---|---|---|---|---|']
+        for name, f in diag.items():
+            L.append(f"| {name} | ${f.get('end_value', 0):,.0f} | {_pct(f.get('cagr'))} | {_num(f.get('sharpe'))} | "
+                     f"{_pct(f.get('max_drawdown'))} |")
     return '\n'.join(L) + '\n'
 
 
