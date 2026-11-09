@@ -29,7 +29,7 @@ type Search=Promise<Record<string,string|string[]|undefined>>;
 export default function Page({searchParams}:{searchParams:Search}){
  return <>
   <PageHeading title="PrizePicks player props" description="Daily virtual picks on NBA points, rebounds and assists. Lines are saved before each game, picks are recorded before lock, and results are graded from final box scores."
-   action={<><Link href="/paper-betting/props-research" className="button button-secondary">Ranked picks &amp; research</Link><AutomationRefresh/></>}/>
+   action={<><Link href="/assistant" className="button">Ask</Link><Link href="/paper-betting/props-research" className="button button-secondary">Ranked picks &amp; research</Link><AutomationRefresh/></>}/>
   <div className="virtual-banner" role="note">
    <span className="virtual-banner-icon"><NavIcon name="shield" size={18}/></span>
    <div><strong>Virtual entries only.</strong> No PrizePicks or DFS account is connected and nothing here submits a real entry. Paid contests may not be lawful where you live.</div>

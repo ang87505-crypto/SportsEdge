@@ -19,3 +19,8 @@ test('other sections are unchanged',()=>{
  assert.deepEqual(crumbsFor('/research/nba').map(c=>c.href),['/sports','/research/nba']);
  assert.deepEqual(crumbsFor('/automation').map(c=>c.href),['/automation']);
 });
+
+test('the Ask page sits under PrizePicks',()=>{
+ assert.deepEqual(crumbsFor('/assistant').map(c=>c.href),['/paper-betting/props','/assistant']);
+ assert.ok(SECTIONS.find(s=>s.id==='paper').children.some(c=>c.href==='/assistant'&&c.label==='Ask'));
+});

@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -98,6 +98,11 @@ try{
     if(data.placeholders)issues.push('Placeholder links detected');
     if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
      issues.push('Model panel missing');
+    if(route==='/assistant'){
+     await evaluate(send,`(document.querySelector('.chat-chip')?.click(),true)`);
+     try{await until(async()=>evaluate(send,`document.querySelectorAll('.chat-msg.bot:not(.pending)').length>=2`),label+' assistant reply',15000);}
+     catch{issues.push('Assistant did not reply to a starter question');}
+    }
     if(!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});

@@ -17,8 +17,9 @@ export const SECTIONS:NavSection[]=[
    {href:'/research/epl',label:'Soccer model',description:'EPL three-way forecast archive'},
    {href:'/research/backtest',label:'Soccer accuracy history',description:'Six-month retrospective by league'},
   ]},
- {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting'],
+ {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting','/assistant'],
   children:[
+   {href:'/assistant',label:'Ask',description:'Ask about picks, results and the model'},
    {href:'/paper-betting/props-research',label:'Ranked picks & research',description:'Top qualifying picks and the model comparison'},
    {href:'/paper-betting',label:'Moneyline ledger (older test)',description:'The earlier NBA moneyline virtual bankroll'},
   ]},

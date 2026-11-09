@@ -27,6 +27,7 @@ entries per platform per day.
 | I want to… | Where | What to do |
 | --- | --- | --- |
 | See today's picks and how it is doing | **PrizePicks** page (`/paper-betting/props`) | Status, balance, record, hit rate and upcoming picks are at the top. |
+| Ask a question in plain words | **Ask** page (`/assistant`) | Type "how did last night go?", "tonight's picks", "why Booker?" or "is it running?". Free, read-only, never places bets. |
 | Pause / Resume / Stop PrizePicks | PrizePicks page → **Controls** | Sign in with the owner key and press the button. Results are kept. |
 | Collect lines or grade results now | GitHub → Actions → **NBA props paper cycle** | **Run workflow** → kind `collect` or `settle` → **Run workflow**. Refresh the site after 1–2 minutes. |
 | Read-only status check | Same workflow | kind `status`. |
