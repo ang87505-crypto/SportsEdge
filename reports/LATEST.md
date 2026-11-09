@@ -6,16 +6,16 @@ Research only. No candidate is active and broker writes stay off. Pre-registrati
 
 | Source | Attempts | Last status | Last success | Failures |
 |---|---|---|---|---|
-| qmom-holdings | 5 | OK | 2026-11-09T22:31:37Z | 2 |
-| sec-edgar-13f | 5 | NOT_CONFIGURED | never | 5 |
+| openfigi-cusip | 6 | OK | 2026-11-09T22:37:39Z | 0 |
+| qmom-holdings | 6 | OK | 2026-11-09T22:37:39Z | 2 |
+| sec-edgar-13f | 341 | INCOMPLETE | 2026-11-09T22:37:39Z | 156 |
 
 ## Historical evaluation (2017-02-01 to 2026-11-06, $30,000)
 
 **Overall: NONE QUALIFIES**
 
-Dataset SHA-256 `9b53d64da9f5153c0fd000433d9ba386cd97e0635688c2cd45e7c14c99d9ad7e`; code `8fcc6bf867bd877e157000ab4355709a5bb32040`; registry `498d9977c9672387…`. The 2017–2026 history was already inspected and the 136-stock universe is survivorship-biased: this is exploratory research data, not an untouched validation set.
+Dataset SHA-256 `db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938`; code `8fcc6bf867bd877e157000ab4355709a5bb32040`; registry `498d9977c9672387…`. The 2017–2026 history was already inspected and the 136-stock universe is survivorship-biased: this is exploratory research data, not an untouched validation set.
 
-- berkshire-13f-top5-paper-v1: not evaluated historically (no SEC filings collected (SEC_EDGAR_USER_AGENT not configured)).
 - qmom-disclosure-follower-v1: not evaluated historically (no reliable historical holdings snapshots; forward only).
 
 | Comparison (same dates) | Cost/side | End value | CAGR | Sharpe | Max DD |
@@ -26,6 +26,39 @@ Dataset SHA-256 `9b53d64da9f5153c0fd000433d9ba386cd97e0635688c2cd45e7c14c99d9ad7
 | Weekly strategy ($1,000, ~half invested) | 5 bps | $1,845 | 6.5% | 0.54 | -23.8% |
 | Weekly strategy ($1,000, ~half invested) | 10 bps | $1,777 | 6.1% | 0.52 | -24.8% |
 | Weekly strategy ($1,000, ~half invested) | 25 bps | $1,585 | 4.8% | 0.42 | -28.0% |
+
+### berkshire-13f-top5-paper-v1: FAILS
+
+Exposure-matched SPY (continuous, 10 bps exposure): CAGR 13.9%, Sharpe 0.83.
+
+| berkshire-13f-top5-paper-v1 | Series | Cost/side | End value | Total | CAGR | Sharpe | Max DD | Turnover/yr | Exposure | End cash | Costs paid | Halted |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| | continuous | 0 bps | $84,452 | 181.5% | 11.2% | 0.63 | -41.8% | 0.4x | 97% | $7,366 | $0 | no |
+| | as-live | 0 bps | $31,432 | 4.8% | 0.5% | 0.16 | -10.2% | 0.3x | 10% | $31,432 | $0 | 2018-02-08 |
+| | continuous | 5 bps | $84,886 | 183.0% | 11.3% | 0.63 | -42.0% | 0.3x | 97% | $4,444 | $80 | no |
+| | as-live | 5 bps | $31,390 | 4.6% | 0.5% | 0.15 | -10.2% | 0.3x | 10% | $31,390 | $42 | 2018-02-08 |
+| | continuous | 10 bps | $84,817 | 182.7% | 11.3% | 0.63 | -42.0% | 0.3x | 98% | $4,374 | $160 | no |
+| | as-live | 10 bps | $31,348 | 4.5% | 0.5% | 0.15 | -10.2% | 0.3x | 10% | $31,348 | $84 | 2018-02-08 |
+| | continuous | 25 bps | $84,310 | 181.0% | 11.2% | 0.63 | -41.2% | 0.3x | 98% | $3,323 | $403 | no |
+| | as-live | 25 bps | $31,218 | 4.1% | 0.4% | 0.14 | -10.2% | 0.3x | 10% | $31,218 | $209 | 2018-02-08 |
+
+| Check (pre-registered) | Result |
+|---|---|
+| at_least_6_positive_years | pass |
+| both_halves_positive | pass |
+| cagr_above_exposure_matched_spy | FAIL |
+| cagr_positive_at_10_and_25bps | pass |
+| halt_exit_loss_within_15pct | pass |
+| max_drawdown_within_35pct | FAIL |
+| no_unresolved_at_any_cost | pass |
+| sharpe_above_spy_buy_and_hold | FAIL |
+| sharpe_above_weekly | pass |
+
+Decisions 41; orders 26, filled 25, unfilled (gap 1, no bar 0, cash 0), reduced for cash 11, unavailable targets 0; dividends $9,967; unresolved 0; integrity mismatches 0.
+
+| Year (continuous, 10 bps) | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|---|---|---|---|---|---|
+| | -15.8% | 40.4% | -1.0% | 28.5% | -5.7% | 11.5% | 27.0% | 17.9% | 9.0% |
 
 ### momentum-quality-paper-v1: FAILS
 
