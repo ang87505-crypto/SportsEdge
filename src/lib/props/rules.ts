@@ -15,6 +15,7 @@
  *    most correct entries. No NBA base table is published -> returns are UNKNOWN.
  */
 import type {Platform} from './contract.ts';
+import type {MarketView} from './market.ts';
 import {SELECTION_VERSION} from './contract.ts';
 
 // ---------------------------------------------------------------- grading
@@ -49,7 +50,7 @@ export function gradeLine(g:GradeInput):Grade{
 // ---------------------------------------------------------------- selection
 export const SELECTION_RULE_V1={version:SELECTION_VERSION,minSideProbability:0.60,maxSideProbability:0.80,maxTieProbability:0.05};
 export type PickDecision={status:'recorded';side:'more'|'less';probability:number;reason:'edge_band'}|
- {status:'skipped';side:null;probability:number|null;reason:'unscorable'|'below_threshold'|'extreme_disagreement'|'tie_risk'};
+ {status:'skipped';side:null;probability:number|null;reason:'unscorable'|'below_threshold'|'extreme_disagreement'|'tie_risk'|'pros_disagree'};
 export function decidePick(p:{status:'scored'|'unscorable';pMore:number|null;pLess:number|null;pTie:number|null}):PickDecision{
  const R=SELECTION_RULE_V1;
  if(p.status!=='scored'||p.pMore===null||p.pLess===null||p.pTie===null)return {status:'skipped',side:null,probability:null,reason:'unscorable'};
@@ -59,6 +60,16 @@ export function decidePick(p:{status:'scored'|'unscorable';pMore:number|null;pLe
  // A very large disagreement with the posted line most often means information the model lacks.
  if(prob>R.maxSideProbability)return {status:'skipped',side:null,probability:prob,reason:'extreme_disagreement'};
  return {status:'recorded',side,probability:prob,reason:'edge_band'};
+}
+
+/**
+ * props-select-v2: the v1 rule on the active model's probabilities, plus one extra skip. A pick the
+ * sportsbooks clearly lean against is most often one where the model is missing news.
+ */
+export function decidePickV2(p:Parameters<typeof decidePick>[0],market:MarketView|null):PickDecision{
+ const d=decidePick(p);
+ if(d.status==='recorded'&&market?.flags.includes('pros_disagree'))return {status:'skipped',side:null,probability:d.probability,reason:'pros_disagree'};
+ return d;
 }
 
 // ---------------------------------------------------------------- entries

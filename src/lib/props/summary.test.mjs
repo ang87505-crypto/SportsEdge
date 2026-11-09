@@ -40,3 +40,29 @@ test('Mountain time handles missing and daylight-saving dates',()=>{
  assert.match(mtShort('2026-11-08T19:10:00Z'),/12:10 PM MST/);
  assert.match(mtShort('2026-10-08T19:10:00Z'),/1:10 PM MDT/);
 });
+
+test('upcoming picks carry the why: expected value, sportsbook view and matchup',()=>{
+ const r=JSON.parse(JSON.stringify(raw));
+ r.views=[{observation_id:4,books_at_same_line:1,p_more_books:0.45,line_gap:0,nearest_book_line:20.5,flags:['pros_disagree']}];
+ const s=propsSummary(buildView(r,'prizepicks'));
+ const top=s.upcoming[0];
+ assert.equal(top.id,4);
+ assert.equal(top.mean,20);
+ assert.deepEqual(top.market.flags,['pros_disagree']);
+ assert.equal(top.oppAllowedRatio,null);
+ assert.equal(s.upcoming[1].market,null);
+});
+
+test('the why line names only what is known',async()=>{
+ const {whyLine}=await import('./summary.ts');
+ assert.equal(whyLine({mean:22.43,market:{booksAtSameLine:2,pMoreBooks:0.58},oppAllowedRatio:0.9}),'Stats: 22.4 expected · Books: 58% More (2 books) · tough matchup');
+ assert.equal(whyLine({mean:9,market:null,oppAllowedRatio:null}),'Stats: 9.0 expected');
+ assert.equal(whyLine({mean:null,market:{booksAtSameLine:0,pMoreBooks:null},oppAllowedRatio:1.1}),'soft matchup');
+});
+
+test('learning status line',async()=>{
+ const {learningStatus}=await import('./summary.ts');
+ assert.equal(learningStatus(null),'Stats model · learning not set up yet');
+ assert.equal(learningStatus({active:'props-learn-v3',learningEnabled:true,autoSwitchEnabled:false}),'Learning model v3 · learning on · auto-switch off');
+ assert.equal(learningStatus({active:'props-nb-minutes-rate-v1',learningEnabled:false,autoSwitchEnabled:true}),'Stats model · learning off · auto-switch on');
+});

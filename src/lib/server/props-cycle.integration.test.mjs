@@ -10,6 +10,7 @@ import {propsStore} from './props-store.ts';
 import {runCollect,runSettle} from './props-cycle.ts';
 
 const enabled=process.env.PROPS_PG_TEST==='1';
+const schema=name=>new URL('../../../database/props/'+name,import.meta.url).pathname;
 const DB='props_it';
 let clock='2026-11-05T12:00:00.000Z';
 const now=()=>clock;
@@ -47,13 +48,17 @@ const odds={
   const book=(key,shift)=>({key,markets:[['player_points',2],['player_rebounds',3],['player_assists',4]].map(([m,idx])=>({key:m,last_update:clock,
    outcomes:[...PLAYERS[h],...PLAYERS[a]].flatMap(pl=>{const line=Math.max(0.5,Math.floor(pl[idx]*0.8)+0.5+shift);
     return [{name:'Over',description:pl[1],price:-137,point:line,...(key==='pick6'?{multiplier:1}:{})},{name:'Under',description:pl[1],price:-137,point:line}];})}))});
-  return {ok:true,httpStatus:200,body:{...e,bookmakers:[book('prizepicks',0),book('pick6',1)]},receivedAt:clock,usage:{remaining:400-oddsCalls*3,used:100+oddsCalls*3,last:3}};},
+  const sportsbook=(key,shift,over,under)=>({key,markets:[['player_points',2],['player_rebounds',3],['player_assists',4]].map(([m,idx])=>({key:m,last_update:clock,
+   outcomes:[...PLAYERS[h],...PLAYERS[a]].flatMap(pl=>{const line=Math.max(0.5,Math.floor(pl[idx]*0.8)+0.5+shift);
+    return [{name:'Over',description:pl[1],price:over,point:line},{name:'Under',description:pl[1],price:under,point:line}];})}))});
+  return {ok:true,httpStatus:200,body:{...e,bookmakers:[book('prizepicks',0),book('pick6',1),sportsbook('draftkings',0,-150,130),sportsbook('fanduel',1,-110,-110)]},
+   receivedAt:clock,usage:{remaining:400-oddsCalls*3,used:100+oddsCalls*3,last:3}};},
 };
 
 test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
  const dir=mkdtempSync(join(tmpdir(),'props-it-'));
  const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
- resetDb(DB,[new URL('../../../database/props/props_v1.sql',import.meta.url).pathname,clockFile]);
+ resetDb(DB,[schema('props_v1.sql'),schema('props_market_v1.sql'),clockFile]);
  const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
  const store=propsStore(env,pgFetch(DB,now));
  const deps={store,odds,espn,model,now,worker:'test:1',seasonStart:'2026-10-01T00:00:00Z'};
@@ -78,6 +83,13 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  assert.equal(c.summary.receipt.observations,48);               // 8 players x 3 stats x 2 platforms
  assert.equal(c.summary.receipt.predictions,48);
  assert.equal(c.summary.predictions.scored,48,JSON.stringify(c.summary.predictions));
+ // Sportsbook reference quotes ride in the same reply: no extra credits, and no platform line is lost.
+ assert.deepEqual(c.summary.bookQuotes,{inserted:48,byBook:{draftkings:24,fanduel:24,betmgm:0,williamhill_us:0}}); // 2 games x 4 players x 3 stats per book
+ assert.equal(psql(DB,'SELECT count(*) FROM props_book_quotes').out,'48');
+ assert.equal(psql(DB,'SELECT count(*) FROM props_market_views').out,'48');
+ assert.equal(c.summary.marketViews.withBooks,48);
+ assert.equal(psql(DB,`SELECT count(*) FROM props_market_views WHERE books_at_same_line>0 AND p_more_books IS NOT NULL`).out,'48');
+ assert.equal(psql(DB,`SELECT sum(credits) FROM props_credit_reservations WHERE run_id=${c.runId}`).out,'7');
  const pp=c.summary.entries.prizepicks,p6=c.summary.entries.pick6;
  assert.ok(pp.entries.length>=1&&p6.entries.length>=1,JSON.stringify(c.summary.entries));
  const legs=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT e.id,count(DISTINCT o.provider_event_id) g,count(*) n FROM props_entries e
@@ -123,4 +135,180 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  const next=await runCollect(deps,'collect-2026-11-08T15',null);
  assert.equal(next.summary.abandonedRecovered,1);
  assert.equal(psql(DB,`SELECT status FROM props_runs WHERE slot_key='collect-zombie'`).out,'abandoned');
+});
+
+test('collect still records lines and picks when the market tables are not migrated yet',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const db='props_it_nomarket';
+ const dir=mkdtempSync(join(tmpdir(),'props-it-'));
+ const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+ resetDb(db,[schema('props_v1.sql'),clockFile]);
+ const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+ clock='2026-11-05T12:00:00.000Z';
+ const store=propsStore(env,pgFetch(db,now));
+ const deps={store,odds,espn,model,now,worker:'test:2',seasonStart:'2026-10-01T00:00:00Z'};
+ await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'integration test',p_actor:'owner-test'});
+ for(const day of [1,2,3,4])finals['202611'+String(day).padStart(2,'0')]=day;
+ assert.equal((await runSettle(deps,'backfill-test',null,{kind:'backfill',dates:['2026-11-01','2026-11-02','2026-11-03','2026-11-04']})).outcome,'COMPLETED');
+ clock='2026-11-07T19:00:00.000Z';
+ const c=await runCollect(deps,'collect-2026-11-07T19',null);
+ assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+ assert.equal(c.summary.receipt.observations,48);
+ assert.equal(c.summary.receipt.predictions,48);
+ assert.match(c.summary.bookQuotes.error,/^[A-Z0-9_]+$/);
+ assert.match(c.summary.marketViews.error,/^[A-Z0-9_]+$/);
+});
+
+// ---- learning layer: active model, shadows, v2 selection, fallback (synthetic TEST-ONLY artifacts)
+async function learningDb(db){
+ const {artifactSha256,FEATURES}=await import('../props/learn.ts');
+ const dir=mkdtempSync(join(tmpdir(),'props-it-'));
+ const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+ resetDb(db,[schema('props_v1.sql'),schema('props_market_v1.sql'),schema('props_learning_v1.sql'),clockFile]);
+ const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+ clock='2026-11-05T12:00:00.000Z';
+ const store=propsStore(env,pgFetch(db,now));
+ const deps={store,odds,espn,model,now,worker:'test:l',seasonStart:'2026-10-01T00:00:00Z'};
+ await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'integration test',p_actor:'owner-test'});
+ for(const day of [1,2,3,4])finals['202611'+String(day).padStart(2,'0')]=day;
+ assert.equal((await runSettle(deps,'backfill-test',null,{kind:'backfill',dates:['2026-11-01','2026-11-02','2026-11-03','2026-11-04']})).outcome,'COMPLETED');
+ const w=[0,1,0,0,0,0,0,0,0];
+ const artifact=v=>({modelVersion:v,baseModelVersion:'props-nb-minutes-rate-v1',trainedAt:'2026-11-05T12:00:00Z',dataCutoff:'2026-11-05T12:00:00Z',
+  features:[...FEATURES],weights:{points:w,rebounds:w,assists:w},lambda:{points:1,rebounds:1,assists:1},marketWeightsActive:false,
+  counts:{points:{historical:1,forward:0,forwardWithBooks:0},rebounds:{historical:1,forward:0,forwardWithBooks:0},assists:{historical:1,forward:0,forwardWithBooks:0}}});
+ const add=async(v,sha)=>{const a=artifact(v);await store.insert('props_model_artifacts',[{version:v,sha256:sha??artifactSha256(a),artifact:a}]);};
+ const event=(version,ev)=>store.insert('props_model_events',[{version,event:ev,reason:'integration test',actor:'system:test',
+  detail:ev==='eligible'?{activeVersion:'props-nb-minutes-rate-v1'}:{}}]);
+ return {store,deps,add,event};
+}
+
+test('a promoted learning model picks into the v2 accounts while a shadow only scores',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const db='props_it_learn';
+ const {store,deps,add,event}=await learningDb(db);
+ await add('props-learn-v1');await event('props-learn-v1','eligible');
+ await store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'system:test',p_reason:'integration test'});
+ await add('props-learn-v2');await event('props-learn-v2','shadow_start');
+ clock='2026-11-07T19:00:00.000Z';
+ const c=await runCollect(deps,'collect-2026-11-07T19',null);
+ assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+ assert.deepEqual(c.summary.activeModel,{version:'props-learn-v1',fallback:false,controlAvailable:true,shadows:['props-learn-v2']});
+ const byVersion=JSON.parse(psql(db,`SELECT json_object_agg(model_version,n) FROM (SELECT model_version,count(*) n FROM props_predictions GROUP BY 1) x`).out);
+ assert.deepEqual(byVersion,{'props-nb-minutes-rate-v1':48,'props-learn-v1':48,'props-learn-v2':48});
+ const picks=JSON.parse(psql(db,`SELECT json_object_agg(k,n) FROM (SELECT p.model_version||'/'||k.selection_version k,count(*) n
+  FROM props_picks k JOIN props_predictions p ON p.id=k.prediction_id GROUP BY 1) x`).out);
+ assert.deepEqual(Object.keys(picks),['props-learn-v1/props-select-v2']);
+ assert.equal(picks['props-learn-v1/props-select-v2'],48);
+ const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
+ assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v2')),accounts);
+});
+
+test('a tampered active artifact falls back to the stats model and its accounts',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const db='props_it_fallback';
+ const {store,deps,add,event}=await learningDb(db);
+ await add('props-learn-v1','f'.repeat(64));await event('props-learn-v1','eligible');
+ await store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'system:test',p_reason:'integration test'});
+ clock='2026-11-07T19:00:00.000Z';
+ const c=await runCollect(deps,'collect-2026-11-07T19',null);
+ assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+ assert.equal(c.summary.activeModel.fallback,true);
+ assert.equal(c.summary.activeModel.version,'props-nb-minutes-rate-v1');
+ assert.equal(psql(db,`SELECT string_agg(DISTINCT selection_version,',') FROM props_picks`).out,'props-select-v1');
+ const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
+ assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v1')),accounts);
+});
+
+test('weekly learning loop: settle brake, train, evaluate, auto-switch, review and owner actions',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {runTrain,runEvaluate,runReview,runOwnerAction}=await import('./props-learn-worker.ts');
+ const {verifiedArtifact}=await import('./props-active-model.ts');
+ const db='props_it_loop';
+ const {store,deps,add,event}=await learningDb(db);
+ await add('props-learn-v1');await event('props-learn-v1','shadow_start');
+ clock='2026-11-07T19:00:00.000Z';
+ assert.equal((await runCollect(deps,'collect-2026-11-07T19',null)).outcome,'COMPLETED');
+ finals['20261107']=7;
+ clock='2026-11-08T07:00:00.000Z';
+ const s=await runSettle(deps,'settle-2026-11-08T07',null);
+ assert.equal(s.outcome,'COMPLETED',JSON.stringify(s.summary));
+ assert.equal(s.summary.safetyBrake.trip,false);
+ assert.ok(s.summary.safetyBrake.n>0&&s.summary.safetyBrake.n<50,JSON.stringify(s.summary.safetyBrake));
+ assert.equal(s.summary.safetyBrake.model,'props-nb-minutes-rate-v1');
+
+ const learn={store,now,historical:[]};
+ // Learning off: nothing is trained, evaluated or switched.
+ await runOwnerAction(store,'learning_off',{reason:'integration test',actor:'owner:test'});
+ assert.deepEqual(await runTrain(learn),{status:'LEARNING_DISABLED'});
+ const frozen=await runEvaluate({store,now},{minGradedLines:1,minDates:1,minGames:1,minCandidateDecisions:0,maxBrierDifferenceUpper95:1,bootstrapReplicates:50,bootstrapSeed:1,requireNoWorseLogLoss:false});
+ assert.equal(frozen.status,'LEARNING_DISABLED');
+ assert.equal(frozen.promoted,null);
+ assert.equal(psql(db,`SELECT count(*) FROM props_model_events WHERE event='eligible'`).out,'0');
+ assert.equal(psql(db,'SELECT count(*) FROM props_model_artifacts').out,'1');
+ await runOwnerAction(store,'learning_on',{reason:'integration test',actor:'owner:test'});
+
+ // Synthetic history (TEST-ONLY) plus the graded forward lines.
+ let seed=11;const r=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
+ const historical=Array.from({length:900},(_,i)=>{const p=0.35+r()*0.3;return {stat:['points','rebounds','assists'][i%3],
+  input:{base:{pMore:p,pLess:1-p,pTie:0},market:null,matchup:{oppAllowedRatio:0.9+r()*0.2,home:i%2,restDays:i%4,backToBack:i%4===0?1:0}},
+  y:r()<p?1:0,at:new Date(Date.UTC(2026,0,1)+i*3600_000).toISOString(),key:'h'+i,eventId:'h'+(i%60),date:'2026-01-01'};});
+ const t=await runTrain({...learn,historical});
+ assert.ok(['SHADOWING','DROPPED'].includes(t.status),JSON.stringify(t));
+ assert.equal(t.version,'props-learn-v2');
+ assert.equal(t.marketWeightsActive,false);
+ const row=JSON.parse(psql(db,`SELECT json_build_object('version',version,'sha256',sha256,'artifact',artifact) FROM props_model_artifacts WHERE version='props-learn-v2'`).out);
+ assert.ok(verifiedArtifact(row),'stored artifact verifies');
+ const evs=psql(db,`SELECT string_agg(event,',' ORDER BY id) FROM props_model_events WHERE version='props-learn-v2'`).out;
+ assert.ok(evs==='created,shadow_start'||evs==='created,dropped',evs);
+
+ // A broken fit writes nothing.
+ const bad=historical.map((h,i)=>i===0?{...h,input:{...h.input,base:{pMore:NaN,pLess:NaN,pTie:0}}}:h);
+ assert.equal((await runTrain({...learn,historical:bad})).status,'FAILED_INVALID_ARTIFACT');
+ assert.equal(psql(db,'SELECT count(*) FROM props_model_artifacts').out,'2');
+
+ // The registered gate needs far more evidence than one night.
+ const strict=await runEvaluate({store,now});
+ assert.ok(strict.challengers.find(c=>c.version==='props-learn-v1').failed.includes('min_lines'));
+ assert.equal(strict.promoted,null);
+ // A relaxed TEST gate: auto-switch off records eligibility only; on, it promotes.
+ const relaxed={minGradedLines:1,minDates:1,minGames:1,minCandidateDecisions:0,maxBrierDifferenceUpper95:1,bootstrapReplicates:50,bootstrapSeed:1,requireNoWorseLogLoss:false};
+ await runOwnerAction(store,'auto_off',{reason:'integration test',actor:'owner:test'});
+ const held=await runEvaluate({store,now},relaxed);
+ assert.equal(held.promoted,null);
+ assert.equal(psql(db,`SELECT event FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out,'eligible');
+ // A later failing check withdraws the eligibility, so a stale pass can never be approved.
+ await runEvaluate({store,now});
+ assert.equal(psql(db,`SELECT event||'|'||reason FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out.split('|')[0],'shadow_start');
+ assert.match(psql(db,`SELECT reason FROM props_model_events WHERE version='props-learn-v1' ORDER BY id DESC LIMIT 1`).out,/^No longer eligible/);
+ await assert.rejects(store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'owner:test',p_reason:'stale'}),/PROPS_MODEL_NOT_ELIGIBLE/);
+ await runEvaluate({store,now},relaxed);
+ await runOwnerAction(store,'auto_on',{reason:'integration test',actor:'owner:test'});
+ const auto=await runEvaluate({store,now},relaxed);
+ assert.equal(auto.promoted,'props-learn-v1');
+ assert.equal(psql(db,'SELECT active_model_version FROM props_model_control').out,'props-learn-v1');
+
+ // Weekly review stored; owner roll back restores the stats model.
+ const rv=await runReview({store,now});
+ assert.equal(rv.status,'OK');
+ assert.equal(psql(db,'SELECT count(*) FROM props_learning_reports').out,'1');
+ await runOwnerAction(store,'rollback',{reason:'integration test',actor:'owner:test'});
+ assert.equal(psql(db,'SELECT active_model_version FROM props_model_control').out,'props-nb-minutes-rate-v1');
+ await assert.rejects(runOwnerAction(store,'approve',{version:'v1; drop table',reason:'x',actor:'owner:test'}),/PROPS_INVALID_VERSION/);
+});
+
+test('review fix: a learning-layer failure never costs the run its picks',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {PropsStoreError}=await import('./props-store.ts');
+ for(const withActive of [true,false]){
+  const db=withActive?'props_it_learnfail_a':'props_it_learnfail_s';
+  const {store,deps,add,event}=await learningDb(db);
+  if(withActive){await add('props-learn-v1');await event('props-learn-v1','eligible');
+   await store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'system:test',p_reason:'integration test'});}
+  await add('props-learn-v2');await event('props-learn-v2','shadow_start');
+  // The matchup read (paged with offset) fails, as a transient Supabase error would.
+  const flaky={...store,select:async(t,q)=>{if(t==='props_player_games'&&q.includes('offset='))throw new PropsStoreError('STORE_OUTCOME_UNKNOWN',false);return store.select(t,q);}};
+  clock='2026-11-07T19:00:00.000Z';
+  const c=await runCollect({...deps,store:flaky},'collect-2026-11-07T19',null);
+  assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+  assert.equal(c.summary.predictions.learnError,'STORE_OUTCOME_UNKNOWN');
+  assert.equal(c.summary.activeModel.fallback,withActive);
+  assert.equal(psql(db,`SELECT string_agg(DISTINCT selection_version,',') FROM props_picks`).out,'props-select-v1');
+  const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
+  assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v1')),accounts);
+ }
 });

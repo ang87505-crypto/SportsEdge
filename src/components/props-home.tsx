@@ -5,7 +5,7 @@ import {connection} from 'next/server';
 import {Badge,Evidence,Metric,Panel,StatusDot} from '@/components/ui';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {buildView} from '@/lib/props/dashboard-view';
-import {propsSummary,mtShort} from '@/lib/props/summary';
+import {propsSummary,mtShort,learningStatus} from '@/lib/props/summary';
 import {propsAutomationStatus} from '@/lib/paper-automation-view';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
 import {pct,usdCents} from '@/lib/format';
@@ -34,7 +34,7 @@ export async function PropsHomeCard(){
  const next=nextPlannedRuns(raw.nowIso,4).find(r=>r.kind==='collect');
  const running=PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING';
  return <Panel {...head}>
-  <div className="props-status-line"><Badge tone={status.tone} dot>{status.label}</Badge></div>
+  <div className="props-status-line"><Badge tone={status.tone} dot>{status.label}</Badge><p className="small-print" style={{margin:0}}>{learningStatus(v.model)}</p></div>
   <div className="home-metric-pair">
    <Metric label="Virtual balance" value={usdCents(s.balanceCents)} detail={v.bankroll?`Started at ${usdCents(v.bankroll.initialCents)}`:'No account row'}/>
    <Metric label="Net result" value={usdCents(s.netCents,{signed:true})} tone={s.netCents===null||s.netCents===0?undefined:s.netCents>0?'positive':'negative'}

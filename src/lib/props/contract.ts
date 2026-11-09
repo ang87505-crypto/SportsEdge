@@ -15,6 +15,14 @@ export type Platform=typeof PLATFORMS[number];
 /** The Odds API bookmaker key for each platform (verified 2026-11-07 on the bookmaker list). */
 export const PLATFORM_BOOKMAKER:Record<Platform,string>={prizepicks:'prizepicks',pick6:'pick6'};
 export const PLATFORM_LABEL:Record<Platform,string>={prizepicks:'PrizePicks',pick6:'DraftKings Pick6'};
+/**
+ * Sportsbooks whose standard player props are requested alongside the DFS platforms, as a
+ * professional-market reference. The Odds API counts up to 10 bookmakers as one region, so
+ * adding them does not change the credit cost of a request. Never an account or an entry.
+ */
+export const SPORTSBOOKS=['draftkings','fanduel','betmgm','williamhill_us'] as const;
+export type Sportsbook=typeof SPORTSBOOKS[number];
+export const SPORTSBOOK_LABEL:Record<Sportsbook,string>={draftkings:'DraftKings',fanduel:'FanDuel',betmgm:'BetMGM',williamhill_us:'Caesars'};
 
 export const STATS=['points','rebounds','assists'] as const;
 export type Stat=typeof STATS[number];
@@ -30,6 +38,8 @@ export const MARKET_STAT:Record<string,Stat>=Object.fromEntries(
 
 export const MODEL_VERSION='props-nb-minutes-rate-v1' as const;
 export const SELECTION_VERSION='props-select-v1' as const;
+/** v1 bands on the active (learning) model's probabilities, plus: skip when the sportsbooks clearly disagree. */
+export const SELECTION_VERSION_V2='props-select-v2' as const;
 export const NORMALIZER_VERSION='props-normalize-v1' as const;
 
 /** Observation admission rules (frozen for v1). */

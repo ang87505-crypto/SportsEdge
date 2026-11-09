@@ -483,3 +483,26 @@
 .props-picks li span { display: grid; min-width: 0; }
 .props-picks small { color: var(--text-3); }
 .props-picks strong.prob { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.props-weights { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
+.props-why { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+.props-flag-row { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; justify-self: start; }
+
+/* Ask: the props assistant chat */
+.chat { display: grid; gap: 12px; max-width: 760px; }
+.chat-thread { display: grid; gap: 10px; min-height: 280px; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2, transparent); overflow-wrap: anywhere; }
+.chat-msg { max-width: 85%; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); }
+.chat-msg p { margin: 0; line-height: 1.5; }
+.chat-msg.user { justify-self: end; background: rgba(32, 201, 120, 0.14); border-color: rgba(32, 201, 120, 0.35); }
+.chat-msg.bot { justify-self: start; background: var(--surface-3, transparent); }
+.chat-msg.pending { opacity: 0.7; }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-chip { font: inherit; font-size: var(--fs-sm); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-3); background: transparent; color: var(--text); cursor: pointer; }
+.chat-chip:hover { border-color: var(--accent); }
+.chat-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.chat-form input { flex: 1 1 220px; min-width: 0; }
+.chat-card { margin: 8px 0 0; display: grid; gap: 6px; }
+.chat-card code { white-space: normal; }
+.chat-list { list-style: none; padding: 0; }
+.chat-list li { display: grid; padding: 6px 0; border-top: 1px solid var(--line); }
+.chat-list small { color: var(--text-3); }
+@media (max-width: 640px) { .chat-msg { max-width: 100%; } }

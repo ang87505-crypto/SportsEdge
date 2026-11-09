@@ -1,7 +1,8 @@
 /**
  * Daily NBA player-prop PAPER cycle (worker side). Two run kinds:
- *  collect: events -> choose (budget) -> event odds (us_dfs: prizepicks, pick6) -> validate
- *           -> predict (frozen model) -> record pick/skip -> virtual entries, all before lock.
+ *  collect: events -> choose (budget) -> event odds (prizepicks, pick6 + sportsbook references) -> validate
+ *           -> predict (frozen model) -> record pick/skip -> market views -> virtual entries, all before lock.
+ *           Sportsbook quotes and market views are best-effort: a failure there never loses a line or pick.
  *  settle:  ESPN scoreboard/summary -> box scores (append revisions) -> link events
  *           -> grade lines -> settle entries (PrizePicks captured table; Pick6 unknown).
  * Every provider request is reserved first and never retried. A successful exit is
@@ -11,13 +12,19 @@ import {PropsStoreError,type PropsStore} from './props-store.ts';
 import type {PropsOddsClient} from './props-odds-client.ts';
 import {ProviderError} from './props-odds-client.ts';
 import {trimSummary,type EspnClient} from './props-espn-client.ts';
-import {parseEventList,normalizePropEvent,sha256,canonicalJson,type ListedEvent} from '../props/normalize.ts';
+import {parseEventList,normalizePropEvent,normalizeBookQuotes,sha256,canonicalJson,type ListedEvent,type BookQuote} from '../props/normalize.ts';
+import {marketView,type MarketView} from '../props/market.ts';
 import {chooseEvents,ACTIVE_BUDGET_POLICY,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,type BudgetState} from '../props/budget.ts';
 import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../props/model.ts';
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
-import {gradeLine,decidePick,buildEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
-import {MODEL_VERSION,SELECTION_VERSION,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,type Platform,type Stat} from '../props/contract.ts';
+import {gradeLine,decidePick,decidePickV2,buildEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
+import {matchupFeatures} from '../props/features.ts';
+import {predictLearn} from '../props/learn.ts';
+import {loadActiveModel,type ActiveModel} from './props-active-model.ts';
+import {loadTeamRows} from './props-learn-data.ts';
+import {checkSafetyBrake} from './props-learn-worker.ts';
+import {MODEL_VERSION,SELECTION_VERSION,SELECTION_VERSION_V2,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,SPORTSBOOKS,type Platform,type Stat} from '../props/contract.ts';
 
 export type ModelArtifact={modelVersion:string;params:ModelParams;
  players:Record<string,{name:string;lastTeam:string;games:number;minutes:number;points:number;rebounds:number;assists:number}>};
@@ -121,6 +128,8 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   s.plan={chosen:plan.chosen.map(e=>e.id),skipped:plan.skipped};
   const observed:{obs:ObsRow;event:ListedEvent}[]=[];
   const perEvent:Record<string,unknown>[]=[];
+  const quotes:BookQuote[]=[];
+  const bookQuotes:{inserted:number;byBook:Record<string,number>;error?:string}={inserted:0,byBook:Object.fromEntries(SPORTSBOOKS.map(b=>[b,0]))};
   for(const e of plan.chosen){
    await heartbeat(d,runId);
    const r=await paidCall(d,runId,'event_odds',e.id,eventOddsWorstCost(),()=>odds.eventOdds(e.id));
@@ -136,15 +145,31 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
    const inserted=await d.store.insert<ObsRow>('props_observations',rows,
     {onConflict:'platform,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true,select:OBS_COLS});
    inserted.forEach(o=>observed.push({obs:o,event:e}));
+   if(!bookQuotes.error)try{
+    const bq=normalizeBookQuotes(r.reply.body,e,r.reply.receivedAt);
+    const qrows=bq.quotes.map(x=>({run_id:runId,raw_response_id:r.rawId,bookmaker_key:x.bookmakerKey,provider_event_id:x.providerEventId,
+     player_name:x.playerName,stat:x.stat,market_key:x.marketKey,line:x.line,over_price:x.overPrice,under_price:x.underPrice,
+     provider_last_update:x.providerLastUpdate,ingested_at:x.ingestedAt,lock_at:x.lockAt,response_sha256:x.responseSha256}));
+    for(const part of chunk(qrows,200))await d.store.insert('props_book_quotes',part,
+     {onConflict:'bookmaker_key,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true});
+    quotes.push(...bq.quotes);bookQuotes.inserted+=qrows.length;
+    for(const x of bq.quotes)bookQuotes.byBook[x.bookmakerKey]++;
+   }catch(err){bookQuotes.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
    // Keyed platform:reason so one-sided or special lines can be traced to the platform that published them.
    const reasons:Record<string,number>={};for(const x of norm.rejected){const k=(x.platform??'unknown')+':'+x.reason;reasons[k]=(reasons[k]??0)+1;}
    perEvent.push({event:e.id,outcome:'stored',accepted:norm.observations.length,inserted:inserted.length,rejected:reasons,
     usage:r.reply.usage,byPlatform:Object.fromEntries(PLATFORMS.map(p=>[p,norm.observations.filter(o=>o.platform===p).length]))});
   }
   s.collection=perEvent;
+  s.bookQuotes=bookQuotes;
   await heartbeat(d,runId);
-  s.predictions=await predictAndPick(d,runId,observed);
-  s.entries=await recordEntries(d,runId);
+  const active=await loadActiveModel(d.store);
+  s.activeModel={version:active.version,fallback:active.fallback,controlAvailable:active.controlAvailable,shadows:active.shadows.map(x=>x.version)};
+  const picked=await predictAndPick(d,runId,observed,quotes,active);
+  s.predictions=picked.out;
+  s.marketViews=await recordMarketViews(d,picked.views);
+  if(picked.fallback)s.activeModel={...s.activeModel as object,fallback:true};
+  s.entries=await recordEntries(d,runId,picked.out.selectionVersion);
   // Read back what was durably recorded in this run (the receipt, not the exit code).
   const [o,p,k]=await Promise.all(['props_observations','props_predictions','props_picks'].map(t=>
    d.store.select<{id:number}>(t,'select=id&run_id=eq.'+runId+'&limit=5000')));
@@ -162,9 +187,25 @@ type ObsRow={id:number;platform:Platform;provider_event_id:string;home_team:stri
  player_name:string;stat:Stat;line:number;ingested_at:string};
 const OBS_COLS='id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,ingested_at';
 
-async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[]){
- const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>};
- if(!observed.length)return out;
+type ViewRow={observation_id:number;run_id:number;books_at_same_line:number;p_more_books:number|null;nearest_book_line:number|null;
+ line_gap:number|null;flags:string[]};
+/** One market view per new observation, computed against the active model's side. Best-effort. */
+async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:number;without:number;flags:Record<string,number>;error?:string}>{
+ const out:{withBooks:number;without:number;flags:Record<string,number>;error?:string}={withBooks:0,without:0,flags:{}};
+ for(const v of rows){
+  if(v.books_at_same_line)out.withBooks++;else out.without++;
+  for(const f of v.flags)out.flags[f]=(out.flags[f]??0)+1;
+ }
+ try{for(const part of chunk(rows,200))await d.store.insert('props_market_views',part,{onConflict:'observation_id',ignoreDuplicates:true});}
+ catch(err){out.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
+ return out;
+}
+
+async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[],quotes:BookQuote[],active:ActiveModel){
+ const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>,
+  learn:{} as Record<string,number>,selectionVersion:active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION as string,learnError:undefined as string|undefined};
+ const views:ViewRow[]=[];
+ if(!observed.length)return {out,views,fallback:false};
  const teams=[...new Set(observed.flatMap(x=>[teamAbbr(x.event.homeTeam),teamAbbr(x.event.awayTeam)]).filter((t):t is string=>!!t))];
  const roster=teams.length?latest(await d.store.select<PG>('props_player_games','select='+PG_COLS+'&team_abbr='+inList(teams)+
   '&game_start=gte.'+q(d.seasonStart)+'&order=game_start.asc&limit=10000')):[];
@@ -191,30 +232,86 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
    const pr=d.model.players[m.athleteId];
    const prior:PriorSummary|null=pr?{games:pr.games,minutes:pr.minutes,points:pr.points,rebounds:pr.rebounds,assists:pr.assists}:null;
    const p=predictLine({logs,prior,stat:obs.stat,line:Number(obs.line),cutoff,params:d.model.params});
-   row=p.status==='scored'?{status:'scored',reason:'ok',athlete_id:m.athleteId,p_more:p.pMore,p_less:p.pLess,p_tie:p.pTie,mean:p.mean,inputs:p.inputs}
-    :{status:'unscorable',reason:p.reason,athlete_id:m.athleteId,p_more:null,p_less:null,p_tie:null,mean:null,inputs:p.inputs};
+   // The team is kept with the prediction so the learning loop never has to guess it later.
+   row=p.status==='scored'?{status:'scored',reason:'ok',athlete_id:m.athleteId,p_more:p.pMore,p_less:p.pLess,p_tie:p.pTie,mean:p.mean,inputs:{...p.inputs,team:m.teamAbbr}}
+    :{status:'unscorable',reason:p.reason,athlete_id:m.athleteId,p_more:null,p_less:null,p_tie:null,mean:null,inputs:{...p.inputs,team:m.teamAbbr}};
    meta.set(obs.id,{athlete:m.athleteId,team:m.teamAbbr});
   }
   if(row.status==='scored')out.scored++;else out.unscorable[row.reason as string]=(out.unscorable[row.reason as string]??0)+1;
   predRows.push({observation_id:obs.id,run_id:runId,model_version:MODEL_VERSION,data_cutoff:cutoff,...row});
  }
- const preds:{id:number;observation_id:number;status:'scored'|'unscorable';p_more:number|null;p_less:number|null;p_tie:number|null}[]=[];
- for(const part of chunk(predRows,200))preds.push(...await d.store.insert<typeof preds[number]>('props_predictions',part,
-  {onConflict:'observation_id,model_version',ignoreDuplicates:true,select:'id,observation_id,status,p_more,p_less,p_tie'}));
- const pickRows=preds.map(p=>{const dec=decidePick({status:p.status,pMore:p.p_more===null?null:Number(p.p_more),
-  pLess:p.p_less===null?null:Number(p.p_less),pTie:p.p_tie===null?null:Number(p.p_tie)});
+ type PredRow={id:number;observation_id:number;model_version:string;status:'scored'|'unscorable';p_more:number|null;p_less:number|null;p_tie:number|null};
+ const insertPreds=async(rows:Record<string,unknown>[])=>{const got:PredRow[]=[];
+  for(const part of chunk(rows,200))got.push(...await d.store.insert<PredRow>('props_predictions',part,
+   {onConflict:'observation_id,model_version',ignoreDuplicates:true,select:'id,observation_id,model_version,status,p_more,p_less,p_tie'}));
+  return got;};
+ const preds=await insertPreds(predRows);
+ const probs=(p:PredRow)=>({pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)});
+ const byObs=new Map(observed.map(x=>[x.obs.id,x]));
+ const obsInfo=(o:ObsRow)=>({providerEventId:o.provider_event_id,playerName:o.player_name,stat:o.stat,line:Number(o.line)});
+
+ // Learning layer: the active learn model and every shadowing challenger score each scored line before lock.
+ const learners=[...(active.artifact?[{version:active.version,artifact:active.artifact}]:[]),...active.shadows];
+ const learnPreds=new Map<number,PredRow>();
+ let useLearn=!!active.artifact,fallback=false;
+ // Best-effort: a learning-layer failure never costs the run its picks. Shadows are skipped;
+ // an active learning model falls back to the stats model (and its accounts) for this run.
+ if(learners.length)try{
+  const teamRows=await loadTeamRows(d.store,ago(d.now(),95*86400_000));
+  const learnRows:Record<string,unknown>[]=[];
+  for(const p of preds){
+   const x=byObs.get(p.observation_id);const m=meta.get(p.observation_id);
+   if(p.status!=='scored'||!x||!m?.team)continue;
+   const home=teamAbbr(x.event.homeTeam),away=teamAbbr(x.event.awayTeam);
+   const opponent=m.team===home?away:home;
+   if(!home||!away||!opponent)continue;
+   const cutoff=x.obs.ingested_at;
+   const matchup=matchupFeatures({teamAbbr:m.team,opponentAbbr:opponent,home:m.team===home,lockAt:cutoff,stat:x.obs.stat,rows:teamRows});
+   const market=marketView(obsInfo(x.obs),quotes,null);
+   const base=probs(p);
+   const v1=predRows.find(r=>r.observation_id===p.observation_id)!;
+   for(const l of learners){
+    const lp=predictLearn(l.artifact,x.obs.stat,{base,market,matchup});
+    learnRows.push({observation_id:p.observation_id,run_id:runId,model_version:l.version,data_cutoff:cutoff,status:'scored',reason:'ok',
+     athlete_id:m.athlete,p_more:lp.pMore,p_less:lp.pLess,p_tie:lp.pTie,mean:v1.mean,
+     inputs:{matchup,booksAtSameLine:market.booksAtSameLine,pMoreBooks:market.pMoreBooks,lineGap:market.lineGap}});
+    out.learn[l.version]=(out.learn[l.version]??0)+1;
+   }
+  }
+  for(const r of await insertPreds(learnRows))if(r.model_version===active.version)learnPreds.set(r.observation_id,r);
+ }catch(err){
+  out.learnError=err instanceof PropsStoreError?err.code:'UNEXPECTED';
+  if(useLearn){useLearn=false;fallback=true;learnPreds.clear();out.selectionVersion=SELECTION_VERSION;}
+ }
+
+ // Picks come from the active model only: layer 1 under props-select-v1, a learn model under props-select-v2.
+ const pickRows:Record<string,unknown>[]=[];
+ for(const p of preds){
+  const x=byObs.get(p.observation_id)!;
+  const chosen=useLearn?learnPreds.get(p.observation_id)??null:p;
+  const scored=chosen&&chosen.status==='scored';
+  const side=scored?(Number(chosen.p_more)>=Number(chosen.p_less)?'more':'less'):null;
+  const view:MarketView=marketView(obsInfo(x.obs),quotes,side);
+  views.push({observation_id:p.observation_id,run_id:runId,books_at_same_line:view.booksAtSameLine,p_more_books:view.pMoreBooks,
+   nearest_book_line:view.nearestBookLine,line_gap:view.lineGap,flags:view.flags});
+  if(useLearn&&!chosen){out.skipped.unscorable=(out.skipped.unscorable??0)+1;continue;}
+  const target=chosen??p;
+  const input={status:target.status,pMore:target.p_more===null?null:Number(target.p_more),
+   pLess:target.p_less===null?null:Number(target.p_less),pTie:target.p_tie===null?null:Number(target.p_tie)};
+  const dec=useLearn?decidePickV2(input,view):decidePick(input);
   if(dec.status==='recorded')out.recorded++;else out.skipped[dec.reason]=(out.skipped[dec.reason]??0)+1;
-  return {prediction_id:p.id,run_id:runId,selection_version:SELECTION_VERSION,status:dec.status,side:dec.side,reason:dec.reason};});
+  pickRows.push({prediction_id:target.id,run_id:runId,selection_version:out.selectionVersion,status:dec.status,side:dec.side,reason:dec.reason});
+ }
  for(const part of chunk(pickRows,200))await d.store.insert('props_picks',part,{onConflict:'prediction_id,selection_version',ignoreDuplicates:true});
- return out;
+ return {out,views,fallback};
 }
 
-async function recordEntries(d:CycleDeps,runId:number){
+async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){
  const now=d.now();
  const accounts=await d.store.select<{id:number;platform:Platform;max_entries_per_day:number;picks_per_entry:number}>('props_accounts',
-  'select=id,platform,max_entries_per_day,picks_per_entry&selection_version=eq.'+SELECTION_VERSION+'&limit=10');
+  'select=id,platform,max_entries_per_day,picks_per_entry&selection_version=eq.'+selectionVersion+'&limit=10');
  const picks=await d.store.select<{id:number;prediction_id:number}>('props_picks','select=id,prediction_id&status=eq.recorded'+
-  '&selection_version=eq.'+SELECTION_VERSION+'&decided_at=gt.'+q(ago(now,36*3600_000))+'&limit=2000');
+  '&selection_version=eq.'+selectionVersion+'&decided_at=gt.'+q(ago(now,36*3600_000))+'&limit=2000');
  const result:Record<string,unknown>={};
  if(!picks.length){for(const a of accounts)result[a.platform]={recorded:0,reason:'no_recorded_picks'};return result;}
  const legs=await d.store.select<{pick_id:number}>('props_entry_legs','select=pick_id&pick_id='+inList(picks.map(p=>p.id))+'&limit=2000');
@@ -345,6 +442,9 @@ export async function runSettle(d:CycleDeps,slot:string,scheduledFor:string|null
   for(const part of chunk(newResults,200))await d.store.insert('props_line_results',part,{onConflict:'observation_id,revision',ignoreDuplicates:true});
   s.grading={pendingLines:pending.length,newResults:newResults.length,graded,waiting,newLinks:newLinks.length};
   s.settlement=await settleEntries(d);
+  // Safety brake: best-effort; a failure here never fails grading or settlement.
+  try{s.safetyBrake=await checkSafetyBrake(d.store,d.now());}
+  catch(err){s.safetyBrake={error:err instanceof PropsStoreError?err.code:'UNEXPECTED'};}
   await finish(d,runId,true,'COMPLETED',s);
   return {kind,outcome:'COMPLETED',runId,summary:s};
  }catch(e){
