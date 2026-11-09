@@ -5,7 +5,7 @@ import {buildView} from '../props/dashboard-view.ts';
 export const NOW='2026-11-09T19:00:00.000Z';
 const Y1='2026-11-09T01:00:00.000Z',Y2='2026-11-09T02:30:00.000Z',T1='2026-11-10T02:00:00.000Z',T2='2026-11-10T03:00:00.000Z';
 
-export function makeRaw({graded=true,tonight=true,nowIso=NOW}={}){
+export function makeRaw({graded=true,tonight=true,nowIso=NOW,model=null,report=null,control=null}={}){
  const obs=[],pred=[],picks=[],results=[];
  const add=(id,{player,stat='points',line=20.5,lock,ev,pMore,side,decision='recorded',result=null,platform='prizepicks',mean=21})=>{
   obs.push({id,platform,provider_event_id:ev,home_team:'Test Home '+ev,away_team:'Test Away '+ev,lock_at:lock,player_name:player,stat,line,
@@ -36,14 +36,14 @@ export function makeRaw({graded=true,tonight=true,nowIso=NOW}={}){
  const es=[entry(7,[1,2],{outcome:'won',wins:2,losses:0,voids:0,return_cents:1500,profit_cents:1000}),
   entry(8,[3,10],{outcome:'lost',wins:1,losses:1,voids:0,return_cents:0,profit_cents:-500}),
   entry(9,[5,6],{outcome:'won',wins:2,losses:0,voids:0,return_cents:1500,profit_cents:1000})];
- return {nowIso,control:{state:'RUNNING',reason:'Released after verified cycle',changed_at:'2026-11-07T00:00:00Z'},
+ return {nowIso,control:control??{state:'RUNNING',reason:'Released after verified cycle',changed_at:'2026-11-07T00:00:00Z'},
   runs:[{id:6,kind:'collect',slot_key:'collect-2026-11-08T19',status:'completed',outcome:'COMPLETED',started_at:'2026-11-08T22:50:00Z',
    finished_at:'2026-11-08T22:50:09Z',start_delay_seconds:13203,summary:{}}],credits:[],providerRemaining:485,
   observations:obs,predictions:pred,picks,results,
   accounts:[{id:1,slug:'props-prizepicks-v1',platform:'prizepicks',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3},
    {id:2,slug:'props-pick6-v1',platform:'pick6',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3}],
   entries:es.map(e=>e.entry),legs:es.flatMap(e=>e.legs),settlements:es.flatMap(e=>e.settlement?[e.settlement]:[]),
-  model:null,views:[],report:null};
+  model,views:[],report};
 }
 
 export function makeData(opts={},extra={}){
@@ -51,3 +51,10 @@ export function makeData(opts={},extra={}){
  return {nowIso:raw.nowIso,pp:buildView(raw,'prizepicks'),p6:buildView(raw,'pick6'),control:raw.control,
   nextCollect:'2026-11-09T19:10:00.000Z',nextSettle:'2026-11-10T09:20:00.000Z',...extra};
 }
+
+export const MODEL={active:'props-learn-v2',previous:'props-nb-minutes-rate-v1',learningEnabled:true,autoSwitchEnabled:false,weights:null,
+ events:[{id:9,version:'props-learn-v4',event:'shadow_start',reason:'ok',detail:{},at:'2026-11-08T10:00:00Z'},
+  {id:8,version:'props-learn-v3',event:'eligible',reason:'ok',detail:{},at:'2026-11-07T10:00:00Z'},
+  {id:7,version:'props-learn-v2',event:'promoted',reason:'ok',detail:{},at:'2026-11-01T10:00:00Z'}]};
+export const REPORT={period_from:'2026-11-01',period_to:'2026-11-07',model_version:'props-learn-v2',at:'2026-11-08T10:05:00Z',
+ report:{misses:{minutes_collapse:3,books_were_right:2,matchup:1,overconfidence:0,other:1},voidsExcluded:1,overconfidentBands:[]}};

@@ -94,3 +94,65 @@ test('every reply offers 2 to 4 suggestions',()=>{
    assert.ok(r.suggestions.length>=2&&r.suggestions.length<=4,intent+' '+r.suggestions.length);
   }
 });
+
+// ---- part 2
+import {MODEL,REPORT} from './fixtures.mjs';
+
+test('status in plain words, with last and next runs',()=>{
+ assert.equal(answer(P({intent:'status'}),makeData()).text,
+  'Picking is running. Last line collection Sun, Nov 8, 3:50 PM MST. Next collection Mon, Nov 9, 12:10 PM MST; next grading Tue, Nov 10, 2:20 AM MST.');
+ const brake=makeData({control:{state:'PAUSED',reason:'SAFETY_BRAKE: last 50 picks hit 40.0%, confidently below the 57.7% break-even',changed_at:'x'}});
+ assert.equal(answer(P({intent:'status'}),brake).text,
+  'Picking is paused by the safety brake: last 50 picks hit 40.0%, confidently below the 57.7% break-even. Grading still runs. Press Resume on the PrizePicks page when you are ready.');
+ const stopped=makeData({control:{state:'STOPPED',reason:'Owner stop',changed_at:'x'}});
+ assert.match(answer(P({intent:'status'}),stopped).text,/^Picking is stopped \(Owner stop\)\. Nothing new runs until you press Resume/);
+ assert.equal(answer(P({intent:'status'}),{...makeData(),control:null}).text,"I can't tell whether picking is running right now.");
+});
+
+test('model: active model, switches and challengers; or not set up yet',()=>{
+ assert.equal(answer(P({intent:'model'}),makeData()).text,"The learning layer isn't set up yet; the stats model makes every pick.");
+ assert.equal(answer(P({intent:'model'}),makeData({model:MODEL})).text,
+  'Active model: Learning model v2. Learning is on; auto-switch is off. Challengers: Learning model v4 shadowing, Learning model v3 eligible.');
+});
+
+test('mistakes: the latest weekly review, most common first; or none yet',()=>{
+ assert.equal(answer(P({intent:'mistakes'}),makeData()).text,'No weekly review yet; the first comes after a Sunday learning run.');
+ assert.equal(answer(P({intent:'mistakes'}),makeData({report:REPORT})).text,
+  'Nov 1 to Nov 7: 7 missed picks. Most common: playing time collapsed (3), the sportsbooks were right (2), the matchup (1).');
+});
+
+test('future: next runs, the model in charge, and the queued picks',()=>{
+ assert.equal(answer(P({intent:'future'}),makeData()).text,
+  'Next: line collection Mon, Nov 9, 12:10 PM MST, then grading Tue, Nov 10, 2:20 AM MST. The stats model makes the picks. Already queued: Devin Booker More 11.5 rebounds (74%), Trae Young More 9.5 assists (68%), Domantas Sabonis Less 11.5 rebounds (64%).');
+});
+
+test('help and unknown list what it can do, with four starters',()=>{
+ for(const intent of ['help','unknown']){
+  const r=answer(P({intent}),makeData());
+  assert.match(r.text,/tonight's picks/);
+  assert.equal(r.suggestions.length,4);
+ }
+ assert.match(answer(P({intent:'unknown'}),makeData()).text,/^I'm not sure what you mean\./);
+});
+
+test('bet is always refused, with a lineup to enter by hand',()=>{
+ const r=answer(P({intent:'bet',player:{name:'Devin Booker'}}),makeData());
+ assert.equal(r.text,"I can't place entries — PrizePicks doesn't allow apps to, and SportsEdge is paper-only. Here's a lineup you can enter yourself:");
+ assert.equal(r.cards[0].kind,'lineup');
+ assert.match(answer(P({intent:'bet'}),makeData({tonight:false})).text,/no lineup from tonight's picks yet/);
+});
+
+test('ambiguous and unknown players are asked about, never guessed',()=>{
+ const r=answer(P({intent:'player',player:{ambiguous:['Jalen Brunson','Jalen Williams']}}),makeData());
+ assert.equal(r.text,'Did you mean Jalen Brunson or Jalen Williams?');
+ assert.deepEqual(r.suggestions,['Jalen Brunson','Jalen Williams']);
+ const why=answer(P({intent:'why',player:{ambiguous:['A One','B Two','C Three']}}),makeData());
+ assert.equal(why.text,'Did you mean A One, B Two or C Three?');
+ assert.equal(answer(P({intent:'player',player:{unknown:'zzzz smith'}}),makeData()).text,"I don't see a line for zzzz smith in the last two weeks.");
+});
+
+test('small talk is short and points somewhere useful',()=>{
+ const r=answer(P({intent:'smalltalk'}),makeData());
+ assert.equal(r.text,"Happy to help. Ask me about tonight's picks, last night's results, or your record.");
+ assert.ok(r.suggestions.length>=2);
+});

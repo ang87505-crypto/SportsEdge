@@ -179,12 +179,72 @@ function lineup(p:Parsed,d:AssistantData):Reply{
 }
 
 const HELP_SUGGESTIONS=["Tonight's picks",'How did last night go?',"What's my record?",'Is it running?'];
+const CAN_DO="I can tell you tonight's picks and why, how a night or week went, your record, a player's lines, your entries, a copy-ready lineup, and whether the system and model are running.";
 function help(p:Parsed):Reply{
- return reply("I can tell you tonight's picks and why, how a night or week went, your record, a player's lines, your entries, a copy-ready lineup, and whether the system and model are running.",
-  HELP_SUGGESTIONS,ctx(p));
+ return reply(p.intent==='unknown'?`I'm not sure what you mean. ${CAN_DO}`:CAN_DO,HELP_SUGGESTIONS,ctx(p));
 }
 
+const modelName=(v:string|null|undefined)=>!v||v==='props-nb-minutes-rate-v1'?'the stats model':v.replace(/^props-learn-v/,'Learning model v');
+const cap=(t:string)=>t.charAt(0).toUpperCase()+t.slice(1);
+
+function status(p:Parsed,d:AssistantData):Reply{
+ const sugg=["Tonight's picks",'Which model is active?','How did last night go?'];
+ const c=d.control;
+ if(!c)return reply("I can't tell whether picking is running right now.",sugg,ctx(p));
+ if(c.state==='PAUSED'&&c.reason.startsWith('SAFETY_BRAKE:'))
+  return reply(`Picking is paused by the safety brake: ${c.reason.slice('SAFETY_BRAKE:'.length).trim()}. Grading still runs. Press Resume on the PrizePicks page when you are ready.`,
+   ["What went wrong?","What's my record?"],ctx(p));
+ if(c.state!=='RUNNING')
+  return reply(`Picking is ${c.state==='PAUSED'?'paused':'stopped'} (${c.reason}). Nothing new runs until you press Resume on the PrizePicks page.`,sugg,ctx(p));
+ const last=d.pp.automation.lastCollect?.finished_at??null;
+ return reply(`Picking is running. Last line collection ${last?mtShort(last):'not recorded yet'}. Next collection ${d.nextCollect?mtShort(d.nextCollect):'not scheduled'}; next grading ${d.nextSettle?mtShort(d.nextSettle):'not scheduled'}.`,
+  sugg,ctx(p));
+}
+
+function model(p:Parsed,d:AssistantData):Reply{
+ const m=d.pp.model;
+ const sugg=["What went wrong this week?","Tonight's picks",'Is it running?'];
+ if(!m)return reply("The learning layer isn't set up yet; the stats model makes every pick.",sugg,ctx(p));
+ const STATE:Record<string,string>={shadow_start:'shadowing',eligible:'eligible',created:'replaying'};
+ const ch=m.challengers.filter(c=>c.version!==m.active&&STATE[c.state]).map(c=>`${cap(modelName(c.version))} ${STATE[c.state]}`);
+ return reply(`Active model: ${cap(modelName(m.active))}. Learning is ${m.learningEnabled?'on':'off'}; auto-switch is ${m.autoSwitchEnabled?'on':'off'}. ${ch.length?`Challengers: ${ch.join(', ')}.`:'No challengers right now.'}`,
+  sugg,ctx(p));
+}
+
+const CAUSE:Record<string,string>={minutes_collapse:'playing time collapsed',books_were_right:'the sportsbooks were right',matchup:'the matchup',
+ overconfidence:'too sure in one confidence range',other:'no single cause'};
+function mistakes(p:Parsed,d:AssistantData):Reply{
+ const r=d.pp.report;
+ const sugg=['Which model is active?',"Tonight's picks","What's my record?"];
+ if(!r)return reply('No weekly review yet; the first comes after a Sunday learning run.',sugg,ctx(p));
+ const misses=Object.entries(r.report.misses).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+ const total=misses.reduce((a,[,n])=>a+n,0);
+ const top=misses.filter(([k])=>k!=='other').slice(0,3).map(([k,n])=>`${CAUSE[k]??k} (${n})`);
+ return reply(`${shortDate(r.period_from)} to ${shortDate(r.period_to)}: ${total} missed pick${total===1?'':'s'}.${top.length?` Most common: ${top.join(', ')}.`:''}`,sugg,ctx(p));
+}
+
+function future(p:Parsed,d:AssistantData):Reply{
+ const queued=upcoming(d.pp,null);
+ const runs=`Next: line collection ${d.nextCollect?mtShort(d.nextCollect):'not scheduled'}, then grading ${d.nextSettle?mtShort(d.nextSettle):'not scheduled'}.`;
+ const who=`${cap(modelName(d.pp.model?.active))} makes the picks.`;
+ const q=queued.length?`Already queued: ${queued.map(u=>`${pickText(u)} (${pct(u.probability,0)})`).join(', ')}.`:'Nothing queued yet.';
+ return reply(`${runs} ${who} ${q}`,["Tonight's picks",'Is it running?','Which model is active?'],ctx(p,{lastPickIds:queued.map(u=>u.id)}));
+}
+
+function bet(p:Parsed,d:AssistantData):Reply{
+ const pair=bestPair(upcoming(d.pp,null));
+ const base="I can't place entries — PrizePicks doesn't allow apps to, and SportsEdge is paper-only.";
+ if(pair.length<2)return reply(`${base} There's no lineup from tonight's picks yet.`,["Tonight's picks",'Is it running?'],ctx(p));
+ return reply(`${base} Here's a lineup you can enter yourself:`,['Why the top pick?','How did last night go?'],ctx(p,{lastPickIds:pair.map(u=>u.id)}),
+  [{kind:'lineup',text:pair.map(u=>pickText(u)).join('; ')}]);
+}
+
+const listOr=(xs:string[])=>xs.length<=2?xs.join(' or '):`${xs.slice(0,-1).join(', ')} or ${xs[xs.length-1]}`;
+
 export function answer(p:Parsed,d:AssistantData):Reply{
+ // Never guess between players, and never invent one the data does not know.
+ if(p.player&&'ambiguous' in p.player)return reply(`Did you mean ${listOr(p.player.ambiguous)}?`,p.player.ambiguous.slice(0,4),ctx(p));
+ if(p.player&&'unknown' in p.player&&p.intent!=='bet')return reply(`I don't see a line for ${p.player.unknown} in the last two weeks.`,["Tonight's picks",'Help'],ctx(p));
  switch(p.intent){
   case 'picks':return p.range&&p.range!=='today'?results(p,d):picks(p,d);
   case 'why':return why(p,d);
@@ -193,6 +253,12 @@ export function answer(p:Parsed,d:AssistantData):Reply{
   case 'player':return player(p,d);
   case 'entries':return entries(p,d);
   case 'lineup':return lineup(p,d);
+  case 'status':return status(p,d);
+  case 'model':return model(p,d);
+  case 'mistakes':return mistakes(p,d);
+  case 'future':return future(p,d);
+  case 'bet':return bet(p,d);
+  case 'smalltalk':return reply("Happy to help. Ask me about tonight's picks, last night's results, or your record.",["Tonight's picks",'How did last night go?',"What's my record?"],ctx(p));
   default:return help(p);
  }
 }
