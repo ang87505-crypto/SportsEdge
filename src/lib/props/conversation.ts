@@ -40,7 +40,7 @@ function inPeriod(iso:string,period:Period,now:string){
 }
 const periodLabel=(p:Period)=>({today:'today',yesterday:'yesterday',tomorrow:'tomorrow',week:'the last 7 Mountain-time dates',loaded:'the loaded records'}[p]);
 const label=(l:ChatLine)=>`${l.player} ${l.side==='more'?'More':'Less'} ${l.line} ${l.stat}`;
-const uncertainty=(l:ChatLine)=>l.probability===null?'No probability is available.':`${percent(l.probability)} is a model estimate. If calibrated, that still means about ${Math.round((1-l.probability)*100)} losses per 100 similar picks.`;
+const uncertainty=(l:ChatLine)=>l.probability===null?'No probability is available.':`${percent(l.probability)} is a model estimate. Even if calibrated, about ${Math.round((1-l.probability)*100)} out of 100 similar picks would still not win; ties may be refunded.`;
 
 function intentOf(s:string):Intent|undefined{
  if(/\b(pause|resume|stop|retrain|roll back|rollback|approve switch|turn learning|turn auto)\b/.test(s)&&!/^is |^why |^when |^how /.test(s))return 'controls';

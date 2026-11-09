@@ -21,7 +21,7 @@ const ask=(q,context=ctx,data=fixture(),now=NOW)=>answerProps(q,context,data,now
 
 test('plain-language picks and slash command read recorded upcoming estimates',()=>{
  for(const q of ['who should i take tonight','/picks','show picks today','can i see tonights picks','what should i bet on','NBA picks tonight']){
-  const r=ask(q);assert.match(r.text,/64%|66%/);assert.match(r.text,/losses per 100/);assert.doesNotMatch(r.text,/Curry/);
+  const r=ask(q);assert.match(r.text,/64%|66%/);assert.match(r.text,/out of 100 similar picks would still not win/);assert.match(r.text,/ties may be refunded/);assert.doesNotMatch(r.text,/Curry/);
  }
 });
 test('results synonyms exclude pending and voids from hit rate',()=>{
