@@ -101,7 +101,7 @@ def follower_targets(rows: list[dict], has_price) -> tuple[dict, dict]:
     for r in rows:
         w = min(r['weight_pct'] / 100.0, FOLLOWER_CAP)
         sym = r['ticker'].replace('/', '.').replace(' ', '.')
-        if has_price(sym):
+        if r.get('equity_symbol', True) and has_price(sym):
             targets[sym] = targets.get(sym, 0.0) + w
         else:
             dropped[sym] = w

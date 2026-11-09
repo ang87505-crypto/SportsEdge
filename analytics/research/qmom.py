@@ -14,7 +14,6 @@ import re
 SOURCE_ID = 'qmom-holdings'
 URL = 'https://funds.alphaarchitect.com/qmom/'
 AJAX = 'https://funds.alphaarchitect.com/wp-admin/admin-ajax.php'
-COLUMNS = ('stock_ticker', 'security_desc', 'cusip', 'shares', 'price', 'market-value-mm', 'weightings')
 MIN_ROWS = 20
 WEIGHT_RANGE = (90.0, 102.0)
 STALE_BUSINESS_DAYS = 3
@@ -34,45 +33,73 @@ def _num(text: str) -> float:
         raise ParseError('NUMBER_INVALID:' + t[:20]) from None
 
 
-def _cell(row_html: str, column: str) -> str | None:
-    m = re.search(r'<td[^>]*class="[^"]*\bcolumn-' + re.escape(column) + r'\b[^"]*"[^>]*>(.*?)</td>', row_html, re.S)
-    if not m:
-        return None
-    return htmlmod.unescape(re.sub(r'<[^>]+>', '', m.group(1))).strip()
+HEADERS = {'Ticker': 'ticker', 'Name': 'name', 'CUSIP': 'cusip', 'Shares': 'shares', 'Price (Local)': 'price',
+           'Market Value ($mm)': 'mv', '% of Net Assets': 'weight'}
+
+
+def _text(fragment: str) -> str:
+    return htmlmod.unescape(re.sub(r'<[^>]+>', '', fragment)).strip()
+
+
+def tables(page: str) -> list[dict]:
+    """Every <table> with its header texts and body rows (cell texts in column order). Works on the static
+    HTML the server sends and on browser-rendered HTML alike: columns are found by their visible headers."""
+    out = []
+    for t in re.findall(r'<table\b.*?</table>', page, re.S):
+        head = re.search(r'<thead\b.*?</thead>', t, re.S)
+        headers = [_text(h) for h in re.findall(r'<th\b[^>]*>(.*?)</th>', head.group(0), re.S)] if head else []
+        body = t[head.end():] if head else t
+        rows = [[_text(c) for c in re.findall(r'<td\b[^>]*>(.*?)</td>', tr, re.S)]
+                for tr in re.findall(r'<tr\b[^>]*>(.*?)</tr>', body, re.S) if '<td' in tr]
+        out.append({'headers': headers, 'rows': rows})
+    return out
+
+
+def holdings_table(page: str) -> dict | None:
+    for t in tables(page):
+        if {'Ticker', 'CUSIP', '% of Net Assets'} <= set(t['headers']):
+            return t
+    return None
 
 
 def header_signature(page: str) -> list[str]:
-    """Column classes of the holdings table header; a change creates a research item."""
-    i = page.find('column-stock_ticker')
-    if i < 0:
-        return []
-    head = page[page.rfind('<thead', 0, i):page.find('</thead>', i)]
-    return re.findall(r'column-([a-z_\-]+)', head)
+    """Visible column headers of the holdings table; a change creates a research item."""
+    t = holdings_table(page)
+    return t['headers'] if t else []
 
 
 def effective_date(page: str) -> str | None:
-    m = re.search(r'column-maxholdings_websiteeffective_date[^>]*>(?:<span[^>]*></span>)?\s*(\d{2})/(\d{2})/(\d{4})', page)
-    return f'{m.group(3)}-{m.group(1)}-{m.group(2)}' if m else None
+    for t in tables(page):
+        if t['headers'] == ['Effective Date'] and t['rows']:
+            m = re.fullmatch(r'(\d{2})/(\d{2})/(\d{4})', t['rows'][0][0])
+            if m:
+                return f'{m.group(3)}-{m.group(1)}-{m.group(2)}'
+    return None
 
 
 def parse_rows_html(page: str) -> list[dict]:
+    t = holdings_table(page)
+    if t is None:
+        return []
+    idx = {HEADERS[h]: i for i, h in enumerate(t['headers']) if h in HEADERS}
+    if len(idx) != len(HEADERS):
+        raise ParseError('HOLDINGS_COLUMNS_CHANGED:' + '|'.join(t['headers']))
     rows = []
-    for tr in re.findall(r'<tr\b[^>]*>(.*?)</tr>', page, re.S):
-        if 'column-stock_ticker' not in tr or '<td' not in tr:  # skip header rows (<th>)
-            continue
-        cells = {c: _cell(tr, c) for c in COLUMNS}
-        if any(v is None for v in cells.values()):
+    for cells in t['rows']:
+        if len(cells) != len(t['headers']):
             raise ParseError('ROW_MISSING_COLUMN')
-        rows.append(_row(cells['stock_ticker'], cells['security_desc'], cells['cusip'], cells['shares'],
-                         cells['price'], cells['market-value-mm'], cells['weightings']))
+        g = lambda k: cells[idx[k]]
+        rows.append(_row(g('ticker'), g('name'), g('cusip'), g('shares'), g('price'), g('mv'), g('weight')))
     return rows
 
 
 def _row(ticker, name, cusip, shares, price, mv, weight) -> dict:
     ticker = re.sub(r'<[^>]+>', '', str(ticker)).strip().upper()
-    if not re.fullmatch(r'[A-Z0-9./\- ]{1,15}', ticker):
+    if not ticker or len(ticker) > 30 or not re.fullmatch(r'[A-Z0-9&./\- ]+', ticker):
         raise ParseError('TICKER_INVALID:' + ticker[:20])
-    return {'ticker': ticker, 'name': str(name).strip(), 'cusip': str(cusip).strip().upper(),
+    # Disclosed non-equity lines (e.g. 'CASH&OTHER') are kept as rows but are not tradeable symbols.
+    equity = bool(re.fullmatch(r'[A-Z][A-Z0-9]{0,6}([./-][A-Z0-9]{1,3})?', ticker))
+    return {'ticker': ticker, 'equity_symbol': equity, 'name': str(name).strip(), 'cusip': str(cusip).strip().upper(),
             'shares': _num(str(shares)), 'price': _num(str(price)), 'market_value_mm': _num(str(mv)),
             'weight_pct': _num(str(weight))}
 

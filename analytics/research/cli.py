@@ -88,7 +88,7 @@ def market_data(source, symbols: set, start: str, end: str, late_asof: dict) -> 
     sessions = rdata.fetch_calendar(source, start, end)
     bars = rdata.fetch_bars(source, sorted(symbols), start, end, asof=end)
     pages = rdata.fetch_actions(source, sorted(symbols), start, end)
-    actions = rdata.normalize_actions(pages)
+    actions, dropped = rdata.validate_actions(bars, rdata.normalize_actions(pages))  # entity check (ticker reuse)
     renamed = {a['new_symbol'] for a in actions if a['kind'] == 'name_change' and a['symbol'] in symbols} - set(bars)
     if renamed:
         bars |= rdata.fetch_bars(source, sorted(renamed), start, end, asof=end)
@@ -102,6 +102,7 @@ def market_data(source, symbols: set, start: str, end: str, late_asof: dict) -> 
     bars, actions, joins = rdata.join_renamed(bars, actions, symbols)
     dataset = {'sessions': sessions, 'bars': bars, 'actions': actions}
     return {'sessions': sessions, 'bars': bars, 'actions': actions, 'joins': joins, 'refetched_as_of': refetched,
+            'actions_dropped': dropped,
             'missing': sorted(symbols - set(bars)), 'fingerprint': rdata.fingerprint(dataset),
             'actions_pages_fingerprint': rdata.fingerprint(pages), 'requests': source.count}
 
@@ -163,7 +164,8 @@ def cmd_historical(data: Path, out_dir: Path, end: str, now: datetime) -> dict:
            'not_evaluated_historically': {'qmom-disclosure-follower-v1': 'no reliable historical holdings snapshots; forward only'}
            | ({} if filings else {'berkshire-13f-top5-paper-v1': 'no SEC filings collected (SEC_EDGAR_USER_AGENT not configured)'}),
            'verdicts': verdicts, 'results': results, 'benchmarks': bench, 'exposure_matched_spy': matched,
-           'data': {k: md[k] for k in ('fingerprint', 'actions_pages_fingerprint', 'joins', 'refetched_as_of', 'missing', 'requests')}
+           'data': {k: md[k] for k in ('fingerprint', 'actions_pages_fingerprint', 'joins', 'refetched_as_of', 'missing', 'requests',
+                                       'actions_dropped')}
            | {'sessions': [md['sessions'][0], md['sessions'][-1]], 'symbols_with_bars': len(md['bars']), 'actions': len(md['actions'])},
            'sources': {'sec_filings': [{'accession': f['accession'], 'accepted_at': f['accepted_at'], 'form': f['form'],
                                         'period': f['primary']['period']} for f in filings],
@@ -327,7 +329,9 @@ def main():
         print(json.dumps({'overall': out['overall'], 'verdicts': {k: v['verdict'] for k, v in out['verdicts'].items()},
                           'dataset_fingerprint': out['data']['fingerprint']}))
     elif a.command == 'forward':
-        out = cmd_forward(a.data, a.data / 'results', now.date().isoformat(), now)
+        # Through the last completed day only: Alpaca's free plan refuses the most recent SIP data, and a
+        # session is only complete after its close. The nightly 02:17 UTC run therefore covers the prior session.
+        out = cmd_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
         print(json.dumps({k: v for k, v in out.items() if k in ('status', 'latest_session')} |
                          {'ledgers': {s: l['status'] for s, l in (out.get('ledgers') or {}).items()}}))
     else:

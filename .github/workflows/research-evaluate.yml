@@ -16,6 +16,7 @@ on:
       - analytics/research/data.py
       - analytics/research/cli.py
       - docs/STOCK_STRATEGY_RESEARCH_PREREG_2026_11_09.md
+      - docs/STOCK_STRATEGY_RESEARCH_PREREG_AMENDMENT_1_2026_11_09.md
       - .github/workflows/research-evaluate.yml
 permissions:
   contents: write   # pushes to the research-data branch only

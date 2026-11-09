@@ -132,3 +132,61 @@ def fingerprint(obj) -> str:
 def assemble(sessions: list[str], bars: dict) -> tuple[list[str], dict]:
     """Session-aligned series {'o','c','v','ao','ac'} (None where a bar is missing)."""
     return align({'sessions': sessions, 'bars': bars})
+
+
+FOOTPRINT_KINDS = ('cash_dividend', 'split', 'stock_dividend')
+
+
+def validate_actions(bars: dict, actions: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Keep only actions consistent with the price history of the entity actually requested.
+
+    Alpaca keys corporate actions by ticker, and tickers are reused (in January 2022 the Roundhill
+    Metaverse ETF renamed META -> METV so Meta Platforms could take META). The adjusted bars fetched
+    `asof` the window end belong to one entity, so its back-adjustment factor (adjusted / raw) shows
+    exactly which dividends and splits it had. Rules:
+      - a name change to the same symbol, or whose old symbol keeps trading at/after the date, is dropped;
+      - a cash merger whose symbol keeps trading more than 5 sessions after the date is dropped;
+      - dividends and splits on a session are checked together against the factor change that session:
+        expected factor ratio = prod(1 / split ratio) * (1 - sum(dividends) / previous raw close);
+        a mismatch beyond 30% of the dividend yield (+0.002% rounding) or 3% for splits drops the group;
+      - an action on a day the symbol has no bar cannot be checked: kept and marked unvalidated.
+    """
+    kept, dropped = [], []
+    groups: dict = {}
+    for a in actions:
+        if a['kind'] in FOOTPRINT_KINDS:
+            groups.setdefault((a['symbol'], a['date']), []).append(a)
+            continue
+        b = bars.get(a['symbol'])
+        after = [d for d in b['d'] if d >= a['date']] if b else []
+        if a['kind'] == 'name_change':
+            if a.get('new_symbol') == a['symbol']:
+                dropped.append(dict(a, why='SAME_SYMBOL'))
+            elif len(after) > 1:
+                dropped.append(dict(a, why='OLD_SYMBOL_STILL_TRADES'))
+            else:
+                kept.append(a)
+        elif a['kind'] == 'cash_merger' and len([d for d in after if d > a['date']]) > 5:
+            dropped.append(dict(a, why='OLD_SYMBOL_STILL_TRADES'))
+        else:
+            kept.append(a)
+    for (sym, day), acts in groups.items():
+        b = bars.get(sym)
+        i = b['d'].index(day) if b and day in b['d'] else -1
+        if i <= 0 or not b['c'][i - 1] or not b['c'][i] or not b['ac'][i]:
+            kept += [dict(a, unvalidated=True) for a in acts]
+            continue
+        prev_c = b['c'][i - 1]
+        actual = (b['ac'][i - 1] / b['c'][i - 1]) / (b['ac'][i] / b['c'][i])
+        div = sum(a['rate'] for a in acts if a['kind'] == 'cash_dividend')
+        ratio = 1.0
+        for a in acts:
+            if a['kind'] in ('split', 'stock_dividend'):
+                ratio *= a['ratio']
+        expected = (1 - div / prev_c) / ratio
+        tol = 0.03 if ratio != 1.0 else 0.3 * div / prev_c + 0.00002  # yield-proportional; tiny rounding allowance
+        if abs(actual / expected - 1) <= tol:
+            kept += acts
+        else:
+            dropped += [dict(a, why='NO_ADJUSTMENT_FOOTPRINT', factor_ratio=round(actual, 6), expected=round(expected, 6)) for a in acts]
+    return sorted(kept, key=lambda a: (a['date'], a['symbol'], a['kind'])), dropped

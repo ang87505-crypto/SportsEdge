@@ -27,8 +27,8 @@ def synthetic_page(n=50, weight=2.0, eff='11/09/2026', extra=''):
     return ('<table><thead><tr><th class="column-maxholdings_websiteeffective_date">Effective Date</th></tr></thead><tbody>'
             f'<tr><td class=" expand column-maxholdings_websiteeffective_date"><span class="responsiveExpander"></span>{eff}</td></tr></tbody></table>'
             '<table data-wpdatatable_id="35"><thead><tr><th class="column-stock_ticker">Ticker</th><th class="column-security_desc">Name</th>'
-            '<th class="column-cusip">CUSIP</th><th class="column-shares">Shares</th><th class="column-price">Price</th>'
-            '<th class="column-market-value-mm">MV</th><th class="column-weightings">%</th></tr></thead><tbody>' + rows +
+            '<th class="column-cusip">CUSIP</th><th class="column-shares">Shares</th><th class="column-price">Price (Local)</th>'
+            '<th class="column-market-value-mm">Market Value ($mm)</th><th class="column-weightings">% of Net Assets</th></tr></thead><tbody>' + rows +
             '</tbody></table>' + extra)
 
 
@@ -71,6 +71,15 @@ class QmomCollector(unittest.TestCase):
         self.assertEqual(rec['parsed']['rows'][0]['ticker'], 'SYRE')
         self.assertIn('TOO_FEW_ROWS:5', rec['parsed']['problems'])
         self.assertEqual(rec['body'].decode(), REAL_PAGE)  # complete raw page preserved
+
+    def test_real_static_page_as_served_is_complete(self):
+        page = (FIX / 'qmom' / 'qmom_static_tables_2026-11-09.html').read_text()
+        line = qmom.collect(FakeFetcher({qmom.URL: page}), self.store, datetime(2026, 11, 9, 22, 18, 1, tzinfo=timezone.utc))
+        self.assertEqual(line['status'], 'OK')
+        rec = self.store.load(line['path'])['parsed']
+        self.assertEqual((rec['row_count'], rec['weight_sum'], rec['effective_date']), (52, 99.96, '2026-11-09'))
+        cash = [r for r in rec['rows'] if not r['equity_symbol']]
+        self.assertEqual([r['ticker'] for r in cash], ['CASH&OTHER'])
 
     def test_complete_page_is_ok_with_hash_and_times(self):
         line = qmom.collect(FakeFetcher({qmom.URL: synthetic_page()}), self.store, NOW)
@@ -115,7 +124,7 @@ class QmomCollector(unittest.TestCase):
 
     def test_table_layout_change_creates_a_research_item(self):
         qmom.collect(FakeFetcher({qmom.URL: synthetic_page()}), self.store, NOW)
-        changed = synthetic_page().replace('<th class="column-weightings">%</th>', '<th class="column-weightings">%</th><th class="column-sector">S</th>')
+        changed = synthetic_page().replace('% of Net Assets</th>', '% of Net Assets</th><th>Sector</th>')
         qmom.collect(FakeFetcher({qmom.URL: changed}), self.store, datetime(2026, 11, 10, 23, 30, tzinfo=timezone.utc))
         items = [json.loads(x) for x in (Path(self.tmp.name) / 'items.jsonl').read_text().splitlines()]
         self.assertEqual(items[0]['kind'], 'TABLE_HEADER_CHANGED')
