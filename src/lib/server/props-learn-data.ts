@@ -72,10 +72,19 @@ export async function loadForwardLines(store:PropsStore,sinceIso:string):Promise
  const gameIds=[...latest.values()].map(r=>r.player_game_id).filter((x):x is number=>x!==null);
  const minutes=new Map((gameIds.length?await byIds<{id:number;minutes:number|null}>(store,'props_player_games','id,minutes','id',gameIds):[])
   .map(r=>[r.id,r.minutes===null?null:Number(r.minutes)]));
- const athletes=[...new Set(preds.map(p=>p.athlete_id).filter((x):x is string=>!!x))];
- const games=athletes.length?await byIds<{athlete_id:string;team_abbr:string;game_start:string}>(store,'props_player_games',
-  'athlete_id,team_abbr,game_start','athlete_id',athletes):[];
- const teamAt=(athlete:string|null,lock:string)=>{
+ // The team is stored with each prediction since the review fix; older rows fall back to a bounded,
+ // paged lookup of the player's games in the 30 days before the earliest lock (never an unbounded read).
+ const teamOfPred=new Map<number,string>();
+ for(const p of preds){const t=(p.inputs as {team?:unknown}|null)?.team;if(typeof t==='string'&&/^[A-Z]{2,4}$/.test(t))teamOfPred.set(p.observation_id,t);}
+ const missing=[...new Set(preds.filter(p=>p.athlete_id&&!teamOfPred.has(p.observation_id)).map(p=>p.athlete_id as string))];
+ const games:{athlete_id:string;team_abbr:string;game_start:string}[]=[];
+ if(missing.length){
+  const from=new Date(Math.min(...obs.map(o=>Date.parse(o.lock_at)))-30*86400_000).toISOString();
+  for(const part of chunk(missing,IDS))games.push(...await paged<{athlete_id:string;team_abbr:string;game_start:string}>(store,'props_player_games',
+   'select=athlete_id,team_abbr,game_start&athlete_id='+inList(part)+'&game_start=gte.'+q(from)+'&order=id.asc'));
+ }
+ const teamAt=(obsId:number,athlete:string|null,lock:string)=>{
+  const stored=teamOfPred.get(obsId);if(stored)return stored;
   if(!athlete)return null;
   const before=games.filter(g=>g.athlete_id===athlete&&g.game_start<lock).sort((a,b)=>b.game_start.localeCompare(a.game_start));
   return before[0]?.team_abbr??null;
@@ -95,7 +104,7 @@ export async function loadForwardLines(store:PropsStore,sinceIso:string):Promise
    lockAt:o.lock_at,ingestedAt:o.ingested_at,homeTeam:o.home_team,awayTeam:o.away_team,date:etDate(o.lock_at),
    key:[o.provider_event_id,playerKey(o.player_name),o.stat,Number(o.line)].join('|'),
    outcome:!r?null:r.outcome==='more'||r.outcome==='less'||r.outcome==='tie'?r.outcome:'void',gradedAt:r?.graded_at??null,
-   actualMinutes:r?.player_game_id?minutes.get(r.player_game_id)??null:null,athleteId,team:teamAt(athleteId,o.lock_at),
+   actualMinutes:r?.player_game_id?minutes.get(r.player_game_id)??null:null,athleteId,team:teamAt(o.id,athleteId,o.lock_at),
    predictions:Object.fromEntries(ps.filter(p=>p.status==='scored').map(p=>[p.model_version,{id:p.id,
     probs:{pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)},inputs:p.inputs??{}}])),
    market:v?{booksAtSameLine:Number(v.books_at_same_line),pMoreBooks:v.p_more_books===null?null:Number(v.p_more_books),

@@ -168,7 +168,8 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   const picked=await predictAndPick(d,runId,observed,quotes,active);
   s.predictions=picked.out;
   s.marketViews=await recordMarketViews(d,picked.views);
-  s.entries=await recordEntries(d,runId,active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION);
+  if(picked.fallback)s.activeModel={...s.activeModel as object,fallback:true};
+  s.entries=await recordEntries(d,runId,picked.out.selectionVersion);
   // Read back what was durably recorded in this run (the receipt, not the exit code).
   const [o,p,k]=await Promise.all(['props_observations','props_predictions','props_picks'].map(t=>
    d.store.select<{id:number}>(t,'select=id&run_id=eq.'+runId+'&limit=5000')));
@@ -202,9 +203,9 @@ async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:
 
 async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[],quotes:BookQuote[],active:ActiveModel){
  const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>,
-  learn:{} as Record<string,number>,selectionVersion:active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION};
+  learn:{} as Record<string,number>,selectionVersion:active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION as string,learnError:undefined as string|undefined};
  const views:ViewRow[]=[];
- if(!observed.length)return {out,views};
+ if(!observed.length)return {out,views,fallback:false};
  const teams=[...new Set(observed.flatMap(x=>[teamAbbr(x.event.homeTeam),teamAbbr(x.event.awayTeam)]).filter((t):t is string=>!!t))];
  const roster=teams.length?latest(await d.store.select<PG>('props_player_games','select='+PG_COLS+'&team_abbr='+inList(teams)+
   '&game_start=gte.'+q(d.seasonStart)+'&order=game_start.asc&limit=10000')):[];
@@ -231,8 +232,9 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
    const pr=d.model.players[m.athleteId];
    const prior:PriorSummary|null=pr?{games:pr.games,minutes:pr.minutes,points:pr.points,rebounds:pr.rebounds,assists:pr.assists}:null;
    const p=predictLine({logs,prior,stat:obs.stat,line:Number(obs.line),cutoff,params:d.model.params});
-   row=p.status==='scored'?{status:'scored',reason:'ok',athlete_id:m.athleteId,p_more:p.pMore,p_less:p.pLess,p_tie:p.pTie,mean:p.mean,inputs:p.inputs}
-    :{status:'unscorable',reason:p.reason,athlete_id:m.athleteId,p_more:null,p_less:null,p_tie:null,mean:null,inputs:p.inputs};
+   // The team is kept with the prediction so the learning loop never has to guess it later.
+   row=p.status==='scored'?{status:'scored',reason:'ok',athlete_id:m.athleteId,p_more:p.pMore,p_less:p.pLess,p_tie:p.pTie,mean:p.mean,inputs:{...p.inputs,team:m.teamAbbr}}
+    :{status:'unscorable',reason:p.reason,athlete_id:m.athleteId,p_more:null,p_less:null,p_tie:null,mean:null,inputs:{...p.inputs,team:m.teamAbbr}};
    meta.set(obs.id,{athlete:m.athleteId,team:m.teamAbbr});
   }
   if(row.status==='scored')out.scored++;else out.unscorable[row.reason as string]=(out.unscorable[row.reason as string]??0)+1;
@@ -251,7 +253,10 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
  // Learning layer: the active learn model and every shadowing challenger score each scored line before lock.
  const learners=[...(active.artifact?[{version:active.version,artifact:active.artifact}]:[]),...active.shadows];
  const learnPreds=new Map<number,PredRow>();
- if(learners.length){
+ let useLearn=!!active.artifact,fallback=false;
+ // Best-effort: a learning-layer failure never costs the run its picks. Shadows are skipped;
+ // an active learning model falls back to the stats model (and its accounts) for this run.
+ if(learners.length)try{
   const teamRows=await loadTeamRows(d.store,ago(d.now(),95*86400_000));
   const learnRows:Record<string,unknown>[]=[];
   for(const p of preds){
@@ -274,28 +279,31 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
    }
   }
   for(const r of await insertPreds(learnRows))if(r.model_version===active.version)learnPreds.set(r.observation_id,r);
+ }catch(err){
+  out.learnError=err instanceof PropsStoreError?err.code:'UNEXPECTED';
+  if(useLearn){useLearn=false;fallback=true;learnPreds.clear();out.selectionVersion=SELECTION_VERSION;}
  }
 
  // Picks come from the active model only: layer 1 under props-select-v1, a learn model under props-select-v2.
  const pickRows:Record<string,unknown>[]=[];
  for(const p of preds){
   const x=byObs.get(p.observation_id)!;
-  const chosen=active.artifact?learnPreds.get(p.observation_id)??null:p;
+  const chosen=useLearn?learnPreds.get(p.observation_id)??null:p;
   const scored=chosen&&chosen.status==='scored';
   const side=scored?(Number(chosen.p_more)>=Number(chosen.p_less)?'more':'less'):null;
   const view:MarketView=marketView(obsInfo(x.obs),quotes,side);
   views.push({observation_id:p.observation_id,run_id:runId,books_at_same_line:view.booksAtSameLine,p_more_books:view.pMoreBooks,
    nearest_book_line:view.nearestBookLine,line_gap:view.lineGap,flags:view.flags});
-  if(active.artifact&&!chosen){out.skipped.unscorable=(out.skipped.unscorable??0)+1;continue;}
+  if(useLearn&&!chosen){out.skipped.unscorable=(out.skipped.unscorable??0)+1;continue;}
   const target=chosen??p;
   const input={status:target.status,pMore:target.p_more===null?null:Number(target.p_more),
    pLess:target.p_less===null?null:Number(target.p_less),pTie:target.p_tie===null?null:Number(target.p_tie)};
-  const dec=active.artifact?decidePickV2(input,view):decidePick(input);
+  const dec=useLearn?decidePickV2(input,view):decidePick(input);
   if(dec.status==='recorded')out.recorded++;else out.skipped[dec.reason]=(out.skipped[dec.reason]??0)+1;
   pickRows.push({prediction_id:target.id,run_id:runId,selection_version:out.selectionVersion,status:dec.status,side:dec.side,reason:dec.reason});
  }
  for(const part of chunk(pickRows,200))await d.store.insert('props_picks',part,{onConflict:'prediction_id,selection_version',ignoreDuplicates:true});
- return {out,views};
+ return {out,views,fallback};
 }
 
 async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){

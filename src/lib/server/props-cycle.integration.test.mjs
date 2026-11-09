@@ -291,3 +291,24 @@ test('weekly learning loop: settle brake, train, evaluate, auto-switch, review a
  assert.equal(psql(db,'SELECT active_model_version FROM props_model_control').out,'props-nb-minutes-rate-v1');
  await assert.rejects(runOwnerAction(store,'approve',{version:'v1; drop table',reason:'x',actor:'owner:test'}),/PROPS_INVALID_VERSION/);
 });
+
+test('review fix: a learning-layer failure never costs the run its picks',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {PropsStoreError}=await import('./props-store.ts');
+ for(const withActive of [true,false]){
+  const db=withActive?'props_it_learnfail_a':'props_it_learnfail_s';
+  const {store,deps,add,event}=await learningDb(db);
+  if(withActive){await add('props-learn-v1');await event('props-learn-v1','eligible');
+   await store.rpc('props_promote_model',{p_version:'props-learn-v1',p_actor:'system:test',p_reason:'integration test'});}
+  await add('props-learn-v2');await event('props-learn-v2','shadow_start');
+  // The matchup read (paged with offset) fails, as a transient Supabase error would.
+  const flaky={...store,select:async(t,q)=>{if(t==='props_player_games'&&q.includes('offset='))throw new PropsStoreError('STORE_OUTCOME_UNKNOWN',false);return store.select(t,q);}};
+  clock='2026-11-07T19:00:00.000Z';
+  const c=await runCollect({...deps,store:flaky},'collect-2026-11-07T19',null);
+  assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
+  assert.equal(c.summary.predictions.learnError,'STORE_OUTCOME_UNKNOWN');
+  assert.equal(c.summary.activeModel.fallback,withActive);
+  assert.equal(psql(db,`SELECT string_agg(DISTINCT selection_version,',') FROM props_picks`).out,'props-select-v1');
+  const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
+  assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v1')),accounts);
+ }
+});
