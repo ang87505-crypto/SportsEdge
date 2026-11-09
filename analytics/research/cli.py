@@ -85,8 +85,10 @@ def cmd_collect(data: Path, now: datetime) -> dict:
 
 def market_data(source, symbols: set, start: str, end: str, late_asof: dict) -> dict:
     """Bars, sessions and actions, with renamed members joined and delisted names refetched as of their date."""
+    requested, rejected = rdata.market_symbols(symbols)
+    symbols = set(requested)
     sessions = rdata.fetch_calendar(source, start, end)
-    bars = rdata.fetch_bars(source, sorted(symbols), start, end, asof=end)
+    bars = rdata.fetch_bars(source, requested, start, end, asof=end)
     pages = rdata.fetch_actions(source, sorted(symbols), start, end)
     actions, dropped = rdata.validate_actions(bars, rdata.normalize_actions(pages))  # entity check (ticker reuse)
     renamed = {a['new_symbol'] for a in actions if a['kind'] == 'name_change' and a['symbol'] in symbols} - set(bars)
@@ -102,7 +104,7 @@ def market_data(source, symbols: set, start: str, end: str, late_asof: dict) -> 
     bars, actions, joins = rdata.join_renamed(bars, actions, symbols)
     dataset = {'sessions': sessions, 'bars': bars, 'actions': actions}
     return {'sessions': sessions, 'bars': bars, 'actions': actions, 'joins': joins, 'refetched_as_of': refetched,
-            'actions_dropped': dropped,
+            'actions_dropped': dropped, 'symbols_rejected': rejected,
             'missing': sorted(symbols - set(bars)), 'fingerprint': rdata.fingerprint(dataset),
             'actions_pages_fingerprint': rdata.fingerprint(pages), 'requests': source.count}
 
@@ -194,7 +196,8 @@ def cmd_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
     universe, members = universe_members()
     filings, mapping = filings_and_mapping(store)
     snaps = qmom_snapshots(store)
-    follower_syms = {r['ticker'].replace('/', '.') for s in snaps if s['status'] == 'OK' for r in s['rows']}
+    follower_syms = {r['ticker'].replace('/', '.') for s in snaps if s['status'] == 'OK' for r in s['rows']
+                     if r.get('equity_symbol', True)}
     brk = brk_symbols(filings, mapping)
     symbols = {m['symbol'] for m in members} | {'SPY', 'QMOM', 'BRK.B'} | follower_syms | set(brk)
     start = (date.fromisoformat(ev.FORWARD_START) - timedelta(days=400)).isoformat()
@@ -229,7 +232,7 @@ def cmd_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
                                        'meta': x['meta']} for x in d],
                         'result': ev.strip_series(res), 'benchmarks': bench}
     out = {'kind': 'forward', 'at': stamp(now), 'latest_session': sessions[end_k], 'ledgers': ledgers,
-           'data': {k: md[k] for k in ('fingerprint', 'joins', 'missing', 'requests')}}
+           'data': {k: md[k] for k in ('fingerprint', 'joins', 'missing', 'requests', 'actions_dropped', 'symbols_rejected')}}
     path = write_new(out_dir / f"forward-{stamp(now).replace(':', '')}.json", out)
     append_run(data, {'command': 'forward', 'at': stamp(now), 'file': str(path),
                       'status': {s: v['status'] for s, v in ledgers.items()}})

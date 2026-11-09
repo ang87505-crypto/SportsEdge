@@ -68,5 +68,30 @@ class EntityChecks(unittest.TestCase):
         self.assertFalse(by_kind['cash_merger'].get('unvalidated'))
 
 
+class MarketSymbols(unittest.TestCase):
+    """A disclosed non-equity line (the real QMOM page lists CASH&OTHER) must never reach the bars request:
+    one invalid symbol makes Alpaca reject the whole batch with HTTP 400 (collect run 42711611478)."""
+
+    def test_only_exchange_tickers_are_requested(self):
+        ok, rejected = rdata.market_symbols({'SPY', 'BRK.B', 'CASH&OTHER', 'MRSH', '', 'US DOLLAR', 'abc'})
+        self.assertEqual(ok, ['BRK.B', 'MRSH', 'SPY'])
+        self.assertEqual(rejected, ['', 'CASH&OTHER', 'US DOLLAR', 'abc'])
+
+    def test_market_data_skips_rejected_symbols_and_records_them(self):
+        from analytics.research import cli
+        seen = []
+
+        class Src:
+            count = 0
+            def fetch(self, base, path, query):
+                return [{'date': '2026-11-06'}]
+            def paged(self, base, path, query):
+                seen.extend(query['symbols'].split(','))
+                return [{}]
+        md = cli.market_data(Src(), {'SPY', 'CASH&OTHER'}, '2026-11-01', '2026-11-06', {})
+        self.assertNotIn('CASH&OTHER', seen)
+        self.assertEqual(md['symbols_rejected'], ['CASH&OTHER'])
+
+
 if __name__ == '__main__':
     unittest.main()

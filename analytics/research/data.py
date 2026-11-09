@@ -6,10 +6,19 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 
 from analytics.stock_weekly_backtest_v1 import align
 
 ACTION_DATES = ('ex_date', 'effective_date', 'process_date')
+MARKET_SYMBOL = re.compile(r'^[A-Z][A-Z0-9]{0,5}(\.[A-Z]{1,2})?$')
+
+
+def market_symbols(symbols) -> tuple[list[str], list[str]]:
+    """Split requested names into exchange tickers and everything else (e.g. a disclosed CASH&OTHER line).
+    One invalid symbol makes the provider reject a whole batch, so non-tickers are never requested."""
+    ok = sorted(s for s in symbols if MARKET_SYMBOL.match(s or ''))
+    return ok, sorted(s for s in symbols if not MARKET_SYMBOL.match(s or ''))
 
 
 def fetch_bars(source, symbols: list[str], start: str, end: str, asof: str) -> dict:
