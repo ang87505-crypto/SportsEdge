@@ -1,0 +1,1084 @@
+{
+ "at": "2026-11-10T18:15:14Z",
+ "benchmarks": {
+  "buffer_matched_v1": {
+   "cagr": 0.14001359848426653,
+   "end_value": 107589.08924308143,
+   "max_drawdown": -0.33642072212616336,
+   "sharpe": 0.8319775547071802,
+   "total": 2.586302974769381,
+   "vol": 0.17627892058123498,
+   "years": 9.746031746031745
+  },
+  "buffer_matched_v2": {
+   "cagr": 0.1400953643652718,
+   "end_value": 107664.3198146201,
+   "max_drawdown": -0.3362181024210531,
+   "sharpe": 0.8323881330568988,
+   "total": 2.588810660487337,
+   "vol": 0.1762778489956642,
+   "years": 9.746031746031745
+  },
+  "spy_adjusted_hold": {
+   "cagr": 0.14472479211569267,
+   "end_value": 112001.52322924601,
+   "max_drawdown": -0.33793888166449937,
+   "sharpe": 0.8444846723136871,
+   "total": 2.733384107641534,
+   "vol": 0.1791608394825993,
+   "years": 9.746031746031745
+  },
+  "spy_through_engine_raw_prices_and_dividends_99pct": {
+   "cagr": 0.13552311965162556,
+   "costs": 0.0,
+   "end_value": 103529.242917,
+   "filled": 1,
+   "max_drawdown": -0.3216878886977935,
+   "orders": 1,
+   "reduced_for_cash": 0,
+   "sharpe": 0.8417571082446328,
+   "turnover": 0.05158479070856252,
+   "unfilled_gap": 0,
+   "zero_share_targets": 0
+  }
+ },
+ "code_commit": "61e2cd7b5b29800de08b034a7ab291914cac4afc",
+ "cost_sensitivity": {
+  "momentum-quality-paper-v1": {
+   "0bps": {
+    "cagr": 0.1801488102583222,
+    "costs": 0.0,
+    "end_value": 150736.81239999994,
+    "filled": 249,
+    "max_drawdown": -0.3476482047874404,
+    "orders": 254,
+    "reduced_for_cash": 28,
+    "sharpe": 0.7919405981802852,
+    "turnover": 9.833429889406428,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "10bps": {
+    "cagr": 0.16652052582037746,
+    "costs": 8316.819052600003,
+    "end_value": 134603.5648474005,
+    "end_value_gap": 16133.247552599438,
+    "examples_only_at_0bps": [
+     {
+      "date": "2018-10-01",
+      "price": 2021.99,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-08-03",
+      "price": 1449.2,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-02-01",
+      "price": 814.29,
+      "shares": 8,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-06-01",
+      "price": 627.8,
+      "shares": 8,
+      "side": "buy",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-09-04",
+      "price": 2026.5,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-07-01",
+      "price": 1083.0,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-01-04",
+      "price": 719.46,
+      "shares": 6,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 248,
+    "first_divergence": [
+     "2017-04-03",
+     "MS",
+     "buy"
+    ],
+    "first_order_cost_drag": 14311.405699052602,
+    "fixed_path_cagr": 0.16870251149163584,
+    "fixed_path_max_drawdown": -0.34838558605585457,
+    "fixed_path_sharpe": 0.7527102689385177,
+    "max_drawdown": -0.34877707217660814,
+    "orders": 253,
+    "path_effect": 1821.8418535468354,
+    "reduced_for_cash": 25,
+    "same_trade_different_shares": 421,
+    "sharpe": 0.7443134403582671,
+    "trades_only_at_0bps": 4,
+    "trades_only_at_this_cost": 3,
+    "turnover": 9.824735049190975,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "25bps": {
+    "cagr": 0.15158104155569885,
+    "costs": 19089.502182750002,
+    "end_value": 118713.32271725038,
+    "end_value_gap": 32023.489682749554,
+    "examples_only_at_0bps": [
+     {
+      "date": "2018-10-01",
+      "price": 2021.99,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-02-01",
+      "price": 814.29,
+      "shares": 8,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-06-01",
+      "price": 627.8,
+      "shares": 8,
+      "side": "buy",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-02-01",
+      "price": 352.95,
+      "shares": 6,
+      "side": "sell",
+      "symbol": "BA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2018-12-03",
+      "price": 206.11,
+      "shares": 9,
+      "side": "sell",
+      "symbol": "MA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-01-04",
+      "price": 719.46,
+      "shares": 5,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2025-12-01",
+      "price": 154.85,
+      "shares": 27,
+      "side": "buy",
+      "symbol": "LRCX",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-02-02",
+      "price": 233.33,
+      "shares": 23,
+      "side": "sell",
+      "symbol": "LRCX",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 249,
+    "first_divergence": [
+     "2017-02-01",
+     "BAC",
+     "buy"
+    ],
+    "first_order_cost_drag": 35778.51424763151,
+    "fixed_path_cagr": 0.1517207092722468,
+    "fixed_path_max_drawdown": -0.3494916579584759,
+    "fixed_path_sharpe": 0.6936567456742673,
+    "max_drawdown": -0.350001373301543,
+    "orders": 254,
+    "path_effect": -3755.0245648819546,
+    "reduced_for_cash": 33,
+    "same_trade_different_shares": 458,
+    "sharpe": 0.6912397995597109,
+    "trades_only_at_0bps": 3,
+    "trades_only_at_this_cost": 5,
+    "turnover": 9.82128241545966,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "50bps": {
+    "cagr": 0.12305214406457532,
+    "costs": 33059.613298000004,
+    "end_value": 92965.21710200036,
+    "end_value_gap": 57771.59529799958,
+    "examples_only_at_0bps": [
+     {
+      "date": "2018-10-01",
+      "price": 2021.99,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-08-03",
+      "price": 1449.2,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-02-01",
+      "price": 814.29,
+      "shares": 8,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-06-01",
+      "price": 627.8,
+      "shares": 8,
+      "side": "buy",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2024-01-02",
+      "price": 127.01,
+      "shares": 41,
+      "side": "sell",
+      "symbol": "GE",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-02-01",
+      "price": 352.95,
+      "shares": 5,
+      "side": "sell",
+      "symbol": "BA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2018-11-01",
+      "price": 199.0,
+      "shares": 9,
+      "side": "sell",
+      "symbol": "MA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-07-01",
+      "price": 1083.0,
+      "shares": 2,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-01-04",
+      "price": 719.46,
+      "shares": 5,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2023-11-01",
+      "price": 108.3,
+      "shares": 28,
+      "side": "sell",
+      "symbol": "GE",
+      "why": "rebalance"
+     },
+     {
+      "date": "2025-12-01",
+      "price": 154.85,
+      "shares": 22,
+      "side": "buy",
+      "symbol": "LRCX",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-02-02",
+      "price": 233.33,
+      "shares": 19,
+      "side": "sell",
+      "symbol": "LRCX",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 249,
+    "first_divergence": [
+     "2017-02-01",
+     "BAC",
+     "buy"
+    ],
+    "first_order_cost_drag": 71557.02849526302,
+    "fixed_path_cagr": 0.12391158355071141,
+    "fixed_path_max_drawdown": -0.35133511112951143,
+    "fixed_path_sharpe": 0.5948234911282277,
+    "max_drawdown": -0.35015321590065185,
+    "orders": 254,
+    "path_effect": -13785.433197263439,
+    "reduced_for_cash": 34,
+    "same_trade_different_shares": 471,
+    "sharpe": 0.5910349082675358,
+    "trades_only_at_0bps": 5,
+    "trades_only_at_this_cost": 7,
+    "turnover": 9.824702331149291,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "5bps": {
+    "cagr": 0.17270010982289485,
+    "costs": 4307.657763300001,
+    "end_value": 141716.2396367005,
+    "end_value_gap": 9020.572763299424,
+    "examples_only_at_0bps": [
+     {
+      "date": "2018-10-01",
+      "price": 2021.99,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-08-03",
+      "price": 1449.2,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-09-04",
+      "price": 2026.5,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "AMZN",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-07-01",
+      "price": 1083.0,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 249,
+    "first_divergence": [
+     "2017-04-03",
+     "MS",
+     "buy"
+    ],
+    "first_order_cost_drag": 7155.702849526301,
+    "fixed_path_cagr": 0.1744130855242494,
+    "fixed_path_max_drawdown": -0.3480168954216475,
+    "fixed_path_sharpe": 0.7723407308072016,
+    "max_drawdown": -0.3479641524412811,
+    "orders": 254,
+    "path_effect": 1864.8699137731228,
+    "reduced_for_cash": 28,
+    "same_trade_different_shares": 374,
+    "sharpe": 0.7662955799039072,
+    "trades_only_at_0bps": 2,
+    "trades_only_at_this_cost": 2,
+    "turnover": 9.83787158854979,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   }
+  },
+  "mq-buffer-v1": {
+   "0bps": {
+    "cagr": 0.20516667248921427,
+    "costs": 0.0,
+    "end_value": 184930.69139999995,
+    "filled": 182,
+    "max_drawdown": -0.3102835182543694,
+    "orders": 184,
+    "reduced_for_cash": 34,
+    "sharpe": 0.8630533788890907,
+    "turnover": 6.691150592611092,
+    "unfilled_gap": 2,
+    "zero_share_targets": 0
+   },
+   "10bps": {
+    "cagr": 0.20467479177522918,
+    "costs": 6269.832618599995,
+    "end_value": 184196.38978140036,
+    "end_value_gap": 734.3016185995948,
+    "examples_only_at_0bps": [
+     {
+      "date": "2020-08-03",
+      "price": 1449.2,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-05-01",
+      "price": 511.78,
+      "shares": 15,
+      "side": "sell",
+      "symbol": "MU",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-07-02",
+      "price": 69.69,
+      "shares": 27,
+      "side": "buy",
+      "symbol": "MPC",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-06-01",
+      "price": 252.68,
+      "shares": 37,
+      "side": "buy",
+      "symbol": "MPC",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 184,
+    "first_divergence": [
+     "2017-08-01",
+     "AMAT",
+     "buy"
+    ],
+    "first_order_cost_drag": 12238.612138648918,
+    "fixed_path_cagr": 0.19700750943366518,
+    "fixed_path_max_drawdown": -0.310532935210573,
+    "fixed_path_sharpe": 0.8362190048517208,
+    "max_drawdown": -0.3117019470975174,
+    "orders": 186,
+    "path_effect": -11504.310520049323,
+    "reduced_for_cash": 36,
+    "same_trade_different_shares": 236,
+    "sharpe": 0.8585829446996761,
+    "trades_only_at_0bps": 2,
+    "trades_only_at_this_cost": 2,
+    "turnover": 6.711038344036533,
+    "unfilled_gap": 2,
+    "zero_share_targets": 0
+   },
+   "25bps": {
+    "cagr": 0.1923398338838196,
+    "costs": 14807.881128999998,
+    "end_value": 166616.7267710003,
+    "end_value_gap": 18313.964628999645,
+    "examples_only_at_0bps": [
+     {
+      "date": "2019-05-01",
+      "price": 117.05,
+      "shares": 24,
+      "side": "buy",
+      "symbol": "LLY",
+      "why": "rebalance"
+     },
+     {
+      "date": "2020-08-03",
+      "price": 1449.2,
+      "shares": 3,
+      "side": "sell",
+      "symbol": "TSLA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-05-01",
+      "price": 511.78,
+      "shares": 15,
+      "side": "sell",
+      "symbol": "MU",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2019-02-01",
+      "price": 120.32,
+      "shares": 18,
+      "side": "buy",
+      "symbol": "LLY",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-08-02",
+      "price": 376.17,
+      "shares": 11,
+      "side": "buy",
+      "symbol": "GS",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-02-02",
+      "price": 199.99,
+      "shares": 34,
+      "side": "buy",
+      "symbol": "RTX",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-06-01",
+      "price": 252.68,
+      "shares": 34,
+      "side": "buy",
+      "symbol": "MPC",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 185,
+    "first_divergence": [
+     "2017-02-01",
+     "BAC",
+     "buy"
+    ],
+    "first_order_cost_drag": 30596.530346622294,
+    "fixed_path_cagr": 0.18485987204840826,
+    "fixed_path_max_drawdown": -0.3109070606448783,
+    "fixed_path_sharpe": 0.7958481623455798,
+    "max_drawdown": -0.3123540216075943,
+    "orders": 186,
+    "path_effect": -12282.565717622649,
+    "reduced_for_cash": 44,
+    "same_trade_different_shares": 315,
+    "sharpe": 0.8168295699030419,
+    "trades_only_at_0bps": 3,
+    "trades_only_at_this_cost": 4,
+    "turnover": 6.72569392169256,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "50bps": {
+    "cagr": 0.16627354328931432,
+    "costs": 26019.605692999987,
+    "end_value": 134326.06920700023,
+    "end_value_gap": 50604.62219299973,
+    "examples_only_at_0bps": [
+     {
+      "date": "2019-05-01",
+      "price": 117.05,
+      "shares": 24,
+      "side": "buy",
+      "symbol": "LLY",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-05-01",
+      "price": 511.78,
+      "shares": 15,
+      "side": "sell",
+      "symbol": "MU",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2018-03-01",
+      "price": 362.33,
+      "shares": 6,
+      "side": "sell",
+      "symbol": "BA",
+      "why": "rebalance"
+     },
+     {
+      "date": "2019-02-01",
+      "price": 120.32,
+      "shares": 19,
+      "side": "buy",
+      "symbol": "LLY",
+      "why": "rebalance"
+     },
+     {
+      "date": "2021-08-02",
+      "price": 376.17,
+      "shares": 11,
+      "side": "buy",
+      "symbol": "GS",
+      "why": "rebalance"
+     },
+     {
+      "date": "2024-01-02",
+      "price": 3520.0,
+      "shares": 1,
+      "side": "sell",
+      "symbol": "BKNG",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-02-02",
+      "price": 199.99,
+      "shares": 31,
+      "side": "buy",
+      "symbol": "RTX",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-05-01",
+      "price": 255.14,
+      "shares": 22,
+      "side": "sell",
+      "symbol": "LRCX",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 184,
+    "first_divergence": [
+     "2017-02-01",
+     "BAC",
+     "buy"
+    ],
+    "first_order_cost_drag": 61193.06069324459,
+    "fixed_path_cagr": 0.16485466522872172,
+    "fixed_path_max_drawdown": -0.31153060303538727,
+    "fixed_path_sharpe": 0.7283019664212557,
+    "max_drawdown": -0.3136203862212892,
+    "orders": 185,
+    "path_effect": -10588.438500244862,
+    "reduced_for_cash": 45,
+    "same_trade_different_shares": 339,
+    "sharpe": 0.7321313820631781,
+    "trades_only_at_0bps": 2,
+    "trades_only_at_this_cost": 6,
+    "turnover": 6.710481917415218,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "5bps": {
+    "cagr": 0.20493832963662206,
+    "costs": 3133.2900142999993,
+    "end_value": 184589.4848857003,
+    "end_value_gap": 341.20651429964346,
+    "examples_only_at_0bps": [
+     {
+      "date": "2026-05-01",
+      "price": 511.78,
+      "shares": 15,
+      "side": "sell",
+      "symbol": "MU",
+      "why": "rebalance"
+     }
+    ],
+    "examples_only_at_this_cost": [
+     {
+      "date": "2021-08-02",
+      "price": 376.17,
+      "shares": 11,
+      "side": "buy",
+      "symbol": "GS",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-02-02",
+      "price": 199.99,
+      "shares": 36,
+      "side": "buy",
+      "symbol": "RTX",
+      "why": "rebalance"
+     },
+     {
+      "date": "2026-06-01",
+      "price": 252.68,
+      "shares": 37,
+      "side": "buy",
+      "symbol": "MPC",
+      "why": "rebalance"
+     }
+    ],
+    "filled": 185,
+    "first_divergence": [
+     "2018-06-01",
+     "CSCO",
+     "buy"
+    ],
+    "first_order_cost_drag": 6119.306069324459,
+    "fixed_path_cagr": 0.20108099607246044,
+    "fixed_path_max_drawdown": -0.31040822673247115,
+    "fixed_path_sharpe": 0.8496447066580649,
+    "max_drawdown": -0.31048353993983246,
+    "orders": 186,
+    "path_effect": -5778.099555024815,
+    "reduced_for_cash": 37,
+    "same_trade_different_shares": 245,
+    "sharpe": 0.8603787807580936,
+    "trades_only_at_0bps": 1,
+    "trades_only_at_this_cost": 3,
+    "turnover": 6.718899205035308,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   }
+  }
+ },
+ "data": {
+  "actions_dropped": 16,
+  "fingerprint": "5143ba7830eae5cfa6cbbc11fe7a12bb29e5cd32e0373ff607d8e1ab85300838",
+  "joins": [
+   {
+    "adjusted_rescale": 0.9785562285153053,
+    "date": "2026-01-14",
+    "new": "MRSH",
+    "old": "MMC"
+   }
+  ],
+  "missing": []
+ },
+ "execution_sensitivities": {
+  "as_tested": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.16652052582037746,
+    "costs": 8316.819052600003,
+    "end_value": 134603.5648474005,
+    "filled": 248,
+    "max_drawdown": -0.34877707217660814,
+    "orders": 253,
+    "reduced_for_cash": 25,
+    "sharpe": 0.7443134403582671,
+    "turnover": 9.824735049190975,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.20467479177522918,
+    "costs": 6269.832618599995,
+    "end_value": 184196.38978140036,
+    "filled": 184,
+    "max_drawdown": -0.3117019470975174,
+    "orders": 186,
+    "reduced_for_cash": 36,
+    "sharpe": 0.8585829446996761,
+    "turnover": 6.711038344036533,
+    "unfilled_gap": 2,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "execute_one_session_later": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": false,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.14027466604743544,
+    "costs": 7735.768381800004,
+    "end_value": 107829.45571820044,
+    "filled": 247,
+    "max_drawdown": -0.35178004550363273,
+    "orders": 251,
+    "reduced_for_cash": 29,
+    "sharpe": 0.6513940927970954,
+    "turnover": 9.780448147851821,
+    "unfilled_gap": 4,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.1954391150376269,
+    "costs": 6047.261059699999,
+    "end_value": 170885.9511403003,
+    "filled": 182,
+    "max_drawdown": -0.3162528292998197,
+    "orders": 183,
+    "reduced_for_cash": 31,
+    "sharpe": 0.8350456792455908,
+    "turnover": 6.727118491420682,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "fill_at_execution_day_close": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.12178134465688428,
+    "costs": 6632.20162,
+    "end_value": 91945.03588000033,
+    "filled": 246,
+    "max_drawdown": -0.3102693050734031,
+    "orders": 271,
+    "reduced_for_cash": 27,
+    "sharpe": 0.6338951460895796,
+    "turnover": 9.616924751376082,
+    "unfilled_gap": 25,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.1915989567187517,
+    "costs": 5482.7917,
+    "end_value": 165610.46080000035,
+    "filled": 182,
+    "max_drawdown": -0.2878711139736998,
+    "orders": 194,
+    "reduced_for_cash": 35,
+    "sharpe": 0.8459629652864336,
+    "turnover": 6.680393238437449,
+    "unfilled_gap": 12,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "limit_gap_1pct": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.1543596772793252,
+    "costs": 7063.666418999996,
+    "end_value": 121534.63558100048,
+    "filled": 230,
+    "max_drawdown": -0.3015565726402908,
+    "orders": 283,
+    "reduced_for_cash": 22,
+    "sharpe": 0.7478921062676208,
+    "turnover": 9.198643251197003,
+    "unfilled_gap": 53,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.194000444633184,
+    "costs": 5264.348232999999,
+    "end_value": 168892.14226700034,
+    "filled": 167,
+    "max_drawdown": -0.3120385124373791,
+    "orders": 207,
+    "reduced_for_cash": 26,
+    "sharpe": 0.8578460211302672,
+    "turnover": 6.249289967626941,
+    "unfilled_gap": 40,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "no_limit_price": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.17294403199279773,
+    "costs": 8667.2306061,
+    "end_value": 142003.78529390055,
+    "filled": 251,
+    "max_drawdown": -0.34877707217660814,
+    "orders": 251,
+    "reduced_for_cash": 30,
+    "sharpe": 0.7619147657643062,
+    "turnover": 9.940898614082815,
+    "unfilled_gap": 0,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.20180991390528158,
+    "costs": 6355.242697599993,
+    "end_value": 179971.32870240038,
+    "filled": 185,
+    "max_drawdown": -0.3117019470975174,
+    "orders": 185,
+    "reduced_for_cash": 34,
+    "sharpe": 0.8516804281909305,
+    "turnover": 6.763114863495482,
+    "unfilled_gap": 0,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "rebalance_band_0": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": false,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.17058339376448295,
+    "costs": 8858.801651300002,
+    "end_value": 139242.82154870045,
+    "filled": 402,
+    "max_drawdown": -0.3517937071938717,
+    "orders": 412,
+    "reduced_for_cash": 1,
+    "sharpe": 0.7569780305684749,
+    "turnover": 10.2542598539488,
+    "unfilled_gap": 10,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.19885407575972525,
+    "costs": 6691.3663291,
+    "end_value": 175703.47457090032,
+    "filled": 359,
+    "max_drawdown": -0.3106982084832379,
+    "orders": 367,
+    "reduced_for_cash": 1,
+    "sharpe": 0.8438892066124389,
+    "turnover": 7.160171262549848,
+    "unfilled_gap": 8,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "rebalance_band_40pct": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.16878984719939027,
+    "costs": 8312.027907599997,
+    "end_value": 137177.42799240045,
+    "filled": 244,
+    "max_drawdown": -0.3483128951350223,
+    "orders": 249,
+    "reduced_for_cash": 36,
+    "sharpe": 0.7476011789673785,
+    "turnover": 9.720278801448737,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.20589178012693266,
+    "costs": 6182.276713599998,
+    "end_value": 186017.95568640035,
+    "filled": 171,
+    "max_drawdown": -0.3103033698184937,
+    "orders": 172,
+    "reduced_for_cash": 39,
+    "sharpe": 0.8610594866611948,
+    "turnover": 6.5478978461940605,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8444846723136871
+  },
+  "start_one_month_later": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.16225200245301008,
+    "costs": 7982.153794499999,
+    "end_value": 128415.26320550047,
+    "filled": 250,
+    "max_drawdown": -0.3480830806971724,
+    "orders": 255,
+    "reduced_for_cash": 30,
+    "sharpe": 0.7284674276017774,
+    "turnover": 9.856796954923567,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.2021868642646949,
+    "costs": 6094.243178999999,
+    "end_value": 178033.22582100035,
+    "filled": 184,
+    "max_drawdown": -0.31116503906264015,
+    "orders": 185,
+    "reduced_for_cash": 37,
+    "sharpe": 0.8491639359018314,
+    "turnover": 6.7463344298913,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8231436236229352
+  },
+  "start_two_months_later": {
+   "buffer_beats_b0_sharpe": true,
+   "buffer_beats_spy_sharpe": true,
+   "momentum-quality-paper-v1": {
+    "cagr": 0.16849042785919566,
+    "costs": 8213.085947999993,
+    "end_value": 133329.8350520004,
+    "filled": 247,
+    "max_drawdown": -0.34745629893852237,
+    "orders": 252,
+    "reduced_for_cash": 28,
+    "sharpe": 0.7490965608798342,
+    "turnover": 9.850804791613642,
+    "unfilled_gap": 5,
+    "zero_share_targets": 0
+   },
+   "mq-buffer-v1": {
+    "cagr": 0.1985579431557889,
+    "costs": 6131.837802000002,
+    "end_value": 170068.8841980004,
+    "filled": 185,
+    "max_drawdown": -0.3115690562170744,
+    "orders": 187,
+    "reduced_for_cash": 36,
+    "sharpe": 0.8371437009207107,
+    "turnover": 6.747659854737983,
+    "unfilled_gap": 1,
+    "zero_share_targets": 0
+   },
+   "spy_sharpe_same_window": 0.8313256623189784
+  }
+ },
+ "integrity": {
+  "momentum-quality-paper-v1": {
+   "corporate_actions_on_traded_names": 3277,
+   "fills_not_at_the_raw_open": 0,
+   "integrity_examples": [],
+   "integrity_mismatches": 0,
+   "sells_pending": 0,
+   "stale_marks": 0,
+   "symbols_traded": 101,
+   "unavailable": 0,
+   "unfilled_missing": 0,
+   "unresolved": []
+  },
+  "mq-buffer-v1": {
+   "corporate_actions_on_traded_names": 2940,
+   "fills_not_at_the_raw_open": 0,
+   "integrity_examples": [],
+   "integrity_mismatches": 0,
+   "sells_pending": 0,
+   "stale_marks": 0,
+   "symbols_traded": 92,
+   "unavailable": 0,
+   "unfilled_missing": 0,
+   "unresolved": []
+  }
+ },
+ "kind": "buffer-audit",
+ "label": "POST-HOC DIAGNOSTICS (not gates; the pre-registered verdict is unchanged)",
+ "window": [
+  "2017-02-01",
+  "2026-11-06"
+ ]
+}
