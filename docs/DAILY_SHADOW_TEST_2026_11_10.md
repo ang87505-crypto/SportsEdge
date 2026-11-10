@@ -37,3 +37,8 @@ Result: https://github.com/ang87505-crypto/SportsEdge/blob/research-data/daily-s
 Both phases run on GitHub/Vercel using existing market-data credentials, without an AI conversation,
 an open browser or a personal computer. The weekly bot's November 16 supervised acceptance and PR #102
 remain separate. This test does not satisfy that release gate.
+
+Data bounds use the exchange's actual close (including an early close), not a midnight that may still
+be in the future. SIP historical queries on Basic require an end at least 15 minutes old; capture waits
+until 15 minutes after the prior close and grading until 30 minutes after this session's close.
+Source: https://docs.alpaca.markets/us/docs/market-data-faq (historical data).

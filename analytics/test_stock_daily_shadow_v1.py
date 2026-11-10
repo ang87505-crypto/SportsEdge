@@ -109,8 +109,11 @@ class ShadowTest(unittest.TestCase):
         source = Source()
         data = m.market_data(source, ['AAA'], '2026-11-09', '2026-11-09')
         self.assertEqual(data['bars']['AAA']['d'], ['2026-11-09'])
-        self.assertEqual(source.queries[0]['end'], '2026-11-10T04:59:59+00:00')
+        self.assertEqual(source.queries[0]['end'], '2026-11-09T21:00:00+00:00')
         self.assertEqual(source.queries[0]['asof'], '2026-11-09')
+        early = Source()
+        m.market_data(early, ['AAA'], '2026-11-09', '2026-11-09', '13:00')
+        self.assertEqual(early.queries[0]['end'], '2026-11-09T18:00:00+00:00')
         with self.assertRaisesRegex(ValueError, 'OUTSIDE_WINDOW'):
             m.market_data(source, ['AAA'], '2026-11-10', '2026-11-10')
 
