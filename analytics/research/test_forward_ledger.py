@@ -102,6 +102,10 @@ class Predict(Base):
         self.assertEqual(rec['strategies'][fl.BUFFER]['held_before'], [])
         self.assertEqual(len(rec['input_fingerprint']), 64)
         self.assertEqual(fl.verify_chain(self.ledger), {'2026-11-30': 'VALID'})
+        for sid in (fl.BUFFER, fl.BASELINE):
+            sa = rec['strategies'][sid]['small_account']
+            self.assertEqual(sa['capital'], 1000.0)
+            self.assertEqual(sa['targets_without_a_whole_share'], ['PRICEY'] if 'PRICEY' in rec['strategies'][sid]['targets'] else [])
 
     def test_duplicate_runs_never_change_the_record(self):
         self.predict('2026-11-30T21:30:00')

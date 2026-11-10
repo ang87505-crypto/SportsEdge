@@ -39,6 +39,7 @@ LOOKBACK_SESSIONS = 260            # fingerprinted inputs: the 252-session momen
 DATA_DELAY = timedelta(minutes=20)  # free SIP data: requests must end at least 15 minutes in the past
 CLOSE_SETTLE = timedelta(minutes=10)  # the requested data must reach 10 minutes past the close (closing auction printed)
 READY_SHARE = 0.98                 # of members that traded the session before, the share that must have a signal bar
+SMALL_CAPITAL = 1_000.0
 APPROVAL = 'Owner approval 2026-11-10 (forward-only virtual tracking; no orders, no activation)'
 
 
@@ -267,12 +268,18 @@ def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, membe
     held = _held_before(ledger, signal, valid)
     b_targets, b_meta = buffer_targets(series, members, k, held)
     base_targets = cand.momentum_quality_targets(series, members, k)
+
+    def small_account(targets):
+        # Whole shares only: at $1,000 a 20% slot cannot hold a share priced above about $199.50.
+        bad = sorted(s_ for s_, w in targets.items() if series[s_]['c'][k] * (1 + 0.0025) > w * SMALL_CAPITAL)
+        return {'capital': SMALL_CAPITAL, 'targets_without_a_whole_share': bad,
+                'prices_at_signal_close': {s_: series[s_]['c'][k] for s_ in bad}}
     body = {'ledger': LEDGER, 'label': label, 'approval': APPROVAL, 'prereg': ng.PREREG, 'signal_session': signal,
             'decision_at_utc': cand.close_utc(signal), 'next_open_utc': deadline, 'execution_session': next_session(calendar, signal),
             'created_at': stamp(now), 'data_end_time': end_time, 'input_fingerprint': fp, 'members_missing_signal_bar': missing,
             'code_commit': code_commit, 'strategies': {
-                BUFFER: {'targets': b_targets, 'held_before': held, 'meta': b_meta},
-                BASELINE: {'targets': base_targets}}}
+                BUFFER: {'targets': b_targets, 'held_before': held, 'meta': b_meta, 'small_account': small_account(b_targets)},
+                BASELINE: {'targets': base_targets, 'small_account': small_account(base_targets)}}}
     existing = ledger.prediction(signal)
     if existing is not None:
         same = existing['strategies'] == body['strategies'] and existing['input_fingerprint'] == fp
@@ -327,7 +334,6 @@ def revisions(ledger: Ledger, statuses: dict, sessions, series, symbols) -> dict
 
 
 FORWARD_MIN_SESSIONS, FORWARD_MIN_REBALANCES = 252, 12
-SMALL_CAPITAL = 1_000.0
 COSTS = (10, 25)
 
 
