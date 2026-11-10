@@ -56,7 +56,8 @@ try{
  const model=JSON.parse(readFileSync(new URL('../src/data/props/model_v1.json',import.meta.url),'utf8')) as ModelArtifact;
  if(model.modelVersion!==MODEL_VERSION)emit({status:'MODEL_ARTIFACT_MISMATCH'},1);
  const key=process.env.ODDS_API_KEY??'';
- const deps:CycleDeps={store,odds:kind==='collect'&&key?theOddsApiClient(key):null,espn:espnClient(),model,now,worker,seasonStart:PROPS_SEASON_START};
+ const trigger=process.env.GITHUB_EVENT_NAME==='schedule'?'github-schedule':slotDispatch?'backup-dispatch':'manual';
+ const deps:CycleDeps={store,odds:kind==='collect'&&key?theOddsApiClient(key):null,espn:espnClient(),model,now,worker,seasonStart:PROPS_SEASON_START,trigger};
  const cron=process.env.SCHEDULE_CRON??'';
  const scheduledFor=scheduled?scheduledInstant(cron,now()):null;
  if(scheduled&&!scheduledFor)emit({status:'UNKNOWN_SCHEDULE',cron},1);

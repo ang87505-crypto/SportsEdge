@@ -18,7 +18,7 @@ import {chooseEvents,ACTIVE_BUDGET_POLICY,EVENTS_LIST_COST,eventOddsWorstCost,ca
 import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../props/model.ts';
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
-import {gradeLine,decidePick,decidePickV2,buildEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
+import {gradeLine,decidePick,decidePickV2,buildEntries,explainNoEntries,settleEntry,legResult,PRIZEPICKS_TERMS_V1,type LineOutcome} from '../props/rules.ts';
 import {matchupFeatures} from '../props/features.ts';
 import {predictLearn} from '../props/learn.ts';
 import {loadActiveModel,type ActiveModel} from './props-active-model.ts';
@@ -28,11 +28,21 @@ import {MODEL_VERSION,SELECTION_VERSION,SELECTION_VERSION_V2,NORMALIZER_VERSION,
 
 export type ModelArtifact={modelVersion:string;params:ModelParams;
  players:Record<string,{name:string;lastTeam:string;games:number;minutes:number;points:number;rebounds:number;assists:number}>};
+export type CycleTrigger='github-schedule'|'backup-dispatch'|'manual';
 export type CycleDeps={store:PropsStore;odds:PropsOddsClient|null;espn:EspnClient;model:ModelArtifact;
- now:()=>string;worker:string;seasonStart:string};
+ now:()=>string;worker:string;seasonStart:string;
+ /** What started this run; recorded in the run summary (not used for any decision). */
+ trigger?:CycleTrigger};
 export type CycleResult={kind:'collect'|'settle'|'backfill';outcome:string;runId:number|null;summary:Record<string,unknown>};
 
 const LEASE=900;
+/**
+ * A scheduled collect that starts more than this long after its slot spends nothing (SKIPPED_LATE).
+ * GitHub has started collects 4-7 hours late; at that point most games have started, and because the
+ * daily cap is a rolling 24 hours, a late spend also takes credits from the next day's on-time collect.
+ * The Vercel backup dispatches each collect slot 50-110 minutes after it, inside this window.
+ */
+export const COLLECT_MAX_START_DELAY_S=150*60;
 const COLLECT_HORIZON_MS=10*3600_000;
 /** Extra margin beyond the 10-minute lock buffer for processing time inside one run. */
 const COLLECT_LOCK_MARGIN_MS=OBSERVATION_RULES.lockBufferMs+10*60_000;
@@ -103,8 +113,12 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
  if(start.outcome!=='STARTED'||!start.runId)return {kind:'collect',outcome:start.outcome,runId:start.runId??null,summary:{...start}};
  const runId=start.runId;
  const s:Record<string,unknown>={startDelaySeconds:start.startDelaySeconds??null,abandonedRecovered:start.abandoned??0,
-  modelVersion:MODEL_VERSION,selectionVersion:SELECTION_VERSION};
+  modelVersion:MODEL_VERSION,selectionVersion:SELECTION_VERSION,trigger:d.trigger??null};
  try{
+  if(scheduledFor!==null&&Number(start.startDelaySeconds??0)>COLLECT_MAX_START_DELAY_S){
+   s.reason='started_too_late_for_slot';s.maxStartDelaySeconds=COLLECT_MAX_START_DELAY_S;
+   await finish(d,runId,true,'SKIPPED_LATE',s);return {kind:'collect',outcome:'SKIPPED_LATE',runId,summary:s};
+  }
   if(!d.odds){await finish(d,runId,false,'ODDS_NOT_CONFIGURED',s);return {kind:'collect',outcome:'ODDS_NOT_CONFIGURED',runId,summary:s};}
   const odds=d.odds;
   const state=await budgetState(d);s.budgetBefore=state;
@@ -313,7 +327,7 @@ async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){
  const picks=await d.store.select<{id:number;prediction_id:number}>('props_picks','select=id,prediction_id&status=eq.recorded'+
   '&selection_version=eq.'+selectionVersion+'&decided_at=gt.'+q(ago(now,36*3600_000))+'&limit=2000');
  const result:Record<string,unknown>={};
- if(!picks.length){for(const a of accounts)result[a.platform]={recorded:0,reason:'no_recorded_picks'};return result;}
+ if(!picks.length){for(const a of accounts)result[a.platform]={recorded:0,reason:'no_recorded_picks',noEntryReason:'NO_QUALIFYING_PICKS',entries:[]};return result;}
  const legs=await d.store.select<{pick_id:number}>('props_entry_legs','select=pick_id&pick_id='+inList(picks.map(p=>p.id))+'&limit=2000');
  const used=new Set(legs.map(l=>Number(l.pick_id)));
  const open=picks.filter(p=>!used.has(Number(p.id)));
@@ -338,12 +352,15 @@ async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){
     p_payout_terms:a.platform==='prizepicks'?PRIZEPICKS_TERMS_V1.version:null}));}
    catch(e){if(e instanceof PropsStoreError&&e.refused){done.push({outcome:'REFUSED',code:e.code});continue;}throw e;}
   }
-  result[a.platform]={room,eligiblePicks:cands.filter(c=>c.platform===a.platform).length,entries:done};
+  const why=done.length?null:explainNoEntries(cands,{platform:a.platform,picksPerEntry:a.picks_per_entry,maxEntries:room,nowIso:now,
+   lockBufferMs:OBSERVATION_RULES.lockBufferMs});
+  result[a.platform]={room,eligiblePicks:cands.filter(c=>c.platform===a.platform).length,entries:done,
+   ...(why?{noEntryReason:why.reason,distinctGames:why.distinctGames,usablePicks:why.usablePicks}:{})};
  }
  return result;
 }
 /** UTC instant of the most recent midnight in New York. */
-function etMidnightUtc(now:string){
+export function etMidnightUtc(now:string){
  const day=etDate(now);
  for(const off of [4,5]){const t=new Date(`${day}T00:00:00Z`);t.setUTCHours(off);if(etDate(t.toISOString())===day&&
   etDate(new Date(t.getTime()-1).toISOString())!==day)return t.toISOString();}
@@ -356,7 +373,7 @@ export async function runSettle(d:CycleDeps,slot:string,scheduledFor:string|null
  const start=await begin(d,kind,slot,scheduledFor);
  if(start.outcome!=='STARTED'||!start.runId)return {kind,outcome:start.outcome,runId:start.runId??null,summary:{...start}};
  const runId=start.runId;const now=d.now();
- const s:Record<string,unknown>={startDelaySeconds:start.startDelaySeconds??null,abandonedRecovered:start.abandoned??0};
+ const s:Record<string,unknown>={startDelaySeconds:start.startDelaySeconds??null,abandonedRecovered:start.abandoned??0,trigger:d.trigger??null};
  try{
   // Observations awaiting a result (locked within the last 7 days).
   const pending=await d.store.select<ObsRow>('props_observations','select='+OBS_COLS+'&lock_at=lt.'+q(now)+
