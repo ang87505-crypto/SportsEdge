@@ -72,11 +72,17 @@ shows whether it passed.
 
 ## First supervised stock paper session (needs the owner)
 
+**If chat says the account is ready or armed while paper orders are disabled:** your Start action has
+already been recorded. The account check and the permission to send orders are separate. This is
+**planning only**; a successful execute worker may have made a shadow plan or skipped outside market
+hours. Check its result and actual order/fill records. Pressing Start again does not enable the release.
+
 The stock gate requires all of the following on one real session, in order. The weekly picks are made on the
 first market day of the week, so the earliest qualifying session is **Monday 2026-11-16**:
 
 1. Early that morning: open https://sports-edge-eta.vercel.app/stocks/paper-auto, sign in with the owner key,
-   confirm the weekly decision shows targets and the fresh account check is clean, and press **Start**.
+   confirm the weekly decision shows targets and the fresh account check is clean. If owner permission is
+   already **ARMED**, Start is recorded. Otherwise press **Start** when you are ready for the paper test.
 2. After the market opens (7:30 AM MT): GitHub → Actions → *Recurring PAPER worker (manual)* →
    **Run workflow** → branch **`release/stock-paper-orders`** → kind **execute**, experiment
    `stock-v2-weekly-1`. Check the Autopilot page for real paper intents and fills.

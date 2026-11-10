@@ -1,6 +1,7 @@
 /** Pure answers over existing stock dashboard read models. No orders or network. */
 import type {PaperAutoLedger,UnregisteredLedger} from '../stocks/paper-auto-ledger.ts';
 import {forwardPerformance} from '../stocks/paper-auto-performance.ts';
+import {activity} from '../stocks/autopilot-view.ts';
 import {usdCents,pct} from '../format.ts';
 import type {normalizePaperSnapshot} from '../server/alpaca-paper-reader.ts';
 import type {Reply,Card} from './answer.ts';
@@ -13,7 +14,8 @@ export type PaperSnapshot=ReturnType<typeof normalizePaperSnapshot>;
 export type BrokerView={state:'ready';snapshot:PaperSnapshot}|{state:'owner_required'|'unavailable'};
 const stamp=(s:string)=>new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(s));
 const links=(items:{label:string;href:string}[]):Card=>({kind:'links',items});
-const stockLinks=()=>links([{label:'Paper autopilot',href:'/stocks/paper-auto'},{label:'Paper account and positions',href:'/stocks/alpaca'},{label:'Strategy research',href:'/stocks/research'}]);
+const stockLinks=(setup=false)=>links([{label:'Paper autopilot',href:'/stocks/paper-auto'},{label:'Paper account and positions',href:'/stocks/alpaca'},{label:'Strategy research',href:'/stocks/research'},
+ ...(setup?[{label:'Paper-order setup steps',href:'https://github.com/ang87505-crypto/SportsEdge/blob/main/docs/AUTOMATION_OPERATIONS_2026_11_10.md#first-supervised-stock-paper-session-needs-the-owner'}]:[])]);
 const context=(q:QuestionRoute):AssistantContext=>({domain:q.domain??undefined,topic:q.topic,symbol:q.symbol,strategyId:q.strategyId});
 const reply=(q:QuestionRoute,text:string,cards:Card[]=[],privateData=false):Reply=>({text,cards,suggestions:['Stock results','Stock bot status','Research results',"Tonight's picks"],context:context(q),private:privateData});
 export function stockAnswer(q:QuestionRoute,accounts:StockAccounts,broker:BrokerView|null,nowIso:string,range:AssistantContext['range']=undefined):Reply{
@@ -27,6 +29,10 @@ export function stockAnswer(q:QuestionRoute,accounts:StockAccounts,broker:Broker
  if(q.topic==='holdings')return reply(q,'I cannot verify current broker positions right now. Planned targets and fill records do not establish the complete current holdings. Open the Paper account page for connection status.',[stockLinks()],accounts.state==='ready');
  if(accounts.state!=='ready')return reply(q,'The stock ledger is unavailable right now. That does not mean the portfolio is empty or its profit is zero. Research results can still be read separately.',[stockLinks()]);
  const parts:string[]=[];
+ if(q.topic!=='performance')parts.push(accounts.brokerWritesEnabled===false?
+  'Planning only. Paper trading is not enabled yet: this deployment cannot submit paper buy or sell orders.':
+  accounts.brokerWritesEnabled===true?'Paper orders are released. Owner permission and account checks still determine whether a run can trade.':
+  'Paper-order permission is unknown. I cannot confirm whether this deployment can submit paper orders.');
  const facts:{label:string;value:string;detail?:string}[]=[];
  for(const l of accounts.ledgers){
   if(!l.registered){parts.push(`${l.experimentId}: not registered.`);continue;}
@@ -60,12 +66,17 @@ export function stockAnswer(q:QuestionRoute,accounts:StockAccounts,broker:Broker
    parts.push(`${l.experimentId} uses ${l.status.modelVersion}. The weekly momentum model evaluates completed history, skips the latest month and checks the long-term trend. Last recorded blockers: ${l.status.lastCheckBlockers.join(', ')||'none reported'}. Research challengers have separate evidence and are not this account's results.`);
   }else{
    const run=[...l.runs].sort((a,b)=>b.startedAt.localeCompare(a.startedAt))[0];
-   parts.push(`${l.experimentId}: ${l.status.state}, gate ${l.status.gateMode} (${l.status.gateReason}), checked ${stamp(l.status.checkedAt)}. ${run?`Last recorded ${run.kind} run: ${run.status}${run.finishedAt?' at '+stamp(run.finishedAt):''}. `:''}Blockers: ${l.status.lastCheckBlockers.join(', ')||'none reported'}. ${l.status.unresolvedIntents} unresolved intents; ${l.status.unacknowledgedCriticalAlerts} unacknowledged critical alerts.`);
+   const recent=activity(l,1)[0];
+   const permission=l.status.gateMode==='ARMED'?'Your Start is recorded (owner permission armed).':
+    `Owner permission: ${l.status.gateMode.toLowerCase()}.`;
+   parts.push(`${l.experimentId}: account check ${l.status.state==='READY'?'passed':l.status.state.toLowerCase()}, checked ${stamp(l.status.checkedAt)}. ${permission} ${run?`Last recorded ${run.kind} worker: ${recent.result}${run.finishedAt?' at '+stamp(run.finishedAt):''}. Worker status: ${run.status}. `:''}Account-check blockers: ${l.status.lastCheckBlockers.join(', ')||'none reported'}. ${l.status.unresolvedIntents} unresolved intents; ${l.status.unacknowledgedCriticalAlerts} unacknowledged critical alerts.`);
   }
  }
- if(!parts.length)parts.push('No configured stock experiments were returned.');
- if(q.topic!=='performance')parts.push(`Paper broker writes: ${accounts.brokerWritesEnabled===null?'not reported':accounts.brokerWritesEnabled?'enabled':'disabled'}. A planned schedule does not prove a successful run.`);
- const out=reply(q,parts.join('\n\n'),[...(facts.length?[{kind:'facts' as const,items:facts}]:[]),stockLinks()],true);
+ if(!accounts.ledgers.length)parts.push('No configured stock experiments were returned.');
+ if(q.topic!=='performance')parts.push(accounts.brokerWritesEnabled===false?
+  'Next step: open Paper-order setup steps for the supervised test and release checklist. Pressing Start again does not enable paper orders. A successful worker run is not proof that an order was placed.':
+  'A successful worker run is not proof that an order was placed. Check recorded orders and fills on the Paper account page. Planned times do not prove a run.');
+ const out=reply(q,parts.join('\n\n'),[...(facts.length?[{kind:'facts' as const,items:facts}]:[]),stockLinks(accounts.brokerWritesEnabled===false&&q.topic!=='performance')],true);
  out.context.range=range;return out;
 }
 const checkNames:Record<string,string>={max_drawdown_within_35pct:'drawdown exceeded 35%',sharpe_above_spy_buy_and_hold:'risk-adjusted return did not beat SPY',cagr_above_exposure_matched_spy:'return did not beat exposure-matched SPY',sharpe_above_weekly:'risk-adjusted return did not beat the weekly strategy'};

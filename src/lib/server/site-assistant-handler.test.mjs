@@ -120,6 +120,32 @@ test('plans do not become holdings or fills, and chat actions remain read-only',
  assert.match(stockAnswer({domain:'stocks',topic:'holdings'},account(),{state:'unavailable'},NOW).text,/cannot verify/);
  assert.match(stockAnswer({domain:'stocks',topic:'controls'},account(),null,NOW).text,/has not submitted/);
 });
+test('armed account and successful worker never imply trading while the release is off',async()=>{
+ const a=account(),l=a.ledgers[0];
+ l.status={...l.status,state:'READY',gateMode:'ARMED',lastCheckBlockers:[],unacknowledgedCriticalAlerts:0};
+ l.runs=[{kind:'execute',status:'succeeded',startedAt:NOW,finishedAt:NOW,summary:'SHADOW_PLAN_ONLY'}];
+ const s=setup(true);s.ports.accounts=async()=>a;
+ const r=await ask('Stock bot status',s);
+ assert.match(r.reply.text,/^Planning only\. Paper trading is not enabled yet/);
+ assert.match(r.reply.text,/Your Start is recorded/);
+ assert.match(r.reply.text,/Planned trades \(practice mode: nothing sent\)/);
+ assert.match(r.reply.text,/Account-check blockers: none reported/);
+ assert.match(r.reply.text,/Pressing Start again does not enable paper orders/);
+ assert.match(r.reply.text,/successful worker run is not proof that an order was placed/);
+ assert.doesNotMatch(r.reply.text,/READY, gate ARMED/);
+ assert.ok(r.reply.cards.flatMap(c=>c.items??[]).some(i=>i.label==='Paper-order setup steps'));
+ assert.equal(r.reply.private,true);
+});
+test('stock status preserves owner pauses and never infers order permission from missing release data',()=>{
+ const a=account();
+ a.brokerWritesEnabled=true;
+ const enabled=stockAnswer({domain:'stocks',topic:'automation'},a,null,NOW);
+ assert.match(enabled.text,/Paper orders are released/);
+ assert.match(enabled.text,/Owner permission: paused/);
+ assert.doesNotMatch(enabled.text,/Your Start is recorded/);
+ a.brokerWritesEnabled=null;
+ assert.match(stockAnswer({domain:'stocks',topic:'automation'},a,null,NOW).text,/permission is unknown/);
+});
 test('historical continuous, halted and forward research are separately labeled',()=>{
  const r=researchAnswer({domain:'research',topic:'explain',strategyId:'momentum-quality-paper-v1'},{summary:saved,mode:'saved',checkedAt:NOW});
  assert.match(r.text,/Saved research report; live feed unavailable/);assert.match(r.text,/16\.4%/);assert.match(r.text,/3\.4%/);
