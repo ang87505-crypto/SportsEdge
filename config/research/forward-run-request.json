@@ -1,0 +1,5 @@
+{
+  "modes": ["audit", "dry-run", "predict", "evaluate"],
+  "signal": "2026-10-30",
+  "reason": "Readiness run before any schedule: historical audit, a dry run on the 2026-10-30 month-end into a scratch folder, and a no-op predict/evaluate on the empty ledger"
+}
