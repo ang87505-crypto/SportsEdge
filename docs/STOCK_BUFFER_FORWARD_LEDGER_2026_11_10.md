@@ -82,14 +82,22 @@ these tracks side by side:
 
 ## 4. Real-data readiness run
 
-Actions runs [42872326374](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42872326374) and
-[42873224730](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42873224730).
+Actions runs:
+- [42872326374](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42872326374): first dry run, no-op
+  predict and evaluate, audit;
+- [42873224730](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42873224730): audit with the fixed-path
+  estimate;
+- [42873865782](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42873865782): dry run on the final code.
 
 - **Dry run on the 2026-10-30 month-end, as if 40 minutes after its close (scratch folder and artifact only, label
   `DRY_RUN`):**
   - **Result:** `RECORDED`, deadline `2026-11-02T14:30:00Z`, input fingerprint `ff808ae5…`.
   - **Members missing a signal bar:** 0.
   - **Targets:** buffer and baseline both ADI, AMAT, FCX, MPC, NUE. They match because nothing was held before.
+  - **Reproducible:** the final-code rerun produced the same input fingerprint.
+  - **$1,000 account:** **4 of the 5 targets cannot be bought** as one whole share: ADI $417.11, AMAT $390.09,
+    MPC $444.73 and NUE $273.87 against a $200 slot. Only FCX fits. A $1,000 version of this strategy would be
+    mostly cash. The record states this rather than hiding it.
   - **What it does not test:** the bars come from today's archive, so it rehearses the data path and the record,
     not real-time timing.
 - **No-op predict on the real ledger:** `NOT_A_SIGNAL_SESSION` (2026-11-10). This created the ledger branch.
