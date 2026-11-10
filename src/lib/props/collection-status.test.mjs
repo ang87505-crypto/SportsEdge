@@ -65,3 +65,17 @@ test('tick mode: slates show examined, selected, captured, lines and missed wind
  const later=collectionStatus({...base,nowIso:'2026-11-13T04:00:00Z',runs:[],credits:[],plans,captures,ticksReleased:true});
  assert.ok(later.missing.some(m=>m.what==='AevtTICK0002 @ HevtTICK0002'&&/No tick ran/.test(m.why)));
 });
+
+test('provider-actuals policy shows effective credits and correct next release',()=>{
+ const credits=[
+  {credits:1,effective_credits:0,reserved_at:'2026-11-10T02:00:08Z'},
+  {credits:3,effective_credits:2,reserved_at:'2026-11-10T02:00:09Z'},
+  {credits:3,reserved_at:'2026-11-10T02:00:10Z'}, // unknown provider cost still reserved
+ ];
+ const policy={...BUDGET_POLICY_V2,countsProviderActuals:true};
+ const s=collectionStatus({...base,credits,policy});
+ assert.deepEqual([s.budget.used24h,s.budget.used30d,s.budget.remaining24h,s.budget.remaining30d],[5,5,2,195]);
+ assert.equal(s.budget.countsProviderActuals,true);
+ assert.equal(s.budget.nextRelease.at,'2026-11-11T02:00:09.000Z'); // free event doesn't delay the next actual credit release
+ assert.equal(s.budget.nextRelease.credits,5);
+});
