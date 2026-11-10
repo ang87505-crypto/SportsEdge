@@ -10,7 +10,7 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  const stocks=/\b(stocks?|portfolio|alpaca|shares?|equity|autopilot|oxy|altria|usb|bmy|csx)\b/.test(t);
  const research=/\b(qmom|berkshire|buffett|momentum|research|backtest|strategies|strategy|benchmark|spy|challengers?)\b/.test(t)||
   (stocks&&/\b(algorithm|model|learning|learn)\b/.test(t));
- const general=/\b(both|everything|all systems|whole site|site status)\b/.test(t);
+ const general=/\b(both|everything|all systems|whole site|site status|background jobs?|jobs?|workers?|monitor|github actions|cron)\b/.test(t);
  let domain:QuestionRoute['domain']=sports&&(stocks||research)||general?'all':research?'research':stocks?'stocks':sports?'sports':null;
  const follow=/^(why|and|also|what about|how about|explain|is it|did it|when|how much|what changed|what is next|what happened|how did|show me)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);

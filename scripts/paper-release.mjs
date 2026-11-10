@@ -138,7 +138,7 @@ export function parseManualReceipts(log){
  }
  return out;
 }
-async function manualStockReceipts(gh,pin){
+export async function manualStockReceipts(gh,pin){
  const runs=await gh.request(path('actions/workflows/paper-auto-worker.yml/runs?branch='+
   encodeURIComponent(pin.branch)+'&event=workflow_dispatch&status=success&per_page=30'));
  const receipts=[];
