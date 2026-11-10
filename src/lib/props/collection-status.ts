@@ -11,13 +11,13 @@ import {NO_ENTRY_TEXT,type NoEntryReason} from './rules.ts';
 
 export type CollectionInput={nowIso:string;
  runs:(LedgerRun&{id:number})[];
- credits:{credits:number;reserved_at:string}[];
+ credits:{credits:number;reserved_at:string;effective_credits?:number}[];
  providerRemaining:number|null;
  runCounts:RunCounts|null;
  /** null = the capture tables are not migrated (shown as unavailable). */
  plans:(PlanRow&{planned_at:string})[]|null;
  captures:(CaptureRow&{run_id:number;lines_by_platform?:Record<string,number>|null;minutes_to_tip?:number|null})[]|null;
- policy:{dailyCredits:number;monthlyCredits:number;providerFloor:number};
+ policy:{dailyCredits:number;monthlyCredits:number;providerFloor:number;countsProviderActuals?:boolean};
  ticksReleased:boolean;scheduledRunsEnabled:boolean;controlState:string|null};
 
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
@@ -45,13 +45,16 @@ export function collectionStatus(x:CollectionInput){
  });
 
  // Rolling budget (reservations as recorded) and when the oldest in-window credits roll off.
+ const charge=(c:{credits:number;effective_credits?:number})=>Number(c.effective_credits??c.credits);
  const in24=x.credits.filter(c=>Date.parse(c.reserved_at)>dayAgo).sort((a,b)=>a.reserved_at.localeCompare(b.reserved_at));
- const used24h=in24.reduce((a,c)=>a+Number(c.credits),0),used30d=x.credits.reduce((a,c)=>a+Number(c.credits),0);
- const nextRelease=in24.length?{at:new Date(Date.parse(in24[0].reserved_at)+86400_000).toISOString(),
-  credits:in24.filter(c=>c.reserved_at.slice(0,16)===in24[0].reserved_at.slice(0,16)).reduce((a,c)=>a+Number(c.credits),0)}:null;
+ const used24h=in24.reduce((a,c)=>a+charge(c),0),used30d=x.credits.reduce((a,c)=>a+charge(c),0);
+ const pendingRelease=in24.filter(c=>charge(c)>0);
+ const nextRelease=pendingRelease.length?{at:new Date(Date.parse(pendingRelease[0].reserved_at)+86400_000).toISOString(),
+  credits:pendingRelease.filter(c=>c.reserved_at.slice(0,16)===pendingRelease[0].reserved_at.slice(0,16)).reduce((a,c)=>a+charge(c),0)}:null;
  const budget={daily:x.policy.dailyCredits,monthly:x.policy.monthlyCredits,used24h,used30d,
   remaining24h:Math.max(0,x.policy.dailyCredits-used24h),remaining30d:Math.max(0,x.policy.monthlyCredits-used30d),
-  providerRemaining:x.providerRemaining,providerFloor:x.policy.providerFloor,nextRelease};
+  providerRemaining:x.providerRemaining,providerFloor:x.policy.providerFloor,nextRelease,
+  countsProviderActuals:x.policy.countsProviderActuals===true};
 
  // Slates from capture plans: games examined, selected, captured, lines, misses.
  const plans=x.plans??[],caps=x.captures??[];
