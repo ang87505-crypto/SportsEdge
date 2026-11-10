@@ -30,6 +30,10 @@ export function scheduledInstant(cron:string,nowIso:string):string|null{
  return t.toISOString();
 }
 export const slotKey=(kind:string,scheduled:string)=>`${kind}-${scheduled.slice(0,13)}`;
+/** True when `cron` is one of the release's scheduled slots for exactly this run kind. */
+export function slotCronMatches(kind:string,cron:string):boolean{
+ return PROPS_SCHEDULE.some(s=>s.cron===cron&&s.kind===kind);
+}
 
 export function nextPlannedRuns(nowIso:string,count=4){
  const now=Date.parse(nowIso);const out:{kind:ScheduledKind;at:string}[]=[];

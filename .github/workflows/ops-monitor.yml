@@ -1,0 +1,93 @@
+# Operations monitor: replaces chat reminders and temporary watchers with a deployed check.
+# Reads run history and real receipts, probes the live site, checks credential presence/expiry and
+# publishes ops-status/status.json for the dashboard and chat. Opens one GitHub issue when something needs
+# attention (GitHub emails the owner) and closes it when everything is healthy again. Read-only for every
+# job, control and account: it never dispatches a job, changes a control, places an order or prints a secret.
+name: Operations monitor
+on:
+  schedule:
+    - cron: '7 1,5,9,13,17,21 * * *'
+  workflow_run:
+    workflows:
+      - NBA props paper cycle
+      - NBA props research receipts
+      - NBA props learning loop
+      - Recurring PAPER weekly decision (manual)
+      - Recurring PAPER worker (manual)
+      - Research collect (nightly)
+      - Research evaluate (monthly)
+      - Independent PAPER release checks
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/ops-monitor*
+      - config/ops/**
+      - .github/workflows/ops-monitor.yml
+      - .github/scripts/ops-status-branch.sh
+permissions:
+  contents: read
+concurrency:
+  group: ops-monitor
+  cancel-in-progress: false
+jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test scripts/ops-monitor.test.mjs
+  monitor:
+    if: github.event_name != 'pull_request' && github.repository == 'ang87505-crypto/SportsEdge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write    # the ops-status branch only
+      issues: write      # one alert issue
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Recheck the monitor before giving it credentials
+        run: node --test scripts/ops-monitor.test.mjs
+      - name: Check jobs, receipts, credentials and the live site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
+          SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
+          # Presence only: these are booleans, never values.
+          HAS_SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL != '' }}
+          HAS_SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY != '' }}
+          HAS_ODDS_API_KEY: ${{ secrets.ODDS_API_KEY != '' }}
+          HAS_SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL != '' }}
+          HAS_SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY != '' }}
+          HAS_ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID != '' }}
+          HAS_ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY != '' }}
+          HAS_SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT != '' }}
+          HAS_SPORTSEDGE_PAPER_AUTO_OWNER_REF: ${{ secrets.SPORTSEDGE_PAPER_AUTO_OWNER_REF != '' }}
+        run: |
+          set -o pipefail
+          node --experimental-strip-types scripts/ops-monitor.mjs ops-out | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish status for the dashboard and chat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/ops-status-branch.sh ops-out
+      - name: Open, update or close the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ops-alert.mjs ops-out/status.json

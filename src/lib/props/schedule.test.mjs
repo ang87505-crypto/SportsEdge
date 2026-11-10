@@ -36,3 +36,17 @@ test('released schedule stays paper-only and fails closed without configuration'
   assert.equal(JSON.parse(o.stdout).status,'OWNER_ACTION_NOT_SCHEDULABLE');
  }
 });
+
+test('backup slot dispatch: only a release cron of the same kind names a slot', async () => {
+  const {slotCronMatches,scheduledInstant,slotKey}=await import('./schedule.ts');
+  assert.equal(slotCronMatches('collect','10 19 * * *'),true);
+  assert.equal(slotCronMatches('settle','20 9 * * *'),true);
+  assert.equal(slotCronMatches('settle','10 19 * * *'),false);
+  assert.equal(slotCronMatches('collect','0 19 * * *'),false);
+  assert.equal(slotCronMatches('backfill','20 9 * * *'),false);
+  // A backup run an hour after the slot gets the same key as the on-time scheduled run.
+  const onTime=slotKey('collect',scheduledInstant('10 19 * * *','2026-11-10T19:12:00Z'));
+  const backup=slotKey('collect',scheduledInstant('10 19 * * *','2026-11-10T20:40:00Z'));
+  assert.equal(onTime,'collect-2026-11-10T19');
+  assert.equal(backup,onTime);
+});

@@ -11,6 +11,8 @@ import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {handlePaperAutoGet} from './paper-auto-owner.ts';
 import {getAlpacaPaperSnapshot} from './alpaca-paper-reader.ts';
 import {loadStockResearch} from './stock-research-load.ts';
+import {loadOpsStatus} from './ops-status-load.ts';
+import {opsSummaryText,type OpsView} from '../ops/status.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
 export function assistantAccess(cookie:string|undefined):AssistantAccess{
@@ -19,10 +21,12 @@ export function assistantAccess(cookie:string|undefined):AssistantAccess{
 }
 export type SiteRequest={url:string;contentType:string|null;origin:string|null;ownerCookie?:string;text:()=>Promise<string>};
 export type SitePorts={access:AssistantAccess;sports:(nowIso:string)=>Promise<Raw>;
- accounts:()=>Promise<StockAccounts>;broker:()=>Promise<BrokerView>;research:(nowIso:string)=>Promise<ResearchView>};
+ accounts:()=>Promise<StockAccounts>;broker:()=>Promise<BrokerView>;research:(nowIso:string)=>Promise<ResearchView>;
+ /** Public background-job status from the operations monitor. */
+ ops?:(nowIso:string)=>Promise<OpsView>};
 export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):SitePorts{
  const access=assistantAccess(req.ownerCookie);
- return {access,sports,research:loadStockResearch,
+ return {access,sports,research:loadStockResearch,ops:loadOpsStatus,
   async accounts(){
    if(!access.ownerAccess)return {state:'owner_required',ledgers:[],brokerWritesEnabled:null};
    const response=await handlePaperAutoGet({...req,ownerCookie:req.ownerCookie},env);
@@ -79,8 +83,13 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());
  if(q.domain==='research')return respond(await research());
- const results=await Promise.allSettled([sports(),stocks(),research()]);
- const names=['Sports','Stock account','Stock research'];
+ async function jobs():Promise<Reply>{
+  if(!ports.ops)return simple('Background job status is not connected here.',{domain:'all'});
+  try{return simple(opsSummaryText(await ports.ops(nowIso)),{domain:'all'});}
+  catch{return simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'});}
+ }
+ const results=await Promise.allSettled([sports(),stocks(),research(),jobs()]);
+ const names=['Sports','Stock account','Stock research','Background jobs'];
  const replies=results.map((r,i)=>r.status==='fulfilled'?r.value:simple(names[i]+' records are unavailable.'));
  return respond({text:replies.map((r,i)=>names[i]+'\n'+r.text).join('\n\n'),cards:replies.flatMap(r=>r.cards),
   suggestions:["Tonight's picks",'Stock results','Research results','Stock bot status'],context:{domain:'all',topic:q.topic},private:replies.some(r=>r.private)});

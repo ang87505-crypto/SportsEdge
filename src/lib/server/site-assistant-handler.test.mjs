@@ -167,3 +167,20 @@ test('client session metadata expires and malformed access cannot reveal private
  for(const v of [{ownerAccess:true,ownerExpiresAt:now},{ownerAccess:true,ownerExpiresAt:now+31*60000},{ownerAccess:'true',ownerExpiresAt:now+1000},null])
   assert.equal(parseOwnerAccess(v,now).ownerAccess,false);
 });
+
+test('background jobs: combined status reports real runs and labels planned times; outages stay isolated', async()=>{
+ const s=setup();
+ const jobs={id:'research-collect',label:'Strategy research: nightly collection',area:'research',required:true,status:'PENDING_FIRST_RUN',
+  detail:'No run yet',historyUrl:'https://github.com/ang87505-crypto/SportsEdge/actions/workflows/research-collect.yml',
+  lastRun:null,lastSuccess:null,lastFailure:null,running:null,slots7d:{due:0,missed:0,lastMissedAt:null},nextPlanned:['2026-11-10T02:17:00Z'],note:null};
+ s.ports.ops=async()=>({mode:'live',checkedAt:NOW,monitorStale:false,status:{schemaVersion:'ops-status-v1',generatedAt:'2026-11-09T22:50:00Z',
+  monitorRun:null,overall:{state:'OK',attention:[]},jobs:[jobs],blockers:[],site:{url:'x',checkedAt:NOW,ok:true,checks:[]},evidence:{},credentials:[]}});
+ assert.equal(routeQuestion('Did the background jobs run?',null).domain,'all');
+ const r=await ask('Did the background jobs run?',s);
+ assert.match(r.reply.text,/Background jobs\n/);
+ assert.match(r.reply.text,/no successful run yet; next planned .*\(planned, not yet run\)/);
+ s.ports.ops=async()=>{throw new Error('feed down');};
+ const down=await ask('Is everything running?',s);
+ for(const h of ['Sports','Stock account','Stock research','Background jobs'])assert.ok(down.reply.text.includes(h));
+ assert.match(down.reply.text,/Planned schedules are not evidence of a run/);
+});

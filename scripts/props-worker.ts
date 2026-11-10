@@ -14,7 +14,7 @@ import {propsStore,PropsStoreError} from '../src/lib/server/props-store.ts';
 import {theOddsApiClient} from '../src/lib/server/props-odds-client.ts';
 import {espnClient} from '../src/lib/server/props-espn-client.ts';
 import {runCollect,runSettle,type ModelArtifact,type CycleDeps} from '../src/lib/server/props-cycle.ts';
-import {PROPS_RELEASE,scheduledInstant,slotKey} from '../src/lib/props/schedule.ts';
+import {PROPS_RELEASE,scheduledInstant,slotKey,slotCronMatches} from '../src/lib/props/schedule.ts';
 import {MODEL_VERSION,PROPS_SEASON_START} from '../src/lib/props/contract.ts';
 
 function emit(v:Record<string,unknown>,code:number):never{process.stdout.write(JSON.stringify(v)+'\n');process.exit(code);}
@@ -22,8 +22,12 @@ const arg=(n:string)=>{const i=process.argv.indexOf('--'+n);return i>0?process.a
 const kind=process.argv[2]??'';
 const KINDS=['collect','settle','backfill','status','pause','resume','stop'];
 if(!KINDS.includes(kind))emit({status:'USAGE',usage:'props-worker.ts <'+KINDS.join('|')+'>'},2);
-const scheduled=process.env.GITHUB_EVENT_NAME==='schedule';
+// A backup trigger (the Vercel scheduler) may dispatch a run for a named scheduled slot. It gets the same
+// slot key as the GitHub schedule, so whichever starts second is recorded as DUPLICATE and does nothing.
+const slotDispatch=process.env.GITHUB_EVENT_NAME==='workflow_dispatch'&&!!process.env.SCHEDULE_CRON;
+const scheduled=process.env.GITHUB_EVENT_NAME==='schedule'||slotDispatch;
 if(scheduled&&!['collect','settle'].includes(kind))emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind},1);
+if(slotDispatch&&!slotCronMatches(kind,process.env.SCHEDULE_CRON??''))emit({status:'UNKNOWN_SCHEDULE',kind,cron:process.env.SCHEDULE_CRON},1);
 if(scheduled&&(PROPS_RELEASE.scheduledRunsEnabled as boolean)!==true)emit({status:'SCHEDULED_RUNS_RELEASED_OFF',kind,providerCalls:0},0);
 if(!PROPS_RELEASE.paperOnly||PROPS_RELEASE.realMoneyEnabled)emit({status:'RELEASE_INVALID'},1);
 

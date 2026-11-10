@@ -4,6 +4,7 @@ import {connection} from 'next/server';
 import {Badge,Details,Empty,Loading,Metric,MetricGrid,PageHeading,Panel} from '@/components/ui';
 import {AutomationRefresh} from '@/components/automation-refresh';
 import {AutopilotSummary} from '@/components/autopilot-summary';
+import {OpsStatusPanel} from '@/components/ops-status-panel';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
@@ -35,6 +36,7 @@ export default function AutomationPage(){
     </div>
    </Panel>
   </div>
+  <div className="mt-12"><Suspense fallback={<Panel title="Background jobs"><Loading label="Reading the operations monitor…"/></Panel>}><OpsStatusPanel/></Suspense></div>
   <Panel title="What the controls mean" className="mt-12">
    <div className="automation-guide">
     <div><h3>Already running</h3><p>PrizePicks collects lines twice each afternoon and grades results overnight and again in the morning, every day, with no click needed. Stocks needs one owner Start after checking the paper account.</p></div>
