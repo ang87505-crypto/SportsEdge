@@ -7,8 +7,8 @@ Research only. No candidate is active and broker writes stay off. Pre-registrati
 | Source | Attempts | Last status | Last success | Failures |
 |---|---|---|---|---|
 | openfigi-cusip | 6 | OK | 2026-11-09T22:37:39Z | 0 |
-| qmom-holdings | 10 | OK | 2026-11-10T06:31:35Z | 2 |
-| sec-edgar-13f | 353 | OK | 2026-11-10T06:31:35Z | 156 |
+| qmom-holdings | 11 | OK | 2026-11-10T09:59:38Z | 2 |
+| sec-edgar-13f | 356 | OK | 2026-11-10T09:59:38Z | 156 |
 
 ## Historical evaluation (2017-02-01 to 2026-11-06, $30,000)
 

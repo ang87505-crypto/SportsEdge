@@ -22,3 +22,7 @@
 {"at": "2026-11-10T06:31:50Z", "command": "daily-forward", "file": "research-data/results/daily-forward-2026-11-10T063150Z.json", "status": {"daily-momentum5d-v1": "NOT STARTED", "daily-reversal5-v1": "NOT STARTED", "daily-spy-trend50-v1": "NOT STARTED"}}
 {"at": "2026-11-10T06:31:57Z", "command": "tom-historical", "dataset_fingerprint": "5143ba7830eae5cfa6cbbc11fe7a12bb29e5cd32e0373ff607d8e1ab85300838", "file": "research-data/results/tom-historical-2026-11-10T063157Z.json", "overall": "NONE QUALIFIES"}
 {"at": "2026-11-10T06:33:14Z", "command": "tom-forward", "file": "research-data/results/tom-forward-2026-11-10T063314Z.json", "status": "NOT STARTED"}
+{"at": "2026-11-10T09:59:38Z", "command": "collect", "requests": 3, "result": {"cusips_mapped": 41, "cusips_unmapped": 10, "qmom": "OK", "sec": "OK", "sec_new_filings": 0}}
+{"at": "2026-11-10T09:59:43Z", "command": "forward", "status": "NO_FORWARD_SESSIONS_YET"}
+{"at": "2026-11-10T09:59:51Z", "command": "daily-forward", "file": "research-data/results/daily-forward-2026-11-10T095951Z.json", "status": {"daily-momentum5d-v1": "NOT STARTED", "daily-reversal5-v1": "NOT STARTED", "daily-spy-trend50-v1": "NOT STARTED"}}
+{"at": "2026-11-10T09:59:55Z", "command": "tom-forward", "file": "research-data/results/tom-forward-2026-11-10T095955Z.json", "status": "NOT STARTED"}
