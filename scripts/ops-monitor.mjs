@@ -124,10 +124,21 @@ async function releaseEvidence(){
 // ---------- live site ----------
 async function siteChecks(){
  const base=cfg.site,checks=[];
+ const pending=[];
  async function check(name,fn){
   const t0=Date.now();
   try{const detail=await fn();checks.push({name,ok:true,ms:Date.now()-t0,detail:detail??null});}
-  catch(e){checks.push({name,ok:false,ms:Date.now()-t0,detail:String(e.message).slice(0,120)});}
+  catch(e){checks.push({name,ok:false,ms:Date.now()-t0,detail:String(e.message).slice(0,120)});pending.push([name,fn]);}
+ }
+ // A deployment that is still rolling out (or a cold start) should not raise an alert: retry failures once.
+ async function retryFailures(){
+  if(!pending.length)return;
+  await delay(60_000);
+  for(const [name,fn] of pending){
+   const i=checks.findIndex(c=>c.name===name),t0=Date.now();
+   try{const detail=await fn();checks[i]={name,ok:true,ms:Date.now()-t0,detail:(detail??'')+' (passed on retry)'};}
+   catch(e){checks[i]={name,ok:false,ms:Date.now()-t0,detail:String(e.message).slice(0,100)+' (also failed on retry)'};}
+  }
  }
  const page=(path,text)=>async()=>{const r=await getJson(base+path);if(r.status!==200)throw new Error('HTTP '+r.status);
   if(text&&!r.text.includes(text))throw new Error('missing "'+text+'"');return 'HTTP 200';};
@@ -144,7 +155,8 @@ async function siteChecks(){
   if(r?.context?.domain!=='research')throw new Error('not routed to research');
   const f=await ask('Why?',r.context);if(!/Failed checks|failed|check/i.test(f?.text??''))throw new Error('follow-up lost its topic');return 'answered';});
  await check('Chat: combined status',async()=>{const r=await ask('Is everything running?');
-  for(const h of ['Sports','Stock account','Stock research'])if(!r?.text?.includes(h))throw new Error('missing '+h);return 'answered';});
+  for(const h of ['Sports','Stock account','Stock research','Background jobs'])if(!r?.text?.includes(h))throw new Error('missing '+h);
+  if(/Background jobs\n(The operations monitor has not published|Background job status is unavailable)/.test(r.text))throw new Error('chat cannot read the job status');return 'answered';});
  await check('Owner protection: stock account in chat',async()=>{const r=await ask('Stock results');
   if(!/Sign in/i.test(r?.text??''))throw new Error('stock account answered without owner sign-in');if(r.private)throw new Error('private flag on anonymous reply');return 'requires sign-in';});
  await check('Owner protection: session probe',async()=>{const r=await getJson(base+'/api/assistant');
@@ -155,6 +167,7 @@ async function siteChecks(){
   if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
  await check('Owner protection: backup scheduler',async()=>{const r=await getJson(base+'/api/internal/scheduler/ops-monitor',{attempts:1});
   if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
+ await retryFailures();
  return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks};
 }
 
