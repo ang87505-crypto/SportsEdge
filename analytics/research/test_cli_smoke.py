@@ -108,7 +108,23 @@ class Smoke(unittest.TestCase):
                 self.assertEqual(f['first_execution'], '2026-11-10')
                 self.assertEqual(f['status'], 'INSUFFICIENT FORWARD SAMPLE')
                 self.assertAlmostEqual(f['decisions'][0]['meta']['dropped_weight'], 0.20)  # NOPE capped to 20% and unpriced
+                dh = cli.cmd_daily_historical(data, data / 'results', '2026-11-06', now)
+                self.assertEqual(set(dh['results']), {'daily-reversal5-v1', 'daily-momentum5d-v1', 'daily-spy-trend50-v1'})
+                for sid in dh['results']:
+                    self.assertEqual(len(dh['verdicts'][sid]['checks']), 9)
+                    self.assertGreater(dh['results'][sid]['decisions'], 2000)  # one per session
+                self.assertNotIn('momentum-quality-paper-v1', dh['results'])  # separate from the 2026-11-09 study
+                df = cli.cmd_daily_forward(data, data / 'results', '2026-11-20', now)
+                for sid, led in df['ledgers'].items():
+                    self.assertEqual(led['first_execution'], '2026-11-10', sid)  # signal at the 11-09 close
+                    self.assertEqual(led['decisions'][0]['date'], '2026-11-09')
+                    self.assertEqual(led['status'], 'INSUFFICIENT FORWARD SAMPLE')
+                    self.assertEqual(led['sessions'], 9)
                 report = cli.cmd_report(data, now).read_text()
+                summary = json.loads((data / 'summary.json').read_text())
+                self.assertEqual([x['id'] for x in summary['daily']['strategies']], list(cli.cand.DAILY_IDS))
+                self.assertTrue(all(x['active'] is False and x['forward']['sessions'] == 9 for x in summary['daily']['strategies']))
+                self.assertEqual(len(summary['candidates']), 3)  # the original study's summary is unchanged
                 self.assertIn('Historical evaluation', report)
                 self.assertIn('Forward paper ledgers', report)
                 with self.assertRaises(FileExistsError):

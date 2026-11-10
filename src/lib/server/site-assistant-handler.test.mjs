@@ -210,3 +210,19 @@ test('background jobs: combined status reports real runs and labels planned time
  for(const h of ['Sports','Stock account','Stock research','Background jobs'])assert.ok(down.reply.text.includes(h));
  assert.match(down.reply.text,/Planned schedules are not evidence of a run/);
 });
+
+test('daily strategies: optional summary section parses on its own and reaches research answers', async()=>{
+ const daily={prereg:'docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md',historicalAt:null,overall:'NOT_EVALUATED',forwardAt:null,datasetFingerprint:null,
+  strategies:['daily-reversal5-v1','daily-momentum5d-v1','daily-spy-trend50-v1'].map(id=>({id,active:false,historical:null,
+   forward:{status:'NOT STARTED',sessions:0,firstExecution:null,totalReturn:null,lastTargets:null}}))};
+ const withDaily=parseStockResearch({...saved,daily},NOW);
+ assert.equal(withDaily.daily.strategies.length,3);
+ const broken=parseStockResearch({...saved,daily:{...daily,strategies:[{...daily.strategies[0],active:true}]}},NOW);
+ assert.ok(broken,'a bad daily block must not hide the main study');
+ assert.equal(broken.daily,null);
+ assert.equal(routeQuestion('How is daily trading doing?',null).domain,'research');
+ const s=setup();s.ports.research=async()=>({summary:withDaily,mode:'live',checkedAt:NOW});
+ const r=await ask('How is daily trading doing?',s);
+ assert.match(r.reply.text,/Daily strategies \(paper research, not active\)/);
+ assert.match(r.reply.text,/forward trades start at the 2026-11-10 open/);
+});

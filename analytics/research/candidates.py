@@ -180,3 +180,77 @@ def berkshire_decisions(sessions, filings: list[dict], mapping: dict, has_price_
         by_signal[sig] = {'signal_index': sig, 'targets': targets, 'label': f'13F {known["period"]} ({label})',
                           'meta': {'period': known['period'], 'sources': known['sources'], 'as_of': as_of, 'skipped': skipped}}
     return [by_signal[k] for k in sorted(by_signal)]
+
+
+# ---------------------------------------------------------------- daily strategies (docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md)
+
+DAILY_IDS = ('daily-reversal5-v1', 'daily-momentum5d-v1', 'daily-spy-trend50-v1')
+DAILY_HISTORY = 60
+DAILY_NAMES = 5
+DAILY_WEIGHT = 0.20
+
+
+def _adjusted_window(s: dict, k: int, n: int):
+    w = s['ac'][k - n:k + 1]
+    return None if k < n or any(x is None or x <= 0 for x in w) else w
+
+
+def daily_eligible(series: dict, members: list[dict], k: int) -> list[str]:
+    """Adjusted closes on k-60..k, raw close >= $5, average dollar volume over k-19..k >= $20M."""
+    out = []
+    for m in members:
+        s = series.get(m['symbol'])
+        if s is None or _adjusted_window(s, k, DAILY_HISTORY) is None:
+            continue
+        c = s['c'][k]
+        window = [(s['c'][i], s['v'][i]) for i in range(k - 19, k + 1)]
+        if c is None or c < PRICE_FLOOR or any(x is None or y is None for x, y in window):
+            continue
+        if fmean(x * y for x, y in window) < DOLLAR_VOLUME_FLOOR:
+            continue
+        out.append(m['symbol'])
+    return out
+
+
+def daily_reversal_targets(series: dict, members: list[dict], k: int) -> dict:
+    scored = []
+    for sym in daily_eligible(series, members, k):
+        ac = series[sym]['ac']
+        r = ac[k] / ac[k - 1] - 1
+        if r < 0:
+            scored.append((r, sym))
+    return {sym: DAILY_WEIGHT for _, sym in sorted(scored)[:DAILY_NAMES]}
+
+
+def daily_momentum_targets(series: dict, members: list[dict], k: int) -> dict:
+    scored = []
+    for sym in daily_eligible(series, members, k):
+        ac = series[sym]['ac']
+        r = ac[k] / ac[k - 5] - 1
+        if r > 0 and ac[k] > fmean(ac[k - 49:k + 1]):
+            scored.append((-r, sym))
+    return {sym: DAILY_WEIGHT for _, sym in sorted(scored)[:DAILY_NAMES]}
+
+
+def daily_spy_trend_targets(series: dict, k: int) -> dict:
+    s = series.get('SPY')
+    w = _adjusted_window(s, k, 49) if s else None
+    return {'SPY': 1.0} if w is not None and w[-1] > fmean(w) else {}
+
+
+def daily_decisions(sid: str, sessions, series, members, *, first_signal: str, last_exec: str) -> list[dict]:
+    """One decision per session close from `first_signal`, executing at the next open on or before `last_exec`."""
+    if sid not in DAILY_IDS:
+        raise ValueError('UNKNOWN_DAILY_STRATEGY')
+    out = []
+    for k in range(len(sessions) - 1):
+        if sessions[k] < first_signal or sessions[k + 1] > last_exec:
+            continue
+        if sid == 'daily-reversal5-v1':
+            targets = daily_reversal_targets(series, members, k)
+        elif sid == 'daily-momentum5d-v1':
+            targets = daily_momentum_targets(series, members, k)
+        else:
+            targets = daily_spy_trend_targets(series, k)
+        out.append({'signal_index': k, 'targets': targets, 'label': 'close ' + sessions[k], 'meta': {}})
+    return out
