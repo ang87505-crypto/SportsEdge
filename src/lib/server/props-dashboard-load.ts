@@ -21,7 +21,7 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
  const [control,runs,credits,usage,observations,accounts,entries]=await Promise.all([
   store.select<Raw['control']&object>('props_control','select=state,reason,changed_at&id=eq.1'),
   store.select<Raw['runs'][number]>('props_runs','select=id,kind,slot_key,status,outcome,started_at,finished_at,start_delay_seconds,summary&order=id.desc&limit=30'),
-  store.select<Raw['credits'][number]>('props_credit_reservations','select=credits,reserved_at&reserved_at=gt.'+
+  store.select<Raw['credits'][number]>('props_credit_reservations','select=id,credits,reserved_at&reserved_at=gt.'+
    encodeURIComponent(new Date(now-30*86400_000).toISOString())+'&limit=10000'),
   store.select<{requests_remaining:number}>('props_provider_usage','select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1'),
   store.select<Raw['observations'][number]>('props_observations','select=id,run_id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at'+
@@ -29,6 +29,14 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
   store.select<Raw['accounts'][number]>('props_accounts','select=id,slug,platform,selection_version,initial_cents,stake_cents,max_entries_per_day&order=id.asc&limit=10'),
   store.select<Raw['entries'][number]>('props_entries','select=id,account_id,stake_cents,lock_at,created_at,payout_terms_version&order=id.desc&limit=500'),
  ]);
+ // The database policy is authoritative; the source-code policy is only a fallback if it is unavailable.
+ // In v3, completed provider receipts replace worst-case reservations, but an unknown charge remains
+ // reserved in full. The same effective amounts feed both the collection panel and the props dashboard.
+ const budgetPolicy=await optional(()=>loadBudgetPolicy(store,nowIso),null);
+ const actuals=budgetPolicy?.count_provider_actuals
+  ?await optional(()=>loadActualCosts(store,credits),null):null;
+ const effectiveCredits=credits.map(r=>({...r,effective_credits:budgetPolicy?.count_provider_actuals
+  ?Math.min(Number(r.credits),actuals?.get(Number(r.id??-1))??Number(r.credits)):Number(r.credits)}));
  const obsIds=observations.map(o=>o.id);
  const predictions=await byIds<Raw['predictions'][number]>(store,'props_predictions',
   'id,observation_id,model_version,status,reason,p_more,p_less,p_tie,mean,inputs','observation_id',obsIds);
@@ -48,8 +56,32 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
    'select=period_from,period_to,model_version,at,report&order=id.desc&limit=1'))[0]??null,null)]);
  const runCounts=await optional(()=>countsByRun(store,runs.filter(r=>r.kind==='collect').map(r=>r.id)),null);
  const {capturePlans,captures}=await optional<{capturePlans:Raw['capturePlans'];captures:Raw['captures']}>(()=>loadCaptures(store,now),{capturePlans:null,captures:null});
- return {nowIso,control:control[0]??null,runs,credits,runCounts,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
+ return {nowIso,control:control[0]??null,runs,credits:effectiveCredits,budgetPolicy,runCounts,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
   observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report,capturePlans,captures};
+}
+
+/** Read the actual active policy, including pre-v3 schemas where the optional column is absent. */
+async function loadBudgetPolicy(store:PropsStore,nowIso:string):Promise<NonNullable<Raw['budgetPolicy']>>{
+ const base='select=version,daily_credits,monthly_credits,provider_floor';
+ const tail='&active_from=lte.'+encodeURIComponent(nowIso)+'&order=active_from.desc&limit=1';
+ try{
+  const [p]=await store.select<NonNullable<Raw['budgetPolicy']>>('props_budget_policy',base+',count_provider_actuals'+tail);
+  if(!p)throw new Error('PROPS_BUDGET_POLICY_MISSING');
+  return {...p,count_provider_actuals:p.count_provider_actuals===true};
+ }catch(err){
+  // Only fall back for the pre-v3 column; a missing/failed table still fails closed to a null policy.
+  const [p]=await store.select<Omit<NonNullable<Raw['budgetPolicy']>,'count_provider_actuals'>>('props_budget_policy',base+tail);
+  if(!p)throw err;
+  return {...p,count_provider_actuals:false};
+ }
+}
+/** Provider receipts are unique per reservation. Unknown costs are deliberately not assumed free. */
+async function loadActualCosts(store:PropsStore,credits:Raw['credits']):Promise<Map<number,number>>{
+ const ids=credits.map(c=>Number(c.id)).filter(n=>Number.isSafeInteger(n)&&n>0);
+ const rows=await byIds<{reservation_id:number;requests_last:number|null}>(store,'props_provider_usage',
+  'reservation_id,requests_last','reservation_id',ids);
+ return new Map(rows.filter(r=>r.requests_last!==null&&Number.isSafeInteger(Number(r.requests_last))&&Number(r.requests_last)>=0)
+  .map(r=>[Number(r.reservation_id),Number(r.requests_last)]));
 }
 
 /** Decisions, qualifying picks and entries per collect run, from the immutable pick and entry rows. */
