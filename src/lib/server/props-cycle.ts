@@ -47,22 +47,22 @@ const COLLECT_HORIZON_MS=10*3600_000;
 /** Extra margin beyond the 10-minute lock buffer for processing time inside one run. */
 const COLLECT_LOCK_MARGIN_MS=OBSERVATION_RULES.lockBufferMs+10*60_000;
 const q=encodeURIComponent;
-const ago=(now:string,ms:number)=>new Date(Date.parse(now)-ms).toISOString();
+export const ago=(now:string,ms:number)=>new Date(Date.parse(now)-ms).toISOString();
 const etDate=(iso:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));
-const inList=(xs:(string|number)[])=>'in.('+xs.map(x=>typeof x==='number'?String(x):'"'+String(x).replace(/["\\]/g,'')+'"').join(',')+')';
-const chunk=<T,>(xs:T[],n:number)=>Array.from({length:Math.ceil(xs.length/n)},(_,i)=>xs.slice(i*n,i*n+n));
+export const inList=(xs:(string|number)[])=>'in.('+xs.map(x=>typeof x==='number'?String(x):'"'+String(x).replace(/["\\]/g,'')+'"').join(',')+')';
+export const chunk=<T,>(xs:T[],n:number)=>Array.from({length:Math.ceil(xs.length/n)},(_,i)=>xs.slice(i*n,i*n+n));
 
-async function begin(d:CycleDeps,kind:'collect'|'settle'|'backfill',slot:string,scheduledFor:string|null){
+export async function begin(d:CycleDeps,kind:'collect'|'settle'|'backfill',slot:string,scheduledFor:string|null){
  return d.store.rpc<{outcome:string;runId?:number;abandoned?:number;startDelaySeconds?:number|null}>('props_begin_run',
   {p_kind:kind,p_slot:slot,p_worker:d.worker,p_scheduled_for:scheduledFor,p_lease_seconds:LEASE});
 }
-async function finish(d:CycleDeps,runId:number,ok:boolean,outcome:string,summary:Record<string,unknown>){
+export async function finish(d:CycleDeps,runId:number,ok:boolean,outcome:string,summary:Record<string,unknown>){
  try{await d.store.rpc('props_finish_run',{p_run:runId,p_status:ok?'completed':'failed',p_outcome:outcome,p_summary:summary});}
  catch{/* lease lost: the next run records this one as abandoned */}
 }
-const heartbeat=(d:CycleDeps,runId:number)=>d.store.rpc<{control:string}>('props_heartbeat',{p_run:runId,p_lease_seconds:LEASE});
+export const heartbeat=(d:CycleDeps,runId:number)=>d.store.rpc<{control:string}>('props_heartbeat',{p_run:runId,p_lease_seconds:LEASE});
 
-async function budgetState(d:CycleDeps):Promise<BudgetState>{
+export async function budgetState(d:CycleDeps):Promise<BudgetState>{
  const now=d.now();
  const rows=await d.store.select<{credits:number;reserved_at:string}>('props_credit_reservations',
   'select=credits,reserved_at&reserved_at=gt.'+q(ago(now,30*86400_000))+'&limit=10000');
@@ -73,7 +73,7 @@ async function budgetState(d:CycleDeps):Promise<BudgetState>{
   used30d:rows.reduce((a,r)=>a+Number(r.credits),0),providerRemaining:usage.length?Number(usage[0].requests_remaining):null};
 }
 /** Reserve, call once, record usage + raw evidence. Budget refusals and provider failures are explicit outcomes. */
-async function paidCall(d:CycleDeps,runId:number,endpoint:'events'|'event_odds',eventId:string|null,credits:number,
+export async function paidCall(d:CycleDeps,runId:number,endpoint:'events'|'event_odds',eventId:string|null,credits:number,
  call:()=>ReturnType<PropsOddsClient['events']>){
  let reservation:number;
  try{reservation=await d.store.rpc<number>('props_reserve_credits',{p_run:runId,p_endpoint:endpoint,p_event:eventId,p_credits:credits});}
@@ -84,9 +84,9 @@ async function paidCall(d:CycleDeps,runId:number,endpoint:'events'|'event_odds',
  await d.store.rpc('props_record_usage',{p_reservation:reservation,p_http:reply.httpStatus,p_remaining:reply.usage.remaining,
   p_used:reply.usage.used,p_last:reply.usage.last});
  const rawId=await storeRaw(d,runId,'the_odds_api',endpoint,eventId??'nba',reply.httpStatus,reply.receivedAt,reply.body);
- return {kind:'reply' as const,reply,rawId};
+ return {kind:'reply' as const,reply,rawId,reservation};
 }
-async function storeRaw(d:CycleDeps,runId:number,source:string,endpoint:string,externalId:string,http:number,receivedAt:string,body:unknown){
+export async function storeRaw(d:CycleDeps,runId:number,source:string,endpoint:string,externalId:string,http:number,receivedAt:string,body:unknown){
  const hash=sha256(canonicalJson(body));
  const ins=await d.store.insert<{id:number}>('props_raw_responses',[{run_id:runId,source,endpoint,external_id:externalId,
   http_status:http,received_at:receivedAt,content_sha256:hash,body:body??{}}],
@@ -143,36 +143,13 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   const observed:{obs:ObsRow;event:ListedEvent}[]=[];
   const perEvent:Record<string,unknown>[]=[];
   const quotes:BookQuote[]=[];
-  const bookQuotes:{inserted:number;byBook:Record<string,number>;error?:string}={inserted:0,byBook:Object.fromEntries(SPORTSBOOKS.map(b=>[b,0]))};
+  const bookQuotes:BookQuoteTally={inserted:0,byBook:Object.fromEntries(SPORTSBOOKS.map(b=>[b,0]))};
   for(const e of plan.chosen){
    await heartbeat(d,runId);
    const r=await paidCall(d,runId,'event_odds',e.id,eventOddsWorstCost(),()=>odds.eventOdds(e.id));
    if(r.kind!=='reply'){perEvent.push({event:e.id,outcome:r.kind,code:r.code});if(r.kind==='refused')break;continue;}
    if(!r.reply.ok){perEvent.push({event:e.id,outcome:'provider_http_'+r.reply.httpStatus});continue;}
-   const norm=normalizePropEvent(r.reply.body,e,r.reply.receivedAt);
-   const rows=norm.observations.map(o=>({run_id:runId,raw_response_id:r.rawId,provider:o.provider,platform:o.platform,
-    bookmaker_key:o.bookmakerKey,provider_event_id:o.providerEventId,home_team:o.homeTeam,away_team:o.awayTeam,
-    commence_time:o.commenceTime,lock_at:o.lockAt,player_name:o.playerName,stat:o.stat,market_key:o.marketKey,period:o.period,
-    line:o.line,over_price:o.overPrice,under_price:o.underPrice,over_multiplier:o.overMultiplier,under_multiplier:o.underMultiplier,
-    provider_last_update:o.providerLastUpdate,ingested_at:o.ingestedAt,normalizer_version:NORMALIZER_VERSION,
-    response_sha256:o.responseSha256,source_fields:o.sourceFields}));
-   const inserted=await d.store.insert<ObsRow>('props_observations',rows,
-    {onConflict:'platform,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true,select:OBS_COLS});
-   inserted.forEach(o=>observed.push({obs:o,event:e}));
-   if(!bookQuotes.error)try{
-    const bq=normalizeBookQuotes(r.reply.body,e,r.reply.receivedAt);
-    const qrows=bq.quotes.map(x=>({run_id:runId,raw_response_id:r.rawId,bookmaker_key:x.bookmakerKey,provider_event_id:x.providerEventId,
-     player_name:x.playerName,stat:x.stat,market_key:x.marketKey,line:x.line,over_price:x.overPrice,under_price:x.underPrice,
-     provider_last_update:x.providerLastUpdate,ingested_at:x.ingestedAt,lock_at:x.lockAt,response_sha256:x.responseSha256}));
-    for(const part of chunk(qrows,200))await d.store.insert('props_book_quotes',part,
-     {onConflict:'bookmaker_key,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true});
-    quotes.push(...bq.quotes);bookQuotes.inserted+=qrows.length;
-    for(const x of bq.quotes)bookQuotes.byBook[x.bookmakerKey]++;
-   }catch(err){bookQuotes.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
-   // Keyed platform:reason so one-sided or special lines can be traced to the platform that published them.
-   const reasons:Record<string,number>={};for(const x of norm.rejected){const k=(x.platform??'unknown')+':'+x.reason;reasons[k]=(reasons[k]??0)+1;}
-   perEvent.push({event:e.id,outcome:'stored',accepted:norm.observations.length,inserted:inserted.length,rejected:reasons,
-    usage:r.reply.usage,byPlatform:Object.fromEntries(PLATFORMS.map(p=>[p,norm.observations.filter(o=>o.platform===p).length]))});
+   perEvent.push((await storeEventReply(d,runId,e,r.reply,r.rawId,{observed,quotes,bookQuotes})).receipt);
   }
   s.collection=perEvent;
   s.bookQuotes=bookQuotes;
@@ -203,14 +180,49 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
  }
 }
 
-type ObsRow={id:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;
+
+export type BookQuoteTally={inserted:number;byBook:Record<string,number>;error?:string};
+/**
+ * Normalize one event-odds reply, store admitted PrizePicks/Pick6 lines (append-only, deduplicated) and,
+ * best-effort, sportsbook reference quotes. Shared by the slot collect and the capture tick.
+ */
+export async function storeEventReply(d:CycleDeps,runId:number,e:ListedEvent,reply:{body:unknown;receivedAt:string;usage:unknown},rawId:number,
+ acc:{observed:{obs:ObsRow;event:ListedEvent}[];quotes:BookQuote[];bookQuotes:BookQuoteTally}){
+ const norm=normalizePropEvent(reply.body,e,reply.receivedAt);
+ const rows=norm.observations.map(o=>({run_id:runId,raw_response_id:rawId,provider:o.provider,platform:o.platform,
+  bookmaker_key:o.bookmakerKey,provider_event_id:o.providerEventId,home_team:o.homeTeam,away_team:o.awayTeam,
+  commence_time:o.commenceTime,lock_at:o.lockAt,player_name:o.playerName,stat:o.stat,market_key:o.marketKey,period:o.period,
+  line:o.line,over_price:o.overPrice,under_price:o.underPrice,over_multiplier:o.overMultiplier,under_multiplier:o.underMultiplier,
+  provider_last_update:o.providerLastUpdate,ingested_at:o.ingestedAt,normalizer_version:NORMALIZER_VERSION,
+  response_sha256:o.responseSha256,source_fields:o.sourceFields}));
+ const inserted=rows.length?await d.store.insert<ObsRow>('props_observations',rows,
+  {onConflict:'platform,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true,select:OBS_COLS}):[];
+ inserted.forEach(o=>acc.observed.push({obs:o,event:e}));
+ if(!acc.bookQuotes.error)try{
+  const bq=normalizeBookQuotes(reply.body,e,reply.receivedAt);
+  const qrows=bq.quotes.map(x=>({run_id:runId,raw_response_id:rawId,bookmaker_key:x.bookmakerKey,provider_event_id:x.providerEventId,
+   player_name:x.playerName,stat:x.stat,market_key:x.marketKey,line:x.line,over_price:x.overPrice,under_price:x.underPrice,
+   provider_last_update:x.providerLastUpdate,ingested_at:x.ingestedAt,lock_at:x.lockAt,response_sha256:x.responseSha256}));
+  for(const part of chunk(qrows,200))await d.store.insert('props_book_quotes',part,
+   {onConflict:'bookmaker_key,provider_event_id,market_key,player_name,line,provider_last_update',ignoreDuplicates:true});
+  acc.quotes.push(...bq.quotes);acc.bookQuotes.inserted+=qrows.length;
+  for(const x of bq.quotes)acc.bookQuotes.byBook[x.bookmakerKey]++;
+ }catch(err){acc.bookQuotes.error=err instanceof PropsStoreError?err.code:'UNEXPECTED';}
+ // Keyed platform:reason so one-sided or special lines can be traced to the platform that published them.
+ const reasons:Record<string,number>={};for(const x of norm.rejected){const k=(x.platform??'unknown')+':'+x.reason;reasons[k]=(reasons[k]??0)+1;}
+ const byPlatform=Object.fromEntries(PLATFORMS.map(p=>[p,norm.observations.filter(o=>o.platform===p).length])) as Record<Platform,number>;
+ return {norm,inserted,byPlatform,receipt:{event:e.id,outcome:'stored',accepted:norm.observations.length,inserted:inserted.length,rejected:reasons,
+  usage:reply.usage,byPlatform} as Record<string,unknown>};
+}
+
+export type ObsRow={id:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;
  player_name:string;stat:Stat;line:number;ingested_at:string};
-const OBS_COLS='id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,ingested_at';
+export const OBS_COLS='id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,ingested_at';
 
 type ViewRow={observation_id:number;run_id:number;books_at_same_line:number;p_more_books:number|null;nearest_book_line:number|null;
  line_gap:number|null;flags:string[]};
 /** One market view per new observation, computed against the active model's side. Best-effort. */
-async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:number;without:number;flags:Record<string,number>;error?:string}>{
+export async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:number;without:number;flags:Record<string,number>;error?:string}>{
  const out:{withBooks:number;without:number;flags:Record<string,number>;error?:string}={withBooks:0,without:0,flags:{}};
  for(const v of rows){
   if(v.books_at_same_line)out.withBooks++;else out.without++;
@@ -221,7 +233,9 @@ async function recordMarketViews(d:CycleDeps,rows:ViewRow[]):Promise<{withBooks:
  return out;
 }
 
-async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[],quotes:BookQuote[],active:ActiveModel){
+export async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;event:ListedEvent}[],quotes:BookQuote[],active:ActiveModel,
+ /** Observations stored for line history only (closing rechecks): predicted, never picked. */
+ observeOnly:Set<number>=new Set()){
  const out={scored:0,unscorable:{} as Record<string,number>,recorded:0,skipped:{} as Record<string,number>,
   learn:{} as Record<string,number>,selectionVersion:active.artifact?SELECTION_VERSION_V2:SELECTION_VERSION as string,learnError:undefined as string|undefined};
  const views:ViewRow[]=[];
@@ -314,6 +328,7 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
   const view:MarketView=marketView(obsInfo(x.obs),quotes,side);
   views.push({observation_id:p.observation_id,run_id:runId,books_at_same_line:view.booksAtSameLine,p_more_books:view.pMoreBooks,
    nearest_book_line:view.nearestBookLine,line_gap:view.lineGap,flags:view.flags});
+  if(observeOnly.has(p.observation_id)){out.skipped.observe_only=(out.skipped.observe_only??0)+1;continue;}
   if(useLearn&&!chosen){out.skipped.unscorable=(out.skipped.unscorable??0)+1;continue;}
   const target=chosen??p;
   const input={status:target.status,pMore:target.p_more===null?null:Number(target.p_more),
@@ -326,7 +341,7 @@ async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsRow;even
  return {out,views,fallback};
 }
 
-async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){
+export async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){
  const now=d.now();
  const accounts=await d.store.select<{id:number;platform:Platform;max_entries_per_day:number;picks_per_entry:number}>('props_accounts',
   'select=id,platform,max_entries_per_day,picks_per_entry&selection_version=eq.'+selectionVersion+'&limit=10');

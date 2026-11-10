@@ -24,7 +24,7 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
   store.select<Raw['credits'][number]>('props_credit_reservations','select=credits,reserved_at&reserved_at=gt.'+
    encodeURIComponent(new Date(now-30*86400_000).toISOString())+'&limit=10000'),
   store.select<{requests_remaining:number}>('props_provider_usage','select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1'),
-  store.select<Raw['observations'][number]>('props_observations','select=id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at'+
+  store.select<Raw['observations'][number]>('props_observations','select=id,run_id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at'+
    '&lock_at=gt.'+since+'&order=lock_at.desc&limit=3000'),
   store.select<Raw['accounts'][number]>('props_accounts','select=id,slug,platform,selection_version,initial_cents,stake_cents,max_entries_per_day&order=id.asc&limit=10'),
   store.select<Raw['entries'][number]>('props_entries','select=id,account_id,stake_cents,lock_at,created_at,payout_terms_version&order=id.desc&limit=500'),
@@ -47,8 +47,9 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
   optional(async()=>(await store.select<NonNullable<Raw['report']>>('props_learning_reports',
    'select=period_from,period_to,model_version,at,report&order=id.desc&limit=1'))[0]??null,null)]);
  const runCounts=await optional(()=>countsByRun(store,runs.filter(r=>r.kind==='collect').map(r=>r.id)),null);
+ const {capturePlans,captures}=await optional<{capturePlans:Raw['capturePlans'];captures:Raw['captures']}>(()=>loadCaptures(store,now),{capturePlans:null,captures:null});
  return {nowIso,control:control[0]??null,runs,credits,runCounts,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
-  observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report};
+  observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report,capturePlans,captures};
 }
 
 /** Decisions, qualifying picks and entries per collect run, from the immutable pick and entry rows. */
@@ -82,4 +83,22 @@ async function loadModel(store:PropsStore):Promise<Raw['model']>{
   return {active:c.active_model_version,previous:c.previous_model_version,learningEnabled:c.learning_enabled,
    autoSwitchEnabled:c.auto_switch_enabled,weights,events};
  },null);
+}
+
+/** Capture plans (last 21 slates) with their claims and outcomes. Throws when the tables are absent (caller maps to null). */
+async function loadCaptures(store:PropsStore,now:number):Promise<{capturePlans:NonNullable<Raw['capturePlans']>;captures:NonNullable<Raw['captures']>}>{
+ const from=new Date(now-21*86400_000).toISOString().slice(0,10);
+ const plans=await store.select<NonNullable<Raw['capturePlans']>[number]&{id:number}>('props_capture_plans',
+  'select=id,plan_version,slate_date,provider_event_id,home_team,away_team,commence_time,selected,selection_rank,arm,reason,planned_at'+
+  '&slate_date=gte.'+from+'&order=id.asc&limit=1000');
+ const claims=await byIds<{id:number;plan_id:number;run_id:number;provider_event_id:string;capture_key:'primary'|'retry'|'recheck';window_name:'early'|'late';claimed_at:string}>(
+  store,'props_captures','id,plan_id,run_id,provider_event_id,capture_key,window_name,claimed_at','plan_id',plans.map(p=>Number(p.id)));
+ const outs=await byIds<{capture_id:number;outcome:string;dfs_lines:number|null;minutes_to_tip:number|null;lines_by_platform:Record<string,number>|null}>(
+  store,'props_capture_outcomes','capture_id,outcome,dfs_lines,minutes_to_tip,lines_by_platform','capture_id',claims.map(c=>Number(c.id)));
+ const iso=(t:string)=>new Date(t).toISOString();
+ return {capturePlans:plans.map(({id:_id,...p})=>({...p,slate_date:String(p.slate_date).slice(0,10),commence_time:iso(p.commence_time),planned_at:iso(p.planned_at)})),
+  captures:claims.map(c=>{const o=outs.find(x=>Number(x.capture_id)===Number(c.id));
+   return {run_id:Number(c.run_id),provider_event_id:c.provider_event_id,capture_key:c.capture_key,window_name:c.window_name,claimed_at:iso(c.claimed_at),
+    outcome:o?.outcome??null,dfs_lines:o&&o.dfs_lines!==null?Number(o.dfs_lines):null,minutes_to_tip:o&&o.minutes_to_tip!==null?Number(o.minutes_to_tip):null,
+    lines_by_platform:o?.lines_by_platform??null};})};
 }

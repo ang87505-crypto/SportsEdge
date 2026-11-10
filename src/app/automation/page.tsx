@@ -1,4 +1,4 @@
-import {Suspense} from 'react';
+import {Suspense,cache} from 'react';
 import Link from 'next/link';
 import {connection} from 'next/server';
 import {Badge,Details,Empty,Loading,Metric,MetricGrid,PageHeading,Panel} from '@/components/ui';
@@ -7,12 +7,20 @@ import {AutopilotSummary} from '@/components/autopilot-summary';
 import {OpsStatusPanel} from '@/components/ops-status-panel';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
-import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
+import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule';
+import {collectionStatus} from '@/lib/props/collection-status';
+import {timingStudy} from '@/lib/props/timing-study';
+import {ACTIVE_BUDGET_POLICY} from '@/lib/props/budget';
+import {MODEL_VERSION} from '@/lib/props/contract';
+import {PropsCollectionPanel} from '@/components/props-collection-panel';
 import {buildView} from '@/lib/props/dashboard-view';
 import {mountainTime,propsAutomationStatus} from '@/lib/paper-automation-view';
 import {pct,usdCents} from '@/lib/format';
 import {propsSummary,learningStatus} from '@/lib/props/summary';
 import {slotStatus} from '@/lib/props/slot-status';
+
+/** One ledger read per request, shared by the status card and the collection panel. */
+const loadOnce=cache(loadPropsDashboard);
 
 export const metadata={title:'Paper automation · SportsEdge',description:'One place to follow PrizePicks props and stock paper automation.'};
 
@@ -37,6 +45,7 @@ export default function AutomationPage(){
     </div>
    </Panel>
   </div>
+  <Suspense fallback={<Panel title="Props line collection" className="mt-12"><Loading label="Reading collection receipts…"/></Panel>}><CollectionSection/></Suspense>
   <div className="mt-12"><Suspense fallback={<Panel title="Background jobs"><Loading label="Reading the operations monitor…"/></Panel>}><OpsStatusPanel/></Suspense></div>
   <Panel title="What the controls mean" className="mt-12">
    <div className="automation-guide">
@@ -59,7 +68,7 @@ async function SportsStatus(){
  if(!propsDashboardConfigured())return <Panel title="PrizePicks props"><Empty title="Sports records unavailable"
   action={<Link className="button button-secondary" href="/paper-betting/props">Open PrizePicks</Link>}>The props ledger is not connected on this deployment.</Empty></Panel>;
  let raw;
- try{raw=await loadPropsDashboard();}catch{return <Panel title="PrizePicks props"><Empty title="Could not read sports status"
+ try{raw=await loadOnce();}catch{return <Panel title="PrizePicks props"><Empty title="Could not read sports status"
   action={<Link className="button button-secondary" href="/paper-betting/props">Try the props ledger</Link>}>Refresh to check again. The last status is not assumed to be current.</Empty></Panel>;}
  const status=propsAutomationStatus(raw,PROPS_RELEASE.scheduledRunsEnabled);
  const pp=buildView(raw,'prizepicks'),p6=buildView(raw,'pick6');
@@ -95,6 +104,20 @@ async function SportsStatus(){
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
   </div>
  </Panel>;
+}
+
+async function CollectionSection(){
+ await connection();
+ if(!propsDashboardConfigured())return null;
+ let raw;
+ try{raw=await loadOnce();}catch{return <Panel title="Props line collection" className="mt-12"><Empty title="Could not read collection receipts">Refresh to check again. Nothing is assumed.</Empty></Panel>;}
+ const s=collectionStatus({nowIso:raw.nowIso,runs:raw.runs,credits:raw.credits,providerRemaining:raw.providerRemaining,runCounts:raw.runCounts??null,
+  plans:raw.capturePlans??null,captures:raw.captures??null,policy:ACTIVE_BUDGET_POLICY,ticksReleased:ticksReleased(),
+  scheduledRunsEnabled:PROPS_RELEASE.scheduledRunsEnabled,controlState:raw.control?.state??null});
+ const study=raw.capturePlans&&raw.captures?timingStudy({nowIso:raw.nowIso,observations:raw.observations.map(o=>({...o,run_id:o.run_id??-1})),
+  predictions:raw.predictions,picks:raw.picks,results:raw.results,legs:raw.legs,entries:raw.entries,accounts:raw.accounts,settlements:raw.settlements,
+  plans:raw.capturePlans,captures:raw.captures,modelVersion:MODEL_VERSION}):null;
+ return <PropsCollectionPanel s={s} study={study} ticksReleased={ticksReleased()}/>;
 }
 
 const TRIGGER:Record<string,string>={'github-schedule':'GitHub schedule','backup-dispatch':'Vercel backup',manual:'Manual'};

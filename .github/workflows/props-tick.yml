@@ -1,0 +1,49 @@
+# NBA player-prop PAPER capture ticks (props-capture-v1; src/lib/props/capture-plan.ts).
+# Virtual entries only: no DFS account, no deposits, no real-money entries.
+# RELEASED OFF: while PROPS_COLLECTION_V2.tickEnabled is false (src/lib/props/schedule.ts) every scheduled or
+# backup tick exits before any database or provider call. Enabling it is an owner decision.
+# A tick is idempotent: it only captures games whose own window is open, a second start in the same
+# 30-minute bucket is refused by the run ledger (DUPLICATE/BUSY), and each capture is claimed before any
+# paid request. GitHub often starts these late or drops them; the Vercel backups (scheduler-kickoff.ts)
+# dispatch the same tick at fixed hours.
+name: NBA props capture tick
+on:
+  schedule:
+    - cron: '7,37 11-23 * * *'
+    - cron: '7,37 0-4 * * *'
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: manual (owner) or backup (Vercel scheduler only)
+        required: true
+        type: choice
+        options: [manual, backup]
+        default: manual
+      scheduled_hour:
+        description: Backup only - the UTC hour the Vercel cron was scheduled for (YYYY-MM-DDTHH:00:00Z)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: props-paper
+  cancel-in-progress: false
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run one capture tick
+        env:
+          TICK_TRIGGER: ${{ inputs.trigger || 'schedule' }}
+          TICK_SCHEDULED_HOUR: ${{ inputs.scheduled_hour }}
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: node --experimental-strip-types scripts/props-worker.ts tick

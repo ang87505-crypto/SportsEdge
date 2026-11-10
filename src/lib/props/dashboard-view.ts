@@ -13,7 +13,7 @@ export type Raw={
  runs:{id:number;kind:string;slot_key:string;status:string;outcome:string;started_at:string;finished_at:string|null;start_delay_seconds:number|null;summary:Record<string,unknown>}[];
  credits:{credits:number;reserved_at:string}[];
  providerRemaining:number|null;
- observations:{id:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;player_name:string;stat:Stat;
+ observations:{id:number;run_id?:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;player_name:string;stat:Stat;
   line:number;provider_last_update:string;ingested_at:string}[];
  predictions:{id:number;observation_id:number;model_version:string;status:string;reason:string;p_more:number|null;p_less:number|null;p_tie:number|null;mean:number|null;
   inputs?:Record<string,unknown>|null}[];
@@ -29,6 +29,11 @@ export type Raw={
  model?:{active:string;previous:string|null;learningEnabled:boolean;autoSwitchEnabled:boolean;weights:Record<Stat,number[]>|null;
   events:{id:number;version:string;event:string;reason:string;detail:Record<string,unknown>;at:string}[]}|null;
  views?:{observation_id:number;books_at_same_line:number;p_more_books:number|null;line_gap:number|null;nearest_book_line:number|null;flags:string[]}[];
+ /** props-capture-v1 plans and claims with outcomes; null/absent until props_capture_v1.sql is applied. */
+ capturePlans?:{plan_version:string;slate_date:string;provider_event_id:string;home_team:string;away_team:string;commence_time:string;
+  selected:boolean;selection_rank:number;arm:'early'|'late'|null;reason:string;planned_at:string}[]|null;
+ captures?:{run_id:number;provider_event_id:string;capture_key:'primary'|'retry'|'recheck';window_name:'early'|'late';claimed_at:string;
+  outcome:string|null;dfs_lines:number|null;minutes_to_tip:number|null;lines_by_platform:Record<string,number>|null}[]|null;
  report?:{period_from:string;period_to:string;model_version:string;at:string;report:{misses:Record<string,number>;voidsExcluded:number;overconfidentBands:string[]}&Record<string,unknown>}|null;
 };
 
