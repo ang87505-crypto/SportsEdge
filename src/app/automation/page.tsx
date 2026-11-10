@@ -112,7 +112,9 @@ async function CollectionSection(){
  let raw;
  try{raw=await loadOnce();}catch{return <Panel title="Props line collection" className="mt-12"><Empty title="Could not read collection receipts">Refresh to check again. Nothing is assumed.</Empty></Panel>;}
  const s=collectionStatus({nowIso:raw.nowIso,runs:raw.runs,credits:raw.credits,providerRemaining:raw.providerRemaining,runCounts:raw.runCounts??null,
-  plans:raw.capturePlans??null,captures:raw.captures??null,policy:ACTIVE_BUDGET_POLICY,ticksReleased:ticksReleased(),
+  plans:raw.capturePlans??null,captures:raw.captures??null,policy:raw.budgetPolicy?{dailyCredits:Number(raw.budgetPolicy.daily_credits),
+   monthlyCredits:Number(raw.budgetPolicy.monthly_credits),providerFloor:Number(raw.budgetPolicy.provider_floor),
+   countsProviderActuals:raw.budgetPolicy.count_provider_actuals}:ACTIVE_BUDGET_POLICY,ticksReleased:ticksReleased(),
   scheduledRunsEnabled:PROPS_RELEASE.scheduledRunsEnabled,controlState:raw.control?.state??null});
  const study=raw.capturePlans&&raw.captures?timingStudy({nowIso:raw.nowIso,observations:raw.observations.map(o=>({...o,run_id:o.run_id??-1})),
   predictions:raw.predictions,picks:raw.picks,results:raw.results,legs:raw.legs,entries:raw.entries,accounts:raw.accounts,settlements:raw.settlements,
