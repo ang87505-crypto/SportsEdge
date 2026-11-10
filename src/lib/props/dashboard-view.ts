@@ -11,7 +11,9 @@ export type Raw={
  nowIso:string;
  control:{state:string;reason:string;changed_at:string}|null;
  runs:{id:number;kind:string;slot_key:string;status:string;outcome:string;started_at:string;finished_at:string|null;start_delay_seconds:number|null;summary:Record<string,unknown>}[];
- credits:{credits:number;reserved_at:string}[];
+ credits:{id?:number;credits:number;reserved_at:string;effective_credits?:number}[];
+ /** Active database policy; null when it cannot be read. */
+ budgetPolicy?:{version:string;daily_credits:number;monthly_credits:number;provider_floor:number;count_provider_actuals:boolean}|null;
  providerRemaining:number|null;
  observations:{id:number;run_id?:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;player_name:string;stat:Stat;
   line:number;provider_last_update:string;ingested_at:string}[];
@@ -98,8 +100,8 @@ export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}=
   balanceCents:Number(account.initial_cents)+profit,openStakeCents:openStake,settledKnown:known.length}:null;
 
  const day=r.nowIso.slice(0,10);
- const used24h=r.credits.filter(c=>now-Date.parse(c.reserved_at)<86400_000).reduce((a,c)=>a+Number(c.credits),0);
- const used30d=r.credits.reduce((a,c)=>a+Number(c.credits),0);
+ const used24h=r.credits.filter(c=>now-Date.parse(c.reserved_at)<86400_000).reduce((a,c)=>a+Number(c.effective_credits??c.credits),0);
+ const used30d=r.credits.reduce((a,c)=>a+Number(c.effective_credits??c.credits),0);
  const runs=[...r.runs].sort((a,b)=>b.id-a.id);
  const lastOk=(k:string)=>runs.find(x=>x.kind===k&&x.status==='completed'&&x.outcome==='COMPLETED')??null;
  const lastFailure=runs.find(x=>x.status==='failed'||x.status==='abandoned')??null;
