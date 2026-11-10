@@ -254,3 +254,35 @@ def daily_decisions(sid: str, sessions, series, members, *, first_signal: str, l
             targets = daily_spy_trend_targets(series, k)
         out.append({'signal_index': k, 'targets': targets, 'label': 'close ' + sessions[k], 'meta': {}})
     return out
+
+
+# ---------------------------------------------------------------- spy-tom-v1 (docs/STOCK_TOM_PREREG_2026_11_10.md)
+
+TOM_ID = 'spy-tom-v1'
+TOM_FIRST_DAYS = 3
+
+
+def tom_window(calendar: list[str]) -> set[str]:
+    """Sessions in the turn-of-the-month window: the last session of each month and the first three of the next.
+    Uses only the published exchange calendar (no prices). The calendar's opening month and closing month are only
+    partly known, so a first day is detected only after a month change and a last day only before one."""
+    days = sorted(calendar)
+    out = set()
+    for i, d in enumerate(days):
+        if i + 1 < len(days) and days[i + 1][:7] != d[:7]:
+            out.add(d)                                   # last session of its month
+        if i > 0 and days[i - 1][:7] != d[:7]:
+            out.update(days[i:i + TOM_FIRST_DAYS])       # first three sessions of the next month
+    return out
+
+
+def tom_decisions(sessions: list[str], calendar: list[str], *, first_signal: str, last_exec: str) -> list[dict]:
+    """At each close k, hold 100% SPY for the next session if it is in the window, otherwise cash."""
+    window = tom_window(calendar)
+    out = []
+    for k in range(len(sessions) - 1):
+        if sessions[k] < first_signal or sessions[k + 1] > last_exec:
+            continue
+        out.append({'signal_index': k, 'targets': {'SPY': 1.0} if sessions[k + 1] in window else {},
+                    'label': 'close ' + sessions[k], 'meta': {}})
+    return out

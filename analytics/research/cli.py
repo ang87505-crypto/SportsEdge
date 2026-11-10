@@ -255,6 +255,82 @@ def cmd_daily_forward(data: Path, out_dir: Path, today: str, now: datetime) -> d
     return out
 
 
+# ---------------------------------------------------------------- spy-tom-v1 (docs/STOCK_TOM_PREREG_2026_11_10.md)
+
+TOM_PREREG = 'docs/STOCK_TOM_PREREG_2026_11_10.md'
+TOM_FIRST_SIGNAL = '2026-11-10'
+TOM_FORWARD_MIN_WINDOWS = 24
+
+
+def break_even(res: dict, target_cagr: float) -> float | None:
+    """Per-side cost (bps) at which the continuous CAGR falls to `target_cagr`, by linear interpolation on the
+    evaluated grid (0/5/10/25). None when it stays above the target through 25 bps; 0.0 when already below gross."""
+    pts = [(c, res[f'bps{c}']['continuous']['full']['cagr']) for c in ev.COSTS]
+    if pts[0][1] is None or pts[0][1] <= target_cagr:
+        return 0.0
+    for (c0, y0), (c1, y1) in zip(pts, pts[1:]):
+        if y1 is not None and y1 <= target_cagr < y0:
+            return round(c0 + (y0 - target_cagr) * (c1 - c0) / (y0 - y1), 2)
+    return None
+
+
+def _tom_calendar(start: str, end: str) -> list[str]:
+    # The exchange calendar is published years ahead; reading it past `end` is not look-ahead.
+    return rdata.fetch_calendar(alpaca(), start, (date.fromisoformat(end) + timedelta(days=15)).isoformat())
+
+
+def cmd_tom_historical(data: Path, out_dir: Path, end: str, now: datetime) -> dict:
+    universe, members = universe_members()
+    md, sessions, series = _daily_market(members, ev.DATA_START, end)
+    calendar = _tom_calendar(ev.DATA_START, end)
+    start_k, end_k = ev.window(sessions, ev.FIRST_EXEC, end)
+    bench = ev.benchmarks(sessions, series, universe, start_k, end_k, extra_holds=())
+    d = cand.tom_decisions(sessions, calendar, first_signal=sessions[start_k - 1], last_exec=end)
+    res = ev.run_candidate(sessions, series, md['actions'], d, start_k, end_k)
+    exp = res['bps10']['continuous']['exposure_series']
+    matched = ev.summarize(ev.exposure_matched(sessions, series['SPY'], exp, start_k, end_k), sessions[start_k], sessions[end_k])
+    verdict = ev.verdict(res, bench, matched)
+    windows = sum(1 for a, b in zip(d, d[1:]) if not a['targets'] and b['targets'])
+    out = {'kind': 'tom-historical', 'at': stamp(now), 'prereg': TOM_PREREG, 'id': cand.TOM_ID,
+           'window': [sessions[start_k], sessions[end_k]], 'capital': ev.CAPITAL,
+           'overall': 'QUALIFIES FOR REVIEW: ' + cand.TOM_ID if verdict['verdict'] == 'QUALIFIES FOR REVIEW' else 'NONE QUALIFIES',
+           'verdict': verdict, 'result': ev.strip_series(res), 'benchmarks': bench, 'exposure_matched_spy': matched,
+           'break_even_bps': {'to_zero_cagr': break_even(res, 0.0), 'to_exposure_matched_spy': break_even(res, matched['full']['cagr'])},
+           'windows_entered': windows, 'decisions': len(d),
+           'data': {k: md[k] for k in ('fingerprint', 'actions_pages_fingerprint', 'joins', 'missing', 'requests', 'actions_dropped')}
+           | {'sessions': [md['sessions'][0], md['sessions'][-1]], 'symbols_with_bars': len(md['bars']),
+              'calendar_fingerprint': rdata.fingerprint(calendar)},
+           'fingerprints': {'code_commit': os.getenv('GITHUB_SHA', 'local'), 'universe_revision': universe.get('revision')}}
+    path = write_new(out_dir / f"tom-historical-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'tom-historical', 'at': stamp(now), 'overall': out['overall'], 'file': str(path),
+                      'dataset_fingerprint': md['fingerprint']})
+    return out
+
+
+def cmd_tom_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
+    universe, members = universe_members()
+    start = (date.fromisoformat(TOM_FIRST_SIGNAL) - timedelta(days=60)).isoformat()
+    md, sessions, series = _daily_market([], start, today, end_time=forward_end_time(now))
+    calendar = _tom_calendar(start, today)
+    d = cand.tom_decisions(sessions, calendar, first_signal=TOM_FIRST_SIGNAL, last_exec=today)
+    entered = sum(1 for a, b in zip(d, d[1:]) if not a['targets'] and b['targets'])
+    if not d:
+        led = {'status': 'NOT STARTED', 'first_signal': TOM_FIRST_SIGNAL}
+    else:
+        first, end_k = d[0]['signal_index'] + 1, len(sessions) - 1
+        res = ev.run_candidate(sessions, series, md['actions'], d, first, end_k)
+        led = {'status': 'INSUFFICIENT FORWARD SAMPLE' if entered < TOM_FORWARD_MIN_WINDOWS else 'READY FOR PRE-REGISTERED FORWARD REVIEW',
+               'first_execution': sessions[first], 'sessions': end_k - first + 1, 'windows_entered': entered,
+               'last_target': d[-1]['targets'], 'result': ev.strip_series(res),
+               'spy_hold': ev.summarize(ev.hold_curve(sessions, series['SPY'], first, end_k), sessions[first], sessions[end_k])}
+    out = {'kind': 'tom-forward', 'at': stamp(now), 'prereg': TOM_PREREG, 'id': cand.TOM_ID,
+           'latest_session': sessions[-1] if sessions else None, 'ledger': led,
+           'data': {k: md[k] for k in ('fingerprint', 'missing', 'requests', 'symbols_rejected')}}
+    path = write_new(out_dir / f"tom-forward-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'tom-forward', 'at': stamp(now), 'file': str(path), 'status': led['status']})
+    return out
+
+
 # ---------------------------------------------------------------- forward ledgers
 
 def qmom_snapshots(store) -> list[dict]:
@@ -402,7 +478,7 @@ def cmd_report(data: Path, now: datetime) -> Path:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('collect', 'historical', 'forward', 'daily-historical', 'daily-forward', 'report'))
+    p.add_argument('command', choices=('collect', 'historical', 'forward', 'daily-historical', 'daily-forward', 'tom-historical', 'tom-forward', 'report'))
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--end', default=ev.END)
     a = p.parse_args()
@@ -428,6 +504,13 @@ def main():
         out = cmd_daily_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
         print(json.dumps({'latest_session': out['latest_session'], 'ledgers': {s: {k: l.get(k) for k in ('status', 'sessions', 'first_execution')}
                                                                                 for s, l in out['ledgers'].items()}}))
+    elif a.command == 'tom-historical':
+        out = cmd_tom_historical(a.data, a.data / 'results', a.end, now)
+        print(json.dumps({'overall': out['overall'], 'verdict': out['verdict']['verdict'], 'break_even_bps': out['break_even_bps'],
+                          'dataset_fingerprint': out['data']['fingerprint']}))
+    elif a.command == 'tom-forward':
+        out = cmd_tom_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
+        print(json.dumps({'latest_session': out['latest_session'], 'status': out['ledger']['status']}))
     else:
         path = cmd_report(a.data, now)
         print(path.read_text())
