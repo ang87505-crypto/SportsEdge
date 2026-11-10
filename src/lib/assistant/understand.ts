@@ -6,10 +6,13 @@
  */
 import type {Platform,Stat} from '../props/contract.ts';
 import {playerKey} from '../props/identity.ts';
+import type {AssistantDomain,AssistantTopic} from './domain.ts';
+import type {ResearchId} from '../research/stock-summary.ts';
 
 export type Intent='picks'|'why'|'results'|'record'|'player'|'entries'|'lineup'|'status'|'model'|'mistakes'|'future'|'help'|'smalltalk'|'bet'|'unknown';
 export type RangeKey='today'|'yesterday'|'week'|'all'|`date:${string}`;
-export type AssistantContext={intent?:Intent;player?:string;stat?:Stat;range?:RangeKey;lastPickIds?:number[]};
+export type AssistantContext={intent?:Intent;player?:string;stat?:Stat;range?:RangeKey;lastPickIds?:number[];
+ domain?:AssistantDomain;topic?:AssistantTopic;symbol?:string;strategyId?:ResearchId};
 export type Parsed={intent:Intent;player:{name:string}|{ambiguous:string[]}|{unknown:string}|null;stat:Stat|null;side:'more'|'less'|null;
  platform:Platform|null;range:RangeKey|null;followUp:boolean};
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SECTIONS,activeChild,crumbsFor,parentFor,sectionFor} from './navigation.ts';
+import {SECTIONS,PLATFORM,activeChild,crumbsFor,parentFor,sectionFor} from './navigation.ts';
 
 test('the PrizePicks dashboard is the betting section landing page, not a moneyline child',()=>{
  assert.equal(sectionFor('/paper-betting/props').id,'paper');
@@ -20,7 +20,8 @@ test('other sections are unchanged',()=>{
  assert.deepEqual(crumbsFor('/automation').map(c=>c.href),['/automation']);
 });
 
-test('the Ask page sits under PrizePicks',()=>{
- assert.deepEqual(crumbsFor('/assistant').map(c=>c.href),['/paper-betting/props','/assistant']);
- assert.ok(SECTIONS.find(s=>s.id==='paper').children.some(c=>c.href==='/assistant'&&c.label==='Ask'));
+test('the shared Ask page is reachable across the site',()=>{
+ assert.deepEqual(crumbsFor('/assistant').map(c=>c.href),['/assistant']);
+ assert.equal(sectionFor('/assistant'),null);
+ assert.ok(PLATFORM.some(c=>c.href==='/assistant'&&c.label==='Ask SportsEdge'));
 });

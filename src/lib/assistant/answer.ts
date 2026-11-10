@@ -15,8 +15,9 @@ export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{stat
  /** The previous turn's context, so "why?" can refer to the last answer's picks. */
  context?:AssistantContext|null};
 export type Card={kind:'picks';items:{id:number;text:string;detail:string}[]}|{kind:'entries';items:{id:number;text:string;detail:string}[]}|
- {kind:'lineup';text:string};
-export type Reply={text:string;cards:Card[];suggestions:string[];context:AssistantContext};
+ {kind:'lineup';text:string}|{kind:'links';items:{label:string;href:string}[]}|
+ {kind:'facts';items:{label:string;value:string;detail?:string}[]};
+export type Reply={text:string;cards:Card[];suggestions:string[];context:AssistantContext;private?:boolean};
 type Line=PropsView['lines'][number];
 
 const DAY=86400_000;

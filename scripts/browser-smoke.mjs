@@ -240,11 +240,49 @@ try{
   await until(async()=>evaluate(send,`document.querySelector('main h1')?.textContent?.includes('Page not found') && !!document.querySelector('.status-page a[href="/stocks"]')`),'styled not-found page');
   console.log('PASS not found: styled 404 with links back to every section');
  }catch(error){const message='Not-found page: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Shared assistant: real read-only questions, then a synthetic client-only logout regression.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/assistant'});
+  await until(async()=>evaluate(send,"!!document.querySelector('#chat-input') && !document.querySelector('.chat-msg.pending')"),'shared assistant loaded');
+  const lastReply=()=>evaluate(send,"[...document.querySelectorAll('.chat-msg.bot:not(.pending)')].at(-1)?.textContent || ''");
+  async function submitQuestion(text){
+   await evaluate(send,"(()=>{const el=document.querySelector('#chat-input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,"+JSON.stringify(text)+");el.dispatchEvent(new Event('input',{bubbles:true}));return true})()");
+   await until(async()=>evaluate(send,"!document.querySelector('.chat-form button[type=submit]').disabled"),'assistant input');
+   await evaluate(send,"(document.querySelector('.chat-form button[type=submit]').click(),true)");
+  }
+  async function askQuestion(text){
+   const count=await evaluate(send,"document.querySelectorAll('.chat-msg.bot:not(.pending)').length");
+   await submitQuestion(text);
+   await until(async()=>evaluate(send,"document.querySelectorAll('.chat-msg.bot:not(.pending)').length>"+count+" && !document.querySelector('.chat-msg.pending')"),'assistant '+text);
+   return lastReply();
+  }
+  if(!/Sign in/i.test(await askQuestion('Stock results')))throw Error('Anonymous stock query must require owner access');
+  if(!/Historical window/.test(await askQuestion('Momentum research results')))throw Error('Missing historical research evidence');
+  if(!/Failed checks/.test(await askQuestion('Why?')))throw Error('Research follow-up lost its domain');
+  const combined=await askQuestion('Is everything running?');
+  if(!['Sports','Stock account','Stock research'].every(s=>combined.includes(s)))throw Error('Missing a domain in combined status');
+  // This fixture exercises browser privacy only. It never authenticates or contacts an account.
+  await evaluate(send,"(()=>{window.__assistantRealFetch=window.fetch;window.__assistantUiOwner=true;window.fetch=async(input,init)=>{if(String(input)==='/api/assistant'){if(!init?.method||init.method==='GET')return Response.json({ownerAccess:window.__assistantUiOwner,ownerExpiresAt:Date.now()+60000});const b=JSON.parse(init.body);if(b.message==='TEST_PENDING')await new Promise(r=>window.__assistantRelease=r);return Response.json({status:'ok',ownerAccess:true,ownerExpiresAt:Date.now()+60000,reply:{text:'TEST_ONLY_PRIVATE_BALANCE',cards:[],suggestions:[],private:true,context:{domain:'stocks'}}});}return window.__assistantRealFetch(input,init);};return true})()");
+  await askQuestion('TEST_PRIVATE');
+  if(!/TEST_ONLY_PRIVATE_BALANCE/.test(await lastReply()))throw Error('Synthetic private reply did not render');
+  if(await evaluate(send,"JSON.stringify(sessionStorage).includes('TEST_ONLY_PRIVATE_BALANCE')"))throw Error('Private reply was persisted');
+  await submitQuestion('TEST_PENDING');
+  await until(async()=>evaluate(send,"typeof window.__assistantRelease==='function'"),'pending synthetic private reply');
+  await evaluate(send,"(()=>{window.__assistantUiOwner=false;window.dispatchEvent(new Event('focus'));return true})()");
+  await until(async()=>evaluate(send,"!document.body.textContent.includes('TEST_ONLY_PRIVATE_BALANCE')"),'private history clears after logout');
+  await evaluate(send,"(window.__assistantRelease(),true)");
+  await delay(250);
+  if(await evaluate(send,"document.body.textContent.includes('TEST_ONLY_PRIVATE_BALANCE')"))throw Error('Late reply resurrected private content');
+  await send('Page.navigate',{url:base+'/assistant'});
+  console.log('PASS shared assistant: domains, research, follow-up, private history and late reply after logout');
+ }catch(error){const message='Shared assistant: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+
  // Motion: blocks reveal as they scroll into view, the progress bar tracks scroll, Sections jumps work.
  try{
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
   await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
-  await send('Page.navigate',{url:base+'/stocks/research'});
+  await send('Page.navigate',{url:base+'/guide'});
   await until(async()=>evaluate(send,`document.documentElement.classList.contains('motion-ok') && document.querySelectorAll('[data-reveal]').length>4`),'motion armed');
   await delay(400);
   const pending=await evaluate(send,`document.querySelectorAll('[data-reveal="pending"]').length`);

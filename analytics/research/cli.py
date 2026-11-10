@@ -309,7 +309,12 @@ _p, _n = ev._pct, ev._num
 
 def cmd_report(data: Path, now: datetime) -> Path:
     store = SnapshotStore(data)
-    text = render(latest(data / 'results', 'historical'), latest(data / 'results', 'forward'), store)
+    from .summary import build_summary
+    hist, fwd = latest(data / 'results', 'historical'), latest(data / 'results', 'forward')
+    text = render(hist, fwd, store)
+    runs = [json.loads(line) for line in (data / 'runs.jsonl').read_text().splitlines() if line.strip()] if (data / 'runs.jsonl').exists() else []
+    summary = build_summary(hist, fwd, store.manifest(), runs, stamp(now))
+    (data / 'summary.json').write_text(json.dumps(summary, indent=1, sort_keys=True), encoding='utf-8')
     path = data / 'reports' / f"{stamp(now)[:10]}-{stamp(now)[11:19].replace(':', '')}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding='utf-8')
