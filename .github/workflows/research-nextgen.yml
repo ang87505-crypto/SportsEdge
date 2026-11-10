@@ -36,11 +36,18 @@ jobs:
         run: python -m unittest discover -s analytics/research -t .
       - name: Check out the research-data branch
         run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Run mode from the request file (historical, or insider-truncated per Amendment 1)
+        run: |
+          MODE="$(python -c "import json;print(json.load(open('config/research/nextgen-run-request.json')).get('mode','historical'))")"
+          [[ "$MODE" =~ ^(historical|insider-truncated)$ ]] || { echo "invalid mode"; exit 2; }
+          echo "MODE=$MODE" >> "$GITHUB_ENV"
       - name: Collect SEC filings (read-only)
+        if: env.MODE == 'historical'
         env:
           SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
         run: python -m analytics.research.nextgen_cli collect --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Historical slate (pre-registered)
+        if: env.MODE == 'historical'
         env:
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
@@ -49,6 +56,12 @@ jobs:
           END="${END_INPUT:-$(python -c "import json;print(json.load(open('config/research/nextgen-run-request.json'))['end'])")}"
           [[ "$END" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid end"; exit 2; }
           python -m analytics.research.nextgen_cli historical --data research-data --end "$END" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Form 4 features on the window complete filings support (Amendment 1)
+        if: env.MODE == 'insider-truncated'
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.research.nextgen_cli insider-truncated --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit append-only to research-data
         if: always()
         run: bash .github/scripts/research-data-branch.sh commit "nextgen ${{ github.run_id }}"

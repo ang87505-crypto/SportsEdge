@@ -256,6 +256,58 @@ def historical(data: Path, end: str, now) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- amendment 1: truncated V5 window
+
+AMENDMENT_1 = 'docs/STOCK_STRATEGY_NEXTGEN_PREREG_AMENDMENT_1_2026_11_10.md'
+TRUNCATED_END, TRUNCATED_LAST_QUARTER, TRUNCATED_COVERAGE_END = '2026-04-30', '2026q1', '2026-03-31'
+
+
+def insider_truncated(data: Path, now) -> dict:
+    """V5 on the window complete Form 4 data sets support, with B0 on the identical window (Amendment 1)."""
+    store = SnapshotStore(data)
+    universe, members = cli.universe_members()
+    symbols = {m['symbol'] for m in members}
+    end = TRUNCATED_END
+    md = cli.market_data(cli.alpaca(), symbols | {'SPY'}, ev.DATA_START, end, {})
+    sessions, series = rdata.assemble(md['sessions'], md['bars'])
+    start_k, end_k = ev.window(sessions, ev.FIRST_EXEC, end)
+    bench = ev.benchmarks(sessions, series, universe, start_k, end_k, extra_holds=())
+    spy_curve = ev.hold_curve(sessions, series['SPY'], start_k, end_k)
+    ctx = {'sessions': sessions, 'series': series, 'actions': md['actions'], 'start_k': start_k, 'end_k': end_k,
+           'bench': bench, 'spy_curve': spy_curve, 'spy_rets': ng.daily_returns(spy_curve)}
+    kw = {'first_signal': sessions[start_k - 1], 'last_exec': end}
+    _, _, events, qprov, qmissing = load_filings(store, symbols, TRUNCATED_LAST_QUARTER)
+    if qmissing:
+        raise RuntimeError('BLOCKED_BY_POINT_IN_TIME_DATA: ' + ','.join(qmissing))
+    purchases, attribution = filings.qualifying_purchases(events)
+    b0 = cand.momentum_quality_decisions(sessions, series, members, **kw)
+    results = {ng.B0: evaluate_candidate(ng.B0, b0, ctx)}
+    ctx['b0_rets'] = ng.daily_returns(_sim(sessions, series, md['actions'], b0, start_k, end_k, cost=10, halt=False)['curve'])
+    for sid, mode in (('insider-only-v1', 'only'), ('mq-insider-tiebreak-v1', 'tiebreak'), ('mq-insider-filter-v1', 'filter')):
+        d = ng.insider_decisions(sessions, series, members, purchases, mode, coverage_end=TRUNCATED_COVERAGE_END, **kw)
+        results[sid] = evaluate_candidate(sid, d, ctx)
+        results[sid]['picks_changed_vs_b0'] = picks_changed(d, b0)
+        results[sid]['decisions_beyond_coverage'] = sum(1 for x in d if x['meta'].get('beyond_coverage'))
+        results[sid]['decisions_with_any_flag'] = sum(1 for x in d if x['meta'].get('flagged')) if mode != 'only' else None
+        results[sid]['decisions_fully_cash'] = sum(1 for x in d if not x['targets'])
+    qualifying = [k for k, v in results.items() if k != ng.B0 and v['gates']['verdict'] == 'QUALIFIES FOR INDEPENDENT REVIEW']
+    out = {'kind': 'nextgen-insider-truncated', 'prereg': ng.PREREG, 'amendment': AMENDMENT_1, 'label': 'EXPLORATORY-TRUNCATED',
+           'at': cli.stamp(now), 'window': [sessions[start_k], sessions[end_k]], 'capital': ev.CAPITAL,
+           'overall': 'QUALIFIES FOR INDEPENDENT REVIEW (truncated window): ' + ', '.join(qualifying) if qualifying else 'NONE QUALIFIES',
+           'results': results, 'status': {'insider': {'quarters': len(qprov), 'coverage_end': TRUNCATED_COVERAGE_END,
+                                                      'attribution': attribution}},
+           'benchmarks': bench, 'spy_hold_extra': ng.extra_metrics(spy_curve, spy_curve, [1.0] * (len(spy_curve) - 1)),
+           'data': {k: md[k] for k in ('fingerprint', 'actions_pages_fingerprint', 'joins', 'missing', 'requests', 'actions_dropped')}
+           | {'sessions': [md['sessions'][0], md['sessions'][-1]], 'symbols_with_bars': len(md['bars']), 'form345_quarters': qprov},
+           'fingerprints': {'code_commit': os.getenv('GITHUB_SHA', 'local'), 'universe_revision': universe.get('revision'),
+                            'prereg_sha256': filings.sha256((cli.ROOT / ng.PREREG).read_bytes()),
+                            'amendment_sha256': filings.sha256((cli.ROOT / AMENDMENT_1).read_bytes())}}
+    path = cli.write_new(data / 'results' / f"nextgen-insider-truncated-{cli.stamp(now).replace(':', '')}.json", out)
+    cli.append_run(data, {'command': 'nextgen-insider-truncated', 'at': cli.stamp(now), 'overall': out['overall'],
+                          'file': str(path), 'dataset_fingerprint': md['fingerprint']})
+    return out
+
+
 # ---------------------------------------------------------------- report
 
 def _p(x, d=1):
@@ -300,7 +352,7 @@ def render(out: dict) -> str:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('collect', 'historical', 'report'))
+    p.add_argument('command', choices=('collect', 'historical', 'insider-truncated'))
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--end', default=ev.END)
     a = p.parse_args()
@@ -308,11 +360,11 @@ def main():
     a.data.mkdir(parents=True, exist_ok=True)
     if a.command == 'collect':
         print(json.dumps(collect(a.data, now)))
-    elif a.command == 'historical':
-        out = historical(a.data, a.end, now)
+    else:
+        out = historical(a.data, a.end, now) if a.command == 'historical' else insider_truncated(a.data, now)
         text = render(out)
         (a.data / 'reports').mkdir(parents=True, exist_ok=True)
-        rp = a.data / 'reports' / f"nextgen-{cli.stamp(now).replace(':', '')}.md"
+        rp = a.data / 'reports' / f"nextgen-{a.command}-{cli.stamp(now).replace(':', '')}.md"
         if rp.exists():
             raise FileExistsError(str(rp))
         rp.write_text(text, encoding='utf-8')

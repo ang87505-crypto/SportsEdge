@@ -5,6 +5,7 @@ import unittest
 import zipfile
 
 from analytics.research import engine, filings, nextgen
+from datetime import date, timedelta
 from analytics.research.test_engine_candidates import flat, sessions
 
 
@@ -305,3 +306,32 @@ class PipelineSmoke(unittest.TestCase):
 def date_(y):
     from datetime import date
     return date(y, 1, 3)
+
+
+class InsiderModes(unittest.TestCase):
+    def test_only_tiebreak_and_filter(self):
+        from analytics.research import candidates as cand
+        n = 300
+        ss = sessions(n, start=date_(2022))
+        se, members = {}, []
+        for i in range(8):
+            px = [20.0 * (1 + 0.0004 * (i + 1)) ** k * (1 + 0.01 * ((k * (i + 3)) % 7 - 3)) for k in range(n)]
+            se[f'S{i}'] = {'o': px[:], 'c': px[:], 'ao': px[:], 'ac': px[:], 'v': [5_000_000] * n}
+            members.append({'symbol': f'S{i}', 'sector': f'X{i}'})
+        kw = {'first_signal': ss[270], 'last_exec': ss[-1]}
+        signal_day = ss[[k for k in cand.month_end_indices(ss) if ss[k] >= ss[270]][0]]
+        purchases = {'S0': [{'filed': '2022-01-04', 'owner_cik': 'o1', 'value': 1e5}]}    # long before: outside 90 days
+        late = {'S0': [{'filed': signal_day, 'owner_cik': 'o1', 'value': 1e5}]}            # filed on the signal day: invisible
+        for p in (purchases, late):
+            only = nextgen.insider_decisions(ss, se, members, p, 'only', **kw)
+            self.assertTrue(all(not d['targets'] for d in only))
+        prior = (date.fromisoformat(signal_day) - timedelta(days=5)).isoformat()
+        p = {'S0': [{'filed': prior, 'owner_cik': 'o1', 'value': 1e5}]}
+        only = nextgen.insider_decisions(ss, se, members, p, 'only', **kw)
+        self.assertEqual(only[0]['targets'], {'S0': 0.2})
+        b0 = cand.momentum_quality_decisions(ss, se, members, **kw)
+        tb = nextgen.insider_decisions(ss, se, members, p, 'tiebreak', **kw)
+        flt = nextgen.insider_decisions(ss, se, members, p, 'filter', **kw)
+        self.assertIn('S0', tb[0]['targets'])
+        self.assertEqual(len(tb[0]['targets']), len(b0[0]['targets']))
+        self.assertEqual(flt[0]['targets'], {'S0': 0.2})
