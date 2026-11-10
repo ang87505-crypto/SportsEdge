@@ -308,6 +308,47 @@ def insider_truncated(data: Path, now) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- forward ledgers for qualifying candidates
+
+FORWARD_FIRST_SIGNAL = '2026-11-30'   # first month-end after registration (docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md)
+FORWARD_MIN_SESSIONS, FORWARD_MIN_REBALANCES = 252, 12
+FORWARD_BLOCKED = {'mq-insider-tiebreak-v1': 'BLOCKED_BY_POINT_IN_TIME_DATA: SEC quarterly insider data sets arrive a '
+                                             'quarter or more late; a forward ledger needs a per-filing EDGAR collector'}
+
+
+def forward_status(n_sessions: int, n_rebalances: int) -> str:
+    return ('READY FOR PRE-REGISTERED FORWARD REVIEW' if n_sessions >= FORWARD_MIN_SESSIONS and n_rebalances >= FORWARD_MIN_REBALANCES
+            else 'INSUFFICIENT FORWARD SAMPLE')
+
+
+def forward(data: Path, today: str, now) -> dict:
+    """Append-only forward ledger for mq-buffer-v1 from the first month-end after registration. Not scheduled:
+    running it nightly is an owner decision."""
+    from datetime import date, timedelta
+    universe, members = cli.universe_members()
+    start = (date.fromisoformat(FORWARD_FIRST_SIGNAL) - timedelta(days=400)).isoformat()
+    md = cli.market_data(cli.alpaca(), {m['symbol'] for m in members} | {'SPY'}, start, today, {},
+                         end_time=cli.forward_end_time(now))
+    sessions, series = rdata.assemble(md['sessions'], md['bars'])
+    d = ng.buffer_decisions(sessions, series, members, first_signal=FORWARD_FIRST_SIGNAL, last_exec=today)
+    ledgers = {sid: {'status': why} for sid, why in FORWARD_BLOCKED.items()}
+    if not d or d[0]['signal_index'] + 1 >= len(sessions):
+        ledgers['mq-buffer-v1'] = {'status': 'NOT STARTED', 'first_signal': FORWARD_FIRST_SIGNAL}
+    else:
+        first, end_k = d[0]['signal_index'] + 1, len(sessions) - 1
+        res = ev.run_candidate(sessions, series, md['actions'], d, first, end_k)
+        n = end_k - first + 1
+        ledgers['mq-buffer-v1'] = {'status': forward_status(n, len(d)), 'first_execution': sessions[first], 'sessions': n,
+                                   'decisions': [{'date': sessions[x['signal_index']], 'targets': x['targets'], 'meta': x['meta']} for x in d],
+                                   'result': ev.strip_series(res), 'benchmarks': ev.benchmarks(sessions, series, None, first, end_k, extra_holds=())}
+    out = {'kind': 'nextgen-forward', 'at': cli.stamp(now), 'latest_session': sessions[-1] if sessions else None, 'ledgers': ledgers,
+           'data': {k: md[k] for k in ('fingerprint', 'missing', 'requests')}, 'code_commit': os.getenv('GITHUB_SHA', 'local')}
+    path = cli.write_new(data / 'results' / f"nextgen-forward-{cli.stamp(now).replace(':', '')}.json", out)
+    cli.append_run(data, {'command': 'nextgen-forward', 'at': cli.stamp(now), 'file': str(path),
+                          'status': {k: v['status'] for k, v in ledgers.items()}})
+    return out
+
+
 # ---------------------------------------------------------------- report
 
 def _p(x, d=1):
@@ -352,7 +393,7 @@ def render(out: dict) -> str:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('collect', 'historical', 'insider-truncated'))
+    p.add_argument('command', choices=('collect', 'historical', 'insider-truncated', 'forward'))
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--end', default=ev.END)
     a = p.parse_args()
@@ -360,6 +401,10 @@ def main():
     a.data.mkdir(parents=True, exist_ok=True)
     if a.command == 'collect':
         print(json.dumps(collect(a.data, now)))
+    elif a.command == 'forward':
+        from datetime import timedelta
+        out = forward(a.data, (now - timedelta(days=1)).date().isoformat(), now)
+        print(json.dumps({'latest_session': out['latest_session'], 'ledgers': {k: v['status'] for k, v in out['ledgers'].items()}}))
     else:
         out = historical(a.data, a.end, now) if a.command == 'historical' else insider_truncated(a.data, now)
         text = render(out)

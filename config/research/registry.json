@@ -108,7 +108,7 @@
     },
     {
       "id": "mq-recovery-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "B0 with a simulated research-only recovery after a halt: 20-session cooldown, SPY-above-200-day re-entry at 50%, full after 3 partial decisions. Not a production change.",
       "code": [
@@ -116,7 +116,8 @@
         "analytics/research/engine.py",
         "analytics/research/candidates.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: FAILS (10 halts; 5.0% CAGR; COVID exit -16.4%)"
     },
     {
       "id": "mq-buffer-v1",
@@ -128,11 +129,12 @@
         "analytics/research/engine.py",
         "analytics/research/candidates.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: QUALIFIES FOR INDEPENDENT REVIEW (narrow; Sharpe vs SPY CI spans zero); forward ledger pending owner approval"
     },
     {
       "id": "mq-invvol-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "B0 picks weighted by inverse 63-session volatility, 30% cap, no leverage.",
       "code": [
@@ -140,11 +142,12 @@
         "analytics/research/engine.py",
         "analytics/research/candidates.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: FAILS"
     },
     {
       "id": "mq-wide10-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "B0 ranking, 10 names at 10%, at most 3 per sector.",
       "code": [
@@ -152,11 +155,12 @@
         "analytics/research/engine.py",
         "analytics/research/candidates.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: FAILS (Sharpe; unresolved GE spin-off)"
     },
     {
       "id": "mq-fquality-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "Momentum top 20 ranked by point-in-time fundamental quality (annual ROA and 1 - liabilities/assets from SEC XBRL as filed).",
       "code": [
@@ -165,11 +169,12 @@
         "analytics/research/candidates.py",
         "analytics/research/filings.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: FAILS (worse than B0)"
     },
     {
       "id": "insider-only-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "Disclosure only: members with qualifying Form 4 purchases in the trailing 90 days (by filing availability).",
       "code": [
@@ -178,7 +183,8 @@
         "analytics/research/candidates.py",
         "analytics/research/filings.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: Full window BLOCKED_BY_POINT_IN_TIME_DATA; truncated window FAILS"
     },
     {
       "id": "mq-insider-tiebreak-v1",
@@ -191,11 +197,12 @@
         "analytics/research/candidates.py",
         "analytics/research/filings.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: Full window BLOCKED_BY_POINT_IN_TIME_DATA; truncated window QUALIFIES FOR INDEPENDENT REVIEW (narrow; no evidence vs B0); no forward data source"
     },
     {
       "id": "mq-insider-filter-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "B0 restricted to momentum top-20 names with qualifying Form 4 purchases; empty slots stay cash.",
       "code": [
@@ -204,11 +211,12 @@
         "analytics/research/candidates.py",
         "analytics/research/filings.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: Full window BLOCKED_BY_POINT_IN_TIME_DATA; truncated window FAILS"
     },
     {
       "id": "mq-buffer-fquality-v1",
-      "status": "challenger",
+      "status": "rejected",
       "kind": "nextgen-research",
       "description": "Integrated challenger: V2 buffer on V4 ranking; evaluated only if V2 and V4 each beat B0 Sharpe.",
       "code": [
@@ -217,7 +225,8 @@
         "analytics/research/candidates.py",
         "analytics/research/filings.py"
       ],
-      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "rules": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result_ref": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md: Not evaluated: its registered condition (V4 beats B0) failed"
     }
   ],
   "sources": [
@@ -339,8 +348,9 @@
     {
       "id": "nextgen-2026-11-10",
       "strategy": "mq-recovery-v1",
-      "status": "registered",
-      "prereg": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md"
+      "status": "complete",
+      "prereg": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+      "result": "docs/STOCK_STRATEGY_NEXTGEN_RESULTS_2026_11_10.md"
     }
   ]
 }

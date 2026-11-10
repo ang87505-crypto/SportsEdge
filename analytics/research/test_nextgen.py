@@ -335,3 +335,12 @@ class InsiderModes(unittest.TestCase):
         self.assertIn('S0', tb[0]['targets'])
         self.assertEqual(len(tb[0]['targets']), len(b0[0]['targets']))
         self.assertEqual(flt[0]['targets'], {'S0': 0.2})
+
+
+class Forward(unittest.TestCase):
+    def test_forward_review_needs_252_sessions_and_12_rebalances(self):
+        from analytics.research import nextgen_cli
+        self.assertEqual(nextgen_cli.forward_status(251, 20), 'INSUFFICIENT FORWARD SAMPLE')
+        self.assertEqual(nextgen_cli.forward_status(300, 11), 'INSUFFICIENT FORWARD SAMPLE')
+        self.assertEqual(nextgen_cli.forward_status(252, 12), 'READY FOR PRE-REGISTERED FORWARD REVIEW')
+        self.assertGreater(nextgen_cli.FORWARD_FIRST_SIGNAL, '2026-11-10')
