@@ -70,9 +70,9 @@ for(const [obsId,r] of latest){
 }
 const revisions=results.filter(r=>r.revision>1);
 const changedOnRevision=revisions.filter(r=>{const first=results.find(x=>x.observation_id===r.observation_id&&x.revision===1);return first&&first.outcome!==r.outcome;});
-const preds=await all<{model_version:string;status:string;athlete_id:string|null;inputs:Record<string,unknown>}>('props_predictions',
- 'select=model_version,status,athlete_id,inputs&model_version=eq.'+MODEL_VERSION+'&created_at=gte.'+encodeURIComponent(SINCE)+'&order=id.asc');
-const unscored:Record<string,number>={};for(const p of preds)if(p.status!=='scored'){const k=String((p.inputs as {reason?:string})?.reason??p.status);unscored[k]=(unscored[k]??0)+1;}
+const preds=await all<{model_version:string;status:string;reason:string|null;athlete_id:string|null}>('props_predictions',
+ 'select=model_version,status,reason,athlete_id&model_version=eq.'+MODEL_VERSION+'&predicted_at=gte.'+encodeURIComponent(SINCE)+'&order=id.asc');
+const unscored:Record<string,number>={};for(const p of preds)if(p.status!=='scored'){const k=String(p.reason??p.status);unscored[k]=(unscored[k]??0)+1;}
 const names=new Map<string,Set<string>>();for(const l of lines)if(l.athleteId){const s=names.get(l.playerName)??new Set();s.add(l.athleteId);names.set(l.playerName,s);}
 
 // ---------- real captured lines: layer 1 vs role variant vs books (same line, same reply)
@@ -119,7 +119,7 @@ const realLines=Object.fromEntries(STATS.map(st=>{
 const recomputeGap=cmp.map(x=>x.storedVsRecomputed).filter((x):x is number=>x!==null);
 
 // ---------- settled virtual entries (descriptive only)
-const settlements=await all<{outcome:string;return_cents:number|null;profit_cents:number|null}>('props_entry_settlements','select=outcome,return_cents,profit_cents&order=id.asc');
+const settlements=await all<{outcome:string;return_cents:number|null;profit_cents:number|null}>('props_entry_settlements','select=outcome,return_cents,profit_cents&order=entry_id.asc');
 
 const report={generatedAt:nowIso,since:SINCE,observations:lines.length,
  shadowLines:{byModel:shadow,recentSettles:settles,
