@@ -1,14 +1,19 @@
 /** Backup scheduler for jobs GitHub's own schedule often starts hours late or drops.
  * Called by daily Vercel crons (one per slot, an hour after the GitHub slot). It only dispatches fixed,
  * idempotent workflows: props runs carry their scheduled slot, so the database records a second start as
- * DUPLICATE. It never arms a gate, places an order, changes a control or calls a paid model.
+ * DUPLICATE. It never arms a gate, changes a control or calls a paid model. A stock worker backup dispatches the
+ * same execute or monitor run as the GitHub schedule (trigger=backup is treated as scheduled); that run trades only
+ * under the reviewed stock release manifest, an owner-armed gate and a same-day decision.
  */
 import {timingSafeEqual} from 'node:crypto';
 import {PROPS_RELEASE} from '../props/schedule.ts';
+import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
 
 type Env=Readonly<Record<string,string|undefined>>;
 type Deps={now:()=>number;fetcher:typeof fetch};
 type Slot={hourUtc:number;weekdaysUtc?:number[];workflow:string;inputs:Record<string,string>;props?:boolean;
+ /** Stock PAPER worker slot: follows the reviewed stock release manifest's scheduledRunsEnabled. */
+ stock?:boolean;
  /** A one-session research trial must not be dispatched on later days. */
  dateUtc?:string;
  /** Skip when this workflow already succeeded this recently (non-props jobs without slot keys). */
@@ -25,6 +30,16 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededWithinHours:20},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
+ // Stock PAPER worker backups (weekdays). Execute hours sit inside 09:30 ET + 30 min to 16:00 ET - 20 min in both
+ // offsets; the controller re-checks the exchange session, the owner gate and the same-day decision itself.
+ 'stock-execute-early':{hourUtc:15,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ 'stock-execute-midday':{hourUtc:16,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ 'stock-execute-late':{hourUtc:18,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ 'stock-monitor':{hourUtc:22,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
  'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
  'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };
@@ -50,6 +65,7 @@ export async function handleSchedulerKickoff(req:Request,slotName:string,env:Env
   (slot.dateUtc&&now.toISOString().slice(0,10)!==slot.dateUtc))
   return json({status:'skipped',reason:'outside_slot_hour',slot:slotName});
  if(slot.props&&(PROPS_RELEASE.scheduledRunsEnabled as boolean)!==true)return json({status:'skipped',reason:'props_schedule_off',slot:slotName});
+ if(slot.stock&&(PAPER_AUTO_RELEASE.scheduledRunsEnabled as boolean)!==true)return json({status:'skipped',reason:'stock_schedule_off',slot:slotName});
  const token=env.SPORTSEDGE_GITHUB_DISPATCH_TOKEN??'';
  if(!TOKEN.test(token))return json({status:'dispatch_not_configured',slot:slotName},503);
  const headers={Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',

@@ -38,11 +38,15 @@ if(!['execute','reconcile','monitor','decision','context',...OWNER_KINDS].includ
  emit({status:'USAGE',usage:'paper-auto-worker.ts <execute|reconcile|monitor|decision|context|register|'+
   'confirm-absent|resume> --experiment <id>'},2);
 const ownerRef=process.env.SPORTSEDGE_PAPER_AUTO_OWNER_REF??'';
+// A Vercel backup dispatch (trigger=backup) stands in for a missed GitHub schedule and is treated as one.
+const trigger=process.env.SPORTSEDGE_WORKER_TRIGGER??'';
+if(!['','manual','backup'].includes(trigger))emit({status:'USAGE',usage:'SPORTSEDGE_WORKER_TRIGGER is manual or backup'},2);
+const scheduled=process.env.GITHUB_EVENT_NAME==='schedule'||trigger==='backup';
 if(OWNER_KINDS.includes(kind)){
- if(process.env.GITHUB_EVENT_NAME==='schedule')emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind,experimentId},1);
+ if(scheduled)emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind,experimentId},1);
  if(!/^owner-[a-f0-9]{32}$/.test(ownerRef))emit({status:'OWNER_REF_REQUIRED',kind,experimentId},1);
 }
-if(process.env.GITHUB_EVENT_NAME==='schedule'&&(PAPER_AUTO_RELEASE.scheduledRunsEnabled as boolean)!==true)
+if(scheduled&&(PAPER_AUTO_RELEASE.scheduledRunsEnabled as boolean)!==true)
  emit({status:'SCHEDULED_RUNS_RELEASED_OFF',kind,experimentId,brokerCalls:0},0);
 if(!PAPER_AUTO_RELEASE.paperOnly||PAPER_AUTO_RELEASE.realMoneyEnabled)emit({status:'RELEASE_INVALID'},1);
 const keyId=process.env.ALPACA_PAPER_AUTO_KEY_ID??'',secretKey=process.env.ALPACA_PAPER_AUTO_SECRET_KEY??'';
