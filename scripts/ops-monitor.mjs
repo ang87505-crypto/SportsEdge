@@ -155,7 +155,8 @@ async function siteChecks(){
   if(r?.context?.domain!=='research')throw new Error('not routed to research');
   const f=await ask('Why?',r.context);if(!/Failed checks|failed|check/i.test(f?.text??''))throw new Error('follow-up lost its topic');return 'answered';});
  await check('Chat: combined status',async()=>{const r=await ask('Is everything running?');
-  for(const h of ['Sports','Stock account','Stock research'])if(!r?.text?.includes(h))throw new Error('missing '+h);return 'answered';});
+  for(const h of ['Sports','Stock account','Stock research','Background jobs'])if(!r?.text?.includes(h))throw new Error('missing '+h);
+  if(/Background jobs\n(The operations monitor has not published|Background job status is unavailable)/.test(r.text))throw new Error('chat cannot read the job status');return 'answered';});
  await check('Owner protection: stock account in chat',async()=>{const r=await ask('Stock results');
   if(!/Sign in/i.test(r?.text??''))throw new Error('stock account answered without owner sign-in');if(r.private)throw new Error('private flag on anonymous reply');return 'requires sign-in';});
  await check('Owner protection: session probe',async()=>{const r=await getJson(base+'/api/assistant');
