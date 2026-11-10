@@ -77,3 +77,29 @@ test('every slot has a daily Vercel cron in its own hour, and props slots name a
  }
  for(const c of crons)assert.doesNotMatch(c.schedule.split(' ').slice(0,2).join(' '),/[*\/,-]/,'Hobby allows daily crons only');
 });
+
+test('stock worker backups: weekday execute slots inside the trading window in both New York offsets, monitor after the close',async()=>{
+ const stock=Object.entries(SCHEDULER_SLOTS).filter(([,s])=>s.workflow==='paper-auto-worker.yml');
+ const kinds=stock.map(([,s])=>s.inputs.kind).sort();
+ assert.deepEqual(kinds,['execute','execute','execute','monitor']);
+ for(const [name,s] of stock){
+  assert.deepEqual(Object.keys(s.inputs).sort(),['experiment','kind','trigger'],name);
+  assert.equal(s.inputs.experiment,'stock-v2-weekly-1');assert.equal(s.inputs.trigger,'backup');
+  assert.deepEqual(s.weekdaysUtc,[1,2,3,4,5],name);
+  // Vercel Hobby fires somewhere inside the hour: [h:00, h:59].
+  const first=s.hourUtc*60,last=first+59;
+  for(const offset of [4,5]){ // EDT, EST
+   const open=(9*60+30)+offset*60,close=16*60+offset*60;
+   if(s.inputs.kind==='execute')assert.ok(first>=open&&last<close-20,`${name} outside the execute window at UTC-${offset}`);
+   else assert.ok(first>=close,`${name} before the close at UTC-${offset}`);
+  }
+ }
+ const calls=[];
+ const r=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-16T15:05:00Z'),fetcher:fetcher(calls)});
+ assert.equal(r.status,202);
+ assert.deepEqual(calls[0].body,{ref:'main',inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}});
+ assert.match(calls[0].url,/paper-auto-worker\.yml\/dispatches$/);
+ const saturday=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-14T15:05:00Z'),fetcher:fetcher(calls)});
+ assert.equal((await saturday.json()).reason,'outside_slot_hour');
+ assert.equal(calls.length,1);
+});

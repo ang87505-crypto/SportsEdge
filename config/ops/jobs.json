@@ -22,7 +22,7 @@
     {"id": "research-evaluate", "label": "Strategy research: monthly evaluation", "area": "research",
      "workflow": "research-evaluate.yml", "required": true, "staleAfterHours": 800, "graceMinutes": 240},
     {"id": "paper-release", "label": "Temporary PAPER release watcher", "area": "release",
-     "workflow": "paper-release.yml", "required": false, "expiresAt": "2026-11-11T07:00:00Z", "graceMinutes": 180},
+     "workflow": "paper-release.yml", "required": false, "expiresAt": "2026-11-21T07:00:00Z", "graceMinutes": 180},
     {"id": "ops-monitor", "label": "Operations monitor (this status)", "area": "ops",
      "workflow": "ops-monitor.yml", "required": true, "staleAfterHours": 8, "graceMinutes": 120}
   ]

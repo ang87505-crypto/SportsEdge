@@ -43,3 +43,13 @@ test('registration reads only the reviewed config for that experiment, before an
  const s=run(['register','--experiment','fwd-2026-baseline'],OWNER);
  assert.deepEqual([s.code,s.out.status],[1,'NOT_CONFIGURED']);
 });
+
+test('a Vercel backup dispatch counts as a scheduled run: owner commands refused, unknown triggers rejected',()=>{
+ const backup={GITHUB_EVENT_NAME:'workflow_dispatch',SPORTSEDGE_WORKER_TRIGGER:'backup'};
+ let r=run(['resume','--experiment','stock-v2-weekly-1'],{...SETTINGS,...OWNER,...backup});
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
+ r=run(['register','--experiment','stock-v2-weekly-1'],{...SETTINGS,...OWNER,...backup});
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
+ r=run(['execute','--experiment','stock-v2-weekly-1'],{...SETTINGS,GITHUB_EVENT_NAME:'workflow_dispatch',SPORTSEDGE_WORKER_TRIGGER:'cron'});
+ assert.deepEqual([r.code,r.out.status],[2,'USAGE']);
+});

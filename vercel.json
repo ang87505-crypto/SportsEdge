@@ -36,6 +36,22 @@
     {
       "path": "/api/internal/scheduler/daily-shadow-grade",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-early",
+      "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-midday",
+      "schedule": "0 16 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-late",
+      "schedule": "0 18 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-monitor",
+      "schedule": "0 22 * * 1-5"
     }
   ],
   "git": {
