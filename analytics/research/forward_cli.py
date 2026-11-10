@@ -14,8 +14,8 @@ import copy
 from datetime import date, datetime, timedelta, timezone
 import json
 import os
+import time
 from pathlib import Path
-import subprocess
 
 from . import candidates as cand
 from . import cli
@@ -23,6 +23,7 @@ from . import data as rdata
 from . import engine
 from . import evaluate as ev
 from . import forward_ledger as fl
+from . import ledger_receipts as lr
 from . import nextgen as ng
 
 HISTORY_DAYS = 420     # calendar days of bars before a signal: covers the 252-session lookback with margin
@@ -39,17 +40,54 @@ def _market(source, members, start: str, end: str, end_time: str | None):
     return md, sessions, series
 
 
-def commit_times(ledger_dir: Path) -> dict:
-    """signal -> commit time that first added predictions/<signal>.json (needs the ledger's git history)."""
+def receipts_for(ledger_dir: Path, ledger) -> dict:
+    """Server-side receipt evidence for every prediction. Without a working client every prediction is UNAVAILABLE,
+    which never counts as VALID (fail closed)."""
+    preds = ledger.predictions()
+    try:
+        client = lr.GitHubStatuses(os.getenv('GITHUB_REPOSITORY', ''), os.getenv('GH_TOKEN', ''))
+    except lr.ReceiptUnavailable as e:
+        return {s_: {'state': 'UNAVAILABLE', 'reason': str(e)} for s_ in preds}
+    return lr.lookup(ledger_dir, preds, client, fl.sha)
+
+
+def cmd_receipt(ledger_dir: Path, now: datetime, started_at: str | None) -> dict:
+    """Obtain the server-side receipt for every prediction that has none, then read every receipt back from GitHub.
+    A prediction must already be pushed (a status can only be created on a commit GitHub has)."""
+    ledger = fl.Ledger(ledger_dir)
+    client = lr.GitHubStatuses(os.getenv('GITHUB_REPOSITORY', ''), os.getenv('GH_TOKEN', ''))
+    run_url = (os.getenv('GITHUB_SERVER_URL', 'https://github.com') + '/' + os.getenv('GITHUB_REPOSITORY', '') +
+               '/actions/runs/' + os.getenv('GITHUB_RUN_ID', '')) if os.getenv('GITHUB_RUN_ID') else None
+    before = lr.lookup(ledger_dir, ledger.predictions(), client, fl.sha)
+    created = []
+    for signal, r in before.items():
+        if r['state'] == 'FOUND':
+            continue
+        commit = lr.adding_commit(ledger_dir, signal)
+        if not commit:
+            continue
+        for wait in (0, 5, 15, 45):              # transient API failures: retry quickly; later attempts retry again
+            time.sleep(wait)
+            try:
+                client.create(commit, signal, ledger.prediction(signal)['record_sha'], run_url)
+                created.append(signal)
+                break
+            except lr.ReceiptUnavailable:
+                continue
+    after = lr.lookup(ledger_dir, ledger.predictions(), client, fl.sha)
+    valid = fl.verify_chain(ledger, after)
     out = {}
-    for p in sorted((ledger_dir / 'predictions').glob('*.json')):
-        try:
-            t = subprocess.run(['git', '-C', str(ledger_dir), 'log', '--diff-filter=A', '--format=%cI', '--', f'predictions/{p.name}'],
-                               capture_output=True, text=True, timeout=30).stdout.strip().splitlines()
-        except (OSError, subprocess.SubprocessError):
-            t = []
-        if t:
-            out[p.stem] = datetime.fromisoformat(t[-1]).astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    for signal, r in after.items():
+        rec = ledger.prediction(signal)
+        row = {'state': r['state'], 'created_at': r.get('created_at'), 'status_id': r.get('status_id'), 'commit': r.get('commit'),
+               'next_open_utc': rec['next_open_utc'], 'verification': valid.get(signal), 'created_now': signal in created}
+        if r.get('created_at') and started_at:
+            row['seconds_from_run_start_to_receipt'] = (fl.utc(r['created_at']) - fl.utc(started_at)).total_seconds()
+        out[signal] = row
+        if r['state'] == 'FOUND':
+            ledger.write_receipt(signal, {'signal_session': signal, 'record_sha': rec['record_sha'], **{k: r[k] for k in (
+                'commit', 'status_id', 'created_at', 'creator', 'context', 'description')}, 'cached_at': fl.stamp(now),
+                'note': 'Cache only; verification always re-reads the status from GitHub.'})
     return out
 
 
@@ -63,8 +101,10 @@ def cmd_predict(ledger_dir: Path, now: datetime, *, first_signal=fl.FIRST_SIGNAL
     def market(end_time):
         _, sessions, series = _market(source, members, start, today, end_time)
         return sessions, series
-    return fl.predict(fl.Ledger(ledger_dir), now=now, calendar=calendar, market=market, members=members,
-                      code_commit=os.getenv('GITHUB_SHA', 'local'), first_signal=first_signal, label=label)
+    ledger = fl.Ledger(ledger_dir)
+    return fl.predict(ledger, now=now, calendar=calendar, market=market, members=members,
+                      code_commit=os.getenv('GITHUB_SHA', 'local'), receipts=receipts_for(ledger_dir, ledger),
+                      first_signal=first_signal, label=label)
 
 
 def cmd_evaluate(ledger_dir: Path, now: datetime) -> dict:
@@ -74,16 +114,17 @@ def cmd_evaluate(ledger_dir: Path, now: datetime) -> dict:
     start = (date.fromisoformat(fl.FIRST_SIGNAL) - timedelta(days=HISTORY_DAYS)).isoformat()
     calendar = _calendar(source, start, today)
     md, sessions, series = _market(source, members, start, today, cli.forward_end_time(now))
-    return fl.evaluate(fl.Ledger(ledger_dir), now=now, calendar=calendar, sessions=sessions, series=series,
+    ledger = fl.Ledger(ledger_dir)
+    return fl.evaluate(ledger, now=now, calendar=calendar, sessions=sessions, series=series,
                        actions=md['actions'], members=members, data_fingerprint=md['fingerprint'],
-                       code_commit=os.getenv('GITHUB_SHA', 'local'), commit_times=commit_times(ledger_dir))
+                       code_commit=os.getenv('GITHUB_SHA', 'local'), receipts=receipts_for(ledger_dir, ledger))
 
 
-def cmd_dry_run(signal: str, out_dir: Path) -> dict:
+def cmd_dry_run(signal: str, out_dir: Path, label: str = 'DRY_RUN') -> dict:
     """A real-data rehearsal for a past month-end, as if run 40 minutes after its close. Written to a scratch
-    directory labelled DRY_RUN, never to the forward ledger."""
+    directory (DRY_RUN) or the separate rehearsal ledger branch (REHEARSAL), never to the forward ledger."""
     now = fl.utc(cand.close_utc(signal)) + timedelta(minutes=40)
-    return cmd_predict(out_dir, now, first_signal=signal, label='DRY_RUN')
+    return cmd_predict(out_dir, now, first_signal=signal, label=label)
 
 
 # ---------------------------------------------------------------- historical audit of mq-buffer-v1
@@ -223,7 +264,8 @@ def cmd_audit(data: Path, end: str, now: datetime) -> dict:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('predict', 'evaluate', 'dry-run', 'audit'))
+    p.add_argument('command', choices=('predict', 'evaluate', 'dry-run', 'rehearse', 'receipt', 'audit'))
+    p.add_argument('--started-at')
     p.add_argument('--ledger', type=Path)
     p.add_argument('--data', type=Path)
     p.add_argument('--out', type=Path)
@@ -235,12 +277,18 @@ def main():
         print(json.dumps(cmd_predict(a.ledger, now)))
     elif a.command == 'evaluate':
         out = cmd_evaluate(a.ledger, now)
-        print(json.dumps({k: out.get(k) for k in ('status', 'latest_session', 'month_statuses', 'first_execution', 'sessions',
-                                                  'rebalances', 'revisions', 'commit_time_unverified')}))
-    elif a.command == 'dry-run':
-        ev_ = cmd_dry_run(a.signal, a.out)
-        rec = fl.Ledger(a.out).prediction(a.signal)
+        print(json.dumps({k: out.get(k) for k in ('status', 'latest_session', 'month_statuses', 'receipts', 'first_execution',
+                                                  'sessions', 'rebalances', 'revisions')}))
+    elif a.command in ('dry-run', 'rehearse'):
+        ev_ = cmd_dry_run(a.signal, a.out or a.ledger, 'DRY_RUN' if a.command == 'dry-run' else 'REHEARSAL')
+        rec = fl.Ledger(a.out or a.ledger).prediction(a.signal)
         print(json.dumps({'event': ev_, 'record': rec}, indent=1))
+    elif a.command == 'receipt':
+        out = cmd_receipt(a.ledger, now, a.started_at)
+        print(json.dumps(out, indent=1))
+        bad = {s_: r for s_, r in out.items() if r['state'] != 'FOUND'}
+        if bad:
+            raise SystemExit('RECEIPT_MISSING: ' + ', '.join(sorted(bad)))
     else:
         a.data.mkdir(parents=True, exist_ok=True)
         out = cmd_audit(a.data, a.end, now)

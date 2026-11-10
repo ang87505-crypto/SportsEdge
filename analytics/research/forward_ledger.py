@@ -31,6 +31,7 @@ from . import candidates as cand
 from . import engine
 from . import evaluate as ev
 from . import nextgen as ng
+from .ledger_receipts import RECEIPT_MARGIN
 
 LEDGER = 'mq-buffer-forward-v1'
 BUFFER, BASELINE = 'mq-buffer-v1', 'momentum-quality-paper-v1'
@@ -127,7 +128,7 @@ class Ledger:
 
     def __init__(self, root: Path):
         self.root = Path(root)
-        for d in ('predictions', 'missed', 'outcomes'):
+        for d in ('predictions', 'missed', 'outcomes', 'receipts'):
             (self.root / d).mkdir(parents=True, exist_ok=True)
 
     def _append(self, name, row):
@@ -172,14 +173,28 @@ class Ledger:
         except FileExistsError:
             pass
 
+    def write_receipt(self, signal: str, obj: dict):
+        try:
+            self._create(f'receipts/{signal}.json', obj)
+        except FileExistsError:
+            pass
+
     def write_outcome(self, name: str, obj: dict):
         return self._create(f'outcomes/{name}.json', obj)
 
 
-def verify_chain(ledger: Ledger, commit_times: dict | None = None) -> dict:
-    """signal -> 'VALID' or an INVALID reason, from the hash chain and the before-open rule. `commit_times`
-    (signal -> the ledger commit time that first added the file) proves the record was permanently stored before
-    the open; a commit at or after the open is INVALID."""
+def verify_chain(ledger: Ledger, receipts: dict | None) -> dict:
+    """signal -> 'VALID' or an INVALID reason. Fails closed.
+
+    A prediction is VALID only when all of these hold:
+    - its file hash and chain entry match;
+    - its own creation time is before the next open;
+    - an independent server-side receipt (ledger_receipts) binds this exact record hash, at the commit that added it,
+      with a GitHub-assigned time before the next open;
+    - its recorded buffer holdings equal the targets of the previous VALID prediction.
+
+    No receipt, an unverifiable receipt, or a late one is never VALID. Git commit dates are not used at all."""
+    receipts = receipts or {}
     chain, preds, out, prev = ledger.chain(), ledger.predictions(), {}, None
     by_signal = {c['signal_session']: c for c in chain}
     for c in chain:
@@ -190,18 +205,35 @@ def verify_chain(ledger: Ledger, commit_times: dict | None = None) -> dict:
         if out.get(signal):
             continue
         body = {k: v for k, v in rec.items() if k != 'record_sha'}
+        r = receipts.get(signal) or {'state': 'MISSING'}
         if signal not in by_signal:
             out[signal] = 'INVALID_NOT_IN_CHAIN'
         elif sha(body) != rec.get('record_sha') or rec['record_sha'] != by_signal[signal]['record_sha']:
             out[signal] = 'INVALID_HASH_MISMATCH'
-        elif not utc(rec['created_at']) < utc(rec['next_open_utc']):
-            out[signal] = 'INVALID_AFTER_OPEN'
         elif rec.get('signal_session') != signal:
             out[signal] = 'INVALID_SIGNAL_MISMATCH'
-        elif commit_times and commit_times.get(signal) and not utc(commit_times[signal]) < utc(rec['next_open_utc']):
-            out[signal] = 'INVALID_COMMITTED_AFTER_OPEN'
+        elif not utc(rec['created_at']) < utc(rec['next_open_utc']):
+            out[signal] = 'INVALID_AFTER_OPEN'
+        elif r.get('state') == 'UNAVAILABLE':
+            out[signal] = 'INVALID_RECEIPT_UNVERIFIABLE'
+        elif r.get('state') != 'FOUND':
+            out[signal] = 'INVALID_NO_RECEIPT'
+        elif r.get('content_record_sha') != rec['record_sha']:
+            out[signal] = 'INVALID_RECEIPT_MISMATCH'
+        elif not utc(r['created_at']) < utc(rec['next_open_utc']):
+            out[signal] = 'INVALID_RECEIPT_LATE'
         else:
             out[signal] = 'VALID'
+    # The buffer's retained holdings must come from the previous VALID prediction (same rule as at prediction time).
+    held = []
+    for signal in sorted(out):
+        if out[signal] != 'VALID':
+            continue
+        b = preds[signal]['strategies'][BUFFER]
+        if sorted(b.get('held_before', [])) != held:
+            out[signal] = 'INVALID_HELD_STATE_MISMATCH'
+            continue
+        held = sorted(b['targets'])
     return out
 
 
@@ -224,9 +256,16 @@ def buffer_targets(series, members, k, held):
 
 
 def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, members: list[dict], code_commit: str,
-            first_signal: str = FIRST_SIGNAL, label: str = 'FORWARD') -> dict:
-    """One prediction run. `market(end_time)` -> (sessions, series) with bars up to `end_time` (read-only).
-    Returns the event recorded. Never creates a record at or after the next session's open."""
+            receipts: dict | None, first_signal: str = FIRST_SIGNAL, label: str = 'FORWARD',
+            margin: timedelta = RECEIPT_MARGIN) -> dict:
+    """One prediction run.
+    - **Market data:** `market(end_time)` returns (sessions, series) with bars up to `end_time` (read-only).
+    - **Prior receipts:** `receipts` is the server-side receipt evidence for the earlier predictions. It decides which
+      earlier ones are VALID, and so which holdings the buffer retains.
+    - **Returns** the event recorded.
+    - **Never creates a record:**
+      - within `margin` of the next open, so the receipt cannot land after it;
+      - while any earlier receipt is unverifiable."""
     symbols = sorted({m['symbol'] for m in members})
     today = now.astimezone(cand.NY).date().isoformat()
     # Every month-end from the first signal whose next open has passed without a record is MISSED, permanently.
@@ -247,6 +286,16 @@ def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, membe
               'next_open_utc': deadline}
         ledger.event(ev)
         return ev
+    if signal in ledger.missed() and signal not in preds:
+        # Declared MISSED once (e.g. by a run after the open): never recorded afterwards, whatever a runner's clock says.
+        ev = {'at': stamp(now), 'kind': 'MISSED', 'signal_session': signal, 'next_open_utc': deadline, 'detail': 'ALREADY_DECLARED'}
+        ledger.event(ev)
+        return ev
+    if signal not in preds and now >= utc(deadline) - margin:
+        ev = {'at': stamp(now), 'kind': 'TOO_CLOSE_TO_DEADLINE', 'signal_session': signal, 'next_open_utc': deadline,
+              'margin_minutes': margin.total_seconds() / 60}
+        ledger.event(ev)
+        return ev
     if now - DATA_DELAY < utc(cand.close_utc(signal)) + CLOSE_SETTLE:
         ev = {'at': stamp(now), 'kind': 'BEFORE_CLOSE_DATA', 'signal_session': signal}
         ledger.event(ev)
@@ -263,7 +312,14 @@ def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, membe
         ev = {'at': stamp(now), 'kind': 'DATA_NOT_READY', 'signal_session': signal, 'missing': missing[:20]}
         ledger.event(ev)
         return ev
-    valid = verify_chain(ledger)
+    earlier = {x for x in preds if x < signal}
+    unavailable = sorted(x for x in earlier if (receipts or {}).get(x, {}).get('state') == 'UNAVAILABLE')
+    if unavailable:
+        # The buffer state depends on which earlier predictions are VALID; without that evidence, do not guess.
+        ev = {'at': stamp(now), 'kind': 'RECEIPT_CHECK_UNAVAILABLE', 'signal_session': signal, 'earlier': unavailable}
+        ledger.event(ev)
+        return ev
+    valid = verify_chain(ledger, receipts)
     fp = input_fingerprint(sessions, series, set(symbols) | {'SPY'}, k)
     held = _held_before(ledger, signal, valid)
     b_targets, b_meta = buffer_targets(series, members, k, held)
@@ -299,9 +355,9 @@ def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, membe
 
 # ---------------------------------------------------------------- evaluate (outcomes; never edits a prediction)
 
-def month_statuses(ledger: Ledger, calendar: list[str], latest_session: str, commit_times: dict | None = None) -> dict:
+def month_statuses(ledger: Ledger, calendar: list[str], latest_session: str, receipts: dict | None) -> dict:
     """Every month-end from FIRST_SIGNAL whose next open has passed: VALID, MISSED or INVALID_*."""
-    valid = verify_chain(ledger, commit_times)
+    valid = verify_chain(ledger, receipts)
     out = {}
     for s in month_end_sessions(calendar, FIRST_SIGNAL, latest_session):
         if next_session(calendar, s) > latest_session:
@@ -350,14 +406,15 @@ def _run(sessions, series, actions, decisions, first, end_k, *, capital, cost, h
 
 
 def evaluate(ledger: Ledger, *, now: datetime, calendar, sessions, series, actions, members, data_fingerprint: str,
-             code_commit: str, commit_times: dict | None = None) -> dict:
+             code_commit: str, receipts: dict | None) -> dict:
     """Side-by-side forward outcome from the frozen predictions. Writes one new outcome file; edits nothing."""
     symbols = [m['symbol'] for m in members]
     latest = sessions[-1]
-    statuses = month_statuses(ledger, calendar, latest, commit_times)
-    unverified = sorted(s for s, st in statuses.items() if st == 'VALID' and not (commit_times or {}).get(s))
+    statuses = month_statuses(ledger, calendar, latest, receipts)
     out = {'ledger': LEDGER, 'kind': 'outcome', 'evaluated_at': stamp(now), 'latest_session': latest,
-           'month_statuses': statuses, 'commit_time_unverified': unverified, 'data_fingerprint': data_fingerprint, 'code_commit': code_commit,
+           'month_statuses': statuses, 'receipts': {s: {k: v for k, v in (receipts or {}).get(s, {'state': 'MISSING'}).items()
+                                                     if k in ('state', 'created_at', 'status_id', 'commit', 'reason')}
+                                                 for s in statuses}, 'data_fingerprint': data_fingerprint, 'code_commit': code_commit,
            'note': 'Outcomes use current market data; predictions are frozen and never edited.'}
     decs = {s: frozen_decisions(ledger, statuses, sessions, s) for s in (BUFFER, BASELINE)}
     if not decs[BUFFER]:

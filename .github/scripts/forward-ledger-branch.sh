@@ -4,8 +4,12 @@
 # Branch `research-forward-ledger`, checked out into ./forward-ledger. Existing files may never change or disappear;
 # chain.jsonl and events.jsonl may only grow. Uses the job's GITHUB_TOKEN through an HTTP header only.
 set -euo pipefail
-dir=forward-ledger
-branch=research-forward-ledger
+dir="${LEDGER_DIR:-forward-ledger}"
+branch="${LEDGER_BRANCH:-research-forward-ledger}"
+case "$branch" in
+  research-forward-ledger|research-forward-ledger-rehearsal) ;;
+  *) echo "unknown ledger branch"; exit 2 ;;
+esac
 auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
 url="https://github.com/${GITHUB_REPOSITORY}.git"
 case "$1" in
@@ -18,7 +22,7 @@ case "$1" in
       git checkout -q -b "$branch" FETCH_HEAD
     else
       git checkout -q --orphan "$branch"
-      printf '# SportsEdge forward ledger (research only)\n\nAppend-only virtual predictions and outcomes for mq-buffer-v1. No orders. Never edit by hand.\n' > README.md
+      printf '# SportsEdge forward ledger (research only): %s\n\nAppend-only virtual predictions, server receipts and outcomes for mq-buffer-v1. No orders. Never edit by hand.\n' "$branch" > README.md
     fi
     ;;
   commit)

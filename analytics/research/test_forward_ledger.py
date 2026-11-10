@@ -66,9 +66,18 @@ class Base(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def predict(self, when, market=None):
+    def receipts(self, delay=timedelta(minutes=2), only=None):
+        """Synthetic FOUND receipts for every prediction, `delay` after its creation (stand-in for GitHub statuses)."""
+        out = {}
+        for sig, rec in self.ledger.predictions().items():
+            if only is None or sig in only:
+                out[sig] = {'state': 'FOUND', 'created_at': fl.stamp(fl.utc(rec['created_at']) + delay),
+                            'content_record_sha': rec['record_sha'], 'commit': 'c' * 40}
+        return out
+
+    def predict(self, when, market=None, receipts=None):
         return fl.predict(self.ledger, now=at(when), calendar=CAL, market=market or market_factory(), members=MEMBERS,
-                          code_commit='test')
+                          code_commit='test', receipts=self.receipts() if receipts is None else receipts)
 
 
 class MonthEnd(Base):
@@ -101,7 +110,7 @@ class Predict(Base):
             self.assertTrue(rec['strategies'][sid]['targets'])
         self.assertEqual(rec['strategies'][fl.BUFFER]['held_before'], [])
         self.assertEqual(len(rec['input_fingerprint']), 64)
-        self.assertEqual(fl.verify_chain(self.ledger), {'2026-11-30': 'VALID'})
+        self.assertEqual(fl.verify_chain(self.ledger, self.receipts()), {'2026-11-30': 'VALID'})
         for sid in (fl.BUFFER, fl.BASELINE):
             sa = rec['strategies'][sid]['small_account']
             self.assertEqual(sa['capital'], 1000.0)
@@ -137,7 +146,7 @@ class Predict(Base):
         self.assertIsNone(self.ledger.prediction('2026-11-30'))
         self.predict('2026-12-31T21:30:00')
         self.assertEqual(sorted(self.ledger.predictions()), ['2026-12-31'])
-        st = fl.month_statuses(self.ledger, CAL, '2027-01-05')
+        st = fl.month_statuses(self.ledger, CAL, '2027-01-05', self.receipts())
         self.assertEqual(st, {'2026-11-30': 'MISSED', '2026-12-31': 'VALID'})
 
     def test_buffer_state_comes_from_the_last_valid_prediction(self):
@@ -158,19 +167,13 @@ class Integrity(Base):
         rec['strategies'][fl.BUFFER]['targets'] = {'S00': 1.0}
         p.chmod(0o644)
         p.write_text(json.dumps(rec))
-        self.assertEqual(fl.verify_chain(self.ledger)['2026-11-30'], 'INVALID_HASH_MISMATCH')
+        self.assertEqual(fl.verify_chain(self.ledger, self.receipts())['2026-11-30'], 'INVALID_HASH_MISMATCH')
 
     def test_a_record_created_after_the_open_is_invalid_even_if_written(self):
         body = {'signal_session': '2026-12-31', 'created_at': '2027-01-04T15:00:00Z', 'next_open_utc': '2027-01-04T14:30:00Z',
                 'strategies': {fl.BUFFER: {'targets': {}}, fl.BASELINE: {'targets': {}}}, 'input_fingerprint': 'x'}
         self.ledger.write_prediction(body)
-        self.assertEqual(fl.verify_chain(self.ledger)['2026-12-31'], 'INVALID_AFTER_OPEN')
-
-    def test_a_record_committed_after_the_open_is_invalid(self):
-        self.predict('2026-11-30T21:30:00')
-        self.assertEqual(fl.verify_chain(self.ledger, {'2026-11-30': '2026-11-30T21:31:05Z'})['2026-11-30'], 'VALID')
-        self.assertEqual(fl.verify_chain(self.ledger, {'2026-11-30': '2026-12-01T14:30:00Z'})['2026-11-30'],
-                         'INVALID_COMMITTED_AFTER_OPEN')
+        self.assertEqual(fl.verify_chain(self.ledger, self.receipts(delay=-timedelta(hours=1)))['2026-12-31'], 'INVALID_AFTER_OPEN')
 
     def test_files_are_create_once(self):
         self.predict('2026-11-30T21:30:00')
@@ -203,7 +206,7 @@ class Evaluate(Base):
                 se['S05'][f][k] *= 1.10
         sessions, se = market_factory(bump=revise)('2027-02-01T00:00:00Z')
         out = fl.evaluate(self.ledger, now=at('2027-02-01T03:00:00'), calendar=CAL, sessions=sessions, series=se, actions=[],
-                          members=MEMBERS, data_fingerprint='synthetic', code_commit='test')
+                          members=MEMBERS, data_fingerprint='synthetic', code_commit='test', receipts=self.receipts())
         # 2027-01-29's next open (1 February) has not happened yet: pending, not MISSED.
         self.assertEqual(out['month_statuses'], {'2026-11-30': 'VALID', '2026-12-31': 'VALID'})
         self.assertEqual(out['revisions']['2026-11-30'], 'INPUT_DATA_REVISED')
@@ -222,7 +225,7 @@ class Evaluate(Base):
     def test_not_started_before_any_valid_prediction(self):
         sessions, se = market_factory()('2026-11-20T00:00:00Z')
         out = fl.evaluate(self.ledger, now=at('2026-11-20T03:00:00'), calendar=CAL, sessions=sessions, series=se, actions=[],
-                          members=MEMBERS, data_fingerprint='x', code_commit='test')
+                          members=MEMBERS, data_fingerprint='x', code_commit='test', receipts={})
         self.assertEqual(out['status'], 'NOT STARTED')
 
 
