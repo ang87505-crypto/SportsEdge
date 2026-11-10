@@ -4,6 +4,9 @@
 # Times are UTC and cover both New York offsets; the worker re-checks every session and window.
 #   execute: 09:50 ET (13:50 / 14:50 UTC), then 15:20-18:20 UTC to re-plan resting residuals
 #   monitor: after the close (20:35 / 21:35 UTC; an early one skips as BEFORE_CLOSE)
+# GitHub often starts these hours late or drops them, so Vercel crons also dispatch execute at 15, 16 and 18 UTC
+# and monitor at 22 UTC on weekdays (trigger=backup; the worker treats it as scheduled). Duplicate runs are safe:
+# leases, idempotent intents and per-slot runs refuse repeated work.
 name: Recurring PAPER worker (manual)
 on:
   schedule:
@@ -21,6 +24,12 @@ on:
         description: Registered experiment id
         required: true
         type: string
+      trigger:
+        description: manual, or backup for the Vercel scheduler standing in for a missed schedule (treated as scheduled)
+        required: false
+        type: choice
+        options: [manual, backup]
+        default: manual
 permissions:
   contents: read
 concurrency:
@@ -41,6 +50,7 @@ jobs:
         env:
           KIND: ${{ inputs.kind || (github.event.schedule == '35 20,21 * * 1-5' && 'monitor' || 'execute') }}
           EXPERIMENT: ${{ inputs.experiment || 'stock-v2-weekly-1' }}
+          SPORTSEDGE_WORKER_TRIGGER: ${{ inputs.trigger || 'manual' }}
           SPORTSEDGE_STAGING_SUPABASE_URL: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_URL }}
           SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_STAGING_SUPABASE_SERVICE_KEY }}
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}

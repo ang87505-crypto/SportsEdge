@@ -29,6 +29,10 @@ on:
         description: reason for pause/resume/stop
         required: false
         type: string
+      cron:
+        description: Backup trigger only - the scheduled slot this collect/settle stands in for (e.g. '10 19 * * *')
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -48,7 +52,7 @@ jobs:
       - name: Run one props slot
         env:
           KIND: ${{ inputs.kind || (contains(fromJSON('["20 9 * * *","20 15 * * *"]'), github.event.schedule) && 'settle' || 'collect') }}
-          SCHEDULE_CRON: ${{ github.event.schedule }}
+          SCHEDULE_CRON: ${{ github.event.schedule || inputs.cron }}
           FROM: ${{ inputs.from }}
           TO: ${{ inputs.to }}
           REASON: ${{ inputs.reason }}

@@ -26,12 +26,17 @@ export const testClockSql=`
 CREATE OR REPLACE FUNCTION public.props_now() RETURNS timestamptz LANGUAGE sql VOLATILE SET search_path=pg_catalog AS $$
  SELECT coalesce(nullif(current_setting('props_test.now',true),'')::timestamptz,clock_timestamp()) $$;
 GRANT EXECUTE ON FUNCTION public.props_now() TO service_role;
-ALTER ROLE service_role BYPASSRLS;`;
+ALTER ROLE service_role BYPASSRLS;
+-- Test-only: the v1 policy row is stamped with the real load time; backdate it so pinned test clocks see it.
+ALTER TABLE public.props_budget_policy DISABLE TRIGGER props_append_only;
+UPDATE public.props_budget_policy SET active_from='2026-01-01T00:00:00Z' WHERE version='props-budget-v1';
+ALTER TABLE public.props_budget_policy ENABLE TRIGGER props_append_only;
+`;
 
 function filters(params){
  const where=[];
  for(const [k,raw] of params){
-  if(['select','order','limit','on_conflict'].includes(k))continue;
+  if(['select','order','limit','offset','on_conflict'].includes(k))continue;
   const col=ident(k);
   const m=/^(not\.)?(eq|gt|gte|lt|lte|in|is)\.(.*)$/s.exec(raw);if(!m)throw new Error('unsupported filter '+raw);
   const [,neg,op,val]=m;let expr;
@@ -64,10 +69,10 @@ export function pgFetch(db,clock){
    if(!sel)sql=sql.replace(/SELECT coalesce\(json_agg\(ins\),'\[\]'\) FROM ins;$/,"SELECT '' FROM (SELECT count(*) FROM ins) z;");
   }else{
    const t=ident(path);const sel=url.searchParams.get('select')??'*';
-   const order=url.searchParams.get('order');const limit=url.searchParams.get('limit');
+   const order=url.searchParams.get('order');const limit=url.searchParams.get('limit');const offset=url.searchParams.get('offset');
    sql=`SELECT coalesce(json_agg(q),'[]') FROM (SELECT ${sel.split(',').map(ident).join(',')} FROM public.${t}${filters([...url.searchParams])}`+
     (order?' ORDER BY '+order.split(',').map(o=>{const [c,dir]=o.split('.');return ident(c)+(dir==='desc'?' DESC':' ASC');}).join(','):'')+
-    (limit?' LIMIT '+Number(limit):'')+') q;';
+    (limit?' LIMIT '+Number(limit):'')+(offset?' OFFSET '+Number(offset):'')+') q;';
   }
   const r=psql(db,prefix+sql);
   if(!r.ok){

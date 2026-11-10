@@ -1,0 +1,113 @@
+'use client';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
+import type {Card,Reply} from '@/lib/assistant/answer';
+import type {AssistantContext} from '@/lib/assistant/understand';
+import {currentOwnerAccess} from '@/lib/assistant/session';
+
+type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
+type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
+const STARTERS=["Tonight's picks",'Stock results','Research results','Is everything running?'];
+const OPENING:Msg={role:'bot',text:'Ask about sports picks, stock paper accounts, research results, or automation.',suggestions:STARTERS};
+const NO_ACCESS:Access={ownerAccess:false,ownerExpiresAt:null};
+
+/** One conversation. Private replies are ephemeral and hidden whenever owner access is uncertain. */
+export function AssistantChat(){
+ const [msgs,setMsgs]=useState<Msg[]>([OPENING]);
+ const [context,setContext]=useState<AssistantContext|null>(null);
+ const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
+ const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
+ const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
+ const requestId=useRef(0);
+ function applyAccess(a:Access){
+  const valid=currentOwnerAccess(a).ownerAccess;
+  if(!valid&&owner.current){
+   // A reply authorized before logout must not resurrect private content afterward.
+   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
+  }
+  owner.current=valid;setAccess(valid?a:NO_ACCESS);
+ }
+ useEffect(()=>{
+  // Remove the old sports-only browser cache; private replies are never persisted.
+  try{sessionStorage.removeItem('sportsedge-assistant-v1');}catch{/* optional browser storage */}
+  let live=true;
+  async function check(){
+   if(document.visibilityState==='hidden')return;
+   setChecking(true);
+   try{const res=await fetch('/api/assistant',{cache:'no-store'});const a=await res.json();
+    if(live)applyAccess(res.ok&&typeof a.ownerAccess==='boolean'?a:NO_ACCESS);
+   }catch{if(live)applyAccess(NO_ACCESS);}
+   finally{if(live)setChecking(false);}
+  }
+  void check();
+  window.addEventListener('focus',check);document.addEventListener('visibilitychange',check);
+  return()=>{live=false;window.removeEventListener('focus',check);document.removeEventListener('visibilitychange',check);};
+ },[]);
+ useEffect(()=>{
+  if(!access.ownerAccess||!access.ownerExpiresAt)return;
+  const timer=setTimeout(()=>applyAccess(NO_ACCESS),Math.max(0,access.ownerExpiresAt-Date.now()));
+  return()=>clearTimeout(timer);
+ },[access.ownerAccess,access.ownerExpiresAt]);
+ useEffect(()=>{if(follow.current)end.current?.scrollIntoView({block:'end'});},[msgs,busy]);
+ async function send(raw:string){
+  const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
+  if(!text||busy)return;
+  const id=++requestId.current;
+  lastAsked.current=text;follow.current=true;
+  setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
+  try{
+   const res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context})});
+   const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
+   if(id!==requestId.current)return;
+   if(res.ok&&data?.reply){
+    const valid=currentOwnerAccess(data).ownerAccess;
+    applyAccess({ownerAccess:valid,ownerExpiresAt:valid?data.ownerExpiresAt!:null});setChecking(false);
+    const r=data.reply;
+    if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);}
+    else {
+     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private}].slice(-40));
+     setContext(r.context);
+    }
+   }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
+  }catch{if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
+  finally{if(id===requestId.current)setBusy(false);}
+ }
+ function submit(e:FormEvent){e.preventDefault();void send(input);}
+ function reset(){requestId.current++;setBusy(false);setMsgs([OPENING]);setContext(null);}
+ const last=msgs[msgs.length-1];
+ return <div className="chat">
+  <div className="chat-chips" role="group" aria-label="Chat topics">
+   {STARTERS.map((s,i)=><button key={s} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(s)}>{['Sports','Stocks','Research','All systems'][i]}</button>)}
+  </div>
+  <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
+  <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
+   {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
+    {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
+     <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
+     {m.cards?.map((c,j)=><ChatCard key={j} card={c}/>)}
+    </>}
+   </div>)}
+   {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
+   <div ref={end}/>
+  </div>
+  {!busy&&last?.role==='bot'&&last.suggestions?.length?<div className="chat-chips" role="group" aria-label="Suggestions">
+   {last.suggestions.map(s=><button key={s} type="button" className="chat-chip" onClick={()=>void send(s)}>{s}</button>)}
+  </div>:null}
+  <form className="chat-form" onSubmit={submit}>
+   <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
+   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, research…"/>
+   <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
+   <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
+  </form>
+  <p className="quiet small-print">Answers use recorded evidence. Chat cannot place bets or stock orders. This conversation stays in this tab.</p>
+ </div>;
+}
+function ChatCard({card}:{card:Card}){
+ const [copied,setCopied]=useState(false);
+ if(card.kind==='links')return <div className="chat-chips">{card.items.map(it=><a key={it.href} className="chat-chip" href={it.href}>{it.label}</a>)}</div>;
+ if(card.kind==='facts')return <dl className="chat-card">{card.items.map(it=><div key={it.label} className="mb-3"><dt>{it.label}</dt><dd><strong>{it.value}</strong>{it.detail&&<p className="quiet small-print">{it.detail}</p>}</dd></div>)}</dl>;
+ if(card.kind==='lineup'){
+  async function copy(){try{await navigator.clipboard.writeText(card.kind==='lineup'?card.text:'');setCopied(true);}catch{setCopied(false);}}
+  return <div className="chat-card"><code>{card.text}</code><button type="button" className="button button-secondary" onClick={()=>void copy()}>{copied?'Copied':'Copy lineup'}</button></div>;
+ }
+ return <ul className="chat-card chat-list">{card.items.map(it=><li key={it.id}><strong>{it.text}</strong><small>{it.detail}</small></li>)}</ul>;
+}

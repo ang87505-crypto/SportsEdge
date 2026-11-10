@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type {ReactNode} from 'react';
 import {PageHeading,Panel,Details,Evidence,Callout,type EvidenceKind} from '@/components/ui';
 import {NavIcon} from '@/components/nav-icon';
 
@@ -6,6 +7,10 @@ export const metadata={title:'Guide & methodology · SportsEdge',description:'Ho
 
 const terms:[string,string][]=[
  ['Paper trading','Practising with virtual money. A paper bet or trade never places a real order.'],
+ ['More / Less','A PrizePicks pick: will the player finish above (More) or below (Less) the posted line, such as 24.5 points?'],
+ ['Entry (Power Play)','Two picks combined into one $5 virtual entry. Both right pays 3x ($15 back). One right plus a tie or did-not-play pays 1.5x. Two ties or did-not-plays refund the $5. Anything else loses.'],
+ ['Hit rate','Share of graded picks that were right. A two-pick Power Play needs about 57.7% just to break even.'],
+ ['Model confidence','The model\'s chance the pick is right. Only lines between 60% and 80% become picks; above 80% usually means the model is missing news.'],
  ['Probability','An estimated chance. A well-calibrated 60% still fails about 40% of the time.'],
  ['No-vig probability','The market\'s implied chance after removing the sportsbook\'s built-in margin from a complete set of prices.'],
  ['Model − market','The difference, in percentage points, between the model and the market. A research signal, not proof of an edge.'],
@@ -28,6 +33,17 @@ const evidenceText:Record<EvidenceKind,string>={
  local:'Saved only in this browser. Not synced or verified.',
 };
 
+const PROPS_RUNS='https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml';
+const ext=(href:string,text:string)=><a className="text-link" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
+const RUNBOOK:[string,ReactNode,ReactNode][]=[
+ ['See today\'s PrizePicks picks and results',<Link key="a" className="text-link" href="/paper-betting/props">PrizePicks</Link>,'Open it. Status, balance, record, hit rate and upcoming picks are at the top.'],
+ ['Pause, resume or stop PrizePicks',<Link key="b" className="text-link" href="/paper-betting/props">PrizePicks → Controls</Link>,'Sign in with the owner key, then press the button. Saved results are kept.'],
+ ['Collect lines or grade results right now',ext(PROPS_RUNS,'GitHub: NBA props paper cycle'),<>Run workflow → kind <code>collect</code> or <code>settle</code> → Run workflow. Refresh PrizePicks after a minute or two.</>],
+ ['Check whether a job failed',<Link key="c" className="text-link" href="/automation">Automation</Link>,'A yellow badge means look. The run history on the PrizePicks page shows each receipt.'],
+ ['Start or stop the stock autopilot',<Link key="d" className="text-link" href="/stocks/paper-auto">Stocks → Autopilot</Link>,'Sign in, check the paper account, then Start or Stop autopilot.'],
+ ['Find the owner key',ext('https://vercel.com/dashboard','Vercel → Settings → Environment Variables'),<><code>SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY</code>, a 64-character key. Never share it.</>],
+];
+
 export default function Guide(){
  return <>
   <PageHeading title="Guide & methodology" description="How SportsEdge is organized, what its labels mean, and where its data stops."
@@ -35,7 +51,7 @@ export default function Guide(){
 
   <div className="guide-sections">
    {[{href:'/sports',icon:'sports' as const,title:'Sports AI',text:'Pick a game, compare the model\'s probability with the market\'s, and read how well the model has been calibrated.'},
-     {href:'/paper-betting',icon:'paper' as const,title:'Paper Betting',text:'Follow the shared virtual NBA bankroll: open bets, settled results, ROI and drawdown.'},
+     {href:'/paper-betting/props',icon:'paper' as const,title:'PrizePicks',text:'Daily virtual player-prop picks: status, upcoming picks, entries, results and Pause/Resume.'},
      {href:'/stocks',icon:'stocks' as const,title:'Stocks',text:'See the Alpaca PAPER account, the frozen strategy\'s evidence gates, and your own practice journal.'}].map(s=>
     <Link key={s.href} href={s.href} className="guide-section">
      <span className="home-section-icon"><NavIcon name={s.icon} size={20}/></span>
@@ -51,6 +67,15 @@ export default function Guide(){
     <dl className="glossary">{terms.map(([t,d])=><div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}</dl>
    </Panel>
   </div>
+
+  <section id="run-it-yourself" className="mt-12">
+   <div className="section-header"><div><h2>Run it yourself (no AI needed)</h2><p>Every daily task runs on GitHub and Supabase. Claude or ChatGPT only helped write the code.</p></div></div>
+   <div className="table-wrap"><table className="data-table ledger-table">
+    <thead><tr><th scope="col">I want to…</th><th scope="col">Where</th><th scope="col">What to do</th></tr></thead>
+    <tbody>{RUNBOOK.map(([want,where,how])=><tr key={want}><td data-label="I want to…"><strong>{want}</strong></td><td data-label="Where">{where}</td><td data-label="What to do">{how}</td></tr>)}</tbody>
+   </table></div>
+   <p className="quiet small-print">Full steps, including what to do when something fails: <code>docs/OWNER_RUNBOOK.md</code> in the repository.</p>
+  </section>
 
   <section id="limits" className="mt-12">
    <div className="section-header"><div><h2>What this site runs on</h2><p>Reviewed October 2026.</p></div></div>

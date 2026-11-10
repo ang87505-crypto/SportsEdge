@@ -1,7 +1,58 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    {"path": "/api/internal/paper-auto/kickoff", "schedule": "0 9 * * *"}
+    {
+      "path": "/api/internal/paper-auto/kickoff",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-settle-morning",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-settle-midday",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-collect-early",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-collect-late",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/research-collect",
+      "schedule": "0 4 * * 2-6"
+    },
+    {
+      "path": "/api/internal/scheduler/ops-monitor",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-plan",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-grade",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-early",
+      "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-midday",
+      "schedule": "0 16 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-late",
+      "schedule": "0 18 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-monitor",
+      "schedule": "0 22 * * 1-5"
+    }
   ],
   "git": {
     "deploymentEnabled": {

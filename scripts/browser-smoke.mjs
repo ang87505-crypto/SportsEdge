@@ -8,7 +8,7 @@ import path from 'node:path';
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/automation','/sports','/stocks','/paper-betting','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -36,8 +36,24 @@ async function evaluate(command,expression){
 try{
  await mkdir(output,{recursive:true});
  await until(async()=>(await fetch(base)).ok,'local Next.js production server',40000);
- chrome=spawn(executable,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
- const port=await until(async()=>(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0],'Chrome debugging endpoint');
+ // A cold runner can start Chrome slowly or lose the first launch; allow 30 s and one relaunch.
+ let port;
+ for(let attempt=1;!port;attempt++){
+  let exited=false;
+  chrome=spawn(executable,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
+  chrome.once('exit',()=>{exited=true;});
+  try{
+   const got=await until(async()=>exited?'EXITED':(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0],'Chrome debugging endpoint',30000);
+   if(got==='EXITED')throw Error('Chrome exited before its debugging endpoint was ready');
+   port=got;
+  }
+  catch(error){
+   if(attempt>=2)throw error;
+   console.error('Chrome did not start on attempt '+attempt+'; relaunching once.');
+   try{chrome.kill('SIGKILL');}catch{}
+   await rm(path.join(profile,'DevToolsActivePort'),{force:true});
+  }
+ }
  const tab=await(await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();
  ws=new WebSocket(tab.webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
@@ -96,6 +112,13 @@ try{
     if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
     if(data.placeholders)issues.push('Placeholder links detected');
+    if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
+     issues.push('Model panel missing');
+    if(route==='/assistant'){
+     await evaluate(send,`(document.querySelector('.chat-chip')?.click(),true)`);
+     try{await until(async()=>evaluate(send,`document.querySelectorAll('.chat-msg.bot:not(.pending)').length>=2`),label+' assistant reply',15000);}
+     catch{issues.push('Assistant did not reply to a starter question');}
+    }
     if(!data.heading)issues.push('Missing page heading');
     if(width===390||width===1440){
      const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
@@ -233,11 +256,50 @@ try{
   await until(async()=>evaluate(send,`document.querySelector('main h1')?.textContent?.includes('Page not found') && !!document.querySelector('.status-page a[href="/stocks"]')`),'styled not-found page');
   console.log('PASS not found: styled 404 with links back to every section');
  }catch(error){const message='Not-found page: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ // Shared assistant: real read-only questions, then a synthetic client-only logout regression.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/assistant'});
+  // The input exists in the server HTML before React hydrates; wait for the client-side access check to finish.
+  await until(async()=>evaluate(send,"!!document.querySelector('#chat-input') && !document.querySelector('.chat-msg.pending') && !document.body.textContent.includes('Checking owner access')"),'shared assistant loaded');
+  const lastReply=()=>evaluate(send,"[...document.querySelectorAll('.chat-msg.bot:not(.pending)')].at(-1)?.textContent || ''");
+  async function submitQuestion(text){
+   // Re-type until React has accepted the value (a controlled input can reset it during a render).
+   await until(async()=>evaluate(send,"(()=>{const el=document.querySelector('#chat-input'),b=document.querySelector('.chat-form button[type=submit]');if(el.value!=="+JSON.stringify(text)+"){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,"+JSON.stringify(text)+");el.dispatchEvent(new Event('input',{bubbles:true}));}return !b.disabled})()"),'assistant input');
+   await evaluate(send,"(document.querySelector('.chat-form button[type=submit]').click(),true)");
+  }
+  async function askQuestion(text){
+   const count=await evaluate(send,"document.querySelectorAll('.chat-msg.bot:not(.pending)').length");
+   await submitQuestion(text);
+   await until(async()=>evaluate(send,"document.querySelectorAll('.chat-msg.bot:not(.pending)').length>"+count+" && !document.querySelector('.chat-msg.pending')"),'assistant '+text);
+   return lastReply();
+  }
+  if(!/Sign in/i.test(await askQuestion('Stock results')))throw Error('Anonymous stock query must require owner access');
+  if(!/Historical window/.test(await askQuestion('Momentum research results')))throw Error('Missing historical research evidence');
+  if(!/Failed checks/.test(await askQuestion('Why?')))throw Error('Research follow-up lost its domain');
+  const combined=await askQuestion('Is everything running?');
+  if(!['Sports','Stock account','Stock research'].every(s=>combined.includes(s)))throw Error('Missing a domain in combined status');
+  // This fixture exercises browser privacy only. It never authenticates or contacts an account.
+  await evaluate(send,"(()=>{window.__assistantRealFetch=window.fetch;window.__assistantUiOwner=true;window.fetch=async(input,init)=>{if(String(input)==='/api/assistant'){if(!init?.method||init.method==='GET')return Response.json({ownerAccess:window.__assistantUiOwner,ownerExpiresAt:Date.now()+60000});const b=JSON.parse(init.body);if(b.message==='TEST_PENDING')await new Promise(r=>window.__assistantRelease=r);return Response.json({status:'ok',ownerAccess:true,ownerExpiresAt:Date.now()+60000,reply:{text:'TEST_ONLY_PRIVATE_BALANCE',cards:[],suggestions:[],private:true,context:{domain:'stocks'}}});}return window.__assistantRealFetch(input,init);};return true})()");
+  await askQuestion('TEST_PRIVATE');
+  if(!/TEST_ONLY_PRIVATE_BALANCE/.test(await lastReply()))throw Error('Synthetic private reply did not render');
+  if(await evaluate(send,"JSON.stringify(sessionStorage).includes('TEST_ONLY_PRIVATE_BALANCE')"))throw Error('Private reply was persisted');
+  await submitQuestion('TEST_PENDING');
+  await until(async()=>evaluate(send,"typeof window.__assistantRelease==='function'"),'pending synthetic private reply');
+  await evaluate(send,"(()=>{window.__assistantUiOwner=false;window.dispatchEvent(new Event('focus'));return true})()");
+  await until(async()=>evaluate(send,"!document.body.textContent.includes('TEST_ONLY_PRIVATE_BALANCE')"),'private history clears after logout');
+  await evaluate(send,"(window.__assistantRelease(),true)");
+  await delay(250);
+  if(await evaluate(send,"document.body.textContent.includes('TEST_ONLY_PRIVATE_BALANCE')"))throw Error('Late reply resurrected private content');
+  await send('Page.navigate',{url:base+'/assistant'});
+  console.log('PASS shared assistant: domains, research, follow-up, private history and late reply after logout');
+ }catch(error){const message='Shared assistant: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+
  // Motion: blocks reveal as they scroll into view, the progress bar tracks scroll, Sections jumps work.
  try{
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
   await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
-  await send('Page.navigate',{url:base+'/stocks/research'});
+  await send('Page.navigate',{url:base+'/guide'});
   await until(async()=>evaluate(send,`document.documentElement.classList.contains('motion-ok') && document.querySelectorAll('[data-reveal]').length>4`),'motion armed');
   await delay(400);
   const pending=await evaluate(send,`document.querySelectorAll('[data-reveal="pending"]').length`);

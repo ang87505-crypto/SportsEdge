@@ -1,0 +1,43 @@
+name: SportsEdge shared assistant
+on:
+  pull_request:
+    paths:
+      - 'src/lib/assistant/**'
+      - 'src/lib/research/stock-summary.ts'
+      - 'src/lib/server/*assistant*'
+      - 'src/lib/server/stock-research-*'
+      - 'src/app/api/assistant/**'
+      - 'src/app/assistant/**'
+      - 'src/app/stocks/research/**'
+      - 'src/components/assistant-chat.tsx'
+      - 'src/data/research/stock-strategy-summary.json'
+      - 'analytics/research/**'
+      - '.github/scripts/research-data-branch.sh'
+      - '.github/workflows/assistant-verify.yml'
+      - 'src/lib/ops/**'
+      - 'src/lib/server/ops-status-load.ts'
+      - 'src/lib/server/scheduler-kickoff*'
+      - 'src/app/api/internal/scheduler/**'
+      - 'src/components/ops-status-panel.tsx'
+      - 'src/app/automation/**'
+      - 'vercel.json'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Shared assistant, accounting and owner-session regressions (no network)
+        run: node --test src/lib/assistant/*.test.mjs src/lib/server/assistant-handler.test.mjs src/lib/server/site-assistant-handler.test.mjs src/lib/stocks/paper-auto-performance.test.mjs src/lib/server/alpaca-owner-session.test.mjs src/lib/navigation.test.mjs src/lib/ops/status.test.mjs src/lib/server/scheduler-kickoff.test.mjs
+      - name: Research runner and public summary contract (no network)
+        run: python -m unittest discover -s analytics/research -t .

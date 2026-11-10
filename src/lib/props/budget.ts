@@ -24,6 +24,16 @@ export type BudgetPolicy={
 /** v1 defaults: 240 (existing) + 200 (props) <= 500 credits/month (plan size unverified). */
 export const BUDGET_POLICY_V1:BudgetPolicy={
  version:'props-budget-v1',dailyCredits:12,monthlyCredits:200,providerFloor:60,maxEventsPerRun:3};
+/**
+ * v2 (owner-approved 2026-11-07): sustainable inside the same 200/30-day share.
+ * One collect prices at most 2 games: 1 (event list, reserved conservatively) + 2 x 3 = 7
+ * credits per rolling 24 h, about 200 per 30 days. The database row
+ * (database/props/props_budget_v2.sql) is authoritative; this copy only plans requests.
+ */
+export const BUDGET_POLICY_V2:BudgetPolicy={
+ version:'props-budget-v2',dailyCredits:7,monthlyCredits:200,providerFloor:60,maxEventsPerRun:2};
+/** The policy the worker plans with; must match the newest active props_budget_policy row. */
+export const ACTIVE_BUDGET_POLICY=BUDGET_POLICY_V2;
 
 export const EVENTS_LIST_COST=1;
 export const MARKETS_PER_EVENT=STATS.length;

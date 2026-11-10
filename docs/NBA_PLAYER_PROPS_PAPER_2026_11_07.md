@@ -1,9 +1,11 @@
 # NBA player-prop paper testing: PrizePicks and DraftKings Pick6 (2026-11-07)
 
-Status: **implemented and locally verified; not yet connected or running.** No
-genuine line, prediction, entry or settlement exists yet. Scheduled runs are
-released OFF in source (`src/lib/props/schedule.ts`), and the ledger schema has
-not been applied to any Supabase project.
+Status (updated 2026-11-08): **released and running daily.** The schedule was
+released in PR #99 after a verified real collect-and-settle cycle, and the active
+data budget is `props-budget-v2` (at most 2 games per collection; see
+`src/lib/props/budget.ts`). The original 2026-11-07 notes below describe the first
+build, when nothing had run yet and budget v1 applied. Day-to-day operation without
+an AI assistant: `docs/OWNER_RUNBOOK.md`.
 
 The daily cycle is collect, validate, predict, record picks and entries before
 lock, collect final box scores, grade, reconcile, and show the results on the
@@ -252,3 +254,69 @@ Firecrawl research index (abstracts), and Firecrawl page reads for the provider
 and platform documentation. Context7 failed to connect, and the Consensus and
 OpenAlex connectors were not available. Seeing the same paper in several search
 tools is not treated as independent confirmation.
+
+## Release and budget v2 (owner-approved 2026-11-07; merge only after a verified real cycle)
+
+Setup verified by the owner on 2026-11-06 (America/Denver):
+
+- `props_v1.sql` is applied on staging (`vfyzbliksooljxrlfadp`), and the secrets are set.
+- Control is RUNNING.
+- [Backfill](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42329922101) saved 3,271 player-game rows; 1 incomplete summary was skipped.
+- The [first collect](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42332792446) listed 13 upcoming events and priced none. Two were within the lock margin and 11 were beyond the horizon, so it did not test DFS coverage.
+
+This release changes:
+
+- `src/lib/props/schedule.ts`: `scheduledRunsEnabled: true`, with the same four UTC slots.
+  - The 22:10 collect is kept as a no-spend fallback. The 24 h credit window is rolling, so a 19:10 run can be refused when the previous day's collect started late. When the day's credits are already used, the 22:10 run exits before any provider call.
+- `src/lib/props/budget.ts` and `database/props/props_budget_v2.sql`: `props-budget-v2`.
+  - 7 credits per rolling 24 h (event list 1 + 2 games x 3).
+  - 200 per 30 days, floor 60, at most 2 games per collect.
+  - About 200 a month alongside the moneyline refresh's 240, within a 500 quota whether or not the keys are shared.
+  - The SQL row takes effect at 2026-11-08 16:00 UTC, so it can be applied before merging without affecting the first verified cycle.
+- Unchanged: model `props-nb-minutes-rate-v1`, selection `props-select-v1`, pause/stop, idempotency, leases, append-only evidence, paper-only flags.
+
+Owner steps:
+
+1. Run `database/props/props_budget_v2.sql` in the staging SQL editor. It is re-runnable and prints the policy rows.
+2. Merge the release PR after the Saturday collect and Sunday settle receipts are verified.
+3. Rollback: set `scheduledRunsEnabled` back to false, or dispatch `pause`/`stop`.
+
+## Two-season historical check (2026-11-07)
+
+`scripts/props-model-fit.ts backtest` refits only the league per-minute rates and
+NB dispersion, on the prior season alone. It then predicts every
+regular-season player-game of the next season from strictly earlier games and
+applies the frozen `props-select-v1` rule. No platform lines exist for this
+period: historical DFS odds are paid-only and were not purchased. Lines are
+proxies (recent median + 0.5), so there are **no dollar results**.
+
+Outputs:
+
+- full results: `research/props_backtest_20261107/backtest_{2024-25,2025-26}.json`
+- compact summary for the site: `src/data/props/backtest_v1.json`
+- prior-season source: 2023-24 file `player_box_2024.csv`, sha256 `c52a708a…9ae2`
+
+| Season (prior) | Lines | Model Brier P/R/A | Best baseline P/R/A | Picks recorded (share) | Hit 0.60–0.65 / 0.65–0.70 / 0.70–0.80 | Skipped >0.80 hit |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2024-25 (2023-24) | 70,137 | 0.2459 / 0.2367 / 0.2328 | 0.2489 / 0.2427 / 0.2367 | 32,600 (46%) | 60.7% / 65.1% / 69.5% | 69.3% of 3,044 |
+| 2025-26 (2024-25) | 71,595 | 0.2463 / 0.2357 / 0.2313 | 0.2495 / 0.2418 / 0.2369 | 33,977 (47%) | 60.3% / 64.8% / 70.0% | 72.4% of 2,781 |
+
+Both seasons agree. The model beats both simple baselines on every stat, and
+hit rates in each confidence band match the stated confidence. Points remain
+overconfident above about 0.80.
+
+The frozen rule's >0.80 skip would have hit about 70% against proxy lines.
+The rule is unchanged: it guards against injury and role news that move real
+lines, and proxy lines do not capture that. Revisiting it is a candidate for a
+future, separately versioned rule after forward data.
+
+Proxy lines are easier than professional projections, so none of this is
+evidence of profit on PrizePicks or Pick6.
+
+The dashboard (`/paper-betting/props`) now shows:
+
+- this historical check, with a per-stat calibration chart
+- the daily cycle in UTC and New Mexico time
+- the active budget
+
+The moneyline paper page links to it.

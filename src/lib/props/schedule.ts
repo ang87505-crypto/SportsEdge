@@ -5,11 +5,13 @@
  * tip-off; settlement runs after the night's games and again later the same
  * day so late finals and stat corrections are picked up.
  *
- * The release switch is OFF in source: scheduled runs exit before any network
- * call until the owner has applied the schema, set secrets, run a manual
- * cycle, inspected its receipts, and flipped this switch in a reviewed commit.
+ * Release switch: scheduled runs exit before any network call while it is false.
+ * Rollback = set it back to false (or dispatch pause/stop; the ledger keeps every receipt).
+ * The 22:10 collect is a no-spend fallback: the 24 h credit window is rolling, so a
+ * 19:10 run can be refused if the previous day's collect started late.
  */
-export const PROPS_RELEASE={scheduledRunsEnabled:false,paperOnly:true,realMoneyEnabled:false} as const;
+/** Owner-approved 2026-11-07; merged only after a verified real collect-and-settle cycle. */
+export const PROPS_RELEASE={scheduledRunsEnabled:true,paperOnly:true,realMoneyEnabled:false} as const;
 export const PROPS_SCHEDULE=[
  {kind:'settle',cron:'20 9 * * *',hour:9,minute:20},
  {kind:'settle',cron:'20 15 * * *',hour:15,minute:20},
@@ -28,6 +30,10 @@ export function scheduledInstant(cron:string,nowIso:string):string|null{
  return t.toISOString();
 }
 export const slotKey=(kind:string,scheduled:string)=>`${kind}-${scheduled.slice(0,13)}`;
+/** True when `cron` is one of the release's scheduled slots for exactly this run kind. */
+export function slotCronMatches(kind:string,cron:string):boolean{
+ return PROPS_SCHEDULE.some(s=>s.cron===cron&&s.kind===kind);
+}
 
 export function nextPlannedRuns(nowIso:string,count=4){
  const now=Date.parse(nowIso);const out:{kind:ScheduledKind;at:string}[]=[];

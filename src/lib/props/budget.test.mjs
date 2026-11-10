@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BUDGET_POLICY_V1 as P,canSpend,chooseEvents,eventOddsWorstCost,providerUsage} from './budget.ts';
+import {BUDGET_POLICY_V1 as P,BUDGET_POLICY_V2,ACTIVE_BUDGET_POLICY,canSpend,chooseEvents,eventOddsWorstCost,providerUsage} from './budget.ts';
 
 test('worst-case event cost is markets x regions',()=>{
  assert.equal(eventOddsWorstCost(),3);
@@ -38,4 +38,16 @@ test('budget exhaustion chooses nothing rather than forcing a quota',()=>{
 test('usage headers are parsed strictly',()=>{
  const h=new Map([['x-requests-remaining','493'],['x-requests-used','7'],['x-requests-last','3x']]);
  assert.deepEqual(providerUsage({get:k=>h.get(k)??null}),{remaining:493,used:7,last:null});
+});
+
+test('v2 is active: one collect prices at most two games inside 7 credits per 24 h',()=>{
+ assert.equal(ACTIVE_BUDGET_POLICY,BUDGET_POLICY_V2);
+ const ev=(id,h)=>({id,commenceTime:new Date(Date.parse('2026-11-07T19:00:00Z')+h*3600_000).toISOString()});
+ const fresh=chooseEvents({events:[ev('a',5),ev('b',5.5),ev('c',6)],alreadyCollected:new Set(),nowIso:'2026-11-07T19:00:00Z',
+  lockBufferMs:1_200_000,horizonMs:10*3600_000,policy:BUDGET_POLICY_V2,state:{used24h:1,used30d:1,providerRemaining:499}});
+ assert.deepEqual(fresh.chosen.map(e=>e.id),['a','b']);           // 1 (list) + 3 + 3 = 7
+ assert.equal(canSpend(BUDGET_POLICY_V2,{used24h:7,used30d:7,providerRemaining:490},4).reason,'DAILY_CAP');
+ // 30-day share: 200 / 7 per day leaves room for 28 full days.
+ assert.equal(canSpend(BUDGET_POLICY_V2,{used24h:0,used30d:196,providerRemaining:300},4).reason,'OK');
+ assert.equal(canSpend(BUDGET_POLICY_V2,{used24h:0,used30d:197,providerRemaining:300},4).reason,'MONTHLY_CAP');
 });

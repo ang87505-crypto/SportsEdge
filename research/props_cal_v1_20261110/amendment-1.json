@@ -1,0 +1,19 @@
+{
+ "amends": "research/props_cal_v1_20261110/protocol.json",
+ "writtenBefore": "any evaluation run of either candidate (no data was scored under the original protocol)",
+ "withdrawn": {
+  "id": "props-cal-v1",
+  "reason": "Calibration is already covered by an existing registered challenger, props-temperature-v2 (research/props_calibration_20261108, forward gate registered 2026-11-08), and by the learning layer. A Platt variant would duplicate them."
+ },
+ "replacement": {
+  "id": "props-nb-role-minutes-v1",
+  "why": "Playing time is the deferred hypothesis listed in the calibration study and is not addressed by existing features: layer 1 forecasts minutes with a 4-game half-life average of the last 10 played games, which lags role changes (promotion to starter, injury replacement, demotion). Its minutes variance term (rate^2 * sdMinutes^2) widens the distribution but does not move the mean.",
+  "rule": "Let r = mean minutes of the last 3 played games and o = mean minutes of played games 4..10 (needs at least 3). If |r - o| >= 6 and all of the last 3 games are on the same side of o, expected minutes = r and sdMinutes = max(layer-1 sdMinutes, standard deviation of the last 3). Otherwise identical to props-nb-minutes-rate-v1. Fixed parameters (3 games, 6 minutes); no search.",
+  "inputs": "Only minutes of earlier played games, which the live ledger already stores; no lineup, injury or same-game information.",
+  "primary": "props-nb-role-minutes-v1 vs props-nb-minutes-rate-v1 on the 2026-27 holdout with the production artifact's priors and dispersion.",
+  "comparisons": ["B1 last-10 Poisson", "B2 season-to-date Poisson", "B3 last-10 over share shrunk 50/50 toward 0.5"],
+  "exploratory": "2025-26 (already inspected) with 2024-25 priors, reported and labelled exploratory.",
+  "verdict": "Improves only if the Brier upper 95% bound vs layer 1 is below 0 on at least two of three stats on the holdout and no stat is worse (lower 95% bound above 0). Otherwise no improvement. Nothing is promoted either way.",
+  "unchangedFromProtocol": ["holdout data and pinning", "proxy lines", "metrics and bands", "real-line audit design", "no promotion"]
+ }
+}

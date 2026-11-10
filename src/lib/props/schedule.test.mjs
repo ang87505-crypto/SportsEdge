@@ -19,13 +19,34 @@ test('a late firing keeps its original slot; a firing after midnight maps to the
  assert.deepEqual(nextPlannedRuns('2026-11-07T20:00:00Z',3).map(r=>r.kind+'@'+r.at.slice(11,16)),['collect@22:10','settle@09:20','settle@15:20']);
 });
 
-test('scheduled firings exit before any network call while released OFF',()=>{
- assert.equal(PROPS_RELEASE.scheduledRunsEnabled,false);
- const r=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',new URL('../../../scripts/props-worker.ts',import.meta.url).pathname,'collect'],
+test('released schedule stays paper-only and fails closed without configuration',()=>{
+ assert.equal(PROPS_RELEASE.scheduledRunsEnabled,true);
+ assert.equal(PROPS_RELEASE.paperOnly,true);
+ assert.equal(PROPS_RELEASE.realMoneyEnabled,false);
+ const worker=new URL('../../../scripts/props-worker.ts',import.meta.url).pathname;
+ // A scheduled firing with no store configuration stops before any provider or ESPN call.
+ const r=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',worker,'collect'],
   {env:{PATH:process.env.PATH,GITHUB_EVENT_NAME:'schedule',SCHEDULE_CRON:'10 22 * * *'},encoding:'utf8'});
- assert.equal(r.status,0);
- assert.deepEqual(JSON.parse(r.stdout),{status:'SCHEDULED_RUNS_RELEASED_OFF',kind:'collect',providerCalls:0});
- const owner=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',new URL('../../../scripts/props-worker.ts',import.meta.url).pathname,'resume'],
-  {env:{PATH:process.env.PATH,GITHUB_EVENT_NAME:'schedule'},encoding:'utf8'});
- assert.equal(JSON.parse(owner.stdout).status,'OWNER_ACTION_NOT_SCHEDULABLE');
+ assert.equal(r.status,1);
+ assert.equal(JSON.parse(r.stdout).status,'NOT_CONFIGURED');
+ // Owner control and backfill can never run from a schedule.
+ for(const kind of ['resume','stop','backfill']){
+  const o=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',worker,kind],
+   {env:{PATH:process.env.PATH,GITHUB_EVENT_NAME:'schedule'},encoding:'utf8'});
+  assert.equal(JSON.parse(o.stdout).status,'OWNER_ACTION_NOT_SCHEDULABLE');
+ }
+});
+
+test('backup slot dispatch: only a release cron of the same kind names a slot', async () => {
+  const {slotCronMatches,scheduledInstant,slotKey}=await import('./schedule.ts');
+  assert.equal(slotCronMatches('collect','10 19 * * *'),true);
+  assert.equal(slotCronMatches('settle','20 9 * * *'),true);
+  assert.equal(slotCronMatches('settle','10 19 * * *'),false);
+  assert.equal(slotCronMatches('collect','0 19 * * *'),false);
+  assert.equal(slotCronMatches('backfill','20 9 * * *'),false);
+  // A backup run an hour after the slot gets the same key as the on-time scheduled run.
+  const onTime=slotKey('collect',scheduledInstant('10 19 * * *','2026-11-10T19:12:00Z'));
+  const backup=slotKey('collect',scheduledInstant('10 19 * * *','2026-11-10T20:40:00Z'));
+  assert.equal(onTime,'collect-2026-11-10T19');
+  assert.equal(backup,onTime);
 });

@@ -1,0 +1,181 @@
+[
+  {
+    "system": "props",
+    "number": 99,
+    "branch": "claude/nba-player-prop-testing-tuqr7x",
+    "head": "7e916fba01abe7025353291c76217f0bb703be72",
+    "checks": [
+      "Isolated Next.js build",
+      "Next.js lint and production build",
+      "Python statistics and audit tests",
+      "NBA and soccer provider-contract tests",
+      "Desktop and mobile browser smoke",
+      "verify"
+    ],
+    "title": "Release verified daily NBA props PAPER schedule (#99)",
+    "files": [
+      {
+        "path": "database/props/props_budget_v2.sql",
+        "sha": "e36ff679f0cb987bb230667e61b5511ed903cd15",
+        "status": "added"
+      },
+      {
+        "path": "database/props/tests/props_budget_v2_test.sql",
+        "sha": "84cf3cd385988356afe45f43af883fd125997d05",
+        "status": "added"
+      },
+      {
+        "path": "database/props/tests/props_v1_test.sql",
+        "sha": "b5f461b67b7f6d91355ccd5ae5bdf6cee32ebf47",
+        "status": "modified"
+      },
+      {
+        "path": "docs/NBA_PLAYER_PROPS_PAPER_2026_11_07.md",
+        "sha": "1b27eeb566670115dd0f015b4d91c5a3c4916175",
+        "status": "modified"
+      },
+      {
+        "path": "research/props_backtest_20261107/backtest_2024-25.json",
+        "sha": "d81f1f4425885dde05652f94b99735e609c2549a",
+        "status": "added"
+      },
+      {
+        "path": "research/props_backtest_20261107/backtest_2025-26.json",
+        "sha": "a03f9f3537daf85b8dd963ac0a84cfedcc4dff02",
+        "status": "added"
+      },
+      {
+        "path": "scripts/props-model-fit.ts",
+        "sha": "61cb0578dc21b4223772974dd118bdb2adb22797",
+        "status": "modified"
+      },
+      {
+        "path": "scripts/verify-props-sql.sh",
+        "sha": "76d0ce4e60d8637f8bca6515e86b054ed555ecc6",
+        "status": "modified"
+      },
+      {
+        "path": "src/app/pages.css",
+        "sha": "f6861e3116eabf89354799af73e669cfc4db05d1",
+        "status": "modified"
+      },
+      {
+        "path": "src/app/paper-betting/page.tsx",
+        "sha": "ee35da5a85c378e4fa3b05c2300791ada442675a",
+        "status": "modified"
+      },
+      {
+        "path": "src/app/paper-betting/props/page.tsx",
+        "sha": "ec90345a2db706a51cbacabaf8db3d5ff54ab562",
+        "status": "modified"
+      },
+      {
+        "path": "src/components/charts.tsx",
+        "sha": "1937c374dd607cf75fb8c5fbfaa657aa8a6a7735",
+        "status": "modified"
+      },
+      {
+        "path": "src/data/props/backtest_v1.json",
+        "sha": "ca5f1dd6bd1ddf24611ce61253b7776cd1de1487",
+        "status": "added"
+      },
+      {
+        "path": "src/lib/props/backtest-view.test.mjs",
+        "sha": "ad94007c4fb104c2a156132cdac45a3842f44db2",
+        "status": "added"
+      },
+      {
+        "path": "src/lib/props/backtest-view.ts",
+        "sha": "f82a391b8a660f7245e3d39c726eea2b9d2f353d",
+        "status": "added"
+      },
+      {
+        "path": "src/lib/props/budget.test.mjs",
+        "sha": "ed035dfbf19b3a9e4ac1736cb98f723c7f4c5bc2",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/props/budget.ts",
+        "sha": "2c77c6ba6c340022919c97d5a4eff18cad9f0b80",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/props/dashboard-view.ts",
+        "sha": "fe22f26b0dbcdc1ab1cdf71d4a411c69fd5a8f16",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/props/schedule.test.mjs",
+        "sha": "f21de0d5c933cf0a4e71c152fd63d8f913506e01",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/props/schedule.ts",
+        "sha": "88822c268bf507d38195e02dc108ece135ed935a",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/server/props-cycle.integration.test.mjs",
+        "sha": "f4436e0d62d0d58a0c8dc20a90dabe4483f61991",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/server/props-cycle.ts",
+        "sha": "a58459641fd180f802327a197a475c68abcdcf6c",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/server/props-pg-kit.mjs",
+        "sha": "1b76098d093c1e4cad2ec855050416292dc14c3d",
+        "status": "modified"
+      }
+    ]
+  },
+  {
+    "system": "stocks",
+    "number": 102,
+    "branch": "release/stock-paper-orders",
+    "head": "25bbb65c57e295a4b902deaa035b7d3e1bc5eec6",
+    "checks": [
+      "Isolated Next.js build",
+      "Next.js lint and production build",
+      "Python statistics and audit tests",
+      "NBA and soccer provider-contract tests",
+      "Desktop and mobile browser smoke",
+      "controller"
+    ],
+    "title": "Release supervised recurring stock PAPER orders (#102)",
+    "files": [
+      {
+        "path": ".github/workflows/paper-auto-controller.yml",
+        "sha": "f630f5d0310bc335c0f9ae9fc281e270daeed510",
+        "status": "modified"
+      },
+      {
+        "path": ".github/workflows/paper-auto-worker.yml",
+        "sha": "98bab77a5ed03f4da617a804c090acad0c89771d",
+        "status": "modified"
+      },
+      {
+        "path": "scripts/paper-auto-worker.ts",
+        "sha": "26268415b37ff459d1723855f82c685da97b7d16",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/server/paper-auto-broker.test.mjs",
+        "sha": "4ab9d025a25e240f650cbb254929f988b715eb59",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/server/paper-auto-owner.test.mjs",
+        "sha": "473d594902fe4e9f3ac52c511edcc5ed663a6242",
+        "status": "modified"
+      },
+      {
+        "path": "src/lib/stocks/paper-auto-release.ts",
+        "sha": "9fd9720f3cca831b839aaf50cfff81638287aa11",
+        "status": "modified"
+      }
+    ]
+  }
+]

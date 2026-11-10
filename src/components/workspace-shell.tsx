@@ -6,7 +6,7 @@ import {NavIcon} from '@/components/nav-icon';
 import {CommandMenu} from '@/components/command-menu';
 import {AutopilotBadge} from '@/components/autopilot-summary';
 import {MotionLayer} from '@/components/motion';
-import {SECTIONS,PLATFORM,sectionFor,crumbsFor,parentFor} from '@/lib/navigation';
+import {SECTIONS,PLATFORM,sectionFor,crumbsFor,parentFor,activeChild} from '@/lib/navigation';
 
 const isExact=(href:string,path:string)=>path===href;
 
@@ -22,7 +22,7 @@ function SidebarTree({path,onNavigate}:{path:string;onNavigate?:()=>void}){
       <span className="nav-link-label">{section.label}</span>
      </Link>
      {section.children.length>0&&<ul className="nav-children">
-      {section.children.map(child=><li key={child.href}><Link href={child.href} className="nav-link nav-link-child" aria-current={path===child.href||path.startsWith(child.href+'/')?'page':undefined} onClick={onNavigate}>{child.label}</Link></li>)}
+      {section.children.map(child=><li key={child.href}><Link href={child.href} className="nav-link nav-link-child" aria-current={activeChild(section,path)?.href===child.href?'page':undefined} onClick={onNavigate}>{child.label}</Link></li>)}
      </ul>}
     </div>;
    })}
@@ -42,7 +42,7 @@ function SidebarTree({path,onNavigate}:{path:string;onNavigate?:()=>void}){
 function SectionTabs({path}:{path:string}){
  const section=sectionFor(path);
  if(!section||!section.children.length)return null;
- const pages=[{href:section.href,label:section.id==='sports'?"Today's board":section.id==='stocks'?'Dashboard':section.label},...section.children];
+ const pages=[{href:section.href,label:section.id==='sports'?"Today's board":section.id==='stocks'?'Dashboard':section.id==='paper'?'Dashboard':section.label},...section.children];
  return <nav className="section-tabs" aria-label={`${section.label} pages`}>
   {pages.map(p=><Link key={p.href} href={p.href} aria-current={path===p.href?'page':undefined}>{p.label}</Link>)}
  </nav>;
