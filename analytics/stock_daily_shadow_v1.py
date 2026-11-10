@@ -194,15 +194,19 @@ def report(result):
     return '\n'.join(lines) + '\n'
 
 
-def market_data(source, symbols, start, end):
-    """Only GET market-data endpoints. Explicit end-of-day bound includes the final completed bar."""
+def market_data(source, symbols, start, end, close_time='16:00'):
+    """Only GET market data, ending at the completed exchange close.
+
+    Daily bars are timestamped at the start of their New York day. The close bound includes that
+    day's bar without requesting future midnight/latest SIP data, which a Basic plan refuses.
+    """
     from .stock_forward_bridge_v1 import DATA, PAPER
     sessions = sorted(r['date'] for r in source.fetch(PAPER, '/v2/calendar', {'start': start, 'end': end}))
     raw = {}
     for adjustment in ('raw', 'all'):
         for i in range(0, len(symbols), 40):
             params = {'symbols': ','.join(symbols[i:i+40]), 'timeframe': '1Day', 'start': start,
-                      'end': instant(end, '23:59:59').isoformat(), 'adjustment': adjustment,
+                      'end': instant(end, close_time).isoformat(), 'adjustment': adjustment,
                       'feed': 'sip', 'asof': end, 'limit': 10000}
             for page in source.paged(DATA, '/v2/stocks/bars', params):
                 for symbol, bars in (page.get('bars') or {}).items():
@@ -259,7 +263,7 @@ def main():
         session = next(r for r in calendar if r['date'] == SESSION)
         previous = [r for r in calendar if r['date'] < SESSION][-1]
         symbols = sorted({u['symbol'] for u in config['securities']} | {'SPY'})
-        data = market_data(source, symbols, '2025-01-01', previous['date'])
+        data = market_data(source, symbols, '2025-01-01', previous['date'], previous['close'])
         out = build_plan(data, config, session, previous, datetime.now(timezone.utc))
     else:
         if not (root / 'plan.json').exists():
@@ -268,7 +272,8 @@ def main():
         if now < datetime.fromisoformat(plan['close_at']) + timedelta(minutes=30):
             raise ValueError('FINAL_BARS_NOT_DUE')
         symbols = sorted({o['symbol'] for orders in plan['orders'].values() for o in orders})
-        data = market_data(source, symbols, SESSION, SESSION)
+        close_time = datetime.fromisoformat(plan['close_at']).astimezone(NY).strftime('%H:%M')
+        data = market_data(source, symbols, SESSION, SESSION, close_time)
         out = grade(plan, data, datetime.now(timezone.utc), config)
     inputs_path = root / f'{a.phase}-inputs-{digest(data)}.json.gz'
     if not inputs_path.exists():
