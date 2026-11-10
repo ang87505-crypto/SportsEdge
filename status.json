@@ -1,15 +1,17 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-10T02:52:47.995Z",
+ "generatedAt": "2026-11-10T02:58:53.934Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 42745716963,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42745716963",
+  "id": 42746369588,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42746369588",
   "event": "workflow_run"
  },
  "overall": {
-  "state": "WARN",
-  "attention": []
+  "state": "ATTENTION",
+  "attention": [
+   "research-collect"
+  ]
  },
  "jobs": [
   {
@@ -360,15 +362,33 @@
    "workflow": "research-collect.yml",
    "note": null,
    "historyUrl": "https://github.com/ang87505-crypto/SportsEdge/actions/workflows/research-collect.yml",
-   "status": "PENDING_FIRST_RUN",
-   "detail": "No run has happened yet. The next planned time is not an execution.",
+   "status": "FAILING",
+   "detail": "1 failed run since the last success.",
    "workflowState": "active",
    "running": null,
-   "lastRun": null,
+   "lastRun": {
+    "id": 42746331463,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42746331463",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure",
+    "startedAt": "2026-11-10T02:58:25.000Z",
+    "finishedAt": "2026-11-10T02:58:46.000Z",
+    "headSha": "18ee34eeb95d7927858d3d836579c777209412ed"
+   },
    "lastSuccess": null,
-   "lastFailure": null,
+   "lastFailure": {
+    "id": 42746331463,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42746331463",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure",
+    "startedAt": "2026-11-10T02:58:25.000Z",
+    "finishedAt": "2026-11-10T02:58:46.000Z",
+    "headSha": "18ee34eeb95d7927858d3d836579c777209412ed"
+   },
    "lastScheduledSuccess": null,
-   "consecutiveFailures": 0,
+   "consecutiveFailures": 1,
    "slots7d": {
     "due": 0,
     "missed": 0,
@@ -480,34 +500,34 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 42745716963,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42745716963",
+    "id": 42746369588,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42746369588",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-10T02:52:41.000Z",
+    "startedAt": "2026-11-10T02:58:48.000Z",
     "finishedAt": null,
-    "headSha": "cc840f47d2336fbbf1a93dcdd00180c80994b211"
+    "headSha": "18ee34eeb95d7927858d3d836579c777209412ed"
    },
    "lastRun": {
-    "id": 42745716963,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42745716963",
+    "id": 42746369588,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42746369588",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-10T02:52:41.000Z",
+    "startedAt": "2026-11-10T02:58:48.000Z",
     "finishedAt": null,
-    "headSha": "cc840f47d2336fbbf1a93dcdd00180c80994b211"
+    "headSha": "18ee34eeb95d7927858d3d836579c777209412ed"
    },
    "lastSuccess": {
-    "id": 42742567442,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42742567442",
+    "id": 42745716963,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42745716963",
     "event": "workflow_run",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-10T02:24:41.000Z",
-    "finishedAt": "2026-11-10T02:25:02.000Z",
-    "headSha": "37eb4824c98368d3d0856557053e6ccc2b0916d5"
+    "startedAt": "2026-11-10T02:52:41.000Z",
+    "finishedAt": "2026-11-10T02:53:07.000Z",
+    "headSha": "cc840f47d2336fbbf1a93dcdd00180c80994b211"
    },
    "lastFailure": null,
    "lastScheduledSuccess": null,
@@ -568,61 +588,61 @@
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-10T02:53:01.824Z",
+  "checkedAt": "2026-11-10T02:59:04.798Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 2660,
+    "ms": 1936,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 312,
+    "ms": 239,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 1431,
+    "ms": 1214,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 370,
+    "ms": 547,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 1287,
+    "ms": 1450,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 1777,
+    "ms": 1108,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 396,
+    "ms": 248,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 167,
+    "ms": 116,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 107,
+    "ms": 96,
     "detail": "requires sign-in"
    },
    {
@@ -634,19 +654,19 @@
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 124,
+    "ms": 106,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 873,
+    "ms": 464,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 112,
+    "ms": 108,
     "detail": "HTTP 401"
    }
   ]
@@ -725,6 +745,11 @@
   }
  ],
  "blockers": [
+  {
+   "id": "job:research-collect",
+   "text": "Strategy research: nightly collection, forward ledgers and report: 1 failed run since the last success.",
+   "action": "Open https://github.com/ang87505-crypto/SportsEdge/actions/workflows/research-collect.yml and read the latest failed run."
+  },
   {
    "id": "stock-first-session",
    "text": "PR #102 (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: not passed (STOCK_SUPERVISED_EXECUTE_REQUIRED).",
