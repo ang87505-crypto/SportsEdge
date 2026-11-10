@@ -1,0 +1,191 @@
+{
+ "broker_orders": 0,
+ "capital_per_rule": 30000,
+ "captured_at": "2026-11-10T03:10:07.465892+00:00",
+ "close_at": "2026-11-10T21:00:00+00:00",
+ "config_sha256": "e8c65e2bd9a84738b855a765cf30bdc3abe7284c73259e7908316eb426a547d8",
+ "cost_bps_per_side": [
+  0,
+  5,
+  10,
+  25
+ ],
+ "historical_verdict": "NONE QUALIFIES",
+ "input_sha256": "47959ef5ead06cc3260478f9d57a652cd05152de19dab84c3244068fdd400bf7",
+ "last_signal_session": "2026-11-09",
+ "missing_history_symbols": [],
+ "open_at": "2026-11-10T14:30:00+00:00",
+ "orders": {
+  "gainers5": [
+   {
+    "limit": 523.84,
+    "previous_close": 508.58,
+    "shares": 11,
+    "symbol": "AMD"
+   },
+   {
+    "limit": 381.67,
+    "previous_close": 370.55,
+    "shares": 15,
+    "symbol": "AMAT"
+   },
+   {
+    "limit": 227.95,
+    "previous_close": 221.31,
+    "shares": 26,
+    "symbol": "LRCX"
+   },
+   {
+    "limit": 329.06,
+    "previous_close": 319.48,
+    "shares": 18,
+    "symbol": "AVGO"
+   },
+   {
+    "limit": 406.5,
+    "previous_close": 394.66,
+    "shares": 14,
+    "symbol": "ADI"
+   }
+  ],
+  "losers5": [
+   {
+    "limit": 184.03,
+    "previous_close": 178.67,
+    "shares": 32,
+    "symbol": "NVDA"
+   },
+   {
+    "limit": 198.91,
+    "previous_close": 193.12,
+    "shares": 30,
+    "symbol": "PM"
+   },
+   {
+    "limit": 262.0,
+    "previous_close": 254.37,
+    "shares": 22,
+    "symbol": "ACN"
+   },
+   {
+    "limit": 35.93,
+    "previous_close": 34.88,
+    "shares": 166,
+    "symbol": "GIS"
+   },
+   {
+    "limit": 204.54,
+    "previous_close": 198.58,
+    "shares": 29,
+    "symbol": "COF"
+   }
+  ],
+  "losers5-spy200": [
+   {
+    "limit": 184.03,
+    "previous_close": 178.67,
+    "shares": 32,
+    "symbol": "NVDA"
+   },
+   {
+    "limit": 198.91,
+    "previous_close": 193.12,
+    "shares": 30,
+    "symbol": "PM"
+   },
+   {
+    "limit": 262.0,
+    "previous_close": 254.37,
+    "shares": 22,
+    "symbol": "ACN"
+   },
+   {
+    "limit": 35.93,
+    "previous_close": 34.88,
+    "shares": 166,
+    "symbol": "GIS"
+   },
+   {
+    "limit": 204.54,
+    "previous_close": 198.58,
+    "shares": 29,
+    "symbol": "COF"
+   }
+  ],
+  "losers5-spy200-sector2": [
+   {
+    "limit": 184.03,
+    "previous_close": 178.67,
+    "shares": 32,
+    "symbol": "NVDA"
+   },
+   {
+    "limit": 198.91,
+    "previous_close": 193.12,
+    "shares": 30,
+    "symbol": "PM"
+   },
+   {
+    "limit": 262.0,
+    "previous_close": 254.37,
+    "shares": 22,
+    "symbol": "ACN"
+   },
+   {
+    "limit": 35.93,
+    "previous_close": 34.88,
+    "shares": 166,
+    "symbol": "GIS"
+   },
+   {
+    "limit": 204.54,
+    "previous_close": 198.58,
+    "shares": 29,
+    "symbol": "COF"
+   }
+  ],
+  "losers5-volz": [
+   {
+    "limit": 184.03,
+    "previous_close": 178.67,
+    "shares": 32,
+    "symbol": "NVDA"
+   },
+   {
+    "limit": 198.91,
+    "previous_close": 193.12,
+    "shares": 30,
+    "symbol": "PM"
+   },
+   {
+    "limit": 204.54,
+    "previous_close": 198.58,
+    "shares": 29,
+    "symbol": "COF"
+   },
+   {
+    "limit": 262.0,
+    "previous_close": 254.37,
+    "shares": 22,
+    "symbol": "ACN"
+   },
+   {
+    "limit": 35.93,
+    "previous_close": 34.88,
+    "shares": 166,
+    "symbol": "GIS"
+   }
+  ],
+  "spy-open-close": [
+   {
+    "limit": 775.27,
+    "previous_close": 752.69,
+    "shares": 38,
+    "symbol": "SPY"
+   }
+  ]
+ },
+ "plan_sha256": "64f2747f69340c179411a8107935101229df22cef18795300301e9da9f79c051",
+ "schema": "daily-shadow-plan-v1",
+ "session": "2026-11-10"
+}
