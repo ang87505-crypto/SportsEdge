@@ -95,3 +95,31 @@ class MarketSymbols(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ForwardEndTime(unittest.TestCase):
+    """A date-only `end` covers the whole New York day, which is still in the future during the nightly run;
+    Alpaca's free plan refuses SIP requests reaching the last 15 minutes (HTTP 403, run 42746331463)."""
+
+    def test_bars_use_an_explicit_end_time_and_keep_the_asof_date(self):
+        from analytics.research import cli
+        queries = []
+
+        class Src:
+            count = 0
+            def fetch(self, base, path, query):
+                return [{'date': '2026-11-09'}]
+            def paged(self, base, path, query):
+                queries.append((path, dict(query)))
+                return [{}]
+        cli.market_data(Src(), {'SPY'}, '2026-11-01', '2026-11-09', {}, end_time='2026-11-10T02:38:00Z')
+        bars = [q for p, q in queries if p == '/v2/stocks/bars']
+        self.assertTrue(bars)
+        for q in bars:
+            self.assertEqual(q['end'], '2026-11-10T02:38:00Z')
+            self.assertEqual(q['asof'], '2026-11-09')
+
+    def test_forward_end_time_is_twenty_minutes_before_now(self):
+        from datetime import datetime, timezone
+        from analytics.research import cli
+        self.assertEqual(cli.forward_end_time(datetime(2026, 11, 10, 2, 58, 30, tzinfo=timezone.utc)), '2026-11-10T02:38:30Z')

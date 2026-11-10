@@ -83,17 +83,23 @@ def cmd_collect(data: Path, now: datetime) -> dict:
 
 # ---------------------------------------------------------------- market data
 
-def market_data(source, symbols: set, start: str, end: str, late_asof: dict) -> dict:
+def forward_end_time(now: datetime) -> str:
+    """Forward runs read bars up to 20 minutes ago: a date-only end means the whole New York day, which is still in
+    the future during the nightly run, and the free plan refuses SIP requests reaching the last 15 minutes."""
+    return (now.astimezone(timezone.utc) - timedelta(minutes=20)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def market_data(source, symbols: set, start: str, end: str, late_asof: dict, end_time: str | None = None) -> dict:
     """Bars, sessions and actions, with renamed members joined and delisted names refetched as of their date."""
     requested, rejected = rdata.market_symbols(symbols)
     symbols = set(requested)
     sessions = rdata.fetch_calendar(source, start, end)
-    bars = rdata.fetch_bars(source, requested, start, end, asof=end)
+    bars = rdata.fetch_bars(source, requested, start, end, asof=end, end_time=end_time)
     pages = rdata.fetch_actions(source, sorted(symbols), start, end)
     actions, dropped = rdata.validate_actions(bars, rdata.normalize_actions(pages))  # entity check (ticker reuse)
     renamed = {a['new_symbol'] for a in actions if a['kind'] == 'name_change' and a['symbol'] in symbols} - set(bars)
     if renamed:
-        bars |= rdata.fetch_bars(source, sorted(renamed), start, end, asof=end)
+        bars |= rdata.fetch_bars(source, sorted(renamed), start, end, asof=end, end_time=end_time)
     refetched = {}
     for sym in sorted(symbols - set(bars)):
         if sym in late_asof:
@@ -186,9 +192,9 @@ DAILY_FIRST_SIGNAL = '2026-11-09'   # first forward signal close; first simulate
 DAILY_FORWARD_MIN_SESSIONS = 252
 
 
-def _daily_market(members, start: str, end: str):
+def _daily_market(members, start: str, end: str, end_time: str | None = None):
     symbols = {m['symbol'] for m in members} | {'SPY'}
-    md = market_data(alpaca(), symbols, start, end, {})
+    md = market_data(alpaca(), symbols, start, end, {}, end_time=end_time)
     sessions, series = rdata.assemble(md['sessions'], md['bars'])
     return md, sessions, series
 
@@ -224,7 +230,7 @@ def cmd_daily_historical(data: Path, out_dir: Path, end: str, now: datetime) -> 
 def cmd_daily_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
     universe, members = universe_members()
     start = (date.fromisoformat(DAILY_FIRST_SIGNAL) - timedelta(days=150)).isoformat()
-    md, sessions, series = _daily_market(members, start, today)
+    md, sessions, series = _daily_market(members, start, today, end_time=forward_end_time(now))
     ledgers = {}
     end_k = len(sessions) - 1
     for sid in cand.DAILY_IDS:
@@ -271,7 +277,7 @@ def cmd_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
     brk = brk_symbols(filings, mapping)
     symbols = {m['symbol'] for m in members} | {'SPY', 'QMOM', 'BRK.B'} | follower_syms | set(brk)
     start = (date.fromisoformat(ev.FORWARD_START) - timedelta(days=400)).isoformat()
-    md = market_data(alpaca(), symbols, start, today, {})
+    md = market_data(alpaca(), symbols, start, today, {}, end_time=forward_end_time(now))
     sessions, series = rdata.assemble(md['sessions'], md['bars'])
     if not sessions or sessions[-1] < ev.FORWARD_START:
         out = {'kind': 'forward', 'at': stamp(now), 'status': 'NO_FORWARD_SESSIONS_YET', 'latest_session': sessions[-1] if sessions else None}

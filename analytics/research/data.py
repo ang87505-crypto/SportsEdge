@@ -21,14 +21,15 @@ def market_symbols(symbols) -> tuple[list[str], list[str]]:
     return ok, sorted(s for s in symbols if not MARKET_SYMBOL.match(s or ''))
 
 
-def fetch_bars(source, symbols: list[str], start: str, end: str, asof: str) -> dict:
+def fetch_bars(source, symbols: list[str], start: str, end: str, asof: str, end_time: str | None = None) -> dict:
+    """`end_time` (RFC 3339) replaces a date-only end, which Alpaca reads as the whole New York day."""
     from analytics.stock_forward_bridge_v1 import DATA
     bars: dict = {}
     for adjustment, keys in (('raw', ('o', 'c', 'v')), ('all', ('ao', 'ac'))):
         for i in range(0, len(symbols), 40):
             group = symbols[i:i + 40]
             for page in source.paged(DATA, '/v2/stocks/bars', {'symbols': ','.join(group), 'timeframe': '1Day', 'start': start,
-                                                               'end': end, 'adjustment': adjustment, 'feed': 'sip',
+                                                               'end': end_time or end, 'adjustment': adjustment, 'feed': 'sip',
                                                                'asof': asof, 'limit': 10000}):
                 for sym, rows in (page.get('bars') or {}).items():
                     b = bars.setdefault(sym, {})
