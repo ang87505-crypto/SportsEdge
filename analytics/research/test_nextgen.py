@@ -236,6 +236,18 @@ class Benchmark(unittest.TestCase):
         self.assertAlmostEqual(c[1][1], 1000.0)
         self.assertAlmostEqual(c[3][1], 1100.0)
 
+    def test_original_matched_benchmark_uses_same_bar_exposure_on_the_first_session(self):
+        # Half invested at the first open; the candidate's stock then doubles intraday, so its end-of-day
+        # exposure (2/3) reflects that same bar's outcome. SPY rises 10% open-to-close that day.
+        from analytics.research import evaluate as ev
+        ss = sessions(2)
+        spy = {'o': [100, 100], 'c': [100, 110], 'ao': [100, 100], 'ac': [100, 110]}
+        old = ev.exposure_matched(ss, spy, [2 / 3], 1, 1, 1000.0)
+        new = nextgen.exposure_matched_v2(ss, spy, [2 / 3], [0.5], 1, 1, 1000.0)
+        self.assertAlmostEqual(new[1][1], 1050.0)            # known at the open: 50% of +10%
+        self.assertNotAlmostEqual(old[1][1], 1050.0)        # original: 2/3 of +10% (same-bar information)
+        self.assertAlmostEqual(old[1][1], 1000 * (1 + 0.1 * 2 / 3))
+
     def test_bootstrap_is_reproducible(self):
         r = [0.001 * ((i * 7) % 11 - 5) for i in range(500)]
         a = nextgen.block_bootstrap(r, nextgen.sharpe)
