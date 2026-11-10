@@ -1,0 +1,267 @@
+{
+ "benchmark": {
+  "cagr": 0.14472479211569267,
+  "end_value": 112001.52322924601,
+  "max_drawdown": -0.33793888166449937,
+  "sharpe": 0.8444846723136871,
+  "total": 2.733384107641534
+ },
+ "candidates": [
+  {
+   "active": false,
+   "forward": {
+    "firstExecution": null,
+    "sessions": 0,
+    "status": "NO_FORWARD_SESSIONS_YET",
+    "totalReturn": null
+   },
+   "historical": {
+    "asLive": {
+     "cagr": 0.03364325075434227,
+     "end_value": 41416.96701940001,
+     "max_drawdown": -0.10067493503636293,
+     "sharpe": 0.5753175442395545,
+     "total": 0.38056556731333346
+    },
+    "continuous": {
+     "cagr": 0.16387909946405732,
+     "end_value": 131662.30128190044,
+     "max_drawdown": -0.3513621852621839,
+     "sharpe": 0.7344513515914368,
+     "total": 3.3887433760633483
+    },
+    "costBps": 10,
+    "failedChecks": [
+     "max_drawdown_within_35pct",
+     "sharpe_above_spy_buy_and_hold"
+    ],
+    "verdict": "FAILS"
+   },
+   "id": "momentum-quality-paper-v1"
+  },
+  {
+   "active": false,
+   "forward": {
+    "firstExecution": null,
+    "sessions": 0,
+    "status": "NO_FORWARD_SESSIONS_YET",
+    "totalReturn": null
+   },
+   "historical": null,
+   "id": "qmom-disclosure-follower-v1"
+  },
+  {
+   "active": false,
+   "forward": {
+    "firstExecution": null,
+    "sessions": 0,
+    "status": "NO_FORWARD_SESSIONS_YET",
+    "totalReturn": null
+   },
+   "historical": {
+    "asLive": {
+     "cagr": 0.004519789778448358,
+     "end_value": 31347.9272,
+     "max_drawdown": -0.10230477608033905,
+     "sharpe": 0.15049820623700078,
+     "total": 0.04493090666666655
+    },
+    "continuous": {
+     "cagr": 0.11253168189020668,
+     "end_value": 84817.067355,
+     "max_drawdown": -0.4198131006802216,
+     "sharpe": 0.6326523598682963,
+     "total": 1.8272355785000003
+    },
+    "costBps": 10,
+    "failedChecks": [
+     "cagr_above_exposure_matched_spy",
+     "max_drawdown_within_35pct",
+     "sharpe_above_spy_buy_and_hold"
+    ],
+    "verdict": "FAILS"
+   },
+   "id": "berkshire-13f-top5-paper-v1"
+  }
+ ],
+ "capital": 30000.0,
+ "daily": {
+  "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
+  "forwardAt": "2026-11-10T03:04:44Z",
+  "historicalAt": "2026-11-10T03:03:37Z",
+  "overall": "NONE QUALIFIES",
+  "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
+  "strategies": [
+   {
+    "active": false,
+    "forward": {
+     "firstExecution": null,
+     "lastTargets": null,
+     "sessions": 0,
+     "status": "NOT STARTED",
+     "totalReturn": null
+    },
+    "historical": {
+     "asLive": {
+      "cagr": -0.0096721521790879,
+      "end_value": 27288.72041660016,
+      "max_drawdown": -0.10023468676425196,
+      "sharpe": -0.3550726363257972,
+      "total": -0.09037598611332798
+     },
+     "continuous": {
+      "cagr": -0.12016149185385672,
+      "end_value": 8615.307754901432,
+      "max_drawdown": -0.7468988893978274,
+      "sharpe": -0.6716008065517308,
+      "total": -0.7128230748366189
+     },
+     "costBps": 10,
+     "failedChecks": [
+      "at_least_6_positive_years",
+      "both_halves_positive",
+      "cagr_above_exposure_matched_spy",
+      "cagr_positive_at_10_and_25bps",
+      "max_drawdown_within_35pct",
+      "no_unresolved_at_any_cost",
+      "sharpe_above_spy_buy_and_hold",
+      "sharpe_above_weekly"
+     ],
+     "gross": {
+      "cagr": 0.01526699924774455,
+      "end_value": 34773.84979999997,
+      "max_drawdown": -0.4155506674793865,
+      "sharpe": 0.1758250269892864,
+      "total": 0.15912832666666565
+     },
+     "turnoverPerYear": 223.84917967818686,
+     "verdict": "FAILS"
+    },
+    "id": "daily-reversal5-v1"
+   },
+   {
+    "active": false,
+    "forward": {
+     "firstExecution": null,
+     "lastTargets": null,
+     "sessions": 0,
+     "status": "NOT STARTED",
+     "totalReturn": null
+    },
+    "historical": {
+     "asLive": {
+      "cagr": 6.011756980628391e-05,
+      "end_value": 30017.58185400018,
+      "max_drawdown": -0.10507510687974841,
+      "sharpe": 0.021504112436699387,
+      "total": 0.000586061800005977
+     },
+     "continuous": {
+      "cagr": -0.09044324538059212,
+      "end_value": 11908.997707302095,
+      "max_drawdown": -0.7344446081986098,
+      "sharpe": -0.30796501082887595,
+      "total": -0.6030334097565968
+     },
+     "costBps": 10,
+     "failedChecks": [
+      "at_least_6_positive_years",
+      "both_halves_positive",
+      "cagr_above_exposure_matched_spy",
+      "cagr_positive_at_10_and_25bps",
+      "max_drawdown_within_35pct",
+      "no_unresolved_at_any_cost",
+      "sharpe_above_spy_buy_and_hold",
+      "sharpe_above_weekly"
+     ],
+     "gross": {
+      "cagr": 0.11654006777259363,
+      "end_value": 87842.73019999983,
+      "max_drawdown": -0.47998007452311287,
+      "sharpe": 0.5961343137355426,
+      "total": 1.9280910066666612
+     },
+     "turnoverPerYear": 202.91834737215683,
+     "verdict": "FAILS"
+    },
+    "id": "daily-momentum5d-v1"
+   },
+   {
+    "active": false,
+    "forward": {
+     "firstExecution": null,
+     "lastTargets": null,
+     "sessions": 0,
+     "status": "NOT STARTED",
+     "totalReturn": null
+    },
+    "historical": {
+     "asLive": {
+      "cagr": 0.009883397520502823,
+      "end_value": 33017.85240700003,
+      "max_drawdown": -0.1016153799678794,
+      "sharpe": 0.3808393905830356,
+      "total": 0.10059508023333419
+     },
+     "continuous": {
+      "cagr": 0.06045810447176447,
+      "end_value": 53159.619807600386,
+      "max_drawdown": -0.19571990310207932,
+      "sharpe": 0.590547556037031,
+      "total": 0.7719873269200128
+     },
+     "costBps": 10,
+     "failedChecks": [
+      "cagr_above_exposure_matched_spy",
+      "sharpe_above_spy_buy_and_hold"
+     ],
+     "gross": {
+      "cagr": 0.07792286993914477,
+      "end_value": 62333.55267000002,
+      "max_drawdown": -0.1741778949739251,
+      "sharpe": 0.7397297543288288,
+      "total": 1.0777850890000007
+     },
+     "turnoverPerYear": 16.390691563449487,
+     "verdict": "FAILS"
+    },
+    "id": "daily-spy-trend50-v1"
+   }
+  ]
+ },
+ "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
+ "forwardAt": "2026-11-10T03:03:27Z",
+ "generatedAt": "2026-11-10T03:04:50Z",
+ "historicalAt": "2026-11-09T22:39:26Z",
+ "limitations": [
+  "Historical results use previously inspected data and a survivorship-biased stock universe.",
+  "Historical simulation and forward paper results are separate; no candidate is activated."
+ ],
+ "overall": "NONE QUALIFIES",
+ "schemaVersion": "stock-research-summary-v1",
+ "sourceCommit": null,
+ "sources": [
+  {
+   "id": "openfigi-cusip",
+   "lastSuccessAt": "2026-11-09T22:37:39Z",
+   "retrievedAt": "2026-11-09T22:37:39Z",
+   "status": "OK"
+  },
+  {
+   "id": "qmom-holdings",
+   "lastSuccessAt": "2026-11-10T03:03:25Z",
+   "retrievedAt": "2026-11-10T03:03:25Z",
+   "status": "OK"
+  },
+  {
+   "id": "sec-edgar-13f",
+   "lastSuccessAt": "2026-11-10T03:03:25Z",
+   "retrievedAt": "2026-11-10T03:03:25Z",
+   "status": "OK"
+  }
+ ],
+ "window": [
+  "2017-02-01",
+  "2026-11-06"
+ ]
+}
