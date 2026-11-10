@@ -1,0 +1,182 @@
+{
+ "generatedAt": "2026-11-10T06:21:14.962Z",
+ "since": "2026-11-01T00:00:00Z",
+ "observations": 220,
+ "shadowLines": {
+  "byModel": {
+   "props-nb-minutes-rate-v1": {
+    "scored": 213,
+    "graded": 174,
+    "void": 5,
+    "awaitingSettlement": 34,
+    "notLockedYet": 0,
+    "firstLock": "2026-11-07T22:10:00+00:00",
+    "lastLock": "2026-11-10T03:10:00+00:00",
+    "pairedWithLayer1AndGraded": null
+   },
+   "props-learn-v1": {
+    "scored": 34,
+    "graded": 0,
+    "void": 0,
+    "awaitingSettlement": 34,
+    "notLockedYet": 0,
+    "firstLock": "2026-11-10T03:10:00+00:00",
+    "lastLock": "2026-11-10T03:10:00+00:00",
+    "pairedWithLayer1AndGraded": 0
+   }
+  },
+  "recentSettles": [
+   {
+    "slot_key": "settle-2026-11-09T15",
+    "started_at": "2026-11-09T23:48:00.119274+00:00",
+    "outcome": "COMPLETED"
+   },
+   {
+    "slot_key": "settle-2026-11-09T09",
+    "started_at": "2026-11-09T19:54:00.432172+00:00",
+    "outcome": "COMPLETED"
+   },
+   {
+    "slot_key": "settle-2026-11-08T15",
+    "started_at": "2026-11-08T19:44:43.312755+00:00",
+    "outcome": "COMPLETED"
+   },
+   {
+    "slot_key": "settle-manual-42466507490",
+    "started_at": "2026-11-08T09:16:59.200255+00:00",
+    "outcome": "COMPLETED"
+   }
+  ],
+  "explanation": "A shadow line counts as graded only when the line has a final result. Lines scored after the most recent completed settle are awaiting settlement, not missing."
+ },
+ "grading": {
+  "checked": 175,
+  "mismatches": 0,
+  "examples": [],
+  "revisionsAfterFirst": 0,
+  "outcomeChangedByRevision": 0
+ },
+ "identity": {
+  "layer1Predictions": 220,
+  "unscoredByReason": {
+   "identity_player_not_found": 7
+  },
+  "namesWithMoreThanOneAthleteId": []
+ },
+ "team": {
+  "checked": 174,
+  "mismatches": 0
+ },
+ "gameTime": {
+  "checked": 175,
+  "providerLockAfterEspnStart": 175,
+  "ingestedAfterEspnStart": 0,
+  "note": "lock_at is the odds provider start; nothing is recorded within 10 minutes of it.",
+  "minutesFromLockToStart": {
+   "min": -10,
+   "max": -10
+  }
+ },
+ "minutes": {
+  "playedWithoutMinutes": 0
+ },
+ "realCapturedLines": {
+  "dedupedGradedLines": 130,
+  "byStat": {
+   "points": {
+    "lines": 66,
+    "games": 5,
+    "layer1Brier": 0.2671,
+    "roleVariant": {
+     "n": 66,
+     "layer1Recomputed": 0.2671,
+     "role": 0.26731,
+     "linesWhereRoleRuleFired": 8,
+     "differenceInterval": {
+      "games": 5,
+      "lower95": -0.00439,
+      "upper95": 0.0045
+     },
+     "note": "Both recomputed from the same point-in-time history; compare these two numbers only."
+    },
+    "booksSameLine": {
+     "n": 0,
+     "layer1": null,
+     "books": null,
+     "differenceInterval": {
+      "games": 0,
+      "note": "too few games for an interval"
+     }
+    }
+   },
+   "rebounds": {
+    "lines": 38,
+    "games": 5,
+    "layer1Brier": 0.27055,
+    "roleVariant": {
+     "n": 38,
+     "layer1Recomputed": 0.27055,
+     "role": 0.27572,
+     "linesWhereRoleRuleFired": 7,
+     "differenceInterval": {
+      "games": 5,
+      "lower95": -0.00405,
+      "upper95": 0.01251
+     },
+     "note": "Both recomputed from the same point-in-time history; compare these two numbers only."
+    },
+    "booksSameLine": {
+     "n": 0,
+     "layer1": null,
+     "books": null,
+     "differenceInterval": {
+      "games": 0,
+      "note": "too few games for an interval"
+     }
+    }
+   },
+   "assists": {
+    "lines": 26,
+    "games": 5,
+    "layer1Brier": 0.23701,
+    "roleVariant": {
+     "n": 26,
+     "layer1Recomputed": 0.23701,
+     "role": 0.23566,
+     "linesWhereRoleRuleFired": 4,
+     "differenceInterval": {
+      "games": 5,
+      "lower95": -0.01666,
+      "upper95": 0.01572
+     },
+     "note": "Both recomputed from the same point-in-time history; compare these two numbers only."
+    },
+    "booksSameLine": {
+     "n": 0,
+     "layer1": null,
+     "books": null,
+     "differenceInterval": {
+      "games": 0,
+      "note": "too few games for an interval"
+     }
+    }
+   }
+  },
+  "layer1Reproduction": {
+   "n": 130,
+   "maxAbsDifference": 0,
+   "note": "Layer 1 recomputed from the ledger history should match the stored prediction; a gap means the stored history at prediction time differed (later backfill or revision)."
+  }
+ },
+ "settledEntries": {
+  "count": 9,
+  "byOutcome": {
+   "lost": 5,
+   "payout_unknown": 3,
+   "won": 1
+  },
+  "knownReturnCents": 1500,
+  "knownProfitCents": -1500,
+  "note": "Descriptive only; far too few to judge profitability, and not used to fit anything."
+ }
+}
