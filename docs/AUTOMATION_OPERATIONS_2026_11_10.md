@@ -72,24 +72,46 @@ shows whether it passed.
 
 ## First supervised stock paper session (needs the owner)
 
-**If chat says the account is ready or armed while paper orders are disabled:** your Start action has
-already been recorded. The account check and the permission to send orders are separate. This is
-**planning only**; a successful execute worker may have made a shadow plan or skipped outside market
-hours. Check its result and actual order/fill records. Pressing Start again does not enable the release.
+**If chat says the account is ready or armed while paper orders are disabled:** your Start action has already been
+recorded. The account check and the permission to send orders are separate. On `main`, PAPER order writes stay
+released OFF until PR #102 merges, so an execute run on `main` records only a shadow plan (`SHADOW_PLAN_ONLY`).
+Pressing Start again does not change that.
 
-The stock gate requires all of the following on one real session, in order. The weekly picks are made on the
-first market day of the week, so the earliest qualifying session is **Monday 2026-11-16**:
+### Why the earliest session is Monday 2026-11-16 (checked 2026-11-10)
 
-1. Early that morning: open https://sports-edge-eta.vercel.app/stocks/paper-auto, sign in with the owner key,
-   confirm the weekly decision shows targets and the fresh account check is clean. If owner permission is
-   already **ARMED**, Start is recorded. Otherwise press **Start** when you are ready for the paper test.
-2. After the market opens (7:30 AM MT): GitHub → Actions → *Recurring PAPER worker (manual)* →
-   **Run workflow** → branch **`release/stock-paper-orders`** → kind **execute**, experiment
-   `stock-v2-weekly-1`. Check the Autopilot page for real paper intents and fills.
-3. Press **Stop** on the Autopilot page; run the same workflow on `main` with kind **reconcile** and confirm it
-   reports a clean account; then press **Start** again.
-4. After the close (2:35 PM MT monitor slot, or run kind **monitor** on `main`), confirm the day's mark is recorded.
-5. The *Background jobs* panel then shows the release gate as passed. Review PR #102 and merge it yourself.
+**Enforced in code:**
+- **Same-session decisions only.** The controller executes only a decision made for the same New York session
+  (`decision.session === today`); otherwise it returns `NO_EXECUTABLE_DECISION_TODAY`
+  (`src/lib/server/paper-auto-controller.ts`).
+- **Weekly decision days.** The weekly bridge decides only at 08:00 New York on the first exchange session of an
+  ISO week, or once with `initial` on the experiment's first session, which was used on 2026-10-30
+  (`analytics/stock_weekly_bridge_v2.py`, `decision_point`). Every other weekday is `NO_DECISION_THIS_SESSION`.
+- **Release gate.** The gate needs every one of these on one session: an owner ARM, a manual execute on PR #102's
+  pinned head with real PAPER fills, an owner Stop, a clean reconcile, an owner re-Start, and that session's
+  after-close mark (`scripts/paper-release-gates.mjs`). The watcher window now ends 2026-11-21T07:00Z.
+
+**What happened on Monday Nov 9:**
+- A real `TARGETS` decision was recorded at 08:00 ET.
+- No execute ran on the release branch.
+- The only in-session execute ran on `main` (writes OFF) and made a shadow plan.
+- The scheduled slots started after the close.
+
+**Where Nov 16 comes from:** it is the next first-session-of-week. The date is not just written in the docs.
+
+**Earlier option:** a one-day commissioning session on Wed Nov 11 is proposed in draft PR #130
+(`docs/STOCK_PAPER_COMMISSIONING_2026_11_10.md`). It changes a registered rule and is active only if the owner
+merges it.
+
+### Steps on the session day
+
+| When (Mountain) | Who | What |
+|---|---|---|
+| Before 7:30 AM | automatic | Weekly decision at 6:00 AM MT (08:00 ET) records `TARGETS` (or HOLD; then no order day) |
+| Before 7:30 AM | owner | Open https://sports-edge-eta.vercel.app/stocks/paper-auto. If it is not already armed, press **Start** (it checks the account, then arms) |
+| After 7:30 AM | Claude (scheduled check-in) or owner | GitHub → Actions → *Recurring PAPER worker (manual)* → **Run workflow** → branch **`release/stock-paper-orders`**, kind **execute**, experiment `stock-v2-weekly-1`. Its log must show `posts` > 0; the Autopilot page then shows real paper orders and fills |
+| After the fills | owner | Press **Stop autopilot**, then **Start** (Start runs a fresh reconcile before re-arming) |
+| After 2:00 PM close | automatic | Monitor (GitHub 1:35/2:35 PM, Vercel backup 3 PM hour) records the day's mark |
+| Then | automatic / Claude | The release watcher verifies every receipt on the pinned head and merges PR #102; production then sends PAPER orders on schedule |
 
 A shadow plan, a HOLD day, a green workflow or this document is not evidence for any step.
 
