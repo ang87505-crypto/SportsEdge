@@ -36,8 +36,24 @@ async function evaluate(command,expression){
 try{
  await mkdir(output,{recursive:true});
  await until(async()=>(await fetch(base)).ok,'local Next.js production server',40000);
- chrome=spawn(executable,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
- const port=await until(async()=>(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0],'Chrome debugging endpoint');
+ // A cold runner can start Chrome slowly or lose the first launch; allow 30 s and one relaunch.
+ let port;
+ for(let attempt=1;!port;attempt++){
+  let exited=false;
+  chrome=spawn(executable,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
+  chrome.once('exit',()=>{exited=true;});
+  try{
+   const got=await until(async()=>exited?'EXITED':(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0],'Chrome debugging endpoint',30000);
+   if(got==='EXITED')throw Error('Chrome exited before its debugging endpoint was ready');
+   port=got;
+  }
+  catch(error){
+   if(attempt>=2)throw error;
+   console.error('Chrome did not start on attempt '+attempt+'; relaunching once.');
+   try{chrome.kill('SIGKILL');}catch{}
+   await rm(path.join(profile,'DevToolsActivePort'),{force:true});
+  }
+ }
  const tab=await(await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();
  ws=new WebSocket(tab.webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true});});
