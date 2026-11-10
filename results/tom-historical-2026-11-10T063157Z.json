@@ -1,0 +1,2665 @@
+{
+ "at": "2026-11-10T06:31:57Z",
+ "benchmarks": {
+  "spy-hold": {
+   "early": {
+    "cagr": 0.10985226530056869,
+    "end_value": 55559.786747905564,
+    "max_drawdown": -0.33793888166449937,
+    "sharpe": 0.6311409029003429,
+    "total": 0.8519928915968522,
+    "vol": 0.19568248719793416,
+    "years": 5.912698412698413
+   },
+   "full": {
+    "cagr": 0.14472479211569267,
+    "end_value": 112001.52322924601,
+    "max_drawdown": -0.33793888166449937,
+    "sharpe": 0.8444846723136871,
+    "total": 2.733384107641534,
+    "vol": 0.1791608394825993,
+    "years": 9.746031746031745
+   },
+   "late": {
+    "cagr": 0.2006743256353647,
+    "end_value": 112001.52322924601,
+    "max_drawdown": -0.18754263088722167,
+    "sharpe": 1.2934932839481639,
+    "total": 1.0158738862234409,
+    "vol": 0.15011391808882726,
+    "years": 3.8333333333333335
+   },
+   "years": {
+    "2018": -0.04961669505962529,
+    "2019": 0.31136007170064994,
+    "2020": 0.18453336978436918,
+    "2021": 0.2860110203963879,
+    "2022": -0.18175292191040215,
+    "2023": 0.2617683344756683,
+    "2024": 0.24885383395258875,
+    "2025": 0.17718699979121721,
+    "2026": 0.08674253621046413
+   }
+  },
+  "weekly": {
+   "bps0": {
+    "avg_exposure": 0.528076199755247,
+    "early": {
+     "cagr": 0.07020996855890949,
+     "end_value": 1493.6239258155392,
+     "max_drawdown": -0.22865961165270587,
+     "sharpe": 0.5561191552807461,
+     "total": 0.49362392581553927,
+     "vol": 0.13964803092470135,
+     "years": 5.912698412698413
+    },
+    "full": {
+     "cagr": 0.06991045017660658,
+     "end_value": 1932.0616447718166,
+     "max_drawdown": -0.22865961165270587,
+     "sharpe": 0.5822794974213916,
+     "total": 0.9320616447718166,
+     "vol": 0.13081513247475873,
+     "years": 9.746031746031745
+    },
+    "late": {
+     "cagr": 0.06944862448153577,
+     "end_value": 1932.0616447718166,
+     "max_drawdown": -0.12940126179107814,
+     "sharpe": 0.6375047373526622,
+     "total": 0.2935395660034599,
+     "vol": 0.11587798966756688,
+     "years": 3.8333333333333335
+    },
+    "years": {
+     "2018": -0.10823458098151151,
+     "2019": 0.10047022296637365,
+     "2020": 0.06564909434194144,
+     "2021": 0.19101481812466226,
+     "2022": 0.07337601310777364,
+     "2023": 0.05122172286729909,
+     "2024": 0.12699141887951448,
+     "2025": 0.0656302294099369,
+     "2026": 0.024609195698400477
+    }
+   },
+   "bps10": {
+    "avg_exposure": 0.5301720210954013,
+    "early": {
+     "cagr": 0.05995798202696734,
+     "end_value": 1410.9907242219595,
+     "max_drawdown": -0.24779008249920653,
+     "sharpe": 0.48638961551601884,
+     "total": 0.4109907242219595,
+     "vol": 0.13996784300786663,
+     "years": 5.912698412698413
+    },
+    "full": {
+     "cagr": 0.060793459711718345,
+     "end_value": 1777.4562356785814,
+     "max_drawdown": -0.24779008249920653,
+     "sharpe": 0.5153088007657403,
+     "total": 0.7774562356785815,
+     "vol": 0.13133986823653374,
+     "years": 9.746031746031745
+    },
+    "late": {
+     "cagr": 0.062083427909148226,
+     "end_value": 1777.4562356785814,
+     "max_drawdown": -0.13326618069409535,
+     "sharpe": 0.5742535881393792,
+     "total": 0.25972212656372795,
+     "vol": 0.11678849314588119,
+     "years": 3.8333333333333335
+    },
+    "years": {
+     "2018": -0.11843397403335654,
+     "2019": 0.08870413616805939,
+     "2020": 0.05399034488311272,
+     "2021": 0.18140381477280787,
+     "2022": 0.06353075736817781,
+     "2023": 0.043283116194480886,
+     "2024": 0.11791078060942661,
+     "2025": 0.06050844244706277,
+     "2026": 0.018477183329122404
+    }
+   },
+   "bps25": {
+    "avg_exposure": 0.5358749964940156,
+    "early": {
+     "cagr": 0.042323951820493866,
+     "end_value": 1277.746323512762,
+     "max_drawdown": -0.2801316009132404,
+     "sharpe": 0.3657032701290967,
+     "total": 0.27774632351276196,
+     "vol": 0.14047807247641395,
+     "years": 5.912698412698413
+    },
+    "full": {
+     "cagr": 0.04839380191783538,
+     "end_value": 1585.0095746535414,
+     "max_drawdown": -0.2801316009132404,
+     "sharpe": 0.4241340446285811,
+     "total": 0.5850095746535415,
+     "vol": 0.1320835876880333,
+     "years": 9.746031746031745
+    },
+    "late": {
+     "cagr": 0.05782558106717017,
+     "end_value": 1585.0095746535414,
+     "max_drawdown": -0.11596244309875736,
+     "sharpe": 0.5356524129891009,
+     "total": 0.24047281176756252,
+     "vol": 0.11796866338715878,
+     "years": 3.8333333333333335
+    },
+    "years": {
+     "2018": -0.138919638102578,
+     "2019": 0.0712830978112664,
+     "2020": 0.036716423773911044,
+     "2021": 0.1633430423139426,
+     "2022": 0.04445912829425658,
+     "2023": 0.03146834685254851,
+     "2024": 0.08651067762751596,
+     "2025": 0.04962947055804379,
+     "2026": 0.05453580548181547
+    }
+   },
+   "bps5": {
+    "avg_exposure": 0.5297138045041153,
+    "early": {
+     "cagr": 0.06516604542948135,
+     "end_value": 1452.4804921180316,
+     "max_drawdown": -0.23828151469182468,
+     "sharpe": 0.521809731681651,
+     "total": 0.45248049211803165,
+     "vol": 0.13982191016050582,
+     "years": 5.912698412698413
+    },
+    "full": {
+     "cagr": 0.06489126207172258,
+     "end_value": 1845.5166365637888,
+     "max_drawdown": -0.23828151469182468,
+     "sharpe": 0.5450424558346157,
+     "total": 0.8455166365637887,
+     "vol": 0.1312211144573226,
+     "years": 9.746031746031745
+    },
+    "late": {
+     "cagr": 0.06446756337422888,
+     "end_value": 1845.5166365637888,
+     "max_drawdown": -0.13133507421417612,
+     "sharpe": 0.593743978621931,
+     "total": 0.2705965047920369,
+     "vol": 0.11671858229780387,
+     "years": 3.8333333333333335
+    },
+    "years": {
+     "2018": -0.11334720280817312,
+     "2019": 0.09457326107247654,
+     "2020": 0.05980535309802315,
+     "2021": 0.18655952838687906,
+     "2022": 0.06867141647149233,
+     "2023": 0.04724618605803399,
+     "2024": 0.11724230520578094,
+     "2025": 0.06305618083516284,
+     "2026": 0.021539771902815863
+    }
+   }
+  }
+ },
+ "break_even_bps": {
+  "to_exposure_matched_spy": 0.83,
+  "to_zero_cagr": 17.54
+ },
+ "capital": 30000.0,
+ "data": {
+  "actions_dropped": [
+   {
+    "date": "2022-01-31",
+    "kind": "name_change",
+    "new_symbol": "METV",
+    "ratio": 1.0,
+    "source": "alpaca-ca:name_changes:19a51822-eda9-40e2-9301-b8958c74a003",
+    "symbol": "META",
+    "why": "OLD_SYMBOL_STILL_TRADES"
+   },
+   {
+    "date": "2026-07-02",
+    "kind": "name_change",
+    "new_symbol": "XOM",
+    "ratio": 1.0,
+    "source": "alpaca-ca:name_changes:71daae23-2985-4549-870e-a6d678474b6b",
+    "symbol": "XOM",
+    "why": "SAME_SYMBOL"
+   },
+   {
+    "date": "2020-09-01",
+    "expected": 0.999701,
+    "factor_ratio": 0.999565,
+    "kind": "cash_dividend",
+    "rate": 0.16,
+    "source": "alpaca-ca:cash_dividends:391f36bb-8a9c-4b04-85fc-2661d20f9ae5",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2020-12-03",
+    "expected": 0.999705,
+    "factor_ratio": 0.999424,
+    "kind": "cash_dividend",
+    "rate": 0.16,
+    "source": "alpaca-ca:cash_dividends:c94296da-7080-4fe3-b101-e41e06f2cd09",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2021-03-09",
+    "expected": 0.999655,
+    "factor_ratio": 0.999353,
+    "kind": "cash_dividend",
+    "rate": 0.16,
+    "source": "alpaca-ca:cash_dividends:d80fa14c-6eb4-418f-b003-f5775322eba3",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2021-06-09",
+    "expected": 0.999771,
+    "factor_ratio": 0.999522,
+    "kind": "cash_dividend",
+    "rate": 0.16,
+    "source": "alpaca-ca:cash_dividends:d1a013e0-aea6-46ec-b844-d7a546ace337",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2021-08-31",
+    "expected": 0.999824,
+    "factor_ratio": 0.999481,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:fb977d03-8473-4030-8950-50a27f77c911",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2021-12-09",
+    "expected": 0.999675,
+    "factor_ratio": 0.999539,
+    "kind": "cash_dividend",
+    "rate": 0.01,
+    "source": "alpaca-ca:cash_dividends:2ef7308e-d1ad-4278-a1ec-a5a32d0e131a",
+    "symbol": "OXY",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2022-03-02",
+    "expected": 0.99983,
+    "factor_ratio": 0.999997,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:13ca6ae3-efe8-461a-af9c-fa2490d56d9c",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2022-06-08",
+    "expected": 0.999789,
+    "factor_ratio": 0.99963,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:4ac972c2-d010-4c59-9bc5-3804d580e957",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2022-09-07",
+    "expected": 0.999703,
+    "factor_ratio": 0.999852,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:90e63976-7fbe-41e6-a747-98da5ec27d03",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2022-11-30",
+    "expected": 0.999744,
+    "factor_ratio": 0.999357,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:911a9234-60a2-48d3-ba54-6cff9248961c",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2023-03-07",
+    "expected": 0.99983,
+    "factor_ratio": 1.000208,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:0a8c85e7-49e9-49e5-a832-8cadcfbc3348",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2023-12-05",
+    "expected": 0.999912,
+    "factor_ratio": 0.999844,
+    "kind": "cash_dividend",
+    "rate": 0.04,
+    "source": "alpaca-ca:cash_dividends:aa4f9cfa-e38f-459d-a060-7173b2a19476",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2024-06-11",
+    "expected": 0.999918,
+    "factor_ratio": 0.999855,
+    "kind": "cash_dividend",
+    "rate": 0.01,
+    "source": "alpaca-ca:cash_dividends:034a1fb6-d381-451f-aa76-ae3f1e151fed",
+    "symbol": "NVDA",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   },
+   {
+    "date": "2026-06-29",
+    "expected": 2.0,
+    "factor_ratio": 1.048218,
+    "kind": "split",
+    "ratio": 0.5,
+    "source": "alpaca-ca:reverse_splits:08faf3fd-5e20-43f1-a96d-e858c083cb65",
+    "symbol": "HON",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   }
+  ],
+  "actions_pages_fingerprint": "d5c7a72c33be2a50f112ae3072a07879c3cf75139e85e304e31149ca29469b75",
+  "calendar_fingerprint": "4ca7d770e9690d8d71d9242ce123fadeec76f07390ba7d86beaace1e9360d019",
+  "fingerprint": "5143ba7830eae5cfa6cbbc11fe7a12bb29e5cd32e0373ff607d8e1ab85300838",
+  "joins": [
+   {
+    "adjusted_rescale": 0.9785562285153053,
+    "date": "2026-01-14",
+    "new": "MRSH",
+    "old": "MMC"
+   }
+  ],
+  "missing": [],
+  "requests": 86,
+  "sessions": [
+   "2016-01-04",
+   "2026-11-06"
+  ],
+  "symbols_with_bars": 138
+ },
+ "decisions": 2456,
+ "exposure_matched_spy": {
+  "early": {
+   "cagr": 0.07579204502330339,
+   "end_value": 46208.43847245176,
+   "max_drawdown": -0.07792978249862403,
+   "sharpe": 0.8935870070766166,
+   "total": 0.5402812824150587,
+   "vol": 0.0858850923781514,
+   "years": 5.912698412698413
+  },
+  "full": {
+   "cagr": 0.04077491491195584,
+   "end_value": 44287.51742144664,
+   "max_drawdown": -0.16334769756386003,
+   "sharpe": 0.5332712772384035,
+   "total": 0.476250580714888,
+   "vol": 0.08113571831549571,
+   "years": 9.746031746031745
+  },
+  "late": {
+   "cagr": -0.011015291684616901,
+   "end_value": 44287.51742144664,
+   "max_drawdown": -0.16334769756386003,
+   "sharpe": -0.11453489228965792,
+   "total": -0.04157078478534437,
+   "vol": 0.0730891841166122,
+   "years": 3.8333333333333335
+  },
+  "years": {
+   "2018": 0.005297772109699839,
+   "2019": 0.07134837026495955,
+   "2020": 0.218237696815484,
+   "2021": 0.14912610674697468,
+   "2022": -0.011918618979760653,
+   "2023": 0.024121775868922057,
+   "2024": -8.478944437328995e-05,
+   "2025": -0.10323146792118787,
+   "2026": 0.04367410413591477
+  }
+ },
+ "fingerprints": {
+  "code_commit": "2de43bac666718ad0090f9feb4d6a01dfbba1dfa",
+  "universe_revision": "large-cap-v1-2026-10-30"
+ },
+ "id": "spy-tom-v1",
+ "kind": "tom-historical",
+ "overall": "NONE QUALIFIES",
+ "prereg": "docs/STOCK_TOM_PREREG_2026_11_10.md",
+ "result": {
+  "bps0": {
+   "as_live": {
+    "avg_exposure": 0.021456306606551574,
+    "blocked_by_unresolved": 0,
+    "cash_end": 27550.315000000006,
+    "costs": 0.0,
+    "curve_end": [
+     "2026-11-06",
+     27550.315000000006
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": -0.014303576797598416,
+     "end_value": 27550.315000000006,
+     "max_drawdown": -0.11277027791871497,
+     "sharpe": -0.562853534992752,
+     "total": -0.08165616666666642,
+     "vol": 0.02502989260419678,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": 27550.315000000006,
+    "execution_log": [
+     {
+      "date": "2018-01-26",
+      "filled": [],
+      "label": "close 2018-01-25",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-29",
+      "filled": [],
+      "label": "close 2018-01-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-30",
+      "filled": [],
+      "label": "close 2018-01-29",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-31",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-01-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-01",
+      "filled": [],
+      "label": "close 2018-01-31",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-02",
+      "filled": [],
+      "label": "close 2018-02-01",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-05",
+      "filled": [],
+      "label": "close 2018-02-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-06",
+      "filled": [],
+      "label": "close 2018-02-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-07",
+      "filled": [],
+      "label": "close 2018-02-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-08",
+      "filled": [],
+      "label": "close 2018-02-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-09",
+      "filled": [],
+      "label": "close 2018-02-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-12",
+      "filled": [],
+      "label": "close 2018-02-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-13",
+      "filled": [],
+      "label": "close 2018-02-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-14",
+      "filled": [],
+      "label": "close 2018-02-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-15",
+      "filled": [],
+      "label": "close 2018-02-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-16",
+      "filled": [],
+      "label": "close 2018-02-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-20",
+      "filled": [],
+      "label": "close 2018-02-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-21",
+      "filled": [],
+      "label": "close 2018-02-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-22",
+      "filled": [],
+      "label": "close 2018-02-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-23",
+      "filled": [],
+      "label": "close 2018-02-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-26",
+      "filled": [],
+      "label": "close 2018-02-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-27",
+      "filled": [],
+      "label": "close 2018-02-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-28",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-02-27",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-03-01",
+      "filled": [],
+      "label": "close 2018-02-28",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 272,
+    "filled": 14,
+    "full": {
+     "cagr": -0.008702232021233991,
+     "end_value": 27550.315000000006,
+     "max_drawdown": -0.11277027791871497,
+     "sharpe": -0.43829549313747046,
+     "total": -0.08165616666666642,
+     "vol": 0.019500479264885594,
+     "years": 9.746031746031745
+    },
+    "halt_peak": 31052.06500000001,
+    "halted_on": "2018-03-01",
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.0,
+     "end_value": 27550.315000000006,
+     "max_drawdown": 0.0,
+     "sharpe": null,
+     "total": 0.0,
+     "vol": 0.0,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 14,
+    "reduced_for_cash": 0,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 3.0872475108050357,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.09441450787250505,
+     "2019": 0.0,
+     "2020": 0.0,
+     "2021": 0.0,
+     "2022": 0.0,
+     "2023": 0.0,
+     "2024": 0.0,
+     "2025": 0.0,
+     "2026": 0.0
+    }
+   },
+   "continuous": {
+    "avg_exposure": 0.1899181173787124,
+    "blocked_by_unresolved": 0,
+    "cash_end": 45164.029900000045,
+    "costs": 0.0,
+    "curve_end": [
+     "2026-11-06",
+     45164.029900000045
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": 0.04685951237432828,
+     "end_value": 39329.22490000004,
+     "max_drawdown": -0.10640161934480041,
+     "sharpe": 0.5864930932313187,
+     "total": 0.3109741633333345,
+     "vol": 0.08412090349702929,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": null,
+    "execution_log": [
+     {
+      "date": "2026-10-06",
+      "filled": [],
+      "label": "close 2026-10-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-07",
+      "filled": [],
+      "label": "close 2026-10-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-08",
+      "filled": [],
+      "label": "close 2026-10-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-09",
+      "filled": [],
+      "label": "close 2026-10-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-12",
+      "filled": [],
+      "label": "close 2026-10-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-13",
+      "filled": [],
+      "label": "close 2026-10-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-14",
+      "filled": [],
+      "label": "close 2026-10-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-15",
+      "filled": [],
+      "label": "close 2026-10-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-16",
+      "filled": [],
+      "label": "close 2026-10-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-19",
+      "filled": [],
+      "label": "close 2026-10-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-20",
+      "filled": [],
+      "label": "close 2026-10-19",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-21",
+      "filled": [],
+      "label": "close 2026-10-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-22",
+      "filled": [],
+      "label": "close 2026-10-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-23",
+      "filled": [],
+      "label": "close 2026-10-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-26",
+      "filled": [],
+      "label": "close 2026-10-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-27",
+      "filled": [],
+      "label": "close 2026-10-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-28",
+      "filled": [],
+      "label": "close 2026-10-27",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-29",
+      "filled": [],
+      "label": "close 2026-10-28",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-30",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2026-10-29",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-02",
+      "filled": [],
+      "label": "close 2026-10-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-03",
+      "filled": [],
+      "label": "close 2026-11-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-04",
+      "filled": [],
+      "label": "close 2026-11-03",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-05",
+      "filled": [],
+      "label": "close 2026-11-04",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-06",
+      "filled": [],
+      "label": "close 2026-11-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 2456,
+    "filled": 118,
+    "full": {
+     "cagr": 0.042869894841959244,
+     "end_value": 45164.029900000045,
+     "max_drawdown": -0.10640161934480041,
+     "sharpe": 0.5802837090252594,
+     "total": 0.5054676633333348,
+     "vol": 0.07752949652069752,
+     "years": 9.746031746031745
+    },
+    "halt_peak": null,
+    "halted_on": null,
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.036745929317089754,
+     "end_value": 45164.029900000045,
+     "max_drawdown": -0.08929883529008686,
+     "sharpe": 0.5793225815270162,
+     "total": 0.1483579962441619,
+     "vol": 0.06608366015857876,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 118,
+    "reduced_for_cash": 8,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 23.980288587214627,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.05745619506252797,
+     "2019": 0.02373801142017795,
+     "2020": 0.25025953177553784,
+     "2021": 0.050804830688405245,
+     "2022": 0.019778068841893814,
+     "2023": 0.04881789572212014,
+     "2024": -0.003448794584836601,
+     "2025": -0.016508041809753515,
+     "2026": 0.11713787931222952
+    }
+   }
+  },
+  "bps10": {
+   "as_live": {
+    "avg_exposure": 0.021492042577120715,
+    "blocked_by_unresolved": 0,
+    "cash_end": 26782.564945000053,
+    "costs": 827.560055,
+    "curve_end": [
+     "2026-11-06",
+     26782.564945000053
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": -0.019003988847030362,
+     "end_value": 26782.564945000053,
+     "max_drawdown": -0.11835021593769446,
+     "sharpe": -0.7383279062136511,
+     "total": -0.10724783516666492,
+     "vol": 0.0255372070964965,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": 26782.564945000053,
+    "execution_log": [
+     {
+      "date": "2018-01-26",
+      "filled": [],
+      "label": "close 2018-01-25",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-29",
+      "filled": [],
+      "label": "close 2018-01-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-30",
+      "filled": [],
+      "label": "close 2018-01-29",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-31",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-01-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-01",
+      "filled": [],
+      "label": "close 2018-01-31",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-02",
+      "filled": [],
+      "label": "close 2018-02-01",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-05",
+      "filled": [],
+      "label": "close 2018-02-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-06",
+      "filled": [],
+      "label": "close 2018-02-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-07",
+      "filled": [],
+      "label": "close 2018-02-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-08",
+      "filled": [],
+      "label": "close 2018-02-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-09",
+      "filled": [],
+      "label": "close 2018-02-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-12",
+      "filled": [],
+      "label": "close 2018-02-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-13",
+      "filled": [],
+      "label": "close 2018-02-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-14",
+      "filled": [],
+      "label": "close 2018-02-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-15",
+      "filled": [],
+      "label": "close 2018-02-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-16",
+      "filled": [],
+      "label": "close 2018-02-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-20",
+      "filled": [],
+      "label": "close 2018-02-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-21",
+      "filled": [],
+      "label": "close 2018-02-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-22",
+      "filled": [],
+      "label": "close 2018-02-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-23",
+      "filled": [],
+      "label": "close 2018-02-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-26",
+      "filled": [],
+      "label": "close 2018-02-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-27",
+      "filled": [],
+      "label": "close 2018-02-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-28",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-02-27",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-03-01",
+      "filled": [],
+      "label": "close 2018-02-28",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 272,
+    "filled": 14,
+    "full": {
+     "cagr": -0.011572766581594784,
+     "end_value": 26782.564945000053,
+     "max_drawdown": -0.11835021593769446,
+     "sharpe": -0.574835469633838,
+     "total": -0.10724783516666492,
+     "vol": 0.019899264741899157,
+     "years": 9.746031746031745
+    },
+    "halt_peak": 30377.782005000012,
+    "halted_on": "2018-03-01",
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.0,
+     "end_value": 26782.564945000053,
+     "max_drawdown": 0.0,
+     "sharpe": null,
+     "total": 0.0,
+     "vol": 0.0,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 14,
+    "reduced_for_cash": 1,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 3.1312504591563437,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.09923969306475489,
+     "2019": 0.0,
+     "2020": 0.0,
+     "2021": 0.0,
+     "2022": 0.0,
+     "2023": 0.0,
+     "2024": 0.0,
+     "2025": 0.0,
+     "2026": 0.0
+    }
+   },
+   "continuous": {
+    "avg_exposure": 0.1899280368604976,
+    "blocked_by_unresolved": 0,
+    "cash_end": 35733.21314430046,
+    "costs": 7483.8725557,
+    "curve_end": [
+     "2026-11-06",
+     35733.21314430046
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": 0.022067302316827853,
+     "end_value": 34132.7003343003,
+     "max_drawdown": -0.12109784905936949,
+     "sharpe": 0.3006000010057999,
+     "total": 0.1377566778100101,
+     "vol": 0.08449282173468436,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": null,
+    "execution_log": [
+     {
+      "date": "2026-10-06",
+      "filled": [],
+      "label": "close 2026-10-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-07",
+      "filled": [],
+      "label": "close 2026-10-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-08",
+      "filled": [],
+      "label": "close 2026-10-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-09",
+      "filled": [],
+      "label": "close 2026-10-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-12",
+      "filled": [],
+      "label": "close 2026-10-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-13",
+      "filled": [],
+      "label": "close 2026-10-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-14",
+      "filled": [],
+      "label": "close 2026-10-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-15",
+      "filled": [],
+      "label": "close 2026-10-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-16",
+      "filled": [],
+      "label": "close 2026-10-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-19",
+      "filled": [],
+      "label": "close 2026-10-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-20",
+      "filled": [],
+      "label": "close 2026-10-19",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-21",
+      "filled": [],
+      "label": "close 2026-10-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-22",
+      "filled": [],
+      "label": "close 2026-10-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-23",
+      "filled": [],
+      "label": "close 2026-10-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-26",
+      "filled": [],
+      "label": "close 2026-10-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-27",
+      "filled": [],
+      "label": "close 2026-10-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-28",
+      "filled": [],
+      "label": "close 2026-10-27",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-29",
+      "filled": [],
+      "label": "close 2026-10-28",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-30",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2026-10-29",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-02",
+      "filled": [],
+      "label": "close 2026-10-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-03",
+      "filled": [],
+      "label": "close 2026-11-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-04",
+      "filled": [],
+      "label": "close 2026-11-03",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-05",
+      "filled": [],
+      "label": "close 2026-11-04",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-06",
+      "filled": [],
+      "label": "close 2026-11-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 2456,
+    "filled": 118,
+    "full": {
+     "cagr": 0.018106004854526292,
+     "end_value": 35733.21314430046,
+     "max_drawdown": -0.12109784905936949,
+     "sharpe": 0.26980843477437805,
+     "total": 0.19110710481001547,
+     "vol": 0.07772202138171438,
+     "years": 9.746031746031745
+    },
+    "halt_peak": null,
+    "halted_on": null,
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.012026012062950509,
+     "end_value": 35733.21314430046,
+     "max_drawdown": -0.10397107482113743,
+     "sharpe": 0.2144716966043549,
+     "total": 0.04689089331709817,
+     "vol": 0.0659265097867275,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 118,
+    "reduced_for_cash": 8,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 23.981441286877835,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.08030794847285172,
+     "2019": -0.00042740610705449544,
+     "2020": 0.2216932091810846,
+     "2021": 0.026180174051972704,
+     "2022": -0.003940760170901947,
+     "2023": 0.024538585924839706,
+     "2024": -0.026724554004591394,
+     "2025": -0.039410558443381816,
+     "2026": 0.09294806843466574
+    }
+   }
+  },
+  "bps25": {
+   "as_live": {
+    "avg_exposure": 0.0206692542974791,
+    "blocked_by_unresolved": 0,
+    "cash_end": 26765.19293750004,
+    "costs": 1895.1420625,
+    "curve_end": [
+     "2026-11-06",
+     26765.19293750004
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": -0.01911163447931319,
+     "end_value": 26765.19293750004,
+     "max_drawdown": -0.11492950979189387,
+     "sharpe": -0.7755679044859344,
+     "total": -0.10782690208333201,
+     "vol": 0.02448671990094419,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": 26765.19293750004,
+    "execution_log": [
+     {
+      "date": "2018-01-03",
+      "filled": [],
+      "label": "close 2018-01-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-04",
+      "filled": [],
+      "label": "close 2018-01-03",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-05",
+      "filled": [],
+      "label": "close 2018-01-04",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-08",
+      "filled": [],
+      "label": "close 2018-01-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-09",
+      "filled": [],
+      "label": "close 2018-01-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-10",
+      "filled": [],
+      "label": "close 2018-01-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-11",
+      "filled": [],
+      "label": "close 2018-01-10",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-12",
+      "filled": [],
+      "label": "close 2018-01-11",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-16",
+      "filled": [],
+      "label": "close 2018-01-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-17",
+      "filled": [],
+      "label": "close 2018-01-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-18",
+      "filled": [],
+      "label": "close 2018-01-17",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-19",
+      "filled": [],
+      "label": "close 2018-01-18",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-22",
+      "filled": [],
+      "label": "close 2018-01-19",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-23",
+      "filled": [],
+      "label": "close 2018-01-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-24",
+      "filled": [],
+      "label": "close 2018-01-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-25",
+      "filled": [],
+      "label": "close 2018-01-24",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-26",
+      "filled": [],
+      "label": "close 2018-01-25",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-29",
+      "filled": [],
+      "label": "close 2018-01-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-30",
+      "filled": [],
+      "label": "close 2018-01-29",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-31",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-01-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-01",
+      "filled": [],
+      "label": "close 2018-01-31",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-02",
+      "filled": [],
+      "label": "close 2018-02-01",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-05",
+      "filled": [],
+      "label": "close 2018-02-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-06",
+      "filled": [],
+      "label": "close 2018-02-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 256,
+    "filled": 13,
+    "full": {
+     "cagr": -0.011638568893519885,
+     "end_value": 26765.19293750004,
+     "max_drawdown": -0.11492950979189387,
+     "sharpe": -0.6038026463191938,
+     "total": -0.10782690208333201,
+     "vol": 0.01908153619892885,
+     "years": 9.746031746031745
+    },
+    "halt_peak": 30240.74718750001,
+    "halted_on": "2018-02-06",
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.0,
+     "end_value": 26765.19293750004,
+     "max_drawdown": 0.0,
+     "sharpe": null,
+     "total": 0.0,
+     "vol": 0.0,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 13,
+    "reduced_for_cash": 1,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 2.877002246767099,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.06836297144194858,
+     "2019": 0.0,
+     "2020": 0.0,
+     "2021": 0.0,
+     "2022": 0.0,
+     "2023": 0.0,
+     "2024": 0.0,
+     "2025": 0.0,
+     "2026": 0.0
+    }
+   },
+   "continuous": {
+    "avg_exposure": 0.18991986432002148,
+    "blocked_by_unresolved": 0,
+    "cash_end": 25156.750470500392,
+    "costs": 15669.641329499995,
+    "curve_end": [
+     "2026-11-06",
+     25156.750470500392
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": -0.014127111900363531,
+     "end_value": 27579.490508000246,
+     "max_drawdown": -0.2005017282610715,
+     "sharpe": -0.12430730270839355,
+     "total": -0.08068364973332509,
+     "vol": 0.0852194033958604,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": null,
+    "execution_log": [
+     {
+      "date": "2026-10-06",
+      "filled": [],
+      "label": "close 2026-10-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-07",
+      "filled": [],
+      "label": "close 2026-10-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-08",
+      "filled": [],
+      "label": "close 2026-10-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-09",
+      "filled": [],
+      "label": "close 2026-10-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-12",
+      "filled": [],
+      "label": "close 2026-10-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-13",
+      "filled": [],
+      "label": "close 2026-10-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-14",
+      "filled": [],
+      "label": "close 2026-10-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-15",
+      "filled": [],
+      "label": "close 2026-10-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-16",
+      "filled": [],
+      "label": "close 2026-10-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-19",
+      "filled": [],
+      "label": "close 2026-10-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-20",
+      "filled": [],
+      "label": "close 2026-10-19",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-21",
+      "filled": [],
+      "label": "close 2026-10-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-22",
+      "filled": [],
+      "label": "close 2026-10-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-23",
+      "filled": [],
+      "label": "close 2026-10-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-26",
+      "filled": [],
+      "label": "close 2026-10-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-27",
+      "filled": [],
+      "label": "close 2026-10-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-28",
+      "filled": [],
+      "label": "close 2026-10-27",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-29",
+      "filled": [],
+      "label": "close 2026-10-28",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-30",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2026-10-29",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-02",
+      "filled": [],
+      "label": "close 2026-10-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-03",
+      "filled": [],
+      "label": "close 2026-11-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-04",
+      "filled": [],
+      "label": "close 2026-11-03",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-05",
+      "filled": [],
+      "label": "close 2026-11-04",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-06",
+      "filled": [],
+      "label": "close 2026-11-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 2456,
+    "filled": 118,
+    "full": {
+     "cagr": -0.01790371791882972,
+     "end_value": 25156.750470500392,
+     "max_drawdown": -0.22643790510672634,
+     "sharpe": -0.1911941813409981,
+     "total": -0.1614416509833203,
+     "vol": 0.07838300766465722,
+     "years": 9.746031746031745
+    },
+    "halt_peak": null,
+    "halted_on": null,
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": -0.02370057037355544,
+     "end_value": 25156.750470500392,
+     "max_drawdown": -0.18623052727738498,
+     "sharpe": -0.32739333349257577,
+     "total": -0.08784571407499597,
+     "vol": 0.06647141383750764,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 118,
+    "reduced_for_cash": 14,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 23.988874786500922,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.11248344020265966,
+     "2019": -0.03524925083662567,
+     "2020": 0.17811856189374375,
+     "2021": -0.009817472277367512,
+     "2022": -0.03890403218365346,
+     "2023": -0.012172143821966852,
+     "2024": -0.0597132786307758,
+     "2025": -0.0732614436334098,
+     "2026": 0.059667218113087284
+    }
+   }
+  },
+  "bps5": {
+   "as_live": {
+    "avg_exposure": 0.021485818084513265,
+    "blocked_by_unresolved": 0,
+    "cash_end": 27156.805632500054,
+    "costs": 416.5993675,
+    "curve_end": [
+     "2026-11-06",
+     27156.805632500054
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": -0.01669897610249993,
+     "end_value": 27156.805632500054,
+     "max_drawdown": -0.11491777320836682,
+     "sharpe": -0.6532430180728277,
+     "total": -0.0947731455833315,
+     "vol": 0.02528109528567203,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": 27156.805632500054,
+    "execution_log": [
+     {
+      "date": "2018-01-26",
+      "filled": [],
+      "label": "close 2018-01-25",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-29",
+      "filled": [],
+      "label": "close 2018-01-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-30",
+      "filled": [],
+      "label": "close 2018-01-29",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-01-31",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-01-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-01",
+      "filled": [],
+      "label": "close 2018-01-31",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-02",
+      "filled": [],
+      "label": "close 2018-02-01",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-05",
+      "filled": [],
+      "label": "close 2018-02-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-06",
+      "filled": [],
+      "label": "close 2018-02-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-07",
+      "filled": [],
+      "label": "close 2018-02-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-08",
+      "filled": [],
+      "label": "close 2018-02-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-09",
+      "filled": [],
+      "label": "close 2018-02-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-12",
+      "filled": [],
+      "label": "close 2018-02-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-13",
+      "filled": [],
+      "label": "close 2018-02-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-14",
+      "filled": [],
+      "label": "close 2018-02-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-15",
+      "filled": [],
+      "label": "close 2018-02-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-16",
+      "filled": [],
+      "label": "close 2018-02-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-20",
+      "filled": [],
+      "label": "close 2018-02-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-21",
+      "filled": [],
+      "label": "close 2018-02-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-22",
+      "filled": [],
+      "label": "close 2018-02-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-23",
+      "filled": [],
+      "label": "close 2018-02-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-26",
+      "filled": [],
+      "label": "close 2018-02-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-27",
+      "filled": [],
+      "label": "close 2018-02-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-02-28",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2018-02-27",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2018-03-01",
+      "filled": [],
+      "label": "close 2018-02-28",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 272,
+    "filled": 14,
+    "full": {
+     "cagr": -0.01016442439660703,
+     "end_value": 27156.805632500054,
+     "max_drawdown": -0.11491777320836682,
+     "sharpe": -0.5086384063454074,
+     "total": -0.0947731455833315,
+     "vol": 0.019697876864372896,
+     "years": 9.746031746031745
+    },
+    "halt_peak": 30682.805292500052,
+    "halted_on": "2018-03-01",
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.0,
+     "end_value": 27156.805632500054,
+     "max_drawdown": 0.0,
+     "sharpe": null,
+     "total": 0.0,
+     "vol": 0.0,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 14,
+    "reduced_for_cash": 0,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 3.1118102810613855,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.09700732561857361,
+     "2019": 0.0,
+     "2020": 0.0,
+     "2021": 0.0,
+     "2022": 0.0,
+     "2023": 0.0,
+     "2024": 0.0,
+     "2025": 0.0,
+     "2026": 0.0
+    }
+   },
+   "continuous": {
+    "avg_exposure": 0.18991788521795766,
+    "blocked_by_unresolved": 0,
+    "cash_end": 40092.09418235046,
+    "costs": 3974.211117650001,
+    "curve_end": [
+     "2026-11-06",
+     40092.09418235046
+    ],
+    "dividends": 0.0,
+    "early": {
+     "cagr": 0.03421720765125813,
+     "end_value": 36602.95783235026,
+     "max_drawdown": -0.10903703762112438,
+     "sharpe": 0.4407449910044634,
+     "total": 0.22009859441167534,
+     "vol": 0.08442745591878861,
+     "years": 5.912698412698413
+    },
+    "equity_after_halt_exit": null,
+    "execution_log": [
+     {
+      "date": "2026-10-06",
+      "filled": [],
+      "label": "close 2026-10-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-07",
+      "filled": [],
+      "label": "close 2026-10-06",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-08",
+      "filled": [],
+      "label": "close 2026-10-07",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-09",
+      "filled": [],
+      "label": "close 2026-10-08",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-12",
+      "filled": [],
+      "label": "close 2026-10-09",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-13",
+      "filled": [],
+      "label": "close 2026-10-12",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-14",
+      "filled": [],
+      "label": "close 2026-10-13",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-15",
+      "filled": [],
+      "label": "close 2026-10-14",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-16",
+      "filled": [],
+      "label": "close 2026-10-15",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-19",
+      "filled": [],
+      "label": "close 2026-10-16",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-20",
+      "filled": [],
+      "label": "close 2026-10-19",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-21",
+      "filled": [],
+      "label": "close 2026-10-20",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-22",
+      "filled": [],
+      "label": "close 2026-10-21",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-23",
+      "filled": [],
+      "label": "close 2026-10-22",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-26",
+      "filled": [],
+      "label": "close 2026-10-23",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-27",
+      "filled": [],
+      "label": "close 2026-10-26",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-28",
+      "filled": [],
+      "label": "close 2026-10-27",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-29",
+      "filled": [],
+      "label": "close 2026-10-28",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-10-30",
+      "filled": [
+       "SPY"
+      ],
+      "label": "close 2026-10-29",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-02",
+      "filled": [],
+      "label": "close 2026-10-30",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-03",
+      "filled": [],
+      "label": "close 2026-11-02",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-04",
+      "filled": [],
+      "label": "close 2026-11-03",
+      "targets": {
+       "SPY": 1.0
+      },
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-05",
+      "filled": [],
+      "label": "close 2026-11-04",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     },
+     {
+      "date": "2026-11-06",
+      "filled": [],
+      "label": "close 2026-11-05",
+      "targets": {},
+      "unavailable": [],
+      "unfilled": []
+     }
+    ],
+    "executions": 2456,
+    "filled": 118,
+    "full": {
+     "cagr": 0.030200899122484692,
+     "end_value": 40092.09418235046,
+     "max_drawdown": -0.10903703762112438,
+     "sharpe": 0.4220784737072785,
+     "total": 0.336403139411682,
+     "vol": 0.07765086558956372,
+     "years": 9.746031746031745
+    },
+    "halt_peak": null,
+    "halted_on": null,
+    "integrity_examples": [],
+    "integrity_mismatches": 0,
+    "late": {
+     "cagr": 0.02403653288876617,
+     "end_value": 40092.09418235046,
+     "max_drawdown": -0.09664697334378902,
+     "sharpe": 0.393851516672611,
+     "total": 0.09532389065335178,
+     "vol": 0.06584243498023,
+     "years": 3.8333333333333335
+    },
+    "open_unresolved_at_end": 0,
+    "orders": 118,
+    "reduced_for_cash": 12,
+    "sells_pending": 0,
+    "stale_marks": 0,
+    "turnover_per_year": 23.976881046076485,
+    "unavailable": 0,
+    "unfilled_cash": 0,
+    "unfilled_gap": 0,
+    "unfilled_missing": 0,
+    "unresolved": [],
+    "years": {
+     "2018": -0.06912074030418158,
+     "2019": 0.011298114838012241,
+     "2020": 0.23600751971092948,
+     "2021": 0.03802305011808538,
+     "2022": 0.007676341885582305,
+     "2023": 0.03597941226586099,
+     "2024": -0.015117237390005478,
+     "2025": -0.028075723810797704,
+     "2026": 0.1045222506315846
+    }
+   }
+  },
+  "decisions": 2456
+ },
+ "verdict": {
+  "checks": {
+   "at_least_6_positive_years": false,
+   "both_halves_positive": true,
+   "cagr_above_exposure_matched_spy": false,
+   "cagr_positive_at_10_and_25bps": false,
+   "halt_exit_loss_within_15pct": true,
+   "max_drawdown_within_35pct": true,
+   "no_unresolved_at_any_cost": true,
+   "sharpe_above_spy_buy_and_hold": false,
+   "sharpe_above_weekly": false
+  },
+  "verdict": "FAILS"
+ },
+ "window": [
+  "2017-02-01",
+  "2026-11-06"
+ ],
+ "windows_entered": 117
+}

@@ -1,0 +1,53 @@
+{
+ "at": "2026-11-10T06:31:50Z",
+ "data": {
+  "actions_dropped": [
+   {
+    "date": "2026-07-02",
+    "kind": "name_change",
+    "new_symbol": "XOM",
+    "ratio": 1.0,
+    "source": "alpaca-ca:name_changes:71daae23-2985-4549-870e-a6d678474b6b",
+    "symbol": "XOM",
+    "why": "SAME_SYMBOL"
+   },
+   {
+    "date": "2026-06-29",
+    "expected": 2.0,
+    "factor_ratio": 1.048218,
+    "kind": "split",
+    "ratio": 0.5,
+    "source": "alpaca-ca:reverse_splits:08faf3fd-5e20-43f1-a96d-e858c083cb65",
+    "symbol": "HON",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   }
+  ],
+  "fingerprint": "a159032ee3008cbe23284037e447c8aa54effc60b1e1c8d2c6e1c40912c43c33",
+  "joins": [],
+  "missing": [
+   "MMC"
+  ],
+  "requests": 13,
+  "symbols_rejected": []
+ },
+ "kind": "daily-forward",
+ "latest_session": "2026-11-09",
+ "ledgers": {
+  "daily-momentum5d-v1": {
+   "first_signal": "2026-11-09",
+   "reason": "first simulated trades are at the open after the first signal close",
+   "status": "NOT STARTED"
+  },
+  "daily-reversal5-v1": {
+   "first_signal": "2026-11-09",
+   "reason": "first simulated trades are at the open after the first signal close",
+   "status": "NOT STARTED"
+  },
+  "daily-spy-trend50-v1": {
+   "first_signal": "2026-11-09",
+   "reason": "first simulated trades are at the open after the first signal close",
+   "status": "NOT STARTED"
+  }
+ },
+ "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md"
+}
