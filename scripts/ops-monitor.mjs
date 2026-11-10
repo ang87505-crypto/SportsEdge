@@ -153,6 +153,8 @@ async function siteChecks(){
   if(r.status<400||r.status>=500)throw new Error('HTTP '+r.status+' without owner session');return 'HTTP '+r.status;});
  await check('Owner protection: cron kickoff',async()=>{const r=await getJson(base+'/api/internal/paper-auto/kickoff',{attempts:1});
   if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
+ await check('Owner protection: backup scheduler',async()=>{const r=await getJson(base+'/api/internal/scheduler/ops-monitor',{attempts:1});
+  if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
  return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks};
 }
 
