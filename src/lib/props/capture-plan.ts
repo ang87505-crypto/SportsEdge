@@ -7,10 +7,18 @@
  * has started, and lateness of the scheduler no longer matters as long as some tick lands in the window.
  *
  * Research design (pre-registered by this file; see docs/PROPS_COLLECTION_TIMING_2026_11_10.md):
- *  - Which games: games in a slate are ranked by a salted hash of the provider event id (outcome-blind) and
- *    the top N are selected, N sized to the budget (never to a pick quota).
- *  - When: each slate is assigned EARLY or LATE by a salted hash of its date (blocked by slate, so every
- *    virtual entry is single-arm). EARLY = 8 to 4 hours before tip-off; LATE = 3 hours to 35 minutes before.
+ *  - Which games: the slate's games are ranked by a salted hash of the provider event id (outcome-blind); the
+ *    top-ranked open game is the anchor and the other N-1 are the games with the nearest tip-offs to it, N sized
+ *    to the budget (never to a pick quota). Nearby tip-offs keep the EARLY/LATE contrast sharp for every game.
+ *  - Windows are anchored to the slate's earliest selected tip-off, so all selected games are captured
+ *    together and are all still open when the entry is built (per-game windows let the first game lock before
+ *    the last was captured, which is the Nov 9 failure: picks from one game only, no two-game entry).
+ *  - When: within each slate the selected games are split between EARLY and LATE (balanced, order by a salted
+ *    hash of the event id; the first arm by a hash of the slate date). EARLY = 8 to 4 hours before the slate's
+ *    earliest selected tip-off; LATE = 3 hours to 35 minutes before it. Splitting within the slate (a paired
+ *    design) spends about half the day's credits at each time, which the rolling 24-hour cap absorbs; whole-slate
+ *    arms put a LATE day's spend 17-19 h before the next EARLY day's and forced most EARLY captures late in replay.
+ *    Entries therefore usually mix one EARLY and one LATE leg; the timing comparison is made per pick.
  *    (Our only availability evidence is lines present 6 h before tip; an empty attempt still reserves 3 credits.)
  *    An EARLY game whose window is missed falls back to the LATE window and stays labelled EARLY (intention
  *    to treat); the analysis also reports the window actually used.
@@ -101,11 +109,21 @@ export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];nowIso:s
   // A game whose last capture opportunity has passed cannot be selected (no spend on started games).
   const open=(e:PlanEvent)=>Date.parse(e.commenceTime)-now>cfg.windows.late.toMin*MIN;
   const ranked=[...games].sort((a,b)=>hashUnit(cfg.salt,'select:'+a.id)-hashUnit(cfg.salt,'select:'+b.id)||a.id.localeCompare(b.id));
-  let chosen=0;
+  const anchor=ranked.find(open);
+  const rank=new Map(ranked.map((e,i)=>[e.id,i]));
+  const near=anchor?ranked.filter(e=>open(e)&&e.id!==anchor.id).sort((a,b)=>
+   Math.abs(Date.parse(a.commenceTime)-Date.parse(anchor.commenceTime))-Math.abs(Date.parse(b.commenceTime)-Date.parse(anchor.commenceTime))||
+   rank.get(a.id)!-rank.get(b.id)!):[];
+  const chosen=new Map<string,string>(n>0&&anchor?[[anchor.id,'selected_anchor'],...near.slice(0,n-1).map(e=>[e.id,'selected_nearest_tip'] as [string,string])]:[]);
+  // Balanced split of the selected games: hash order, alternating, starting with the slate's hashed arm.
+  const other:Arm=arm==='early'?'late':'early';
+  const armOf=new Map([...chosen.keys()].sort((a,b)=>hashUnit(cfg.salt,'arm:'+a)-hashUnit(cfg.salt,'arm:'+b)||a.localeCompare(b))
+   .map((id,i)=>[id,i%2===0?arm:other] as [string,Arm]));
   ranked.forEach((e,i)=>{
    if(!open(e)){out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:'too_close_when_planned'});return;}
-   if(chosen>=n){out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:n===0?'no_budget_for_games':'budget_games_per_slate'});return;}
-   chosen++;out.push({...base(e),selected:true,selection_rank:i+1,arm,reason:'selected_by_hash'});
+   const why=chosen.get(e.id);
+   if(!why){out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:n===0?'no_budget_for_games':'budget_games_per_slate'});return;}
+   out.push({...base(e),selected:true,selection_rank:i+1,arm:armOf.get(e.id)!,reason:why});
   });
  }
  return out;
@@ -115,12 +133,18 @@ export type DueCapture={plan:PlanRow;captureKey:CaptureKey;window:Arm;fallback:b
 export type CaptureState='NOT_SELECTED'|'WAITING_FOR_WINDOW'|'DUE'|'CAPTURED'|'NO_LINES_FOUND'|'ATTEMPT_UNRESOLVED'|'MISSED'|'BUDGET_REFUSED'|'FAILED';
 
 const inWin=(now:number,from:string,to:string)=>now>=Date.parse(from)&&now<Date.parse(to);
+/** The slate's earliest selected tip-off: every selected game of the slate uses windows anchored to it. */
+export function slateAnchor(plan:PlanRow,plans:PlanRow[]){
+ const tips=plans.filter(p=>p.selected&&p.slate_date===plan.slate_date&&p.plan_version===plan.plan_version).map(p=>p.commence_time);
+ return [plan.commence_time,...tips].sort()[0];
+}
+export const planWindows=(plan:PlanRow,plans:PlanRow[],cfg:CaptureConfig=CAPTURE_PLAN_V1)=>captureWindows(slateAnchor(plan,plans),cfg);
 const RETRYABLE=new Set(['no_dfs_lines','budget_refused']);
 
 /** State of one planned game at `nowIso` (for receipts and the dashboard). Pure. */
-export function captureState(plan:PlanRow,captures:CaptureRow[],nowIso:string,cfg:CaptureConfig=CAPTURE_PLAN_V1):CaptureState{
+export function captureState(plan:PlanRow,captures:CaptureRow[],nowIso:string,cfg:CaptureConfig=CAPTURE_PLAN_V1,plans:PlanRow[]=[plan]):CaptureState{
  if(!plan.selected)return 'NOT_SELECTED';
- const now=Date.parse(nowIso);const w=captureWindows(plan.commence_time,cfg);
+ const now=Date.parse(nowIso);const w=planWindows(plan,plans,cfg);
  const mine=captures.filter(c=>c.provider_event_id===plan.provider_event_id&&c.capture_key!=='recheck')
   .sort((a,b)=>b.claimed_at.localeCompare(a.claimed_at));
  const ok=mine.find(c=>c.outcome==='stored');
@@ -150,7 +174,7 @@ export function dueCaptures(input:{plans:PlanRow[];captures:CaptureRow[];nowIso:
  const prim:DueCapture[]=[],retry:DueCapture[]=[],recheck:DueCapture[]=[];
  let pendingPrimaries=0;
  for(const p of sel){
-  const w=captureWindows(p.commence_time,cfg);const mine=caps(p.provider_event_id);
+  const w=planWindows(p,input.plans,cfg);const mine=caps(p.provider_event_id);
   const primary=mine.find(c=>c.capture_key==='primary');const again=mine.find(c=>c.capture_key==='retry');
   const inEarly=p.arm==='early'&&inWin(now,w.earlyFrom,w.earlyTo),inLate=inWin(now,w.lateFrom,w.lateTo);
   if(!primary){
@@ -197,7 +221,7 @@ export function nextWindowOpen(plans:PlanRow[],captures:CaptureRow[],nowIso:stri
  const now=Date.parse(nowIso);let best:{at:string;event:string;window:Arm;matchup:string}|null=null;
  for(const p of plans){
   if(!p.selected||captures.some(c=>c.provider_event_id===p.provider_event_id&&c.capture_key==='primary'))continue;
-  const w=captureWindows(p.commence_time,cfg);
+  const w=planWindows(p,plans,cfg);
   for(const [at,win] of [[p.arm==='early'?w.earlyFrom:w.lateFrom,p.arm??'late'],[w.lateFrom,'late']] as [string,Arm][]){
    if(Date.parse(at)<=now)continue;
    if(!best||at<best.at)best={at,event:p.provider_event_id,window:win,matchup:`${p.away_team} @ ${p.home_team}`};

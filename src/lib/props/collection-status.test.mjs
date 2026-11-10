@@ -56,10 +56,11 @@ test('tick mode: slates show examined, selected, captured, lines and missed wind
   runCounts:{'40':{decisions:36,qualifyingPicks:9,entries:0}},plans,captures,ticksReleased:true});
  assert.equal(s.mode,'ticks');
  assert.deepEqual([s.slates[0].gamesExamined,s.slates[0].selected,s.slates[0].captured,s.slates[0].linesObserved,s.slates[0].qualifyingPicks],[3,2,1,36,9]);
- assert.equal(s.slates[0].games.find(g=>g.event==='evtTICK0002').state,'WAITING_FOR_WINDOW');
- assert.equal(s.next.source,'capture-window');assert.equal(s.next.at,'2026-11-12T19:00:00.000Z');
+ // Windows are anchored to the slate's earliest selected tip (00:00): the 03:00 game is due in the same window.
+ assert.equal(s.slates[0].games.find(g=>g.event==='evtTICK0002').state,'DUE');
+ assert.equal(s.next.source,'capture-window');assert.equal(s.next.at,'2026-11-12T21:00:00.000Z');assert.match(s.next.what,/LATE window/);
  assert.equal(s.executions[0].gamesCaptured,1);
- assert.equal(s.stages.planned,1);assert.equal(s.stages.completedJobs,1);assert.equal(s.stages.recordedPicks,9);assert.equal(s.stages.virtualEntries,0);
+ assert.equal(s.stages.planned,1);   // the 03:00 game is planned and due, not yet runassert.equal(s.stages.completedJobs,1);assert.equal(s.stages.recordedPicks,9);assert.equal(s.stages.virtualEntries,0);
  // Hours later with no tick: the second game's windows passed -> reported as missed, never as captured.
  const later=collectionStatus({...base,nowIso:'2026-11-13T04:00:00Z',runs:[],credits:[],plans,captures,ticksReleased:true});
  assert.ok(later.missing.some(m=>m.what==='AevtTICK0002 @ HevtTICK0002'&&/No tick ran/.test(m.why)));

@@ -4,7 +4,7 @@
  * (collect runs that finished), RECORDED picks (qualifying picks saved by those runs) and VIRTUAL ENTRIES.
  * Unknown stays unknown: missing tables or receipts are reported as unavailable, never as zero.
  */
-import {captureState,nextWindowOpen,captureWindows,CAPTURE_PLAN_V1,type PlanRow,type CaptureRow,type CaptureState} from './capture-plan.ts';
+import {captureState,nextWindowOpen,planWindows,CAPTURE_PLAN_V1,type PlanRow,type CaptureRow,type CaptureState} from './capture-plan.ts';
 import {nextPlannedRuns} from './schedule.ts';
 import {slotStatus,type LedgerRun,type RunCounts} from './slot-status.ts';
 import {NO_ENTRY_TEXT,type NoEntryReason} from './rules.ts';
@@ -58,7 +58,7 @@ export function collectionStatus(x:CollectionInput){
  const slateDates=[...new Set(plans.map(p=>p.slate_date))].sort().reverse().slice(0,4);
  const slates=slateDates.map(date=>{
   const ps=plans.filter(p=>p.slate_date===date);
-  const states=ps.map(p=>({p,state:captureState(p,caps,x.nowIso)}));
+  const states=ps.map(p=>({p,state:captureState(p,caps,x.nowIso,CAPTURE_PLAN_V1,plans)}));
   const sc=caps.filter(c=>ps.some(p=>p.provider_event_id===c.provider_event_id));
   const runIds=[...new Set(sc.map(c=>c.run_id))];
   const sumCounts=(k:'qualifyingPicks'|'entries')=>x.runCounts?runIds.reduce((a,id)=>a+(x.runCounts![String(id)]?.[k]??0),0):null;
@@ -66,7 +66,7 @@ export function collectionStatus(x:CollectionInput){
    captured:states.filter(s=>s.state==='CAPTURED').length,
    linesObserved:sc.filter(c=>c.capture_key!=='recheck').reduce((a,c)=>a+(c.dfs_lines??0),0),
    qualifyingPicks:sumCounts('qualifyingPicks'),entries:sumCounts('entries'),
-   games:states.filter(s=>s.p.selected).map(({p,state})=>{const w=captureWindows(p.commence_time);
+   games:states.filter(s=>s.p.selected).map(({p,state})=>{const w=planWindows(p,plans);
     const c=caps.filter(v=>v.provider_event_id===p.provider_event_id).sort((a,b)=>a.claimed_at.localeCompare(b.claimed_at));
     return {event:p.provider_event_id,matchup:`${p.away_team} @ ${p.home_team}`,tipoff:p.commence_time,arm:p.arm,state,
      window:p.arm==='early'?{from:w.earlyFrom,to:w.earlyTo}:{from:w.lateFrom,to:w.lateTo},

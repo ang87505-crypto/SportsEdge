@@ -163,7 +163,7 @@ export async function runTick(d:CycleDeps,slot:string,scheduledFor:string|null=n
    skippedDecisions:k.filter(x=>x.status!=='recorded').length,entriesCreated:e.length,observeOnlyLines:observeOnly.size,
    selectionVersion:(s.predictions as {selectionVersion?:string}|undefined)?.selectionVersion??SELECTION_VERSION};
   const slates:Record<string,Record<string,number>>={};
-  for(const pl of plans){const st=captureState(pl,captures,d.now());const b=slates[pl.slate_date]??={};b[st]=(b[st]??0)+1;}
+  for(const pl of plans){const st=captureState(pl,captures,d.now(),CAPTURE_PLAN_V1,plans);const b=slates[pl.slate_date]??={};b[st]=(b[st]??0)+1;}
   s.slates=slates;s.next=nextWindowOpen(plans,captures,d.now());
   s.platforms=PLATFORMS;
   const outcome=done.some(x=>x.outcome==='stored')?'COMPLETED':plan.due.length?'NO_LINES_CAPTURED':'NOTHING_DUE';

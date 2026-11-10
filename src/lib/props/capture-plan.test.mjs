@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CAPTURE_PLAN_V1 as CFG,planSlates,dueCaptures,captureState,captureWindows,gamesPerSlate,slateDateOf,slateArm,
- slateFullyVisible,nextWindowOpen,hashUnit} from './capture-plan.ts';
+ slateFullyVisible,nextWindowOpen,hashUnit,slateAnchor} from './capture-plan.ts';
 import {BUDGET_POLICY_V2} from './budget.ts';
 
 // The real Nov 10 (ET) slate as listed by ESPN; ids are synthetic.
@@ -27,8 +27,9 @@ test('slates are ET days and are planned only once the whole slate is visible',(
  const rows=plan('2026-11-10T09:00:00Z');
  assert.equal(rows.length,6);
  assert.equal(rows.filter(r=>r.selected).length,2);
- const arm=slateArm('2026-11-10');
- for(const r of rows.filter(r=>r.selected))assert.equal(r.arm,arm);   // blocked by slate: entries stay single-arm
+ // Paired within the slate: one EARLY and one LATE game (the first in hash order takes the slate's hashed arm).
+ assert.deepEqual(rows.filter(r=>r.selected).map(r=>r.arm).sort(),['early','late']);
+ assert.ok(['early','late'].includes(slateArm('2026-11-10')));
  assert.ok(rows.filter(r=>!r.selected).every(r=>r.arm===null&&r.reason==='budget_games_per_slate'));
  // Deterministic and outcome-blind: same events, same plan, regardless of order.
  assert.deepEqual(plan('2026-11-10T09:00:00Z',[...NOV10].reverse()).map(r=>[r.provider_event_id,r.selected]).sort(),rows.map(r=>[r.provider_event_id,r.selected]).sort());
@@ -89,9 +90,9 @@ test('duplicate triggers: a claimed capture is never claimed again, and an unkno
 test('no PrizePicks/Pick6 lines yet: one retry, after a wait, only with credits no other game needs',()=>{
  const a=mk('early'),b=mk('early','evtB00000002','2026-11-11T03:00:00Z');
  const empty={provider_event_id:a.provider_event_id,capture_key:'primary',window_name:'early',claimed_at:'2026-11-10T16:10:00Z',outcome:'no_dfs_lines',dfs_lines:0};
- // 7/day cap with 3 already reserved by the empty attempt: b's primary still needs 3, so the retry must wait.
+ // 7/day cap with 3 already reserved by the empty attempt: b (same slate window) takes the next 3, so the retry must wait.
  const r1=dueCaptures({plans:[a,b],captures:[empty],nowIso:'2026-11-10T17:30:00Z',policy:BUDGET_POLICY_V2,state:{...fresh,used24h:3,used30d:3}});
- assert.deepEqual(r1.due,[]);
+ assert.deepEqual(r1.due.map(d=>[d.plan.provider_event_id,d.captureKey]),[[b.provider_event_id,'primary']]);
  assert.deepEqual(r1.deferred,[{event:a.provider_event_id,captureKey:'retry',reason:'DAILY_CAP'}]);
  // With b captured, the retry may use the remaining credits... but 3+3+3 > 7, so it is still refused: never forced.
  const bDone={provider_event_id:b.provider_event_id,capture_key:'primary',window_name:'early',claimed_at:'2026-11-10T18:10:00Z',outcome:'stored',dfs_lines:30};
@@ -137,8 +138,39 @@ test('states for the dashboard: missed windows are explicit, never shown as capt
  assert.equal(nextWindowOpen([a],[],'2026-11-10T17:30:00Z').window,'late');
 });
 
+test('selected games share the slate anchor, so both are open when the second is captured (the Nov 9 failure)',()=>{
+ // Real Nov 9 slate: 00:00 x3, 00:30, 01:00, 01:30, 02:00, 03:00 UTC tip-offs.
+ const nov9=['2026-11-10T00:00:00Z','2026-11-10T00:00:00Z','2026-11-10T00:00:00Z','2026-11-10T00:30:00Z','2026-11-10T01:00:00Z',
+  '2026-11-10T01:30:00Z','2026-11-10T02:00:00Z','2026-11-10T03:00:00Z'].map((t,i)=>({id:'evtNOV09game'+i,commenceTime:t,homeTeam:'H'+i,awayTeam:'A'+i}));
+ for(const salt of ['a','b','c','d','e','f']){
+  const cfg={...CFG,salt};
+  const rows=planSlates({events:nov9,existing:[],nowIso:'2026-11-09T09:00:00Z',policy:BUDGET_POLICY_V2,cfg});
+  const sel=rows.filter(r=>r.selected);assert.equal(sel.length,2);
+  assert.deepEqual(sel.map(r=>r.reason).sort(),['selected_anchor','selected_nearest_tip']);
+  const anchor=slateAnchor(sel[0],rows);
+  // EARLY game first, then the LATE game; when the LATE one is captured the EARLY game is still open, so an entry can form.
+  const w=captureWindows(anchor,cfg);
+  const e=sel.find(r=>r.arm==='early'),l=sel.find(r=>r.arm==='late');
+  const d1=dueCaptures({plans:rows,captures:[],nowIso:w.earlyFrom,policy:BUDGET_POLICY_V2,state:fresh,cfg}).due;
+  assert.deepEqual(d1.map(d=>d.plan.provider_event_id),[e.provider_event_id],salt);
+  const got={provider_event_id:e.provider_event_id,capture_key:'primary',window_name:'early',claimed_at:w.earlyFrom,outcome:'stored',dfs_lines:30};
+  const d2=dueCaptures({plans:rows,captures:[got],nowIso:w.lateFrom,policy:BUDGET_POLICY_V2,state:{...fresh,used24h:3,used30d:3},cfg}).due;
+  assert.deepEqual(d2.map(d=>[d.plan.provider_event_id,d.window]),[[l.provider_event_id,'late']],salt);
+  assert.ok(sel.every(r=>Date.parse(r.commence_time)-Date.parse(w.lateTo)>=35*60_000));
+  // Companion tip-off is the nearest to the anchor's (outcome-blind, from tip times only).
+  const anchorRow=sel.find(r=>r.reason==='selected_anchor'),other=sel.find(r=>r.reason==='selected_nearest_tip');
+  const gap=Math.abs(Date.parse(other.commence_time)-Date.parse(anchorRow.commence_time));
+  assert.ok(rows.filter(r=>r.provider_event_id!==anchorRow.provider_event_id).every(r=>Math.abs(Date.parse(r.commence_time)-Date.parse(anchorRow.commence_time))>=gap));
+ }
+});
+
 test('hash assignment is stable and roughly balanced over a season of slates',()=>{
  assert.equal(hashUnit('s','k'),hashUnit('s','k'));
  let early=0;for(let d=0;d<160;d++){const s=new Date(Date.UTC(2026,9,20+d)).toISOString().slice(0,10);if(slateArm(s)==='early')early++;}
  assert.ok(early>55&&early<105,'early slates '+early);
+ // Larger budgets stay balanced within each slate.
+ const big={...BUDGET_POLICY_V2,dailyCredits:30,monthlyCredits:900};
+ const rows=planSlates({events:NOV10,existing:[],nowIso:'2026-11-10T09:00:00Z',policy:big}).filter(r=>r.selected);
+ assert.equal(rows.length,6);
+ assert.equal(rows.filter(r=>r.arm==='early').length,3);
 });

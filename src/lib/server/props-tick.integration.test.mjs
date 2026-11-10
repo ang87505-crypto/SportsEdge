@@ -9,7 +9,8 @@ import {pgFetch,psql,resetDb,testClockSql} from './props-pg-kit.mjs';
 import {propsStore} from './props-store.ts';
 import {runSettle} from './props-cycle.ts';
 import {runTick} from './props-tick.ts';
-import {slateArm,captureWindows} from '../props/capture-plan.ts';
+import {captureWindows,planSlates,slateAnchor} from '../props/capture-plan.ts';
+import {BUDGET_POLICY_V2} from '../props/budget.ts';
 
 const enabled=process.env.PROPS_PG_TEST==='1';
 const schema=name=>new URL('../../../database/props/'+name,import.meta.url).pathname;
@@ -63,12 +64,16 @@ test('capture ticks end to end: plan once, windows, duplicate triggers, rolling 
  for(const day of [1,2,3,4])finals['202611'+String(day).padStart(2,'0')]=day;
  assert.equal((await runSettle(deps,'backfill-tick',null,{kind:'backfill',dates:['2026-11-01','2026-11-02','2026-11-03','2026-11-04']})).outcome,'COMPLETED');
 
- const arm=slateArm('2026-11-12');
- const tickA=arm==='early'?'2026-11-12T18:30:00.000Z':'2026-11-12T23:05:00.000Z';   // every game's window open
  const plus=(iso,min)=>new Date(Date.parse(iso)+min*60_000).toISOString();
+ // The plan is deterministic: derive the slate's anchored windows to place the ticks (the worker plans for real below).
+ const preview=planSlates({events:EV.map(e=>({id:e.id,commenceTime:e.commence_time,homeTeam:e.home_team,awayTeam:e.away_team})),existing:[],nowIso:'2026-11-11T21:00:00Z',policy:BUDGET_POLICY_V2});
+ const aw=captureWindows(slateAnchor(preview.find(p=>p.selected),preview));
+ const earlyId=preview.find(p=>p.selected&&p.arm==='early').provider_event_id,lateId=preview.find(p=>p.selected&&p.arm==='late').provider_event_id;
+ const tickE=plus(aw.earlyFrom,20),tickL1=plus(aw.lateFrom,5),tickL2=plus(aw.lateFrom,50);
 
- // Yesterday's late collect still inside the rolling 24 h window when tick A runs (the Nov 9->10 shape): 4 credits.
- clock=plus(tickA,-(23*60+20));
+ // Yesterday's late collect (the Nov 9->10 shape, 4 credits) is still inside the rolling 24 h window at tickL1 and
+ // rolls off at lateFrom + 30 min, before tickL2.
+ clock=plus(aw.lateFrom,30-24*60);
  const late=await store.rpc('props_begin_run',{p_kind:'collect',p_slot:'collect-manual-carry',p_worker:'test:carry',p_scheduled_for:null,p_lease_seconds:600});
  await store.rpc('props_reserve_credits',{p_run:late.runId,p_endpoint:'events',p_event:null,p_credits:1});
  await store.rpc('props_reserve_credits',{p_run:late.runId,p_endpoint:'event_odds',p_event:'evtCARRY0001',p_credits:3});
@@ -84,17 +89,15 @@ test('capture ticks end to end: plan once, windows, duplicate triggers, rolling 
  const plans=JSON.parse(psql(DB,`SELECT json_agg(x ORDER BY x.provider_event_id) FROM (SELECT provider_event_id,selected,arm,reason FROM props_capture_plans) x`).out);
  assert.equal(plans.length,3);
  assert.equal(plans.filter(p=>p.selected).length,2);                    // 7/day and 200/30 d sustain two games
- assert.ok(plans.filter(p=>p.selected).every(p=>p.arm===arm));
+ assert.deepEqual(plans.filter(p=>p.selected).map(p=>[p.provider_event_id,p.arm]).sort(),[[earlyId,'early'],[lateId,'late']].sort());
  assert.equal(psql(DB,'SELECT count(*) FROM props_credit_reservations WHERE run_id='+t0.runId).out,'0');
- const selected=plans.filter(p=>p.selected).map(p=>p.provider_event_id).sort((a,b)=>EV.find(e=>e.id===a).commence_time.localeCompare(EV.find(e=>e.id===b).commence_time));
 
- // 2. Tick A inside the window: the carried-over 4 credits leave room for one game only; the other is deferred, not lost.
- clock=tickA;
- const tA=await runTick(deps,'collect-tick-'+tickA.slice(0,16));
+ // 2. EARLY window: only the EARLY game is captured (carry 4 + 3 = 7 fits), predicted at once, no entry from one game.
+ clock=tickE;
+ const tA=await runTick(deps,'collect-tick-'+tickE.slice(0,16));
  assert.equal(tA.outcome,'COMPLETED',JSON.stringify(tA.summary));
- assert.deepEqual(calls.odds.map(c=>c.id),[selected[0]]);
- assert.deepEqual(tA.summary.deferred,[{event:selected[1],captureKey:'primary',reason:'DAILY_CAP'}]);
- assert.equal(tA.summary.captures[0].outcome,'stored');assert.equal(tA.summary.captures[0].window,arm);
+ assert.deepEqual(calls.odds.map(c=>c.id),[earlyId]);
+ assert.equal(tA.summary.captures[0].outcome,'stored');assert.equal(tA.summary.captures[0].window,'early');
  assert.equal(tA.summary.receipt.observations,24);                       // 4 players x 3 stats x 2 platforms
  assert.equal(tA.summary.receipt.predictions,24);                        // predicted in the same run, before lock
  assert.equal(tA.summary.receipt.entriesCreated,0);                      // one game cannot make a two-game entry
@@ -102,16 +105,21 @@ test('capture ticks end to end: plan once, windows, duplicate triggers, rolling 
  assert.ok(reasons.every(r=>['TOO_FEW_DISTINCT_GAMES','NO_QUALIFYING_PICKS'].includes(r)),JSON.stringify(tA.summary.entries));
  assert.equal(psql(DB,'SELECT sum(credits) FROM props_credit_reservations WHERE run_id='+tA.runId).out,'3');
 
- // 3. A duplicate trigger in the same 30-minute bucket (GitHub + Vercel) is refused; a second start later in the
- //    bucket's next half hour sees the claim and makes no paid call for the captured game.
- assert.equal((await runTick(deps,'collect-tick-'+tickA.slice(0,16))).outcome,'DUPLICATE');
+ // 3. A duplicate trigger in the same 30-minute bucket (GitHub + Vercel) is refused before any call.
+ assert.equal((await runTick(deps,'collect-tick-'+tickE.slice(0,16))).outcome,'DUPLICATE');
  assert.equal(calls.odds.length,1);
 
- // 4. Tick B after yesterday's credits roll off: the deferred game is captured, entries span both games.
- clock=plus(tickA,45);
- const tB=await runTick(deps,'collect-tick-'+clock.slice(0,16));
+ // 4. LATE window, first tick: the carried-over credits still count, so the LATE game is deferred (never forced).
+ clock=tickL1;
+ const tL1=await runTick(deps,'collect-tick-'+tickL1.slice(0,16));
+ assert.equal(tL1.outcome,'NOTHING_DUE',JSON.stringify(tL1.summary));
+ assert.deepEqual(tL1.summary.deferred,[{event:lateId,captureKey:'primary',reason:'DAILY_CAP'}]);
+ assert.equal(calls.odds.length,1);
+ // 5. A later tick in the same window after the carry rolls off: captured; the EARLY game is still open, so entries form.
+ clock=tickL2;
+ const tB=await runTick(deps,'collect-tick-'+tickL2.slice(0,16));
  assert.equal(tB.outcome,'COMPLETED',JSON.stringify(tB.summary));
- assert.deepEqual(calls.odds.map(c=>c.id),selected);
+ assert.deepEqual(calls.odds.map(c=>c.id),[earlyId,lateId]);
  assert.ok(tB.summary.receipt.entriesCreated>=1,JSON.stringify(tB.summary.entries));
  const legs=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT e.id,count(DISTINCT o.provider_event_id) g,count(*) n,bool_and(e.created_at<o.lock_at) pre
   FROM props_entries e JOIN props_entry_legs l ON l.entry_id=e.id JOIN props_picks k ON k.id=l.pick_id JOIN props_predictions p ON p.id=k.prediction_id
@@ -121,15 +129,15 @@ test('capture ticks end to end: plan once, windows, duplicate triggers, rolling 
  assert.equal(psql(DB,`SELECT count(*) FROM props_entries e JOIN props_accounts a ON a.id=e.account_id JOIN props_entry_legs l ON l.entry_id=e.id
   JOIN props_picks k ON k.id=l.pick_id JOIN props_predictions p ON p.id=k.prediction_id JOIN props_observations o ON o.id=p.observation_id
   WHERE o.platform<>a.platform`).out,'0');
- assert.equal(psql(DB,`SELECT sum(credits) FROM props_credit_reservations WHERE run_id IN (${t0.runId},${tA.runId},${tB.runId})`).out,'6');
+ assert.equal(psql(DB,`SELECT sum(credits) FROM props_credit_reservations WHERE run_id IN (${t0.runId},${tA.runId},${tL1.runId},${tB.runId})`).out,'6');
  const outs=JSON.parse(psql(DB,`SELECT json_agg(x) FROM (SELECT c.capture_key,c.window_name,c.fallback,o.outcome,o.provider_cost_last,o.dfs_lines
   FROM props_captures c JOIN props_capture_outcomes o ON o.capture_id=c.id ORDER BY c.id) x`).out);
  assert.deepEqual(outs.map(o=>[o.capture_key,o.window_name,o.fallback,o.outcome,o.provider_cost_last,o.dfs_lines]),
-  [['primary',arm,false,'stored',3,24],['primary',arm,false,'stored',3,24]]);
+  [['primary','early',false,'stored',3,24],['primary','late',false,'stored',3,24]]);
 
  // 5. Later ticks: nothing new to capture (no rechecks fit the 7-credit cap) and nothing is re-priced or re-picked.
  const obsBefore=psql(DB,'SELECT count(*) FROM props_observations').out,picksBefore=psql(DB,'SELECT count(*) FROM props_picks').out;
- clock=plus(tickA,105);
+ clock=plus(tickL2,40);
  const tC=await runTick(deps,'collect-tick-'+clock.slice(0,16));
  assert.equal(tC.outcome,'NOTHING_DUE',JSON.stringify(tC.summary));
  // 6. A tick that starts hours late, after tip-off: no paid call for any started game.
