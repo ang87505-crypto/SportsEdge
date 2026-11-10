@@ -94,6 +94,17 @@
         "analytics/research/engine.py"
       ],
       "rules": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md"
+    },
+    {
+      "id": "spy-tom-v1",
+      "status": "challenger",
+      "kind": "calendar-research",
+      "description": "SPY from the last trading day of each month through the third trading day of the next (McConnell & Xu 2008); cash otherwise.",
+      "code": [
+        "analytics/research/candidates.py",
+        "analytics/research/engine.py"
+      ],
+      "rules": "docs/STOCK_TOM_PREREG_2026_11_10.md"
     }
   ],
   "sources": [
@@ -184,6 +195,12 @@
         "daily-momentum5d-v1",
         "daily-spy-trend50-v1"
       ]
+    },
+    {
+      "id": "spy-tom-2026-11-10",
+      "strategy": "spy-tom-v1",
+      "status": "registered",
+      "prereg": "docs/STOCK_TOM_PREREG_2026_11_10.md"
     }
   ]
 }

@@ -61,6 +61,13 @@ jobs:
         run: |
           python -m analytics.research.cli daily-historical --data research-data --end 2026-11-06
           python -m analytics.research.cli daily-forward --data research-data
+      - name: SPY turn-of-the-month - historical test and forward ledger (docs/STOCK_TOM_PREREG_2026_11_10.md)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          python -m analytics.research.cli tom-historical --data research-data --end 2026-11-06
+          python -m analytics.research.cli tom-forward --data research-data
       - name: Report
         run: python -m analytics.research.cli report --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit append-only to research-data
