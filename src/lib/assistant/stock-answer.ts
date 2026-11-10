@@ -8,7 +8,7 @@ import type {Reply,Card} from './answer.ts';
 import {rangeBounds} from './answer.ts';
 import type {AssistantContext} from './understand.ts';
 import type {QuestionRoute} from './domain.ts';
-import {RESEARCH_NAMES,RESEARCH_REPORT_URL,type ResearchView} from '../research/stock-summary.ts';
+import {DAILY_NAMES,type DailySummary,RESEARCH_NAMES,RESEARCH_REPORT_URL,type ResearchView} from '../research/stock-summary.ts';
 export type StockAccounts={state:'ready'|'owner_required'|'unavailable';ledgers:(PaperAutoLedger|UnregisteredLedger)[];brokerWritesEnabled:boolean|null};
 export type PaperSnapshot=ReturnType<typeof normalizePaperSnapshot>;
 export type BrokerView={state:'ready';snapshot:PaperSnapshot}|{state:'owner_required'|'unavailable'};
@@ -100,6 +100,18 @@ export function researchAnswer(q:QuestionRoute,view:ResearchView):Reply{
   parts.push(`${name} forward paper: ${f.status.replaceAll('_',' ')}; ${f.sessions} measured sessions. ${f.totalReturn===null?'No forward return measured yet.':`Cumulative return ${pct(f.totalReturn,1)}.`}`);
  }
  if(s.window)parts.push(`Historical window ${s.window.join(' to ')}; SPY buy-and-hold CAGR ${pct(s.benchmark.cagr,1)} with dividends before investor costs. This previously inspected, survivorship-biased history is exploratory; it is not profit in your account.`);
+ if(s.daily&&!q.strategyId)parts.push(dailyText(s.daily));
  if(q.topic==='holdings'||q.topic==='explain')parts.push('Last recorded source checks: '+s.sources.map(x=>`${x.id}: ${x.status} at ${stamp(x.retrievedAt)}`).join('; ')+'.');
  return reply(q,parts.join('\n\n'),[...(facts.length?[{kind:'facts' as const,items:facts}]:[]),links([{label:'Research dashboard',href:'/stocks/research'},{label:'Full published research report',href:RESEARCH_REPORT_URL},{label:'QMOM disclosed holdings',href:'https://funds.alphaarchitect.com/qmom/'}])]);
+}
+
+/** Daily strategies: research only, never active. Forward results are simulated paper trades from 2026-11-10. */
+export function dailyText(d:DailySummary):string{
+ const lines=d.strategies.map(c=>{
+  const h=c.historical,f=c.forward;
+  const hist=h?`${h.verdict}; historical ${pct(h.continuous.cagr,1)} a year after 10 bps costs (${pct(h.gross.cagr,1)} before costs)`:'historical test not run yet';
+  const fwd=f.sessions?`${f.sessions} simulated forward sessions, ${f.totalReturn===null?'no return yet':pct(f.totalReturn,1)+' so far'}`:'forward trades start at the 2026-11-10 open';
+  return `- ${DAILY_NAMES[c.id]}: ${hist}; ${fwd}.`;
+ });
+ return ['Daily strategies (paper research, not active): '+d.overall+'.',...lines].join('\n');
 }

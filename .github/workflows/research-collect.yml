@@ -49,6 +49,16 @@ jobs:
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
         run: python -m analytics.research.cli forward --data research-data
+      - name: Daily strategies - simulated forward ledgers (docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          # The 10-year historical test runs once here (then monthly in research-evaluate).
+          if ! ls research-data/results/daily-historical-*.json >/dev/null 2>&1; then
+            python -m analytics.research.cli daily-historical --data research-data --end 2026-11-06
+          fi
+          python -m analytics.research.cli daily-forward --data research-data
       - name: Report
         run: python -m analytics.research.cli report --data research-data >> "$GITHUB_STEP_SUMMARY"
       - name: Commit append-only to research-data

@@ -3,7 +3,7 @@ import {connection} from 'next/server';
 import Link from 'next/link';
 import {PageHeading,Panel,Badge,Callout} from '@/components/ui';
 import {loadStockResearch} from '@/lib/server/stock-research-load';
-import {RESEARCH_NAMES,RESEARCH_REPORT_URL} from '@/lib/research/stock-summary';
+import {DAILY_NAMES,RESEARCH_NAMES,RESEARCH_REPORT_URL} from '@/lib/research/stock-summary';
 import {pct} from '@/lib/format';
 
 export const metadata={title:'Strategy research · SportsEdge',description:'Published stock strategy evaluations, collection health and forward paper evidence.'};
@@ -35,6 +35,19 @@ async function ResearchResults(){
   <Panel title="Forward paper evidence" className="mt-8">
    {s.candidates.map(c=><p key={c.id}><strong>{RESEARCH_NAMES[c.id]}:</strong> {c.forward.status.replaceAll('_',' ')} · {c.forward.sessions} measured sessions · {c.forward.totalReturn===null?'No return measured yet':pct(c.forward.totalReturn,1)+' cumulative return'}.</p>)}
   </Panel>
+  {s.daily?<Panel title="Daily strategies (paper research)" description="Pre-registered 2026-11-10. Each is checked every session; simulated trades only, nothing is activated." flush className="mt-8">
+   <div className="table-wrap"><table className="data-table">
+    <thead><tr><th scope="col">Strategy</th><th scope="col">Historical CAGR after 10 bps</th><th scope="col">Before costs</th><th scope="col">Drawdown</th><th scope="col">Trades per year (turnover)</th><th scope="col">Verdict</th><th scope="col">Forward paper</th></tr></thead>
+    <tbody>{s.daily.strategies.map(c=><tr key={c.id}><th scope="row">{DAILY_NAMES[c.id]}</th>
+     <td>{c.historical?pct(c.historical.continuous.cagr,1):'Not run yet'}</td>
+     <td>{c.historical?pct(c.historical.gross.cagr,1):'—'}</td>
+     <td>{c.historical?pct(c.historical.continuous.max_drawdown,1):'—'}</td>
+     <td>{c.historical?.turnoverPerYear!=null?c.historical.turnoverPerYear.toFixed(0)+'×':'—'}</td>
+     <td><Badge tone="neutral">{c.historical?.verdict??'Pending'}</Badge></td>
+     <td>{c.forward.sessions?`${c.forward.sessions} sessions · ${c.forward.totalReturn===null?'no return yet':pct(c.forward.totalReturn,1)}`:'Starts at the Nov 10 open'}</td></tr>)}</tbody>
+   </table></div>
+   <p className="panel-note">{s.daily.overall}. Daily trading pays costs on every rotation; compare the before- and after-cost columns. A forward record never activates a strategy by itself. <a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md">Pre-registered rules</a></p>
+  </Panel>:null}
   <Panel title="Last recorded source checks" className="mt-8">
    {s.sources.map(x=><p key={x.id}><strong>{x.id}:</strong> {x.status} · {x.retrievedAt}. Last successful read: {x.lastSuccessAt??'none recorded'}.</p>)}
    <p>Source statuses describe the saved observation, not a guarantee that the next run succeeds.</p>

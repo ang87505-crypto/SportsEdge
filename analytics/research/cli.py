@@ -179,6 +179,76 @@ def cmd_historical(data: Path, out_dir: Path, end: str, now: datetime) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- daily strategies (docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md)
+
+DAILY_PREREG = 'docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md'
+DAILY_FIRST_SIGNAL = '2026-11-09'   # first forward signal close; first simulated trades at the 2026-11-10 open
+DAILY_FORWARD_MIN_SESSIONS = 252
+
+
+def _daily_market(members, start: str, end: str):
+    symbols = {m['symbol'] for m in members} | {'SPY'}
+    md = market_data(alpaca(), symbols, start, end, {})
+    sessions, series = rdata.assemble(md['sessions'], md['bars'])
+    return md, sessions, series
+
+
+def cmd_daily_historical(data: Path, out_dir: Path, end: str, now: datetime) -> dict:
+    universe, members = universe_members()
+    md, sessions, series = _daily_market(members, ev.DATA_START, end)
+    start_k, end_k = ev.window(sessions, ev.FIRST_EXEC, end)
+    bench = ev.benchmarks(sessions, series, universe, start_k, end_k, extra_holds=())
+    results, verdicts, matched = {}, {}, {}
+    for sid in cand.DAILY_IDS:
+        d = cand.daily_decisions(sid, sessions, series, members, first_signal=sessions[start_k - 1], last_exec=end)
+        res = ev.run_candidate(sessions, series, md['actions'], d, start_k, end_k)
+        exp = res['bps10']['continuous']['exposure_series']
+        matched[sid] = ev.summarize(ev.exposure_matched(sessions, series['SPY'], exp, start_k, end_k), sessions[start_k], sessions[end_k])
+        verdicts[sid] = ev.verdict(res, bench, matched[sid])
+        res['decisions'] = len(d)
+        res['last_decisions'] = [{'date': sessions[x['signal_index']], 'targets': x['targets']} for x in d[-5:]]
+        results[sid] = ev.strip_series(res)
+    passing = [s for s, v in verdicts.items() if v['verdict'] == 'QUALIFIES FOR REVIEW']
+    out = {'kind': 'daily-historical', 'at': stamp(now), 'prereg': DAILY_PREREG, 'window': [sessions[start_k], sessions[end_k]],
+           'capital': ev.CAPITAL, 'overall': 'QUALIFIES FOR REVIEW: ' + ', '.join(passing) if passing else 'NONE QUALIFIES',
+           'verdicts': verdicts, 'results': results, 'benchmarks': bench, 'exposure_matched_spy': matched,
+           'data': {k: md[k] for k in ('fingerprint', 'actions_pages_fingerprint', 'joins', 'missing', 'requests', 'actions_dropped')}
+           | {'sessions': [md['sessions'][0], md['sessions'][-1]], 'symbols_with_bars': len(md['bars'])},
+           'fingerprints': {'code_commit': os.getenv('GITHUB_SHA', 'local'), 'universe_revision': universe.get('revision')}}
+    path = write_new(out_dir / f"daily-historical-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'daily-historical', 'at': stamp(now), 'overall': out['overall'], 'file': str(path),
+                      'dataset_fingerprint': md['fingerprint']})
+    return out
+
+
+def cmd_daily_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
+    universe, members = universe_members()
+    start = (date.fromisoformat(DAILY_FIRST_SIGNAL) - timedelta(days=150)).isoformat()
+    md, sessions, series = _daily_market(members, start, today)
+    ledgers = {}
+    end_k = len(sessions) - 1
+    for sid in cand.DAILY_IDS:
+        d = cand.daily_decisions(sid, sessions, series, members, first_signal=DAILY_FIRST_SIGNAL, last_exec=today)
+        if not d:
+            ledgers[sid] = {'status': 'NOT STARTED', 'reason': 'first simulated trades are at the open after the first signal close',
+                            'first_signal': DAILY_FIRST_SIGNAL}
+            continue
+        first = d[0]['signal_index'] + 1
+        res = ev.run_candidate(sessions, series, md['actions'], d, first, end_k)
+        bench = {'spy-hold': ev.summarize(ev.hold_curve(sessions, series['SPY'], first, end_k), sessions[first], sessions[end_k])}
+        n = end_k - first + 1
+        ledgers[sid] = {'status': 'INSUFFICIENT FORWARD SAMPLE' if n < DAILY_FORWARD_MIN_SESSIONS else 'READY FOR PRE-REGISTERED FORWARD REVIEW',
+                        'first_execution': sessions[first], 'sessions': n,
+                        'decisions': [{'date': sessions[x['signal_index']], 'targets': x['targets']} for x in d],
+                        'result': ev.strip_series(res), 'benchmarks': bench}
+    out = {'kind': 'daily-forward', 'at': stamp(now), 'prereg': DAILY_PREREG, 'latest_session': sessions[end_k] if sessions else None,
+           'ledgers': ledgers, 'data': {k: md[k] for k in ('fingerprint', 'joins', 'missing', 'requests', 'actions_dropped', 'symbols_rejected')}}
+    path = write_new(out_dir / f"daily-forward-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'daily-forward', 'at': stamp(now), 'file': str(path),
+                      'status': {s: v['status'] for s, v in ledgers.items()}})
+    return out
+
+
 # ---------------------------------------------------------------- forward ledgers
 
 def qmom_snapshots(store) -> list[dict]:
@@ -314,6 +384,8 @@ def cmd_report(data: Path, now: datetime) -> Path:
     text = render(hist, fwd, store)
     runs = [json.loads(line) for line in (data / 'runs.jsonl').read_text().splitlines() if line.strip()] if (data / 'runs.jsonl').exists() else []
     summary = build_summary(hist, fwd, store.manifest(), runs, stamp(now))
+    from .summary import build_daily
+    summary['daily'] = build_daily(latest(data / 'results', 'daily-historical'), latest(data / 'results', 'daily-forward'))
     (data / 'summary.json').write_text(json.dumps(summary, indent=1, sort_keys=True), encoding='utf-8')
     path = data / 'reports' / f"{stamp(now)[:10]}-{stamp(now)[11:19].replace(':', '')}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -324,7 +396,7 @@ def cmd_report(data: Path, now: datetime) -> Path:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('collect', 'historical', 'forward', 'report'))
+    p.add_argument('command', choices=('collect', 'historical', 'forward', 'daily-historical', 'daily-forward', 'report'))
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--end', default=ev.END)
     a = p.parse_args()
@@ -342,6 +414,14 @@ def main():
         out = cmd_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
         print(json.dumps({k: v for k, v in out.items() if k in ('status', 'latest_session')} |
                          {'ledgers': {s: l['status'] for s, l in (out.get('ledgers') or {}).items()}}))
+    elif a.command == 'daily-historical':
+        out = cmd_daily_historical(a.data, a.data / 'results', a.end, now)
+        print(json.dumps({'overall': out['overall'], 'verdicts': {k: v['verdict'] for k, v in out['verdicts'].items()},
+                          'dataset_fingerprint': out['data']['fingerprint']}))
+    elif a.command == 'daily-forward':
+        out = cmd_daily_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
+        print(json.dumps({'latest_session': out['latest_session'], 'ledgers': {s: {k: l.get(k) for k in ('status', 'sessions', 'first_execution')}
+                                                                                for s, l in out['ledgers'].items()}}))
     else:
         path = cmd_report(a.data, now)
         print(path.read_text())
