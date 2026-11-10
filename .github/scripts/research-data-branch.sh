@@ -24,9 +24,9 @@ case "$1" in
     cd "$dir"
     git add -A
     if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
-    # Append-only: refuse any change that modifies or deletes an existing tracked file, except LATEST.md.
+    # Snapshots/results stay append-only. LATEST.md and summary.json are derived latest views.
     if git rev-parse -q --verify HEAD >/dev/null; then
-      changed=$(git diff --cached --name-status HEAD | awk '$1 != "A" {print $2}' | grep -v -E '^(reports/LATEST\.md|manifest\.jsonl|items\.jsonl|runs\.jsonl)$' || true)
+      changed=$(git diff --cached --name-status HEAD | awk '$1 != "A" {print $2}' | grep -v -E '^(reports/LATEST\.md|summary\.json|manifest\.jsonl|items\.jsonl|runs\.jsonl)$' || true)
       if [ -n "$changed" ]; then echo "APPEND_ONLY_VIOLATION: $changed"; exit 1; fi
       for f in manifest.jsonl items.jsonl runs.jsonl; do
         if git cat-file -e "HEAD:$f" 2>/dev/null; then

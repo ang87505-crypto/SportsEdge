@@ -44,3 +44,5 @@ jobs:
         run: npm run build
       - name: Owner sign-in HTTP flow (isolated synthetic key, no broker or database)
         run: node scripts/owner-sign-in-smoke.mjs
+      - name: Shared assistant HTTP flow (isolated local server)
+        run: node scripts/assistant-http-smoke.mjs

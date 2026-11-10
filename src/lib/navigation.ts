@@ -17,9 +17,8 @@ export const SECTIONS:NavSection[]=[
    {href:'/research/epl',label:'Soccer model',description:'EPL three-way forecast archive'},
    {href:'/research/backtest',label:'Soccer accuracy history',description:'Six-month retrospective by league'},
   ]},
- {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting','/assistant'],
+ {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting'],
   children:[
-   {href:'/assistant',label:'Ask',description:'Ask about picks, results and the model'},
    {href:'/paper-betting/props-research',label:'Ranked picks & research',description:'Top qualifying picks and the model comparison'},
    {href:'/paper-betting',label:'Moneyline ledger (older test)',description:'The earlier NBA moneyline virtual bankroll'},
   ]},
@@ -34,6 +33,7 @@ export const SECTIONS:NavSection[]=[
 ];
 
 export const PLATFORM:(NavLeaf&{icon:NavIconName})[]=[
+ {href:'/assistant',label:'Ask SportsEdge',description:'Sports, stocks, research and automation in one chat',icon:'pulse'},
  {href:'/automation',label:'Paper automation',description:'Sports and stocks: status, next steps and results',icon:'pulse'},
  {href:'/progress',label:'Research status',description:'Evidence gates and milestones',icon:'pulse'},
  {href:'/testing',label:'Test center',description:'Owner acceptance walkthrough',icon:'shield'},
