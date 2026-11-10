@@ -74,11 +74,32 @@ test('slot status separates scheduled, started, completed, picks, entries and se
  const rows=slotStatus(runs,'2026-11-10T05:00:00Z',1);
  const c19=rows.find(r=>r.slot==='collect-2026-11-09T19');
  assert.equal(c19.state,'COMPLETED');assert.equal(c19.startDelayMinutes,410);
- assert.equal(c19.picksRecorded,36);assert.equal(c19.entriesCreated,0);
+ // Legacy receipt (Nov 9): `picks` is the decision count. Qualifying picks cannot be established from it.
+ assert.equal(c19.decisions,36);assert.equal(c19.qualifyingPicks,null);assert.equal(c19.entriesCreated,0);
+ assert.equal(c19.countsSource,'receipt');
  assert.deepEqual(c19.noEntryReasons.map(r=>r.reason),['TOO_FEW_DISTINCT_GAMES','TOO_FEW_DISTINCT_GAMES']);
  assert.equal(rows.find(r=>r.slot==='collect-2026-11-09T22').state,'SKIPPED');
  assert.equal(rows.find(r=>r.slot==='settle-2026-11-09T09').entriesSettled,3);
  assert.equal(rows.find(r=>r.slot==='settle-2026-11-09T15').state,'NO_RUN_RECORDED');
  const future=rows.find(r=>r.slot==='collect-2026-11-10T19');
  assert.equal(future.state,'PLANNED');assert.equal(future.startedAt,null);assert.equal(future.outcome,null); // a plan is never a run
+});
+
+test('regression: 36 decisions, 10 qualifying picks and 0 entries are three different numbers', () => {
+ // The real collect-2026-11-09T19 receipt, unchanged (immutable), plus the counts read from its saved rows.
+ const run={id:10,kind:'collect',slot_key:'collect-2026-11-09T19',status:'completed',outcome:'COMPLETED',started_at:'2026-11-10T02:00:07Z',
+  finished_at:'2026-11-10T02:00:14Z',start_delay_seconds:24607,summary:{receipt:{observations:36,predictions:70,picks:36},
+   predictions:{scored:34,recorded:10},entries:{prizepicks:{room:3,eligiblePicks:18,entries:[]},pick6:{room:3,eligiblePicks:6,entries:[]}}}};
+ const counts={'10':{decisions:36,qualifyingPicks:10,entries:0}};
+ const row=slotStatus([run],'2026-11-10T05:00:00Z',1,counts).find(r=>r.slot==='collect-2026-11-09T19');
+ assert.deepEqual([row.decisions,row.qualifyingPicks,row.entriesCreated,row.countsSource],[36,10,0,'ledger']);
+ assert.notEqual(row.qualifyingPicks,row.decisions);
+ // Without the row counts, the legacy receipt cannot establish qualifying picks: unknown, never 36 and never a guess.
+ const legacy=slotStatus([run],'2026-11-10T05:00:00Z',1,null).find(r=>r.slot==='collect-2026-11-09T19');
+ assert.deepEqual([legacy.decisions,legacy.qualifyingPicks,legacy.entriesCreated],[36,null,0]);
+ // A new receipt carries all three explicitly.
+ const fresh={...run,id:11,slot_key:'collect-2026-11-09T22',summary:{receipt:{observations:36,predictions:70,picks:36,decisions:36,
+  qualifyingPicks:10,skippedDecisions:26,entriesCreated:0}}};
+ const r2=slotStatus([fresh],'2026-11-10T05:00:00Z',1,null).find(r=>r.slot==='collect-2026-11-09T22');
+ assert.deepEqual([r2.decisions,r2.qualifyingPicks,r2.entriesCreated,r2.countsSource],[36,10,0,'receipt']);
 });

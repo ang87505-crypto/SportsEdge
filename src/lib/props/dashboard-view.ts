@@ -22,6 +22,8 @@ export type Raw={
  accounts:{id:number;slug:string;platform:Platform;selection_version?:string;initial_cents:number;stake_cents:number;max_entries_per_day:number}[];
  entries:{id:number;account_id:number;stake_cents:number;lock_at:string;created_at:string;payout_terms_version:string|null}[];
  legs:{entry_id:number;pick_id:number}[];
+ /** Per-run counts read from the durable rows (null when they could not be read). */
+ runCounts?:Record<string,{decisions:number;qualifyingPicks:number;entries:number}>|null;
  settlements:{entry_id:number;outcome:string;wins:number;losses:number;voids:number;return_cents:number|null;profit_cents:number|null;settled_at:string}[];
  /** Learning loop state; absent or null until the learning tables exist. */
  model?:{active:string;previous:string|null;learningEnabled:boolean;autoSwitchEnabled:boolean;weights:Record<Stat,number[]>|null;

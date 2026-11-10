@@ -63,7 +63,8 @@ changed here.
   - state (planned, no run recorded, running, completed, skipped, failed);
   - trigger and delay;
   - finish time;
-  - picks recorded;
+  - decisions (skips included) and qualifying picks, as separate columns read from the saved pick rows. Unknown when
+    they cannot be read. A historical receipt's `picks` field counts decisions, not qualifying picks;
   - entries made, with the reason when none;
   - entries settled.
 

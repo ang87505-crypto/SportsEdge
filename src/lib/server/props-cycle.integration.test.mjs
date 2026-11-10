@@ -82,6 +82,12 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  assert.equal(c.summary.plan.chosen.length,2);                  // v2 plan: 1 + 2x3 = 7 credits
  assert.equal(c.summary.receipt.observations,48);               // 8 players x 3 stats x 2 platforms
  assert.equal(c.summary.receipt.predictions,48);
+ // Decisions (skips included), qualifying picks and entries are separate receipt numbers, each matching the saved rows.
+ assert.equal(c.summary.receipt.decisions,Number(psql(DB,`SELECT count(*) FROM props_picks WHERE run_id=${c.runId}`).out));
+ assert.equal(c.summary.receipt.qualifyingPicks,Number(psql(DB,`SELECT count(*) FROM props_picks WHERE run_id=${c.runId} AND status='recorded'`).out));
+ assert.equal(c.summary.receipt.decisions,c.summary.receipt.qualifyingPicks+c.summary.receipt.skippedDecisions);
+ assert.equal(c.summary.receipt.entriesCreated,Number(psql(DB,`SELECT count(*) FROM props_entries WHERE run_id=${c.runId}`).out));
+ assert.equal(c.summary.receipt.picks,c.summary.receipt.decisions);   // legacy field keeps its original meaning
  assert.equal(c.summary.predictions.scored,48,JSON.stringify(c.summary.predictions));
  // Sportsbook reference quotes ride in the same reply: no extra credits, and no platform line is lost.
  assert.deepEqual(c.summary.bookQuotes,{inserted:48,byBook:{draftkings:24,fanduel:24,betmgm:0,williamhill_us:0}}); // 2 games x 4 players x 3 stats per book
