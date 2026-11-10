@@ -41,7 +41,11 @@ def _px(series, sym, field, k):
 
 
 def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: list[dict], *, start_index: int,
-             end_index: int, capital: float, cost_bps: float, halt: bool = True) -> dict:
+             end_index: int, capital: float, cost_bps: float, halt: bool = True, recovery: dict | None = None) -> dict:
+    """`recovery` (research proposal V1, docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md; requires halt=True):
+    {'cooldown': completed sessions in cash after a halt's liquidation, 'regime': per-session bool (re-entry
+    allowed at that signal close), 'scale': weight multiplier while partial, 'full_after': partial decisions
+    before full weights}. Without it the behaviour is exactly the original halt-and-stay-in-cash rule."""
     cost = cost_bps / 1e4
     by_day: dict = {}
     for a in actions:
@@ -55,6 +59,10 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
     unresolved_log, trades, executions, integrity = [], [], [], []
     pending_sell: set = set()
     peak, halted, halted_on, liquidating, halt_equity_after = capital, False, None, False, None
+    # recovery state machine (V1 only): normal -> cooldown -> waiting -> partial -> normal
+    state, cooldown_left, partial_count = 'normal', None, 0
+    halts, reentries, cash_sessions = [], [], 0
+    open_exposure = []
     curve = [(sessions[start_index - 1], capital)]
     exposure, traded, costs, dividends = [], 0.0, 0.0, 0.0
     counts = dict(orders=0, filled=0, unfilled_gap=0, unfilled_missing=0, unfilled_cash=0, reduced_for_cash=0,
@@ -145,7 +153,25 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
             liquidating = False
         # 3. a decision from the previous close
         d = dec_at.get(k)
-        if d is not None and not halted:
+        if d is not None and recovery is not None and halted:
+            if state == 'waiting' and recovery['regime'][k - 1]:
+                state, partial_count, halted = 'partial', 1, False
+                peak = cash + sum(n * (_px(series, s_, 'c', k - 1) or last_close.get(s_, 0)) for s_, n in pos.items())
+                reentries.append({'date': day, 'equity': peak})
+            else:
+                d = None
+        elif d is not None and recovery is not None and state == 'partial':
+            if not recovery['regime'][k - 1]:
+                state, halted, cooldown_left = 'waiting', True, None
+                d = dict(d, targets={})          # to cash; waits for the regime again
+                reentries.append({'date': day, 'equity': None, 'exit': 'regime'})
+            else:
+                partial_count += 1
+                if partial_count > recovery['full_after']:
+                    state = 'normal'
+        if d is not None and recovery is not None and state == 'partial' and d['targets']:
+            d = dict(d, targets={s_: w * recovery['scale'] for s_, w in d['targets'].items()})
+        if d is not None and (not halted or (recovery is not None and state == 'waiting' and not d['targets'])):
             sig = k - 1
             equity = cash + sum(n * (_px(series, s, 'c', sig) or last_close.get(s, 0)) for s, n in pos.items())
             desired, prices, unavailable = {}, {}, []
@@ -213,6 +239,9 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
                 trades.append({'date': day, 'symbol': sym, 'side': 'buy', 'shares': qty, 'price': o, 'why': 'rebalance'})
             executions.append({'date': day, 'label': d.get('label'), 'targets': d['targets'], 'filled': filled,
                                'unfilled': unfilled, 'unavailable': unavailable})
+        # exposure right after the opening trades, priced at the open (known before the open-to-close return)
+        inv_o = sum(n * (_px(series, s_, 'o', k) or last_close.get(s_, 0.0)) for s_, n in pos.items())
+        open_exposure.append(inv_o / (cash + inv_o) if cash + inv_o > 0 else 0.0)
         # 4. close: mark to market, integrity checks, halt
         invested = 0.0
         for sym, n in pos.items():
@@ -244,9 +273,21 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
         if halt and not halted:
             peak = max(peak, equity)
             if equity <= (1 - HALT_DRAWDOWN) * peak:
-                halted, halted_on, liquidating = True, day, bool(pos)
+                halted, liquidating = True, bool(pos)
+                halted_on = halted_on or day
+                halts.append({'date': day, 'peak': peak, 'exit_equity': None})
+                state, cooldown_left = 'cooldown', None
         elif halted and halt_equity_after is None and not liquidating:
             halt_equity_after = equity
+        if halts and halts[-1]['exit_equity'] is None and halted and not liquidating and state == 'cooldown':
+            halts[-1]['exit_equity'] = equity
+        if recovery is not None and halted and not liquidating:
+            if state == 'cooldown':
+                cooldown_left = recovery['cooldown'] if cooldown_left is None else cooldown_left - 1
+                if cooldown_left <= 0:
+                    state = 'waiting'
+        if invested == 0:
+            cash_sessions += 1
     years = (len(curve) - 1) / 252
     avg_equity = fmean(v for _, v in curve) if curve else capital
     return {'curve': curve, 'trades': trades, 'executions': executions, 'unresolved': unresolved_log,
@@ -255,4 +296,5 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
             'turnover_per_year': traded / avg_equity / years if years and avg_equity else 0.0,
             'avg_exposure': fmean(exposure) if exposure else 0.0, 'exposure': exposure,
             'cash_end': cash, 'halted_on': halted_on, 'halt_peak': peak if halted else None,
-            'equity_after_halt_exit': halt_equity_after, **counts}
+            'equity_after_halt_exit': halt_equity_after, 'halts': halts, 'reentries': reentries,
+            'cash_sessions': cash_sessions, 'open_exposure': open_exposure, **counts}
