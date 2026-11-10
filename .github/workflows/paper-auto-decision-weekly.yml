@@ -4,7 +4,9 @@
 # timeout). On any weekday that is not the first session of its ISO week the bridge exits
 # quietly with NO_DECISION_THIS_SESSION. Manual dispatch also works: before 07:55 New York on the first
 # exchange session of an ISO week, or on the experiment's first session with
-# initial=true. The reference capture runs at once; the decision capture starts at
+# initial=true. A reviewed config/paper-auto/<experiment>-commissioning.json may name one extra
+# commissioning session (flat account only; see docs/STOCK_PAPER_COMMISSIONING_2026_11_10.md).
+# The reference capture runs at once; the decision capture starts at
 # 08:00:00 and must seal within 60 seconds, otherwise the session is recorded MISSED.
 # The frozen monthly model keeps its own workflow (paper-auto-decision.yml).
 name: Recurring PAPER weekly decision (manual)
@@ -68,7 +70,7 @@ jobs:
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
         run: |
           flag=""; if [ "$INITIAL" = "true" ]; then flag="--initial"; fi
-          python -m analytics.stock_weekly_bridge_v2 capture --session "$SESSION" --universe "$UNIVERSE" $flag --output "$RUNNER_TEMP/capture.json" --execute-network
+          python -m analytics.stock_weekly_bridge_v2 capture --session "$SESSION" --universe "$UNIVERSE" $flag --experiment "$EXPERIMENT" --commissioning-file "config/paper-auto/$EXPERIMENT-commissioning.json" --output "$RUNNER_TEMP/capture.json" --execute-network
       - name: Weekly signal from the sealed capture (no network)
         run: |
           if [ -f "$RUNNER_TEMP/capture.json" ]; then

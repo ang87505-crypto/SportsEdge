@@ -31,6 +31,10 @@ def _week(day):
 
 
 def rebalance_rule(initial):
+    # 'commissioning' (a truthy string) is the proposed one-session commissioning decision: the same
+    # mathematics as an initial session, labelled for what it is. See STOCK_PAPER_COMMISSIONING_2026_11_10.md.
+    if initial == 'commissioning':
+        return 'weekly-commissioning-session'
     return 'weekly-initial-session' if initial else 'weekly-first-session-of-iso-week'
 
 

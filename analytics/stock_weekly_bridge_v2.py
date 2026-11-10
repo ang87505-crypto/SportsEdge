@@ -44,6 +44,17 @@ MIN_SCORED_MEMBERS = 20
 # ---------------------------------------------------------------- calendar
 
 
+def commissioning_mode(path: Path, experiment: str, session: str):
+    """'commissioning' only for the one session an approved, reviewed file names for this experiment."""
+    try:
+        doc = json.loads(Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return False
+    ok = (isinstance(doc, dict) and doc.get('approved') is True and doc.get('experimentId') == experiment
+          and isinstance(doc.get('session'), str) and doc['session'] == session)
+    return 'commissioning' if ok else False
+
+
 def decision_point(sessions: list[dict], session: str, initial: bool = False):
     """(08:00 New York, index) on the first session of an ISO week, or any session when initial."""
     dates = [s['date'] for s in sessions]
@@ -310,6 +321,13 @@ def decide(capture: dict, universe, registration: dict, held_security_ids: list[
     decision_at = point[0]
     base = {'experimentId': experiment, 'session': capture['session'], 'decisionAt': iso(decision_at),
             'bridgeVersion': VERSION}
+    if initial == 'commissioning':
+        if decision_point(sessions, capture['session']) is not None:
+            initial = False  # a regular week start: the registered rule applies unchanged
+        elif held_security_ids:
+            reasons = ['COMMISSIONING_REQUIRES_FLAT_ACCOUNT']
+            return base | {'outcome': 'INPUT_REJECTED', 'diagnostics': {'reasons': reasons},
+                           'decisionId': sha256({'rejected': base, 'reasons': reasons})}
     late = timing_problem(capture, decision_at)
     if late and capture.get('capture_failure'):
         late |= {'captureFailure': capture['capture_failure'][:10]}
@@ -390,6 +408,8 @@ def main():
     c.add_argument('--universe', type=Path, required=True)
     c.add_argument('--output', type=Path, required=True)
     c.add_argument('--initial', action='store_true')
+    c.add_argument('--commissioning-file', type=Path, help='approved one-session commissioning file (optional)')
+    c.add_argument('--experiment', default='')
     c.add_argument('--execute-network', action='store_true')
     d = sub.add_parser('decide', help='pure: capture + universe + registration -> controller decision record')
     for name in ('capture', 'universe', 'registration', 'output'):
@@ -402,6 +422,8 @@ def main():
             return
         if a.output.exists():
             p.error('output exists; refusing to overwrite')
+        if not a.initial and a.commissioning_file:
+            a.initial = commissioning_mode(a.commissioning_file, a.experiment, a.session)
         source = Source(os.getenv('ALPACA_PAPER_AUTO_KEY_ID', ''), os.getenv('ALPACA_PAPER_AUTO_SECRET_KEY', ''))
         try:
             reference = capture_reference(session=a.session, universe=load(a.universe), source=source,
@@ -430,7 +452,7 @@ def main():
     registration = load(a.registration)
     capture = load(a.capture)
     record = decide(capture, load(a.universe), registration, registration.get('heldSecurityIds', []),
-                    bool(capture.get('initial')))
+                    capture.get('initial') if capture.get('initial') == 'commissioning' else bool(capture.get('initial')))
     if record is None:
         print(json.dumps({'status': 'NO_DECISION_THIS_SESSION'}))
         return
