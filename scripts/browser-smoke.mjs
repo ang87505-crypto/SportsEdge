@@ -244,11 +244,12 @@ try{
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/assistant'});
-  await until(async()=>evaluate(send,"!!document.querySelector('#chat-input') && !document.querySelector('.chat-msg.pending')"),'shared assistant loaded');
+  // The input exists in the server HTML before React hydrates; wait for the client-side access check to finish.
+  await until(async()=>evaluate(send,"!!document.querySelector('#chat-input') && !document.querySelector('.chat-msg.pending') && !document.body.textContent.includes('Checking owner access')"),'shared assistant loaded');
   const lastReply=()=>evaluate(send,"[...document.querySelectorAll('.chat-msg.bot:not(.pending)')].at(-1)?.textContent || ''");
   async function submitQuestion(text){
-   await evaluate(send,"(()=>{const el=document.querySelector('#chat-input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,"+JSON.stringify(text)+");el.dispatchEvent(new Event('input',{bubbles:true}));return true})()");
-   await until(async()=>evaluate(send,"!document.querySelector('.chat-form button[type=submit]').disabled"),'assistant input');
+   // Re-type until React has accepted the value (a controlled input can reset it during a render).
+   await until(async()=>evaluate(send,"(()=>{const el=document.querySelector('#chat-input'),b=document.querySelector('.chat-form button[type=submit]');if(el.value!=="+JSON.stringify(text)+"){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,"+JSON.stringify(text)+");el.dispatchEvent(new Event('input',{bubbles:true}));}return !b.disabled})()"),'assistant input');
    await evaluate(send,"(document.querySelector('.chat-form button[type=submit]').click(),true)");
   }
   async function askQuestion(text){
