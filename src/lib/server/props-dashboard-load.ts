@@ -96,7 +96,8 @@ async function loadCaptures(store:PropsStore,now:number):Promise<{capturePlans:N
  const outs=await byIds<{capture_id:number;outcome:string;dfs_lines:number|null;minutes_to_tip:number|null;lines_by_platform:Record<string,number>|null}>(
   store,'props_capture_outcomes','capture_id,outcome,dfs_lines,minutes_to_tip,lines_by_platform','capture_id',claims.map(c=>Number(c.id)));
  const iso=(t:string)=>new Date(t).toISOString();
- return {capturePlans:plans.map(({id:_id,...p})=>({...p,slate_date:String(p.slate_date).slice(0,10),commence_time:iso(p.commence_time),planned_at:iso(p.planned_at)})),
+ return {capturePlans:plans.map(p=>({plan_version:p.plan_version,provider_event_id:p.provider_event_id,home_team:p.home_team,away_team:p.away_team,
+  selected:p.selected,selection_rank:p.selection_rank,arm:p.arm,reason:p.reason,slate_date:String(p.slate_date).slice(0,10),commence_time:iso(p.commence_time),planned_at:iso(p.planned_at)})),
   captures:claims.map(c=>{const o=outs.find(x=>Number(x.capture_id)===Number(c.id));
    return {run_id:Number(c.run_id),provider_event_id:c.provider_event_id,capture_key:c.capture_key,window_name:c.window_name,claimed_at:iso(c.claimed_at),
     outcome:o?.outcome??null,dfs_lines:o&&o.dfs_lines!==null?Number(o.dfs_lines):null,minutes_to_tip:o&&o.minutes_to_tip!==null?Number(o.minutes_to_tip):null,

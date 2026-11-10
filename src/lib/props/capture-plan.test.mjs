@@ -174,3 +174,12 @@ test('hash assignment is stable and roughly balanced over a season of slates',()
  assert.equal(rows.length,6);
  assert.equal(rows.filter(r=>r.arm==='early').length,3);
 });
+
+test('a game that started without a capture never holds credits back from another game',()=>{
+ const missed={...mk('early','evtMISSED001','2026-11-10T00:00:00Z'),slate_date:'2026-11-09'};
+ const b=mk('early','evtB00000002','2026-11-11T03:00:00Z');
+ const empty={provider_event_id:b.provider_event_id,capture_key:'primary',window_name:'early',claimed_at:'2026-11-10T19:00:00Z',outcome:'no_dfs_lines',dfs_lines:0};
+ const big={...BUDGET_POLICY_V2,dailyCredits:12,monthlyCredits:400};
+ const r=dueCaptures({plans:[missed,b],captures:[empty],nowIso:'2026-11-11T00:30:00Z',policy:big,state:{...fresh,used24h:7,used30d:7}});
+ assert.deepEqual(r.due.map(d=>[d.plan.provider_event_id,d.captureKey]),[[b.provider_event_id,'retry']]);
+});

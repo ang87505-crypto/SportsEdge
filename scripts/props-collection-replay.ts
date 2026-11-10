@@ -116,12 +116,13 @@ S.push(ticks('allocation: ticks with props share raised to 13/day, 400/30 days (
 S.push(ticks('larger plan: 20K credits/month, props 24/day (all games, one snapshot)',VH,30,{...BUDGET_POLICY_V2,dailyCredits:30,monthlyCredits:900},'Not purchased.'));
 // Monthly arithmetic for plan sizes (credits per game snapshot = 3; ~7.5 NBA games per day during the season).
 out.planArithmetic=inputs.provider.plans.map(([name,usd,credits])=>{
- const propsShare=name==='Starter'?200:Math.floor(credits*0.8);
+ const propsShare=name==='Starter'?200:Math.floor(credits*0.75);   // illustrative: leave 25% for the NBA/EPL refresh
  const perDay=Math.floor(propsShare/30);
  return {plan:name,usdPerMonth:usd,creditsPerMonth:credits,assumedPropsShare:propsShare,snapshotsPerDay:Math.floor(perDay/3),
   gamesPerDayOneSnapshot:Math.min(7.5,Math.floor(perDay/3)),
   snapshotsPerGamePerDay:Math.floor(perDay/3/7.5),
-  historicalAvailabilityStudyGamesPerMonth:name==='Starter'?0:Math.floor(propsShare*0.25/(10*3*12))};
+  // First-posting time by binary search over 24 h of 5-minute historical snapshots: ~9 lookups x (10 x 3 markets) credits.
+  historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare:name==='Starter'?0:Math.floor(propsShare*0.25/(9*10*3))};
 });
 const i=process.argv.indexOf('--out');
 const text=JSON.stringify(out,null,1);
