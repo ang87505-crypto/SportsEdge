@@ -1,0 +1,93 @@
+{
+ "approval": "Owner approval 2026-11-10 (forward-only virtual tracking; no orders, no activation)",
+ "code_commit": "d21197d086cc1534fae615b3f66b78fd83b9c414",
+ "created_at": "2026-10-30T20:40:00Z",
+ "data_end_time": "2026-10-30T20:20:00Z",
+ "decision_at_utc": "2026-10-30T20:00:00Z",
+ "execution_session": "2026-11-02",
+ "input_fingerprint": "ff808ae54a3d0490c038ff1f98b881377c7d007ccc5ba842fc2f578169225568",
+ "label": "REHEARSAL",
+ "ledger": "mq-buffer-forward-v1",
+ "members_missing_signal_bar": [],
+ "next_open_utc": "2026-11-02T14:30:00Z",
+ "prereg": "docs/STOCK_STRATEGY_NEXTGEN_PREREG_2026_11_10.md",
+ "previous_record_sha": null,
+ "record_sha": "d48af0599b214516fb3aaf9e194b8a328cf8afc96422f411e7b0454f0c8e1511",
+ "signal_session": "2026-10-30",
+ "strategies": {
+  "momentum-quality-paper-v1": {
+   "small_account": {
+    "capital": 1000.0,
+    "prices_at_signal_close": {
+     "ADI": 417.11,
+     "AMAT": 390.09,
+     "MPC": 444.73,
+     "NUE": 273.87
+    },
+    "targets_without_a_whole_share": [
+     "ADI",
+     "AMAT",
+     "MPC",
+     "NUE"
+    ]
+   },
+   "targets": {
+    "ADI": 0.2,
+    "AMAT": 0.2,
+    "FCX": 0.2,
+    "MPC": 0.2,
+    "NUE": 0.2
+   }
+  },
+  "mq-buffer-v1": {
+   "held_before": [],
+   "meta": {
+    "kept": [],
+    "ranked_top20": [
+     "NUE",
+     "AMAT",
+     "MPC",
+     "ADI",
+     "CSCO",
+     "FCX",
+     "NEM",
+     "XOM",
+     "AMD",
+     "COP",
+     "MU",
+     "LRCX",
+     "PSX",
+     "AMGN",
+     "MRK",
+     "FDX",
+     "BMY",
+     "OXY",
+     "TXN",
+     "INTC"
+    ]
+   },
+   "small_account": {
+    "capital": 1000.0,
+    "prices_at_signal_close": {
+     "ADI": 417.11,
+     "AMAT": 390.09,
+     "MPC": 444.73,
+     "NUE": 273.87
+    },
+    "targets_without_a_whole_share": [
+     "ADI",
+     "AMAT",
+     "MPC",
+     "NUE"
+    ]
+   },
+   "targets": {
+    "ADI": 0.2,
+    "AMAT": 0.2,
+    "FCX": 0.2,
+    "MPC": 0.2,
+    "NUE": 0.2
+   }
+  }
+ }
+}
