@@ -45,6 +45,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Research unit tests (synthetic, no network)
+        timeout-minutes: 5   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
         run: python -m unittest discover -s analytics/research -t .
       - name: Modes
         run: |
@@ -73,12 +74,15 @@ jobs:
         if: contains(env.MODES, 'predict') || contains(env.MODES, 'evaluate')
         run: bash .github/scripts/forward-ledger-branch.sh checkout
       - name: Predict (only after a month-end close, not within 20 minutes of the next open)
+        timeout-minutes: 10   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
         if: contains(env.MODES, 'predict')
         run: python -m analytics.research.forward_cli predict --ledger forward-ledger | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Push the prediction immediately
+        timeout-minutes: 2   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
         if: contains(env.MODES, 'predict')
         run: bash .github/scripts/forward-ledger-branch.sh commit "predict ${{ github.run_id }}"
       - name: Server-side receipt for every unreceipted prediction, then read back and verify
+        timeout-minutes: 3   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
         if: contains(env.MODES, 'predict')
         run: |
           python -m analytics.research.forward_cli receipt --ledger forward-ledger --started-at "$STARTED" | tee -a "$GITHUB_STEP_SUMMARY"

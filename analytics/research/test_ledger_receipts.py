@@ -197,6 +197,32 @@ class InvalidPriorPredictions(Base):
                          ['forward 2026-11-30'])
 
 
+class ScheduleBudget(unittest.TestCase):
+    """Requirement: a delayed scheduled run must still record, push and obtain its receipt before the open."""
+
+    def test_every_month_end_shape_survives_the_longest_observed_github_delay(self):
+        for signal, opens_at in (('2026-11-30', '2026-12-01T14:30:00Z'),     # EST, weekday
+                                 ('2026-07-31', '2026-08-03T13:30:00Z'),     # EDT, Friday: window spans the weekend
+                                 ('2026-12-31', '2027-01-04T14:30:00Z'),     # holiday next day, then a weekend
+                                 ('2027-01-29', '2027-02-01T14:30:00Z')):    # Friday, weekend month-end
+            self.assertEqual(fl.next_open_utc(CAL, signal), opens_at)
+            budget = fl.attempt_budget(CAL, signal)
+            self.assertGreaterEqual(len(budget), 5, signal)
+            # The first attempt can start more than the longest delay measured here (634 min) late and still finish.
+            self.assertGreater(budget[0]['max_start_delay_minutes'], fl.OBSERVED_MAX_GITHUB_DELAY.total_seconds() / 60, signal)
+            latest = fl.utc(opens_at) - fl.RECEIPT_MARGIN - fl.PIPELINE_ALLOWANCE
+            self.assertTrue(all(fl.utc(b['attempt']) <= latest for b in budget))
+            # No attempt before the closing bar is final.
+            self.assertTrue(all(fl.utc(b['attempt']) >= fl.utc(fl.cand.close_utc(signal)) + fl.CLOSE_SETTLE + fl.DATA_DELAY
+                                for b in budget))
+
+    def test_the_pipeline_allowance_fits_inside_the_receipt_margin_logic(self):
+        # A run that starts at the last allowed moment finishes its receipt before the open even if every step
+        # uses its full time limit.
+        self.assertLessEqual(fl.PIPELINE_ALLOWANCE, timedelta(minutes=20))
+        self.assertGreaterEqual(fl.RECEIPT_MARGIN, timedelta(minutes=20))
+
+
 class GitHubClient(unittest.TestCase):
     def test_create_and_list_use_the_status_api_and_fail_closed(self):
         calls = []

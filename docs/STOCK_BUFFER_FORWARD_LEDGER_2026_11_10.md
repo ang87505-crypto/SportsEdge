@@ -12,14 +12,17 @@ month-end signal.
 `.github/scripts/forward-ledger-branch.sh`.
 - Existing files may never change or disappear.
 - `chain.jsonl` and `events.jsonl` may only grow.
-- The branch is checked out with full history, so the commit time of every prediction can be verified.
+- **Git commit dates are not evidence.** The client writes them and they can be backdated. Timing rests only on
+  the server-side receipt (section 1a).
 
 | Record | When | Contents |
 |---|---|---|
 | `predictions/<signal>.json` | Once, after a month-end session's close (data at least 10 minutes past the close, requested 20 minutes behind real time) and **before the next session's open** | The full record (below), committed immediately by the same job |
 | `chain.jsonl` | With each prediction | Signal, record SHA-256 and previous record SHA-256 (hash chain) |
 | `missed/<signal>.json` | The first run after a month-end's next open with no prediction | `MISSED`, `reconstructed: false`. Permanent |
-| `events.jsonl` | Every run | `NOT_A_SIGNAL_SESSION`, `BEFORE_CLOSE_DATA`, `DATA_NOT_READY` (with the missing members), `RECORDED`, `DUPLICATE_RUN` (and `RECOMPUTE_DIFFERS` when today's data would give another answer), `MISSED` |
+| Server receipt (on GitHub, not in the branch) | Immediately after the prediction is pushed | A GitHub commit status on the commit that added the file (section 1a) |
+| `receipts/<signal>.json` | After the receipt is read back | A cache of the server evidence. **Verification never trusts it** and always re-reads GitHub |
+| `events.jsonl` | Every run | `NOT_A_SIGNAL_SESSION`, `BEFORE_CLOSE_DATA`, `DATA_NOT_READY` (with the missing members), `TOO_CLOSE_TO_DEADLINE`, `RECEIPT_CHECK_UNAVAILABLE`, `RECORDED`, `DUPLICATE_RUN` (and `RECOMPUTE_DIFFERS` when today's data would give another answer), `MISSED` |
 | `outcomes/<run>.json` | Every evaluation | Results from frozen predictions and current market data; input revisions flagged, never applied |
 
 **Each prediction record holds:**
@@ -39,18 +42,64 @@ month-end signal.
 A dividend after the signal rescales an adjusted history uniformly, so it does not change the fingerprint. Any
 revised raw bar or adjusted return does.
 
+## 1a. Server-side timing receipt (`analytics/research/ledger_receipts.py`)
+
+**What it is.** After the prediction commit is pushed, the workflow token creates a GitHub **commit status** on that
+commit:
+- **context:** `forward-ledger/receipt/<signal>`;
+- **description:** `record_sha=<the 64-hex record hash>`.
+
+**Why it is evidence:**
+- **Timestamp:** GitHub's server assigns `created_at`. A client cannot set or backdate it.
+- **Immutable:** a status cannot be edited or deleted. A later status only adds a newer entry, and the earliest
+  matching one is used.
+- **Proves existence:** a status can only be created for a commit already on GitHub, so it shows that commit and the
+  exact file existed by `created_at`.
+
+**Verification** re-reads GitHub every time and requires all of:
+- creator `github-actions[bot]`;
+- the right context;
+- the exact record hash in the description;
+- the file **as it was at that commit** hashing to the same record;
+- `created_at` strictly before the next open.
+
+**Fail closed:**
+- **Missing or untrusted:** no status, or a status from someone else or for another hash, is not a receipt.
+- **Unreachable GitHub:** UNAVAILABLE, which is never VALID.
+- **Unchanged rule:** a prediction counts only with a receipt.
+
+**Rehearsal on real infrastructure** (run [42877353969](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42877353969),
+separate branch `research-forward-ledger-rehearsal`):
+- **Receipt:** status `58557415694`, context `forward-ledger/receipt/2026-10-30`,
+  `record_sha=d48af059…1511`, creator `github-actions[bot]`, server `created_at` 2026-11-10T18:39:49Z.
+- **Timing:** **37 seconds after the job started**, including 17 seconds of unit tests.
+- **Binding:** the file at commit `4a39e04` hashes to the same record.
+- **Expected rejection:** verification returned `INVALID_RECEIPT_LATE`, because that rehearsal record's deadline
+  (2026-11-02 open) had long passed. That is the correct fail-closed result.
+- **Side effect:** Vercel also tried to build the ledger branch and posted failed-deployment statuses. They are
+  harmless and ignored by context and creator. Excluding ledger branches in `vercel.json` would be a production
+  setting, left to you.
+
 ## 2. Status of each month-end
 
 | Status | Meaning |
 |---|---|
-| `VALID` | Record present, hash and chain intact, created **and committed** before the next open |
+| `VALID` | Record present, hash and chain intact, created before the next open, a **server receipt** binding this exact record dated before the next open, and buffer holdings equal to the previous VALID prediction's targets |
 | `MISSED` | No record before the next open. The portfolio keeps its previous targets. **Never reconstructed from later data** |
 | `INVALID_AFTER_OPEN` | The record's own creation time is at or after the open |
-| `INVALID_COMMITTED_AFTER_OPEN` | The ledger commit that added the file is at or after the open |
+| `INVALID_NO_RECEIPT` | No trusted server receipt for this exact record (never pushed, never receipted, or only untrusted or other-hash statuses) |
+| `INVALID_RECEIPT_UNVERIFIABLE` | GitHub could not be queried. Fail closed: not counted until a later evaluation verifies it |
+| `INVALID_RECEIPT_MISMATCH` | The file at the receipted commit does not hash to the record |
+| `INVALID_RECEIPT_LATE` | The server receipt is at or after the open, whatever the git commit date says |
+| `INVALID_HELD_STATE_MISMATCH` | The recorded buffer holdings are not the previous VALID prediction's targets, for example because an earlier prediction turned out invalid |
 | `INVALID_HASH_MISMATCH`, `INVALID_NOT_IN_CHAIN`, `INVALID_CHAIN_ORDER`, `INVALID_SIGNAL_MISMATCH` | The file was altered, or the chain was broken |
 
-**Outcomes.** Each evaluation uses `VALID` predictions only, at 10 and 25 bps, at $30,000 and $1,000, and reports
-these tracks side by side:
+**Previous holdings.** The buffer's retained holdings at prediction time come from the latest prediction that
+passes this same verification, receipts included. If an earlier receipt cannot be checked, no prediction is made
+(`RECEIPT_CHECK_UNAVAILABLE`); a later attempt retries.
+
+**Outcomes.** Each evaluation uses `VALID` predictions only; invalid ones contribute nothing to performance. At
+10 and 25 bps, and at $30,000 and $1,000, it reports these tracks side by side:
 - `mq-buffer-v1` continuous;
 - `mq-buffer-v1` with the existing 10% halt (no restart);
 - the unchanged baseline, continuous and with the halt;
@@ -65,7 +114,8 @@ these tracks side by side:
 
 ## 3. Tests
 
-`analytics/research/test_forward_ledger.py` has 17 tests. All 450 analytics tests pass.
+`analytics/research/test_forward_ledger.py` (16 tests) and `analytics/research/test_ledger_receipts.py` (15 tests).
+All analytics tests pass.
 
 | Requirement | Tests |
 |---|---|
@@ -75,7 +125,12 @@ these tracks side by side:
 | Duplicate runs | A second run changes nothing (`DUPLICATE_RUN`). With revised data: `RECOMPUTE_DIFFERS` is logged and the file is byte-identical. Create-once files |
 | Frozen predictions | Evaluation uses the recorded targets even when today's data differ |
 | Revised prices | A revised raw bar changes the fingerprint and is flagged `INPUT_DATA_REVISED`; a uniform dividend rescale does not |
-| Integrity | An edited record is `INVALID_HASH_MISMATCH`; created after the open is `INVALID_AFTER_OPEN`; committed after the open is `INVALID_COMMITTED_AFTER_OPEN`; the hash chain links records |
+| Integrity | An edited record is `INVALID_HASH_MISMATCH`; created after the open is `INVALID_AFTER_OPEN`; the hash chain links records |
+| Backdated git timestamps | A real git repo with a commit dated before the open: no receipt gives `INVALID_NO_RECEIPT`; a late server receipt gives `INVALID_RECEIPT_LATE`; an absurd future git date with an in-time receipt is `VALID`. Git dates are irrelevant |
+| Missing or unverifiable receipts | No evidence (None or {}) gives `INVALID_NO_RECEIPT`; unpushed gives `NO_LEDGER_COMMIT`; an unreachable server gives `INVALID_RECEIPT_UNVERIFIABLE`; untrusted creator or wrong hash is not a receipt; a later duplicate cannot replace the first; a file changed at the receipted commit gives `INVALID_RECEIPT_MISMATCH`; the API client fails closed on 401/404/500 and network errors |
+| Late uploads | Receipted at the open gives `INVALID_RECEIPT_LATE`; no prediction starts within 20 minutes of the open (`TOO_CLOSE_TO_DEADLINE`); a declared `MISSED` month is never recorded later, even with a wrong runner clock |
+| Invalid prior predictions | A late-receipted November never sets December's holdings; removing November's receipt makes December `INVALID_HELD_STATE_MISMATCH`; prediction waits when an earlier receipt cannot be checked; invalid months never enter forward performance |
+| Delayed runs | For EST, EDT, holiday and weekend month-ends, every proposed attempt lies inside the window, and the first can absorb more than the longest observed GitHub delay (634 min) while still receipting before the open |
 | Buffer state | The held list comes from the last `VALID` prediction only |
 | $1,000 | An unbuyable whole share is counted and listed (engine `zero_share_targets`); predictions list the names a $1,000 account cannot hold |
 | Audit helpers | Cost decomposition adds up; the zero-cost fixed path equals the original; engine settings are restored |
@@ -183,19 +238,38 @@ and 20.47%, although 10 bps cost it $6,270 in fees. The cause is **path dependen
 **Ready (tested, on this branch):**
 - prediction, outcome and audit code;
 - the separate append-only ledger branch and its guard;
-- a manual workflow (`research-forward-buffer.yml`), unscheduled;
+- a manual workflow (`research-forward-buffer.yml`), unscheduled, with server-side receipts and step time limits;
+- a server-receipt rehearsal on real GitHub infrastructure (section 1a);
 - the real-data dry run;
 - the no-op ledger run.
+
+**Delayed and dropped GitHub runs (requirement 5).**
+
+| Measurement | Value |
+|---|---|
+| Record → push → server receipt, real run | 37 s from job start (including 17 s of unit tests) |
+| Step time limits (tests, predict, push, receipt) | 5 + 10 + 2 + 3 = 20 min (`PIPELINE_ALLOWANCE`) |
+| No prediction starts later than | 20 min before the open (`RECEIPT_MARGIN`); a receipt therefore cannot land after the open unless a step overruns its limit, and then it is `INVALID_RECEIPT_LATE` (fail closed) |
+| Window per month-end | Close + 30 min to open − 40 min: about 16 h on weekdays, more over weekends |
+| First proposed attempt's tolerable start delay | 970 min (weekday EST), 3,790 min (Friday EDT), 3,850 min (Friday EST) |
+| Longest GitHub scheduled-run delay seen in this repo | 634 min (props, 2026-11-09) |
+| GitHub scheduled runs **dropped** here, last 7 days | stock worker about 25 of 40, props about 15 of 28, ops monitor about 41 of 42, release watcher about 159 of 168 |
+
+- **Conclusion:** **delays** are covered by a wide margin, but **dropped runs are not**. On this repository GitHub
+  skips most scheduled runs.
+- **What a GitHub-only schedule risks:** it could easily miss a month. That month would be recorded `MISSED`
+  (honest, never reconstructed), not silently filled in.
+- **Recommendation before enabling tracking:** trigger `predict` from Vercel crons as well. They ran reliably in this
+  repository (stock kickoff, props backups). That is a production scheduler change (`vercel.json` plus a
+  `scheduler-kickoff` slot), so it needs your approval.
 
 **Not done (each needs your approval):**
 1. **Merging.** PR #133 and this PR stay unmerged. A schedule on `main` needs both merged.
 2. **A schedule.** Proposed, not enabled:
-   - **Predict** runs weekdays at 21:40, 23:40, 03:40, 07:40 and 11:40 UTC. Each month-end's prediction window
-     runs from about 16:30 New York to the next 09:30 open (about 17 hours). Five attempts tolerate GitHub's late
-     or dropped crons, and duplicates are harmless.
+   - **Predict** runs **daily** at 21:40, 23:40, 03:40, 07:40 and 11:40 UTC (daily, so Friday month-ends have weekend
+     attempts). Duplicates are harmless.
+   - **Vercel backups:** strongly recommended, given the drop rates above.
    - **Evaluate** runs nightly at 03:10 UTC.
-   - **Vercel backup:** a backup slot like PR #129's would be safer than GitHub's cron alone. That is a production
-     scheduler change.
    - **Deadline:** to catch the first signal, the schedule must be live before **2026-11-30 21:40 UTC**. Otherwise
-     November is recorded as `MISSED`, never reconstructed, and tracking starts with December.
+     November is `MISSED`, never reconstructed, and tracking starts with December.
 3. **Insider tie-break forward tracking:** stays blocked (quarterly SEC data arrive too late).

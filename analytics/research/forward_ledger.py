@@ -353,6 +353,32 @@ def predict(ledger: Ledger, *, now: datetime, calendar: list[str], market, membe
     return ev
 
 
+# ---------------------------------------------------------------- schedule budget (proposal only; nothing is scheduled)
+
+# Proposed daily attempts (UTC). Daily, not weekdays only: a Friday month-end's window runs through the weekend.
+PROPOSED_PREDICT_TIMES_UTC = ('21:40', '23:40', '03:40', '07:40', '11:40')
+PIPELINE_ALLOWANCE = timedelta(minutes=20)   # step time limits: tests 5 + predict 10 + push 2 + receipt 3 minutes
+OBSERVED_MAX_GITHUB_DELAY = timedelta(minutes=634)   # longest scheduled-run delay measured in this repository
+
+
+def attempt_budget(calendar: list[str], signal: str, times=PROPOSED_PREDICT_TIMES_UTC, margin: timedelta = RECEIPT_MARGIN,
+                   pipeline: timedelta = PIPELINE_ALLOWANCE) -> list[dict]:
+    """Each proposed attempt inside the signal's window, with the largest GitHub start delay it can absorb while
+    still recording, pushing and receipting before the open. The window runs from the first moment data are ready
+    (close + settle + request lag) until `margin` before the next open, minus the pipeline allowance."""
+    earliest = utc(cand.close_utc(signal)) + CLOSE_SETTLE + DATA_DELAY
+    latest_start = utc(next_open_utc(calendar, signal)) - margin - pipeline
+    out, day = [], earliest.date()
+    while datetime.combine(day, datetime.min.time(), timezone.utc) <= latest_start:
+        for t in times:
+            h, m = map(int, t.split(':'))
+            a = datetime(day.year, day.month, day.day, h, m, tzinfo=timezone.utc)
+            if earliest <= a <= latest_start:
+                out.append({'attempt': stamp(a), 'max_start_delay_minutes': int((latest_start - a).total_seconds() // 60)})
+        day += timedelta(days=1)
+    return sorted(out, key=lambda b: b['attempt'])
+
+
 # ---------------------------------------------------------------- evaluate (outcomes; never edits a prediction)
 
 def month_statuses(ledger: Ledger, calendar: list[str], latest_session: str, receipts: dict | None) -> dict:
