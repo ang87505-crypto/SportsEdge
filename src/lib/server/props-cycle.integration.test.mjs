@@ -74,11 +74,11 @@ test('daily cycle end to end against the real schema',{skip:!enabled&&'set PROPS
  assert.equal(bf.outcome,'COMPLETED');
  assert.equal(bf.summary.boxScores.newRows,48);
 
- // Collect on Nov 7, started 3 hours late relative to its slot.
- clock='2026-11-07T19:00:00.000Z';
+ // Collect on Nov 7, started 2 hours late relative to its slot (inside the 150-minute window; see the reliability test).
+ clock='2026-11-07T18:00:00.000Z';
  const c=await runCollect(deps,'collect-2026-11-07T16',`2026-11-07T16:00:00.000Z`);
  assert.equal(c.outcome,'COMPLETED',JSON.stringify(c.summary));
- assert.equal(c.summary.startDelaySeconds,10800);
+ assert.equal(c.summary.startDelaySeconds,7200);
  assert.equal(c.summary.plan.chosen.length,2);                  // v2 plan: 1 + 2x3 = 7 credits
  assert.equal(c.summary.receipt.observations,48);               // 8 players x 3 stats x 2 platforms
  assert.equal(c.summary.receipt.predictions,48);
@@ -311,4 +311,104 @@ test('review fix: a learning-layer failure never costs the run its picks',{skip:
   const accounts=psql(db,`SELECT string_agg(DISTINCT a.slug,',') FROM props_entries e JOIN props_accounts a ON a.id=e.account_id`).out;
   assert.ok(accounts.length>0&&accounts.split(',').every(s=>s.endsWith('-v1')),accounts);
  }
+});
+
+// ---------------------------------------------------------------- reliability (primary/backup races, delays, failures)
+function oddsFor(evs,{fail=new Set(),throwOn=new Set()}={}){
+ const c={calls:0};
+ c.events=async()=>{c.calls++;return {ok:true,httpStatus:200,body:evs,receivedAt:clock,usage:{remaining:400,used:100,last:1}};};
+ c.eventOdds=async id=>{c.calls++;
+  if(throwOn.has(id))throw new Error('TEST_NETWORK_DROP');
+  if(fail.has(id))return {ok:false,httpStatus:500,body:{message:'TEST provider error'},receivedAt:clock,usage:{remaining:390,used:110,last:3}};
+  const g=evs.findIndex(x=>x.id===id);const [h,a]=GAMES[g];
+  const book=(key,shift)=>({key,markets:[['player_points',2],['player_rebounds',3],['player_assists',4]].map(([m,idx])=>({key:m,last_update:clock,
+   outcomes:[...PLAYERS[h],...PLAYERS[a]].flatMap(pl=>{const line=Math.max(0.5,Math.floor(pl[idx]*0.8)+0.5+shift);
+    return [{name:'Over',description:pl[1],price:-137,point:line,...(key==='pick6'?{multiplier:1}:{})},{name:'Under',description:pl[1],price:-137,point:line}];})}))});
+  return {ok:true,httpStatus:200,body:{...evs[g],bookmakers:[book('prizepicks',0),book('pick6',1)]},receivedAt:clock,usage:{remaining:390,used:110,last:3}};};
+ return c;
+}
+const evsAt=(day,prefix)=>GAMES.map((x,g)=>({id:prefix+g,commence_time:`2026-11-${String(day+1).padStart(2,'0')}T0${g}:00:00Z`,home_team:x[2],away_team:x[3],sport_key:'basketball_nba'}));
+const count=(sql)=>Number(psql(DB,sql).out);
+
+test('reliability: backup races, late arrivals and partial failures never repeat paid calls or entries',{skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'props-rel-'));
+ const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+ resetDb(DB,[schema('props_v1.sql'),schema('props_market_v1.sql'),clockFile]);
+ const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+ const store=propsStore(env,pgFetch(DB,now));
+ await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'reliability test',p_actor:'owner-test'});
+ for(const day of [1,2,3,4])finals['202611'+String(day).padStart(2,'0')]=day;
+ const base={store,espn,model,now,seasonStart:'2026-10-01T00:00:00Z'};
+ clock='2026-11-06T12:00:00.000Z';
+ assert.equal((await runSettle({...base,odds:null,worker:'test:bf'},'backfill-rel',null,{kind:'backfill',dates:['2026-11-01','2026-11-02','2026-11-03','2026-11-04']})).outcome,'COMPLETED');
+
+ // 1. Primary and backup start the same slot together: exactly one does the work and pays.
+ const o1=oddsFor(evsAt(7,'evtRELa000'));
+ clock='2026-11-07T20:05:00.000Z';                       // 55 min after the 19:10 slot (a Vercel backup time)
+ const slot='collect-2026-11-07T19',sch='2026-11-07T19:10:00.000Z';
+ const [a,b]=await Promise.all([runCollect({...base,odds:o1,worker:'gha:1:1',trigger:'github-schedule'},slot,sch),
+  runCollect({...base,odds:o1,worker:'gha:2:1',trigger:'backup-dispatch'},slot,sch)]);
+ const outcomes=[a.outcome,b.outcome].sort();
+ assert.ok(outcomes[0]==='BUSY'||outcomes[0]==='COMPLETED'||outcomes[0]==='DUPLICATE',outcomes.join());
+ assert.equal(outcomes.filter(x=>x==='COMPLETED').length,1,outcomes.join());
+ const won=a.outcome==='COMPLETED'?a:b;
+ assert.equal(o1.calls,3,'one events list + two games, once');
+ assert.equal(count(`SELECT coalesce(sum(credits),0) FROM props_credit_reservations`),7);
+ const entries=count('SELECT count(*) FROM props_entries');
+ assert.ok(entries>=1,JSON.stringify(won.summary.entries));
+ assert.ok(['github-schedule','backup-dispatch'].includes(won.summary.trigger));
+ // The late GitHub run of the same slot arrives hours later: refused before any spend.
+ clock='2026-11-08T02:00:00.000Z';
+ assert.equal((await runCollect({...base,odds:o1,worker:'gha:3:1',trigger:'github-schedule'},slot,sch)).outcome,'DUPLICATE');
+ assert.equal(o1.calls,3);assert.equal(count('SELECT count(*) FROM props_entries'),entries);
+ assert.equal(count(`SELECT coalesce(sum(credits),0) FROM props_credit_reservations`),7);
+ assert.equal(count(`SELECT count(*) FROM props_runs WHERE slot_key='${slot}'`),1);
+
+ // 2. A collect that arrives more than 150 minutes late spends nothing, so the next day's slot keeps its budget.
+ const o2=oddsFor(evsAt(8,'evtRELb000'));
+ clock='2026-11-08T21:45:00.000Z';                       // 155 minutes after 19:10
+ const late=await runCollect({...base,odds:o2,worker:'gha:4:1',trigger:'github-schedule'},'collect-2026-11-08T19','2026-11-08T19:10:00.000Z');
+ assert.equal(late.outcome,'SKIPPED_LATE');assert.equal(late.summary.reason,'started_too_late_for_slot');
+ assert.equal(o2.calls,0);
+ assert.equal(count(`SELECT count(*) FROM props_credit_reservations WHERE run_id=${late.runId}`),0);
+ assert.equal(psql(DB,`SELECT status||':'||outcome FROM props_runs WHERE id=${late.runId}`).out,'completed:SKIPPED_LATE');
+ // 149 minutes late (the 22:10 slot, just after midnight UTC) still collects, under its own slot key.
+ clock='2026-11-09T00:39:00.000Z';
+ const onTime=await runCollect({...base,odds:o2,worker:'gha:5:1',trigger:'backup-dispatch'},'collect-2026-11-08T22','2026-11-08T22:10:00.000Z');
+ assert.equal(onTime.outcome,'COMPLETED',JSON.stringify(onTime.summary).slice(0,400));
+ assert.equal(onTime.summary.startDelaySeconds,149*60);
+
+ // 3. Partial failure: one game's provider call fails. The run records the other game; a backup for the
+ //    same slot is refused, so the paid calls are not repeated.
+ const o3=oddsFor(evsAt(10,'evtRELc000'),{fail:new Set(['evtRELc0001'])});
+ clock='2026-11-10T20:00:00.000Z';
+ const part=await runCollect({...base,odds:o3,worker:'gha:6:1',trigger:'github-schedule'},'collect-2026-11-10T19','2026-11-10T19:10:00.000Z');
+ assert.equal(part.outcome,'COMPLETED');
+ const perEvent=part.summary.collection;
+ assert.ok(perEvent.some(x=>x.event==='evtRELc0001'&&x.outcome!=='stored'),JSON.stringify(perEvent));
+ const callsAfter=o3.calls;
+ assert.equal((await runCollect({...base,odds:o3,worker:'gha:7:1',trigger:'backup-dispatch'},'collect-2026-11-10T19','2026-11-10T19:10:00.000Z')).outcome,'DUPLICATE');
+ assert.equal(o3.calls,callsAfter);
+ // Entries never fall back to a single game to fill a quota: one priced game gives an explicit reason.
+ for(const p of ['prizepicks','pick6']){
+  const e=part.summary.entries[p];
+  if(!e.entries.length)assert.ok(['TOO_FEW_DISTINCT_GAMES','NO_QUALIFYING_PICKS'].includes(e.noEntryReason),JSON.stringify(e));
+ }
+ assert.equal(count(`SELECT count(*) FROM (SELECT e.id FROM props_entries e JOIN props_entry_legs l ON l.entry_id=e.id
+  JOIN props_picks k ON k.id=l.pick_id JOIN props_predictions p ON p.id=k.prediction_id JOIN props_observations o ON o.id=p.observation_id
+  GROUP BY e.id HAVING count(DISTINCT o.provider_event_id)<count(*)) x`),0,'no entry ever repeats a game');
+
+ // 4. A run that dies mid-way (network drop on every game) stays one row; its backup does not pay again.
+ const entriesBefore=count('SELECT count(*) FROM props_entries'),legsBefore=count('SELECT count(*) FROM props_entry_legs');
+ const o4=oddsFor(evsAt(11,'evtRELd000'),{throwOn:new Set(['evtRELd0000','evtRELd0001','evtRELd0002'])});
+ clock='2026-11-11T22:30:00.000Z';
+ const drop=await runCollect({...base,odds:o4,worker:'gha:8:1',trigger:'github-schedule'},'collect-2026-11-11T22','2026-11-11T22:10:00.000Z');
+ const paid=o4.calls;
+ assert.ok(paid>=1);
+ assert.equal((await runCollect({...base,odds:o4,worker:'gha:9:1',trigger:'backup-dispatch'},'collect-2026-11-11T22','2026-11-11T22:10:00.000Z')).outcome,'DUPLICATE');
+ assert.equal(o4.calls,paid);
+ assert.equal(count(`SELECT count(*) FROM props_runs WHERE slot_key='collect-2026-11-11T22'`),1,drop.outcome);
+ // Append-only: the failed run and its refused backup add no entry and change no earlier leg.
+ assert.equal(count('SELECT count(*) FROM props_entries'),entriesBefore);
+ assert.equal(count('SELECT count(*) FROM props_entry_legs'),legsBefore);
 });
