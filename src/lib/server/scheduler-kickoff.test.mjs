@@ -52,6 +52,19 @@ test('a refused or failed dispatch is reported, never assumed', async()=>{
  assert.deepEqual(await r.json(),{status:'dispatch_refused',slot:'ops-monitor',workflow:'ops-monitor.yml',httpStatus:422});
 });
 
+test('the one-session daily shadow backups only dispatch on their pinned dates',async()=>{
+ for(const [name,iso,phase] of [['daily-shadow-plan','2026-11-10T12:20:00Z','plan'],
+  ['daily-shadow-grade','2026-11-11T00:20:00Z','grade']]){
+  const calls=[];
+  const r=await handleSchedulerKickoff(req(),name,env,{now:at(iso),fetcher:fetcher(calls)});
+  assert.equal(r.status,202);
+  assert.deepEqual(calls[0].body,{ref:'main',inputs:{phase}});
+  const later=iso.replace('2026','2027');
+  assert.equal((await (await handleSchedulerKickoff(req(),name,env,{now:at(later),fetcher:fetcher(calls)})).json()).status,'skipped');
+  assert.equal(calls.length,1);
+ }
+});
+
 test('every slot has a daily Vercel cron in its own hour, and props slots name a real release cron', async()=>{
  const {slotCronMatches}=await import('../props/schedule.ts');
  const crons=JSON.parse(readFileSync(new URL('../../../vercel.json',import.meta.url),'utf8')).crons;

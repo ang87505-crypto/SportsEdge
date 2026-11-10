@@ -9,6 +9,8 @@ import {PROPS_RELEASE} from '../props/schedule.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 type Deps={now:()=>number;fetcher:typeof fetch};
 type Slot={hourUtc:number;weekdaysUtc?:number[];workflow:string;inputs:Record<string,string>;props?:boolean;
+ /** A one-session research trial must not be dispatched on later days. */
+ dateUtc?:string;
  /** Skip when this workflow already succeeded this recently (non-props jobs without slot keys). */
  skipIfSucceededWithinHours?:number};
 const REPO='ang87505-crypto/SportsEdge';
@@ -23,6 +25,8 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededWithinHours:20},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
+ 'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
+ 'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };
 
 const json=(body:Record<string,unknown>,status=200)=>Response.json(body,{status,
@@ -42,7 +46,8 @@ export async function handleSchedulerKickoff(req:Request,slotName:string,env:Env
  if(!slot)return json({status:'unknown_slot'},404);
  const now=new Date(deps.now());
  // Only inside its own hour: a replayed or misrouted call cannot run a slot at another time.
- if(now.getUTCHours()!==slot.hourUtc||(slot.weekdaysUtc&&!slot.weekdaysUtc.includes(now.getUTCDay())))
+ if(now.getUTCHours()!==slot.hourUtc||(slot.weekdaysUtc&&!slot.weekdaysUtc.includes(now.getUTCDay()))||
+  (slot.dateUtc&&now.toISOString().slice(0,10)!==slot.dateUtc))
   return json({status:'skipped',reason:'outside_slot_hour',slot:slotName});
  if(slot.props&&(PROPS_RELEASE.scheduledRunsEnabled as boolean)!==true)return json({status:'skipped',reason:'props_schedule_off',slot:slotName});
  const token=env.SPORTSEDGE_GITHUB_DISPATCH_TOKEN??'';
