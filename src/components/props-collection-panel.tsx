@@ -22,10 +22,11 @@ export function PropsCollectionPanel({s,study,ticksReleased}:{s:CollectionStatus
     detail={s.lastSuccess?`${s.lastSuccess.mode==='tick'?'Capture tick':'Collect slot'}${s.lastSuccess.trigger?' · '+(TRIGGER[s.lastSuccess.trigger]??s.lastSuccess.trigger):''}`:'No collect has completed'}/>
    <Metric size="sm" label="Next planned collection" value={s.next?mountainTime(s.next.at):'None planned'} detail={s.next?s.next.what:'Automation is off, paused, or nothing is scheduled'}/>
    <Metric size="sm" label="Rolling 24-hour credits left" value={`${b.remaining24h} of ${b.daily}`}
-    detail={b.nextRelease?`${b.nextRelease.credits} free again ${mountainTime(b.nextRelease.at)}`:'Nothing reserved in the last 24 hours'}/>
+    detail={b.nextRelease?`${b.nextRelease.credits} free again ${mountainTime(b.nextRelease.at)}`:b.used24h?'No credits scheduled to roll off':'No credits used in the last 24 hours'}/>
    <Metric size="sm" label="30-day credits left" value={`${b.remaining30d} of ${b.monthly}`}
     detail={b.providerRemaining===null?'Provider balance not seen yet':`Provider balance ${b.providerRemaining} (floor ${b.providerFloor})`}/>
   </MetricGrid>
+  <p className="quiet small-print">{b.countsProviderActuals?'Budget reflects provider-confirmed charges; unknown costs still count at the reserved amount.':'Budget uses conservative reserved credits.'}</p>
   <dl className="automation-facts mt-12" aria-label="Last 48 hours by stage">
    <div><dt>Planned (not yet run)</dt><dd>{s.stages.planned} {ticksReleased?'game windows':'collect slots in the next 36 h'}</dd></div>
    <div><dt>Completed collect jobs</dt><dd>{s.stages.completedJobs}</dd></div>
