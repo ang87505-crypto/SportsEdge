@@ -66,7 +66,8 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
     curve = [(sessions[start_index - 1], capital)]
     exposure, traded, costs, dividends = [], 0.0, 0.0, 0.0
     counts = dict(orders=0, filled=0, unfilled_gap=0, unfilled_missing=0, unfilled_cash=0, reduced_for_cash=0,
-                  unavailable=0, blocked_by_unresolved=0, sells_pending=0, stale_marks=0)
+                  unavailable=0, blocked_by_unresolved=0, sells_pending=0, stale_marks=0, zero_share_targets=0)
+    zero_share_log = []
 
     def mark_unresolved(sym, k, reason):
         if sym not in unresolved:
@@ -182,6 +183,10 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
                     continue
                 prices[sym] = c
                 desired[sym] = math.floor(w * equity / (c * (1 + SIZING_SLIPPAGE)))
+                if w > 0 and desired[sym] == 0 and pos.get(sym, 0) == 0:
+                    # A target too small for one whole share: no order is placed, the slot stays cash.
+                    counts['zero_share_targets'] += 1
+                    zero_share_log.append({'date': day, 'symbol': sym, 'weight': w, 'price': c})
             counts['unavailable'] += len(unavailable)
             sells, buys = [], []
             for sym, n in list(pos.items()):
@@ -297,4 +302,4 @@ def simulate(sessions: list[str], series: dict, actions: list[dict], decisions: 
             'avg_exposure': fmean(exposure) if exposure else 0.0, 'exposure': exposure,
             'cash_end': cash, 'halted_on': halted_on, 'halt_peak': peak if halted else None,
             'equity_after_halt_exit': halt_equity_after, 'halts': halts, 'reentries': reentries,
-            'cash_sessions': cash_sessions, 'open_exposure': open_exposure, **counts}
+            'cash_sessions': cash_sessions, 'open_exposure': open_exposure, 'zero_share_log': zero_share_log, **counts}

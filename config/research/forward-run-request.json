@@ -1,0 +1,5 @@
+{
+  "modes": ["rehearse", "predict"],
+  "signal": "2026-10-30",
+  "reason": "Receipt rehearsal on the separate rehearsal ledger (real GitHub status, timing), plus a no-op predict on the real ledger to exercise the receipt step with no predictions"
+}

@@ -1,0 +1,100 @@
+# Forward-only virtual tracking for mq-buffer-v1 (owner-approved preparation 2026-11-10) and the historical audit.
+# NOT SCHEDULED: runs only by manual dispatch or an explicit change to the run-request file on the research branch.
+# A schedule is a separate owner decision (see docs/STOCK_BUFFER_FORWARD_LEDGER_2026_11_10.md).
+# Read-only Alpaca market data. Predictions go to the separate append-only `research-forward-ledger` branch and are
+# receipted server-side by a GitHub commit status (GitHub-assigned time, bound to the exact record hash); rehearsals
+# use `research-forward-ledger-rehearsal`. No orders, no account data, no activation, no production setting.
+name: Research forward ledger mq-buffer-v1 (manual)
+on:
+  push:
+    branches: [research/buffer-forward-ledger-20261110]
+    paths: [config/research/forward-run-request.json]
+  workflow_dispatch:
+    inputs:
+      modes:
+        description: Space-separated subset of "predict evaluate dry-run rehearse audit"
+        required: true
+        default: predict
+      signal:
+        description: Past month-end session for dry-run or rehearse (YYYY-MM-DD)
+        required: false
+        default: '2026-10-30'
+permissions:
+  contents: write   # pushes to the forward-ledger branches and research-data only
+  statuses: write   # server-side receipts (commit statuses) on ledger commits only
+concurrency:
+  group: research-forward-ledger
+  cancel-in-progress: false
+jobs:
+  forward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODES_INPUT: ${{ inputs.modes }}
+      SIGNAL_INPUT: ${{ inputs.signal }}
+      ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+      ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+    steps:
+      - name: Job start (wall clock, for the receipt timing)
+        run: echo "STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Research unit tests (synthetic, no network)
+        timeout-minutes: 5   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
+        run: python -m unittest discover -s analytics/research -t .
+      - name: Modes
+        run: |
+          req=config/research/forward-run-request.json
+          MODES="${MODES_INPUT:-$(python -c "import json;print(' '.join(json.load(open('$req'))['modes']))")}"
+          SIGNAL="${SIGNAL_INPUT:-$(python -c "import json;print(json.load(open('$req')).get('signal','2026-10-30'))")}"
+          for m in $MODES; do [[ "$m" =~ ^(predict|evaluate|dry-run|rehearse|audit)$ ]] || { echo "invalid mode $m"; exit 2; }; done
+          [[ "$SIGNAL" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid signal"; exit 2; }
+          echo "MODES=$MODES" >> "$GITHUB_ENV"; echo "SIGNAL=$SIGNAL" >> "$GITHUB_ENV"
+      - name: Dry run on a past month-end (scratch only, never a ledger)
+        if: contains(env.MODES, 'dry-run')
+        run: python -m analytics.research.forward_cli dry-run --signal "$SIGNAL" --out "$RUNNER_TEMP/dry-run" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Rehearsal on the separate rehearsal ledger (record, push, server receipt, verify)
+        if: contains(env.MODES, 'rehearse')
+        env:
+          LEDGER_BRANCH: research-forward-ledger-rehearsal
+          LEDGER_DIR: rehearsal-ledger
+        run: |
+          bash .github/scripts/forward-ledger-branch.sh checkout
+          python -m analytics.research.forward_cli rehearse --signal "$SIGNAL" --ledger rehearsal-ledger | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/forward-ledger-branch.sh commit "rehearsal record ${{ github.run_id }}"
+          python -m analytics.research.forward_cli receipt --ledger rehearsal-ledger --started-at "$STARTED" | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/forward-ledger-branch.sh commit "rehearsal receipt ${{ github.run_id }}"
+          echo "FINISHED=$(date -u +%Y-%m-%dT%H:%M:%SZ) (job start $STARTED)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check out the forward ledger
+        if: contains(env.MODES, 'predict') || contains(env.MODES, 'evaluate')
+        run: bash .github/scripts/forward-ledger-branch.sh checkout
+      - name: Predict (only after a month-end close, not within 20 minutes of the next open)
+        timeout-minutes: 10   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
+        if: contains(env.MODES, 'predict')
+        run: python -m analytics.research.forward_cli predict --ledger forward-ledger | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Push the prediction immediately
+        timeout-minutes: 2   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
+        if: contains(env.MODES, 'predict')
+        run: bash .github/scripts/forward-ledger-branch.sh commit "predict ${{ github.run_id }}"
+      - name: Server-side receipt for every unreceipted prediction, then read back and verify
+        timeout-minutes: 3   # sums to the 20-minute pipeline allowance (forward_ledger.PIPELINE_ALLOWANCE)
+        if: contains(env.MODES, 'predict')
+        run: |
+          python -m analytics.research.forward_cli receipt --ledger forward-ledger --started-at "$STARTED" | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/forward-ledger-branch.sh commit "receipt cache ${{ github.run_id }}"
+      - name: Evaluate outcomes (VALID, receipted predictions only; predictions never changed)
+        if: contains(env.MODES, 'evaluate')
+        run: |
+          python -m analytics.research.forward_cli evaluate --ledger forward-ledger | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/forward-ledger-branch.sh commit "evaluate ${{ github.run_id }}"
+      - name: Historical audit of mq-buffer-v1 (post-hoc diagnostics)
+        if: contains(env.MODES, 'audit')
+        run: |
+          bash .github/scripts/research-data-branch.sh checkout
+          python -m analytics.research.forward_cli audit --data research-data --end 2026-11-06 | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/research-data-branch.sh commit "buffer audit ${{ github.run_id }}"
