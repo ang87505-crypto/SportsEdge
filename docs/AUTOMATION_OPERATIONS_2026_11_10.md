@@ -86,3 +86,36 @@ first market day of the week, so the earliest qualifying session is **Monday 202
 5. The *Background jobs* panel then shows the release gate as passed. Review PR #102 and merge it yourself.
 
 A shadow plan, a HOLD day, a green workflow or this document is not evidence for any step.
+
+## Verification receipts (2026-11-10)
+
+| What | Evidence |
+|---|---|
+| Chatbot released | PR #112 merged after all checks passed (browser smoke fixed: hydration wait and Chrome start retry); production deployment of `8040aa6` succeeded |
+| Operations monitor and backup scheduler released | PR #113 and #115 merged after all checks passed; production deployments succeeded (Vercel accepted the six new daily crons) |
+| Event-driven monitor run | [42740187373](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42740187373), started automatically when another workflow finished |
+| Alert opens and closes by itself | [Issue #114](https://github.com/ang87505-crypto/SportsEdge/issues/114) opened at 02:04:45 UTC during a deployment roll-out, closed at 02:05:20 UTC when healthy |
+| Live site, chat and owner protections | [42740799665](https://github.com/ang87505-crypto/SportsEdge/actions/runs/42740799665): 13 of 13 checks passed from GitHub, with no browser or AI session involved |
+| Props receipts | Last completed collect 2026-11-10 02:00 UTC, last completed settle 2026-11-09 23:48 UTC, control RUNNING |
+| Stock release gate (check-only) | `STOCK_SUPERVISED_EXECUTE_REQUIRED` on pinned head `25bbb65c57e2` |
+| Secrets | All nine GitHub secrets present; both Supabase service keys are the non-expiring `sb_secret_` type |
+
+Scheduled (unattended) receipts appear on the *Background jobs* panel as they happen; a job whose first
+scheduled run has not happened yet is shown as *First run pending*, never as a success.
+
+## Old reminders
+
+Once the *Background jobs* panel shows a real run for the matching row, a chat reminder that only asked
+"did X run / check X" is redundant and can be retired:
+
+| Reminder about | Replaced by |
+|---|---|
+| Checking that PrizePicks collected or settled | Props rows + props receipts on the panel; Vercel backup slots; alert issue |
+| Checking the stock decision / early kickoff | *Stock paper: weekly decision* and *early decision kickoff* rows |
+| Checking research collection, forward ledgers or reports | Research rows, `research-data/summary.json`, alert issue |
+| Checking the monthly research evaluation (3rd of the month) | *Strategy research: monthly evaluation* row (first scheduled run 2026-12-03 04:23 UTC) |
+| Checking the site or chat is up | Live site checks every monitor run |
+| Watching the PAPER release watcher / PR #99 | PR #99 is merged; the watcher retires itself after 2026-11-11 07:00 UTC |
+
+Keep one reminder, or a calendar entry, for the **first supervised stock paper session (Monday 2026-11-16)**
+until PR #102 is merged. It needs you, and nothing automatic can stand in for it.
