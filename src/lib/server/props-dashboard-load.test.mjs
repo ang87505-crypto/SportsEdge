@@ -21,3 +21,20 @@ test('review fix: a busy fortnight of lines never exceeds the query-length cap',
  assert.equal(r.predictions.length,N);
  assert.ok(longest.n<=3000);
 });
+
+test('per-run counts come from the saved rows: decisions, qualifying picks and entries stay separate',async()=>{
+ const picks=[...Array(36)].map((_,i)=>({run_id:10,status:i<10?'recorded':'skipped'}));
+ const store={select:async(t,q)=>{
+  if(t==='props_runs')return [{id:10,kind:'collect',slot_key:'collect-2026-11-09T19',status:'completed',outcome:'COMPLETED',
+   started_at:'2026-11-10T02:00:07Z',finished_at:'2026-11-10T02:00:14Z',start_delay_seconds:24607,summary:{receipt:{picks:36}}},
+   {id:9,kind:'settle',slot_key:'settle-2026-11-09T15',status:'completed',outcome:'COMPLETED',started_at:'x',finished_at:'x',start_delay_seconds:1,summary:{}}];
+  if(t==='props_picks'&&q.startsWith('select=run_id,status')){assert.match(q,/run_id=in\.\(10\)/);return picks;}
+  if(t==='props_entries'&&q.startsWith('select=run_id'))return [];
+  return [];
+ },rpc:async()=>{},insert:async()=>{}};
+ const r=await loadPropsDashboardFrom(store,'2026-11-10T05:00:00Z');
+ assert.deepEqual(r.runCounts,{'10':{decisions:36,qualifyingPicks:10,entries:0}});
+ // If the rows cannot be read, the counts are absent (shown as unknown), never a partial number.
+ const failing={...store,select:async(t,q)=>{if(t==='props_picks'&&q.startsWith('select=run_id'))throw new Error('down');return store.select(t,q);}};
+ assert.equal((await loadPropsDashboardFrom(failing,'2026-11-10T05:00:00Z')).runCounts,null);
+});

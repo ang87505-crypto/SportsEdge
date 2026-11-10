@@ -46,10 +46,24 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
    'observation_id,books_at_same_line,p_more_books,line_gap,nearest_book_line,flags','observation_id',obsIds),[]),
   optional(async()=>(await store.select<NonNullable<Raw['report']>>('props_learning_reports',
    'select=period_from,period_to,model_version,at,report&order=id.desc&limit=1'))[0]??null,null)]);
- return {nowIso,control:control[0]??null,runs,credits,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
+ const runCounts=await optional(()=>countsByRun(store,runs.filter(r=>r.kind==='collect').map(r=>r.id)),null);
+ return {nowIso,control:control[0]??null,runs,credits,runCounts,providerRemaining:usage.length?Number(usage[0].requests_remaining):null,
   observations,predictions,picks,results,accounts,entries,legs,settlements,model,views,report};
 }
 
+/** Decisions, qualifying picks and entries per collect run, from the immutable pick and entry rows. */
+async function countsByRun(store:PropsStore,runIds:number[]){
+ const out:Record<string,{decisions:number;qualifyingPicks:number;entries:number}>={};
+ if(!runIds.length)return out;
+ for(const id of runIds)out[id]={decisions:0,qualifyingPicks:0,entries:0};
+ const [picks,entries]=await Promise.all([
+  byIds<{run_id:number;status:string}>(store,'props_picks','run_id,status','run_id',runIds,20000),
+  byIds<{run_id:number}>(store,'props_entries','run_id','run_id',runIds,5000)]);
+ if(picks.length>=20000||entries.length>=5000)throw new Error('PROPS_RUN_COUNTS_TRUNCATED');  // never show a partial count
+ for(const p of picks){const c=out[p.run_id];if(!c)continue;c.decisions++;if(p.status==='recorded')c.qualifyingPicks++;}
+ for(const e of entries){const c=out[e.run_id];if(c)c.entries++;}
+ return out;
+}
 /** Tables from later migrations may be absent; the dashboard then shows them as not set up, never as zero. */
 async function optional<T>(f:()=>Promise<T>,fallback:T):Promise<T>{try{return await f();}catch{return fallback;}}
 async function loadModel(store:PropsStore):Promise<Raw['model']>{

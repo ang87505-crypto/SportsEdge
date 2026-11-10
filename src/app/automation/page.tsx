@@ -90,7 +90,7 @@ async function SportsStatus(){
     <Link href="/paper-betting/props" className="button">Open PrizePicks and controls</Link>
     <a href="https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml" className="button button-secondary" target="_blank" rel="noopener noreferrer">Run history on GitHub</a>
    </div>
-   <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1)}/>
+   <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1,raw.runCounts??null)}/>
    <p className="quiet small-print">{raw.accounts.length?`Up to ${raw.accounts.reduce((sum,a)=>sum+a.max_entries_per_day,0)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
   </div>
@@ -105,16 +105,17 @@ const STATE:Record<string,{label:string;tone:'positive'|'warning'|'negative'|'ne
 function SlotTable({rows}:{rows:ReturnType<typeof slotStatus>}){
  return <Details title="Recent and next slots">
   <div className="table-wrap table-scroll"><table className="data-table">
-   <thead><tr><th scope="col">Slot (scheduled)</th><th scope="col">State</th><th scope="col">Started by / delay</th><th scope="col">Finished</th><th scope="col">Picks recorded</th><th scope="col">Entries made</th><th scope="col">Entries settled</th></tr></thead>
+   <thead><tr><th scope="col">Slot (scheduled)</th><th scope="col">State</th><th scope="col">Started by / delay</th><th scope="col">Finished</th><th scope="col">Decisions (incl. skips)</th><th scope="col">Qualifying picks</th><th scope="col">Entries made</th><th scope="col">Entries settled</th></tr></thead>
    <tbody>{rows.map(r=>{const st=STATE[r.state];return <tr key={r.slot}>
     <th scope="row">{r.kind==='collect'?'Collect':'Settle'} · {mountainTime(r.scheduledFor)}</th>
     <td><Badge tone={st.tone}>{st.label}</Badge>{r.outcome&&r.outcome!=='COMPLETED'?<div className="quiet small-print">{r.outcome}</div>:null}{r.note?<div className="quiet small-print">{r.note}</div>:null}</td>
     <td>{r.startedAt?`${r.trigger?TRIGGER[r.trigger]??r.trigger:'Not recorded'} · ${r.startDelayMinutes??0} min late`:'—'}</td>
     <td>{r.finishedAt?mountainTime(r.finishedAt):'—'}</td>
-    <td>{r.picksRecorded??'—'}</td>
+    <td>{r.kind==='collect'&&r.startedAt?r.decisions??'Unknown':'—'}</td>
+    <td>{r.kind==='collect'&&r.startedAt?r.qualifyingPicks??'Unknown':'—'}</td>
     <td>{r.entriesCreated===null?'—':r.entriesCreated}{r.noEntryReasons.length?<div className="quiet small-print">{r.noEntryReasons.map(x=>`${x.platform==='prizepicks'?'PrizePicks':'Pick6'}: ${x.text}`).join(' ')}</div>:null}</td>
     <td>{r.entriesSettled??'—'}</td></tr>;})}</tbody>
   </table></div>
-  <p className="quiet small-print">Planned slots have not run. A collect that starts more than 150 minutes late spends nothing; the Vercel backup starts each slot within about two hours if GitHub is late, and the ledger refuses a second start of the same slot.</p>
+  <p className="quiet small-print">Decisions include skips; qualifying picks are the decisions recorded as picks, read from the saved pick rows (Unknown when they cannot be read). Planned slots have not run. A collect that starts more than 150 minutes late spends nothing; the Vercel backup starts each slot within about two hours if GitHub is late, and the ledger refuses a second start of the same slot.</p>
  </Details>;
 }

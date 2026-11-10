@@ -185,9 +185,15 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   if(picked.fallback)s.activeModel={...s.activeModel as object,fallback:true};
   s.entries=await recordEntries(d,runId,picked.out.selectionVersion);
   // Read back what was durably recorded in this run (the receipt, not the exit code).
-  const [o,p,k]=await Promise.all(['props_observations','props_predictions','props_picks'].map(t=>
-   d.store.select<{id:number}>(t,'select=id&run_id=eq.'+runId+'&limit=5000')));
-  s.receipt={observations:o.length,predictions:p.length,picks:k.length};
+  const [o,p,k,e]=await Promise.all([
+   d.store.select<{id:number}>('props_observations','select=id&run_id=eq.'+runId+'&limit=5000'),
+   d.store.select<{id:number}>('props_predictions','select=id&run_id=eq.'+runId+'&limit=5000'),
+   d.store.select<{id:number;status:string}>('props_picks','select=id,status&run_id=eq.'+runId+'&limit=5000'),
+   d.store.select<{id:number}>('props_entries','select=id&run_id=eq.'+runId+'&limit=500')]);
+  // `picks` keeps its original meaning for older readers: every pick decision, skips included.
+  s.receipt={observations:o.length,predictions:p.length,picks:k.length,decisions:k.length,
+   qualifyingPicks:k.filter(x=>x.status==='recorded').length,skippedDecisions:k.filter(x=>x.status!=='recorded').length,
+   entriesCreated:e.length};
   await finish(d,runId,true,'COMPLETED',s);
   return {kind:'collect',outcome:'COMPLETED',runId,summary:s};
  }catch(e){
