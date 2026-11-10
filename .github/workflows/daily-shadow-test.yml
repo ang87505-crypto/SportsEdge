@@ -1,0 +1,83 @@
+name: Daily stock shadow test (one session, no orders)
+on:
+  schedule:
+    - cron: '10 11 10 11 *' # Nov 10 04:10 MST: backup if tonight's initial plan did not run
+    - cron: '40 22 10 11 *' # Nov 10 15:40 MST: grade after final bars are available
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Research phase; no broker orders
+        type: choice
+        options: [plan, grade]
+        default: plan
+        required: true
+  push:
+    branches: [main, research/daily-forward-20261110]
+    paths:
+      - analytics/stock_daily_shadow_v1.py
+      - analytics/test_stock_daily_shadow_v1.py
+      - config/research/daily-shadow-20261110.json
+      - .github/workflows/daily-shadow-test.yml
+  pull_request:
+    paths:
+      - analytics/stock_daily_shadow_v1.py
+      - analytics/test_stock_daily_shadow_v1.py
+      - config/research/daily-shadow-20261110.json
+      - .github/workflows/daily-shadow-test.yml
+permissions:
+  contents: read
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest analytics.test_stock_daily_shadow_v1
+  observe:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: write # append-only public research records, no account/database writes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Select fixed one-session phase (skip the cron in later years)
+        id: phase
+        env:
+          REQUESTED: ${{ inputs.phase }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ "$(date -u +%Y)" != '2026' ]; then echo 'enabled=false' >> "$GITHUB_OUTPUT"; exit 0; fi
+          phase="${REQUESTED:-plan}"
+          if [ "$SCHEDULE" = '40 22 10 11 *' ]; then phase=grade; fi
+          case "$phase" in plan|grade) ;; *) exit 2;; esac
+          echo "phase=$phase" >> "$GITHUB_OUTPUT"
+          echo 'enabled=true' >> "$GITHUB_OUTPUT"
+      - name: Check out the append-only research ledger
+        if: steps.phase.outputs.enabled == 'true'
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Freeze or grade virtual observations (GET market data only)
+        if: steps.phase.outputs.enabled == 'true'
+        env:
+          PHASE: ${{ steps.phase.outputs.phase }}
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_daily_shadow_v1 "$PHASE" --data research-data --execute-network >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve the frozen plan, raw receipts and result
+        if: always() && steps.phase.outputs.enabled == 'true'
+        run: bash .github/scripts/research-data-branch.sh commit "daily-shadow ${{ github.run_id }}"

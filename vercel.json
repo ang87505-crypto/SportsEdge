@@ -28,6 +28,14 @@
     {
       "path": "/api/internal/scheduler/ops-monitor",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-plan",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-grade",
+      "schedule": "0 0 * * *"
     }
   ],
   "git": {
