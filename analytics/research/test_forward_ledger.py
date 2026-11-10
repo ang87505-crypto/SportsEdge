@@ -250,6 +250,11 @@ class AuditHelpers(unittest.TestCase):
         self.assertAlmostEqual(d['end_value_gap'], d['first_order_cost_drag'] + d['path_effect'])
         self.assertGreater(d['first_order_cost_drag'], 0)
         self.assertEqual(forward_cli.cost_decomposition(r0, r0, 0)['first_divergence'], None)
+        same = forward_cli.cost_decomposition(r0, r0, 0)
+        from analytics.research import evaluate as ev
+        base = ev.summarize(r0['curve'], r0['curve'][1][0], r0['curve'][-1][0])['full']
+        self.assertAlmostEqual(same['fixed_path_cagr'], base['cagr'])        # zero cost: the same path exactly
+        self.assertLess(d['fixed_path_cagr'], base['cagr'])
 
     def test_engine_setting_is_restored(self):
         from analytics.research import engine, forward_cli

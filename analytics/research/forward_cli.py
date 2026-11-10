@@ -126,7 +126,19 @@ def cost_decomposition(base, other, cost_bps):
     only_a, only_b = sorted(set(a) - set(b)), sorted(set(b) - set(a))
     qty = sorted(k for k in set(a) & set(b) if a[k]['shares'] != b[k]['shares'])
     first = min(only_a + only_b + qty) if (only_a or only_b or qty) else None
+    # The 0-bps trades with costs charged: each day's cost removes that share of equity, later returns unchanged.
+    cost_on = {}
+    for t in base['trades']:
+        cost_on[t['date']] = cost_on.get(t['date'], 0.0) + t['shares'] * t['price'] * cost_bps / 1e4
+    factor, fixed = 1.0, []
+    for d, v in base['curve']:
+        if d in cost_on and v > 0:
+            factor *= 1 - cost_on[d] / v
+        fixed.append((d, v * factor))
+    lo = base['curve'][1][0] if len(base['curve']) > 1 else base['curve'][0][0]
+    fm = ev.summarize(fixed, lo, base['curve'][-1][0])['full']
     return {'end_value_gap': total, 'first_order_cost_drag': drag, 'path_effect': total - drag,
+            'fixed_path_cagr': fm.get('cagr'), 'fixed_path_sharpe': fm.get('sharpe'), 'fixed_path_max_drawdown': fm.get('max_drawdown'),
             'trades_only_at_0bps': len(only_a), 'trades_only_at_this_cost': len(only_b), 'same_trade_different_shares': len(qty),
             'first_divergence': first, 'examples_only_at_0bps': [a[k] for k in only_a[:8]],
             'examples_only_at_this_cost': [b[k] for k in only_b[:8]]}
@@ -234,7 +246,8 @@ def main():
         out = cmd_audit(a.data, a.end, now)
         print(json.dumps({'integrity': {k: {x: v[x] for x in ('integrity_mismatches', 'stale_marks', 'fills_not_at_the_raw_open', 'unfilled_missing')}
                                         for k, v in out['integrity'].items()},
-                          'cost': {k: {c: {x: v[c].get(x) for x in ('cagr', 'costs', 'end_value_gap', 'first_order_cost_drag', 'path_effect')}
+                          'cost': {k: {c: {x: v[c].get(x) for x in ('cagr', 'sharpe', 'costs', 'end_value_gap', 'first_order_cost_drag',
+                                                                    'path_effect', 'fixed_path_cagr', 'fixed_path_sharpe')}
                                        for c in v} for k, v in out['cost_sensitivity'].items()}}, indent=1, default=str))
 
 
