@@ -8,7 +8,7 @@ This one-day observation cannot qualify a rule, estimate a reliable win rate or 
 
 - Compare all five failed daily rules without tuning: losers5, gainers5, losers5-spy200,
   losers5-volz, losers5-spy200-sector2. The selector functions are copied unchanged from commit
-  `7791a7cea76850bcfb5365f998ab8c8f959864e3`; their syntax-tree fingerprint is checked in tests.
+  `7791a7cea76850bcfb5365f998ab8c8f959864e3`; their source-text fingerprint is checked in tests.
 - Prospective universe: the existing large-cap list, with MMC replaced by its current MRSH symbol
   and delisted EA removed. The explicit snapshot is `config/research/daily-shadow-20261110.json`.
   This does not revise the historical test or the weekly bot's universe. Missing history is listed.

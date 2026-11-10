@@ -1,5 +1,4 @@
 """The one-day study must freeze before the open and never reconstruct missing picks."""
-import ast
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
@@ -116,10 +115,9 @@ class ShadowTest(unittest.TestCase):
             m.market_data(source, ['AAA'], '2026-11-10', '2026-11-10')
 
     def test_signal_functions_match_the_pre_registered_source(self):
-        nodes = ast.parse(Path(m.__file__).read_text()).body
-        names = {'_ok', '_eligible', '_spy_above_200', '_usual_volatility', 'picks'}
-        source = '\n'.join(ast.dump(n, include_attributes=False) for n in nodes if isinstance(n, ast.FunctionDef) and n.name in names)
-        expected = json.loads(m.CONFIG.read_text())['selector_ast_sha256']
+        source = Path(m.__file__).read_text()
+        source = source[source.index('def _ok('):source.index('\ndef digest(')].strip()
+        expected = json.loads(m.CONFIG.read_text())['selector_source_sha256']
         self.assertEqual(hashlib.sha256(source.encode()).hexdigest(), expected)
         self.assertEqual((m.MAX_POSITIONS, m.WEIGHT, m.LIMIT_GAP, m.SIZING_SLIPPAGE), (5, .2, .03, .0025))
 
