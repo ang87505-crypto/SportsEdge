@@ -46,7 +46,7 @@ export function parseOpsStatus(v:unknown,nowIso:string):OpsStatus|null{
 
 export const OPS_STATUS_URL='https://raw.githubusercontent.com/ang87505-crypto/SportsEdge/ops-status/status.json';
 export const OPS_LABELS:Record<string,{label:string;tone:'positive'|'warning'|'negative'|'neutral'|'info'}>={
- OK:{label:'Running',tone:'positive'},RUNNING:{label:'Running now',tone:'info'},
+ OK:{label:'Healthy',tone:'positive'},RUNNING:{label:'Running now',tone:'info'},
  PENDING_FIRST_RUN:{label:'First run pending',tone:'neutral'},MISSED_SLOT:{label:'Missed a planned time',tone:'warning'},
  STALE:{label:'Stale',tone:'negative'},FAILING:{label:'Failing',tone:'negative'},DISABLED:{label:'Disabled',tone:'negative'},
  EXPIRED:{label:'Window ended',tone:'neutral'},RETIRED:{label:'Retired',tone:'neutral'},UNKNOWN:{label:'Unknown',tone:'warning'},
