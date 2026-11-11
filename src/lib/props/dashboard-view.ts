@@ -123,3 +123,6 @@ export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}=
    budget:{used24h,used30d,daily:ACTIVE_BUDGET_POLICY.dailyCredits,monthly:ACTIVE_BUDGET_POLICY.monthlyCredits,floor:ACTIVE_BUDGET_POLICY.providerFloor,providerRemaining:r.providerRemaining}}};
 }
 export type PropsView=ReturnType<typeof buildView>;
+/** Entries the worker can actually make per day: only the accounts of the active selection version (one per platform). */
+export const dailyEntryCap=(...accounts:(PropsView['account']|null|undefined)[])=>
+ accounts.reduce((sum,a)=>sum+(a?Number(a.max_entries_per_day):0),0);

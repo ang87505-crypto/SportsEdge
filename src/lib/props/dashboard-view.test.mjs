@@ -107,3 +107,16 @@ test('review fix: the model summary knows when it last trained',()=>{
   {id:2,version:'props-learn-v0',event:'created',reason:'weekly retrain',detail:{},at:'2026-11-01T10:00:00Z'});
  assert.equal(buildView(r,'prizepicks').model.lastTrainedAt,'2026-11-08T10:00:00Z');
 });
+
+test('daily entry cap counts only the active selection version accounts, not every account row',async()=>{
+ const {dailyEntryCap}=await import('./dashboard-view.ts');
+ const accounts=[{id:1,slug:'props-prizepicks-v1',platform:'prizepicks',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3},
+  {id:2,slug:'props-pick6-v1',platform:'pick6',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3},
+  {id:3,slug:'props-prizepicks-v2',platform:'prizepicks',selection_version:'props-select-v2',initial_cents:50000,stake_cents:500,max_entries_per_day:3},
+  {id:4,slug:'props-pick6-v2',platform:'pick6',selection_version:'props-select-v2',initial_cents:50000,stake_cents:500,max_entries_per_day:3}];
+ const r={...raw,accounts};
+ assert.equal(dailyEntryCap(buildView(r,'prizepicks').account,buildView(r,'pick6').account),6);   // stats model active: v1 only
+ const learn={...r,model:{active:'props-learn-v1',previous:null,learningEnabled:true,autoSwitchEnabled:true,weights:null,events:[]}};
+ assert.deepEqual([buildView(learn,'prizepicks').account.id,buildView(learn,'pick6').account.id],[3,4]);
+ assert.equal(dailyEntryCap(null,undefined),0);
+});

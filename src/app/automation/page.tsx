@@ -8,7 +8,7 @@ import {OpsStatusPanel} from '@/components/ops-status-panel';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
-import {buildView} from '@/lib/props/dashboard-view';
+import {buildView,dailyEntryCap} from '@/lib/props/dashboard-view';
 import {mountainTime,propsAutomationStatus} from '@/lib/paper-automation-view';
 import {pct,usdCents} from '@/lib/format';
 import {propsSummary,learningStatus} from '@/lib/props/summary';
@@ -91,7 +91,7 @@ async function SportsStatus(){
     <a href="https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml" className="button button-secondary" target="_blank" rel="noopener noreferrer">Run history on GitHub</a>
    </div>
    <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1,raw.runCounts??null)}/>
-   <p className="quiet small-print">{raw.accounts.length?`Up to ${raw.accounts.reduce((sum,a)=>sum+a.max_entries_per_day,0)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
+   <p className="quiet small-print">{pp.account||p6.account?`Up to ${dailyEntryCap(pp.account,p6.account)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
   </div>
  </Panel>;
