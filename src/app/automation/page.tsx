@@ -13,7 +13,7 @@ import {timingStudy} from '@/lib/props/timing-study';
 import {effectiveBudgetPolicy} from '@/lib/props/budget';
 import {MODEL_VERSION} from '@/lib/props/contract';
 import {PropsCollectionPanel} from '@/components/props-collection-panel';
-import {buildView} from '@/lib/props/dashboard-view';
+import {buildView,dailyEntryCap} from '@/lib/props/dashboard-view';
 import {mountainTime,propsAutomationStatus} from '@/lib/paper-automation-view';
 import {pct,usdCents} from '@/lib/format';
 import {propsSummary,learningStatus} from '@/lib/props/summary';
@@ -102,7 +102,7 @@ async function SportsStatus(){
    </div>
    {/* Once capture ticks are released the legacy collect slots stand down; the collection panel below covers collection. */}
    <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1,raw.runCounts??null).filter(r=>!(ticksReleased()&&r.kind==='collect'))}/>
-   <p className="quiet small-print">{raw.accounts.length?`Up to ${raw.accounts.reduce((sum,a)=>sum+a.max_entries_per_day,0)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
+   <p className="quiet small-print">{pp.account||p6.account?`Up to ${dailyEntryCap(pp.account,p6.account)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
   </div>
  </Panel>;

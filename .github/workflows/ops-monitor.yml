@@ -26,6 +26,9 @@ on:
       - config/ops/**
       - .github/workflows/ops-monitor.yml
       - .github/scripts/ops-status-branch.sh
+      - .github/scripts/research-data-branch.sh
+      - scripts/data-branches.test.mjs
+      - vercel.json
 permissions:
   contents: read
 concurrency:
@@ -43,7 +46,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test scripts/ops-monitor.test.mjs
+      - run: node --test scripts/ops-monitor.test.mjs scripts/data-branches.test.mjs
   monitor:
     if: github.event_name != 'pull_request' && github.repository == 'ang87505-crypto/SportsEdge'
     runs-on: ubuntu-latest
