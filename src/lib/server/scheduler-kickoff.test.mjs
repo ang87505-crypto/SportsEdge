@@ -35,11 +35,11 @@ test('refuses without the cron secret, outside production, for unknown slots, qu
  assert.equal(calls.length,0);
 });
 
-test('research collect is skipped when it already succeeded recently, and only Tue-Sat UTC', async()=>{
+test('research collect is skipped when today\'s slot already succeeded, and only Tue-Sat UTC', async()=>{
  const calls=[];
  const skip=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-10T04:20:00Z'),
   fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T02:40:00Z'}]})});
- assert.equal((await skip.json()).reason,'already_succeeded_recently');
+ assert.equal((await skip.json()).reason,'already_succeeded_since_slot');
  const run=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-10T04:20:00Z'),
   fetcher:fetcher(calls,{runs:[{created_at:'2026-11-08T02:40:00Z'}]})});
  assert.equal(run.status,202);
@@ -102,4 +102,16 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  const saturday=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-14T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal((await saturday.json()).reason,'outside_slot_hour');
  assert.equal(calls.length,1);
+});
+
+test('regression 2026-11-11: a late run of yesterday\'s research slot does not suppress today\'s backup',async()=>{
+ // GitHub started the 10 Nov 02:17 slot at 09:59; the 11 Nov 02:17 slot was dropped. The 04:00 backup must run.
+ const calls=[];
+ const r=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
+  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T09:59:25Z'}]})});
+ assert.equal(r.status,202);
+ // Today's own slot already succeeded (even if late, before the backup): skip.
+ const skip=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
+  fetcher:fetcher([],{runs:[{created_at:'2026-11-11T02:41:00Z'}]})});
+ assert.equal((await skip.json()).reason,'already_succeeded_since_slot');
 });
