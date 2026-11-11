@@ -31,10 +31,15 @@ try{
  const response=await post({ownerKey:' \t'+key+'\r\n'});
  assert.equal(response.status,200,'the real route accepts a complete padded key');
  assert.equal((await response.json()).status,'authenticated');
- const setCookie=response.headers.get('set-cookie');
+ const cookies=response.headers.getSetCookie();
+ const setCookie=cookies.find(c=>c.startsWith('__Host-sportsedge-alpaca-owner='));
  for(const expected of ['__Host-sportsedge-alpaca-owner=','HttpOnly','Secure','SameSite=strict','Path=/','Max-Age=1800'])
   assert.ok(setCookie?.includes(expected),'signed cookie has '+expected);
  const cookie=setCookie.split(';')[0];
+ // The readable owner hint lets public pages skip owner-only calls; it is not a credential.
+ const hint=cookies.find(c=>c.startsWith('__Host-sportsedge-owner-hint=1'));
+ assert.ok(hint&&!/HttpOnly/i.test(hint)&&hint.includes('Secure')&&hint.includes('Max-Age=1800'),'owner hint set alongside the session');
+ assert.equal((await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:hint.split(';')[0]}})).status,401,'the hint alone grants nothing');
  const anonymous=await fetch(base+'/api/internal/paper-auto');
  assert.equal(anonymous.status,401,'protected endpoint refuses an anonymous request');
  const signedIn=await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:cookie}});
@@ -44,8 +49,10 @@ try{
  const tampered=cookie.slice(0,-1)+(cookie.at(-1)==='a'?'b':'a');
  assert.equal((await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:tampered}})).status,401);
  const signOut=await fetch(base+'/api/internal/alpaca-paper/session',{method:'DELETE',headers:{Origin:origin,Cookie:cookie}});
- assert.equal(signOut.status,200);assert.ok(signOut.headers.get('set-cookie').includes('Max-Age=0'));
- console.log('OWNER_SIGN_IN_HTTP_PASS: padded key, wrong key, origin, signed cookie, protected route, tampering and logout');
+ assert.equal(signOut.status,200);
+ const cleared=signOut.headers.getSetCookie();
+ assert.ok(['__Host-sportsedge-alpaca-owner=','__Host-sportsedge-owner-hint='].every(n=>cleared.some(c=>c.startsWith(n)&&c.includes('Max-Age=0'))),'logout clears session and hint');
+ console.log('OWNER_SIGN_IN_HTTP_PASS: padded key, wrong key, origin, signed cookie, owner hint (not a credential), protected route, tampering and logout');
 }finally{
  if(child.exitCode===null){child.kill('SIGTERM');await once(child,'exit');}
 }
