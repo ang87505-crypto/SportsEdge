@@ -317,6 +317,8 @@ Mutation checks:
 
 ## 9. Owner approvals required (nothing below has been done)
 
+Exact SQL, verification queries and rollback: `docs/PROPS_CAPTURE_ACTIVATION_CHECKLIST_2026_11_11.md`.
+
 1. **Apply `database/props/props_capture_v1.sql`** to the props Supabase project. It is additive, creates new
    append-only tables and changes no existing object.
 2. **Release switch:** set `PROPS_COLLECTION_V2.tickEnabled = true`.
