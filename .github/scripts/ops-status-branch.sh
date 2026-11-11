@@ -6,7 +6,8 @@ set -euo pipefail
 src=$(cd "$1" && pwd)
 dir=$(mktemp -d)
 auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-url="https://github.com/${GITHUB_REPOSITORY}.git"
+# OPS_STATUS_REMOTE exists only for the local test (a bare repository path); production always uses GitHub.
+url="${OPS_STATUS_REMOTE:-https://github.com/${GITHUB_REPOSITORY}.git}"
 cd "$dir"
 git init -q .
 git config user.name 'sportsedge-ops-monitor'
@@ -21,6 +22,8 @@ for attempt in 1 2 3 4; do
     printf '# SportsEdge operations status\n\nWritten by the ops-monitor workflow. `status.json` is the latest check; `history/` keeps one line per check. Never edit by hand.\n' > README.md
   fi
   cp "$src/status.json" status.json
+  # Data-only branch: tell Vercel not to build a deployment for any of its (frequent) commits.
+  printf '{\n  "git": {"deploymentEnabled": false}\n}\n' > vercel.json
   mkdir -p history
   month=$(date -u +%Y-%m)
   printf '%s\n' "$(tr -d '\n' < "$src/history-line.json")" >> "history/$month.jsonl"

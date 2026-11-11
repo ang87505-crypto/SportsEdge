@@ -56,7 +56,12 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "claude/**": false
+      "claude/**": false,
+      "ops-status": false,
+      "research-data": false,
+      "research/**": false,
+      "docs/**": false,
+      "audit/**": false
     }
   }
 }

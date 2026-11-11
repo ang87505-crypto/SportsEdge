@@ -5,7 +5,8 @@
 set -euo pipefail
 dir=research-data
 auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-url="https://github.com/${GITHUB_REPOSITORY}.git"
+# RESEARCH_DATA_REMOTE exists only for the local test (a bare repository path); production always uses GitHub.
+url="${RESEARCH_DATA_REMOTE:-https://github.com/${GITHUB_REPOSITORY}.git}"
 case "$1" in
   checkout)
     git init -q "$dir"
@@ -22,6 +23,8 @@ case "$1" in
     ;;
   commit)
     cd "$dir"
+    # Data-only branch: tell Vercel not to build a deployment for its commits (added once, never rewritten).
+    [ -f vercel.json ] || printf '{\n  "git": {"deploymentEnabled": false}\n}\n' > vercel.json
     git add -A
     if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
     # Snapshots/results stay append-only. LATEST.md and summary.json are derived latest views.
