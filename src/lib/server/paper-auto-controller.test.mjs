@@ -588,6 +588,40 @@ print(json.dumps(decide(capture('2026-11-09','2026-11-09T13:00:00Z'),universe(),
  assert.ok(w.broker.posts.every(p=>p.shares>=1&&p.side==='buy'));
 });
 
+e2e('commissioning chain (PR #130): a midweek flat-account commissioning decision is accepted by the database and traded',async()=>{
+ const w=world({start:'2026-11-11T11:00:00Z'});
+ await register(w);
+ const registeredAt=sqlValue(DB,`SELECT to_char(registered_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  FROM sportsedge_paper_auto.experiments WHERE experiment_id='${w.experimentId}'`);
+ const run=(held,mode)=>spawnSync('python3',['-c',`import json,sys
+from analytics.test_stock_weekly_v2 import capture,universe
+from analytics.stock_weekly_bridge_v2 import decide
+print(json.dumps(decide(capture('2026-11-11','2026-11-11T13:00:00Z'),universe(),json.loads(sys.argv[1]),json.loads(sys.argv[2]),sys.argv[3] if sys.argv[3]!='False' else False)))`,
+  JSON.stringify({experimentId:w.experimentId,registeredAt,modelVersion:BASELINE}),JSON.stringify(held),mode],
+  {cwd:fileURLToPath(new URL('../../..',import.meta.url)),encoding:'utf8'});
+ // Without the commissioning label a Wednesday is not a decision session under the registered rule.
+ const plain=run([],'False');assert.equal(plain.status,0,plain.stderr);assert.equal(plain.stdout.trim(),'null');
+ // A held position refuses commissioning outright.
+ const held=JSON.parse(run(['SEC-HELD'],'commissioning').stdout);
+ assert.equal(held.outcome,'INPUT_REJECTED');assert.deepEqual(held.diagnostics.reasons,['COMMISSIONING_REQUIRES_FLAT_ACCOUNT']);
+ const py=run([],'commissioning');assert.equal(py.status,0,py.stderr);
+ const record=JSON.parse(py.stdout);
+ assert.equal(record.outcome,'TARGETS',py.stdout.slice(0,500));
+ assert.equal(record.signal.variant.rebalance,'weekly-commissioning-session');
+ w.clock.set('2026-11-11T13:01:00.000Z');
+ const recorded=await recordDecisionSlot(w.deps,record);
+ assert.equal(recorded.reason,'RECORDED',JSON.stringify(recorded));
+ for(const t of record.signal.targets)w.broker.setQuote(t.symbol,Math.round(Number(record.signal.priorInputs[t.securityId].price)*100));
+ // Nothing trades before the owner arms; then exactly the targets are bought with limit orders.
+ assert.notEqual((await execute(w,'2026-11-11T14:35:00.000Z')).reason,'ORDERS_COMPLETE');
+ assert.equal(w.broker.posts.length,0);
+ await arm(w,'2026-11-11T14:40:00.000Z');
+ const r=await execute(w,'2026-11-11T14:45:00.000Z');
+ assert.equal(r.reason,'ORDERS_COMPLETE',JSON.stringify(r));
+ assert.deepEqual(w.broker.posts.map(p=>p.symbol).sort(),record.signal.targets.map(t=>t.symbol).sort());
+ assert.ok(w.broker.posts.every(p=>p.shares>=1&&p.side==='buy'));
+});
+
 e2e('the dashboard reads the real ledger: only reconciled, uncontaminated marks count as strategy return',async()=>{
  const w=await armedWithDecision();
  assert.equal((await execute(w,'2026-10-19T13:45:00.000Z')).reason,'ORDERS_COMPLETE');
