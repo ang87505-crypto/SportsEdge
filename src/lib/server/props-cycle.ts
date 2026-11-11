@@ -14,7 +14,7 @@ import {ProviderError} from './props-odds-client.ts';
 import {trimSummary,type EspnClient} from './props-espn-client.ts';
 import {parseEventList,normalizePropEvent,normalizeBookQuotes,sha256,canonicalJson,type ListedEvent,type BookQuote} from '../props/normalize.ts';
 import {marketView,type MarketView} from '../props/market.ts';
-import {chooseEvents,ACTIVE_BUDGET_POLICY,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,type BudgetState} from '../props/budget.ts';
+import {chooseEvents,EVENTS_LIST_COST,eventOddsWorstCost,canSpend,effectiveBudgetPolicy,type BudgetPolicy,type BudgetState} from '../props/budget.ts';
 import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../props/model.ts';
 import {matchPlayer,playerKey,teamAbbr,type RosterCandidate} from '../props/identity.ts';
 import {parseScoreboard,parseSummary,type ScoreboardGame} from '../props/boxscore.ts';
@@ -62,16 +62,40 @@ export async function finish(d:CycleDeps,runId:number,ok:boolean,outcome:string,
 }
 export const heartbeat=(d:CycleDeps,runId:number)=>d.store.rpc<{control:string}>('props_heartbeat',{p_run:runId,p_lease_seconds:LEASE});
 
-export async function budgetState(d:CycleDeps):Promise<BudgetState>{
+/**
+ * The database's active budget policy (authoritative) and the effective rolling use it implies: provider-confirmed
+ * charges when the policy opts in (props_budget_v3_actuals.sql), otherwise every reservation in full, exactly as
+ * props_reserve_credits counts. Used by the slot collect, the capture tick and (mirrored) the dashboard.
+ */
+export async function budgetSnapshot(d:CycleDeps):Promise<{policy:BudgetPolicy;state:BudgetState;countsActuals:boolean}>{
  const now=d.now();
- const rows=await d.store.select<{credits:number;reserved_at:string}>('props_credit_reservations',
-  'select=credits,reserved_at&reserved_at=gt.'+q(ago(now,30*86400_000))+'&limit=10000');
+ const base='select=version,daily_credits,monthly_credits,provider_floor';
+ const where='&active_from=lte.'+q(now)+'&order=active_from.desc&limit=1';
+ // count_provider_actuals exists only once props_budget_v3_actuals.sql is applied (owner approval); absent = false.
+ let pol:Record<string,unknown>|undefined;
+ try{[pol]=await d.store.select<Record<string,unknown>>('props_budget_policy',base+',count_provider_actuals'+where);}
+ catch{[pol]=await d.store.select<Record<string,unknown>>('props_budget_policy',base+where);}
+ if(!pol)throw new PropsStoreError('BUDGET_POLICY_MISSING',true);
+ const countsActuals=pol.count_provider_actuals===true;
+ const rows=await d.store.select<{id:number;credits:number;reserved_at:string}>('props_credit_reservations',
+  'select=id,credits,reserved_at&reserved_at=gt.'+q(ago(now,30*86400_000))+'&limit=10000');
+ const charged=new Map<number,number>();
+ if(countsActuals&&rows.length)for(let i=0;i<rows.length;i+=150){
+  for(const u of await d.store.select<{reservation_id:number;requests_last:number|null}>('props_provider_usage',
+   'select=reservation_id,requests_last&reservation_id='+inList(rows.slice(i,i+150).map(r=>Number(r.id)))+'&limit=1000'))
+   if(u.requests_last!==null)charged.set(Number(u.reservation_id),Number(u.requests_last));
+ }
+ const eff=(r:{id:number;credits:number})=>{const c=charged.get(Number(r.id));return c===undefined?Number(r.credits):Math.min(Number(r.credits),c);};
  const dayAgo=Date.parse(now)-86400_000;
  const usage=await d.store.select<{requests_remaining:number}>('props_provider_usage',
   'select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1');
- return {used24h:rows.filter(r=>Date.parse(r.reserved_at)>dayAgo).reduce((a,r)=>a+Number(r.credits),0),
-  used30d:rows.reduce((a,r)=>a+Number(r.credits),0),providerRemaining:usage.length?Number(usage[0].requests_remaining):null};
+ return {countsActuals,policy:effectiveBudgetPolicy({version:String(pol.version),daily_credits:Number(pol.daily_credits),
+  monthly_credits:Number(pol.monthly_credits),provider_floor:Number(pol.provider_floor)}),
+  state:{used24h:rows.filter(r=>Date.parse(r.reserved_at)>dayAgo).reduce((a,r)=>a+eff(r),0),used30d:rows.reduce((a,r)=>a+eff(r),0),
+   providerRemaining:usage.length?Number(usage[0].requests_remaining):null}};
 }
+
+export async function budgetState(d:CycleDeps):Promise<BudgetState>{return (await budgetSnapshot(d)).state;}
 /** Reserve, call once, record usage + raw evidence. Budget refusals and provider failures are explicit outcomes. */
 export async function paidCall(d:CycleDeps,runId:number,endpoint:'events'|'event_odds',eventId:string|null,credits:number,
  call:()=>ReturnType<PropsOddsClient['events']>){
@@ -121,8 +145,9 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   }
   if(!d.odds){await finish(d,runId,false,'ODDS_NOT_CONFIGURED',s);return {kind:'collect',outcome:'ODDS_NOT_CONFIGURED',runId,summary:s};}
   const odds=d.odds;
-  const state=await budgetState(d);s.budgetBefore=state;
-  if(!canSpend(ACTIVE_BUDGET_POLICY,state,EVENTS_LIST_COST+eventOddsWorstCost()).allowed){
+  const budget=await budgetSnapshot(d);const state=budget.state;
+  s.budgetBefore={...state,policy:budget.policy.version,countsProviderActuals:budget.countsActuals};
+  if(!canSpend(budget.policy,state,EVENTS_LIST_COST+eventOddsWorstCost()).allowed){
    s.reason='budget_exhausted_before_start';await finish(d,runId,true,'BUDGET_EXHAUSTED',s);
    return {kind:'collect',outcome:'BUDGET_EXHAUSTED',runId,summary:s};
   }
@@ -136,9 +161,9 @@ export async function runCollect(d:CycleDeps,slot:string,scheduledFor:string|nul
   s.events={listed:listed.events.length,invalid:listed.invalid,startedOrPast:listed.startedOrPast};
   const done=await d.store.select<{external_id:string}>('props_raw_responses','select=external_id&source=eq.the_odds_api&endpoint=eq.event_odds'+
    '&received_at=gt.'+q(ago(d.now(),20*3600_000))+'&limit=2000');
-  const after=await budgetState(d);
+  const after=(await budgetSnapshot(d)).state;
   const plan=chooseEvents({events:listed.events,alreadyCollected:new Set(done.map(r=>r.external_id)),nowIso:d.now(),
-   lockBufferMs:COLLECT_LOCK_MARGIN_MS,horizonMs:COLLECT_HORIZON_MS,policy:ACTIVE_BUDGET_POLICY,state:after});
+   lockBufferMs:COLLECT_LOCK_MARGIN_MS,horizonMs:COLLECT_HORIZON_MS,policy:budget.policy,state:after});
   s.plan={chosen:plan.chosen.map(e=>e.id),skipped:plan.skipped};
   const observed:{obs:ObsRow;event:ListedEvent}[]=[];
   const perEvent:Record<string,unknown>[]=[];

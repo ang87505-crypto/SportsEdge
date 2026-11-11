@@ -5,7 +5,7 @@
  */
 import {MODEL_VERSION,type Platform,type Stat} from './contract.ts';
 import {playerKey} from './identity.ts';
-import {ACTIVE_BUDGET_POLICY} from './budget.ts';
+import {effectiveBudgetPolicy} from './budget.ts';
 
 export type Raw={
  nowIso:string;
@@ -127,6 +127,10 @@ export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}=
    allLegsHit:settled.filter(e=>e.settlement!.losses===0&&e.settlement!.wins>0).length,payoutUnknown:unknownPayout.length},
   bankroll,account,
   automation:{control:r.control,runs:runs.slice(0,12),lastCollect:lastOk('collect'),lastSettle:lastOk('settle'),lastFailure,
-   budget:{used24h,used30d,daily:ACTIVE_BUDGET_POLICY.dailyCredits,monthly:ACTIVE_BUDGET_POLICY.monthlyCredits,floor:ACTIVE_BUDGET_POLICY.providerFloor,providerRemaining:r.providerRemaining}}};
+   budget:{used24h,used30d,
+   // The same limits the worker spends under: the stricter of the database row and the reviewed source policy.
+   daily:effectiveBudgetPolicy(r.budgetPolicy).dailyCredits,monthly:effectiveBudgetPolicy(r.budgetPolicy).monthlyCredits,
+   floor:effectiveBudgetPolicy(r.budgetPolicy).providerFloor,policyVersion:effectiveBudgetPolicy(r.budgetPolicy).version,countsProviderActuals:r.budgetPolicy?.count_provider_actuals===true,
+   providerRemaining:r.providerRemaining}}};
 }
 export type PropsView=ReturnType<typeof buildView>;

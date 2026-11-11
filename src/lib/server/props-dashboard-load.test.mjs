@@ -73,3 +73,17 @@ test('pre-v3 policy falls back to conservative reservations when column is missi
  assert.equal(r.budgetPolicy.count_provider_actuals,false);
  assert.equal(r.credits[0].effective_credits,3);
 });
+
+test('runs are read per kind, so a day of capture ticks never pushes settles out of view',async()=>{
+ const seen=[];
+ const store={select:async(t,q)=>{
+  if(t==='props_runs'){seen.push(q);
+   if(q.includes('kind=eq.collect'))return Array.from({length:30},(_,i)=>({id:900-i,kind:'collect',slot_key:'collect-tick-x'+i,status:'completed',outcome:'NOTHING_DUE',started_at:'2026-11-10T20:00:00Z',finished_at:null,start_delay_seconds:null,summary:{}}));
+   if(q.includes('kind=in.(settle,backfill)'))return [{id:12,kind:'settle',slot_key:'settle-2026-11-10T09',status:'completed',outcome:'COMPLETED',started_at:'2026-11-10T10:33:00Z',finished_at:'2026-11-10T10:33:38Z',start_delay_seconds:4390,summary:{}}];
+  }
+  return [];}};
+ const r=await loadPropsDashboardFrom(store,'2026-11-10T21:00:00Z');
+ assert.equal(seen.length,2);
+ assert.equal(r.runs.length,31);assert.equal(r.runs.at(-1).kind,'settle');
+ assert.ok(r.runs.every((x,i,a)=>i===0||a[i-1].id>x.id));
+});

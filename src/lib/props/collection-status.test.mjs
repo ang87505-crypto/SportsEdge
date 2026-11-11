@@ -79,3 +79,12 @@ test('provider-actuals policy shows effective credits and correct next release',
  assert.equal(s.budget.nextRelease.at,'2026-11-11T02:00:09.000Z'); // free event doesn't delay the next actual credit release
  assert.equal(s.budget.nextRelease.credits,5);
 });
+
+test('next collection: legacy slot while ticks are off; the next capture window once released; never a stale slot',async()=>{
+ const {nextCollectionAt}=await import('./collection-status.ts');
+ const plan={plan_version:CAPTURE_PLAN_V1.version,slate_date:'2026-11-12',provider_event_id:'evtNEXT0001',home_team:'H',away_team:'A',
+  commence_time:'2026-11-13T00:00:00.000Z',selected:true,selection_rank:1,arm:'early',reason:'selected_anchor',planned_at:'2026-11-11T21:00:00Z'};
+ assert.equal(nextCollectionAt({nowIso:'2026-11-12T12:00:00Z',ticksReleased:false,plans:[plan],captures:[]}),'2026-11-12T19:10:00.000Z');
+ assert.equal(nextCollectionAt({nowIso:'2026-11-12T12:00:00Z',ticksReleased:true,plans:[plan],captures:[]}),'2026-11-12T16:00:00.000Z');
+ assert.equal(nextCollectionAt({nowIso:'2026-11-12T12:00:00Z',ticksReleased:true,plans:null,captures:null}),null);
+});

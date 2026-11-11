@@ -11,48 +11,21 @@
  */
 import {PropsStoreError} from './props-store.ts';
 import {ProviderError} from './props-odds-client.ts';
-import {begin,finish,heartbeat,paidCall,storeRaw,storeEventReply,predictAndPick,recordMarketViews,recordEntries,
+import {begin,finish,heartbeat,paidCall,storeRaw,storeEventReply,predictAndPick,recordMarketViews,recordEntries,budgetSnapshot,
  ago,inList,type CycleDeps,type CycleResult,type ObsRow,type BookQuoteTally} from './props-cycle.ts';
 import {loadActiveModel} from './props-active-model.ts';
 import {parseEventList,type ListedEvent,type BookQuote} from '../props/normalize.ts';
 import {CAPTURE_PLAN_V1,planSlates,dueCaptures,captureState,slateDateOf,nextWindowOpen,
  type PlanRow,type CaptureRow,type CaptureKey} from '../props/capture-plan.ts';
-import {canSpend,type BudgetPolicy,type BudgetState} from '../props/budget.ts';
+import {canSpend} from '../props/budget.ts';
 import {MODEL_VERSION,SELECTION_VERSION,PLATFORMS,SPORTSBOOKS} from '../props/contract.ts';
 
-const q=encodeURIComponent;
 type DbPlan=PlanRow&{id:number};
 type DbCapture={id:number;plan_id:number;provider_event_id:string;capture_key:CaptureKey;window_name:'early'|'late';claimed_at:string};
 type DbOutcome={capture_id:number;outcome:string;dfs_lines:number|null};
 
-/** The database's active budget policy (authoritative) and the effective rolling use it implies. */
-export async function tickBudget(d:CycleDeps):Promise<{policy:BudgetPolicy;state:BudgetState;countsActuals:boolean}>{
- const now=d.now();
- const base='select=version,daily_credits,monthly_credits,provider_floor';
- const where='&active_from=lte.'+q(now)+'&order=active_from.desc&limit=1';
- // count_provider_actuals exists only once props_budget_v3_actuals.sql is applied (owner approval); absent = false.
- let pol:Record<string,unknown>|undefined;
- try{[pol]=await d.store.select<Record<string,unknown>>('props_budget_policy',base+',count_provider_actuals'+where);}
- catch{[pol]=await d.store.select<Record<string,unknown>>('props_budget_policy',base+where);}
- if(!pol)throw new PropsStoreError('BUDGET_POLICY_MISSING',true);
- const countsActuals=pol.count_provider_actuals===true;
- const rows=await d.store.select<{id:number;credits:number;reserved_at:string}>('props_credit_reservations',
-  'select=id,credits,reserved_at&reserved_at=gt.'+q(ago(now,30*86400_000))+'&limit=10000');
- const charged=new Map<number,number>();
- if(countsActuals&&rows.length)for(let i=0;i<rows.length;i+=150){
-  for(const u of await d.store.select<{reservation_id:number;requests_last:number|null}>('props_provider_usage',
-   'select=reservation_id,requests_last&reservation_id='+inList(rows.slice(i,i+150).map(r=>Number(r.id)))+'&limit=1000'))
-   if(u.requests_last!==null)charged.set(Number(u.reservation_id),Number(u.requests_last));
- }
- const eff=(r:{id:number;credits:number})=>{const c=charged.get(Number(r.id));return c===undefined?Number(r.credits):Math.min(Number(r.credits),c);};
- const dayAgo=Date.parse(now)-86400_000;
- const usage=await d.store.select<{requests_remaining:number}>('props_provider_usage',
-  'select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1');
- return {countsActuals,policy:{version:String(pol.version),dailyCredits:Number(pol.daily_credits),monthlyCredits:Number(pol.monthly_credits),
-  providerFloor:Number(pol.provider_floor),maxEventsPerRun:0},
-  state:{used24h:rows.filter(r=>Date.parse(r.reserved_at)>dayAgo).reduce((a,r)=>a+eff(r),0),used30d:rows.reduce((a,r)=>a+eff(r),0),
-   providerRemaining:usage.length?Number(usage[0].requests_remaining):null}};
-}
+/** Shared with the slot collect: the database's active policy and the effective rolling use it implies. */
+export const tickBudget=budgetSnapshot;
 
 async function loadPlans(d:CycleDeps,fromSlate:string){
  const plans=await d.store.select<DbPlan>('props_capture_plans','select=id,plan_version,slate_date,provider_event_id,home_team,away_team,'+

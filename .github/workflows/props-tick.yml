@@ -25,8 +25,11 @@ on:
         type: string
 permissions:
   contents: read
+# Own group: GitHub cancels any PENDING run in a group when a newer one queues, so sharing props-paper would let a
+# burst of delayed ticks cancel a pending settle or collect. Ticks and slot collects are serialized by the database
+# instead (one running collect run at a time: BUSY/DUPLICATE), and a cancelled pending tick is harmless.
 concurrency:
-  group: props-paper
+  group: props-tick
   cancel-in-progress: false
 jobs:
   tick:

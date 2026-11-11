@@ -24,6 +24,15 @@ const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Ar
 const MISSING:CaptureState[]=['MISSED','NO_LINES_FOUND','BUDGET_REFUSED','FAILED','ATTEMPT_UNRESOLVED'];
 const isTick=(slot:string)=>slot.startsWith('collect-tick-');
 
+/**
+ * The next time a props collection is planned: the next capture window once ticks are released (null when the
+ * capture plans are unavailable), otherwise the next legacy collect slot. Every page and the assistant use this.
+ */
+export function nextCollectionAt(x:{nowIso:string;ticksReleased:boolean;plans:PlanRow[]|null|undefined;captures:CaptureRow[]|null|undefined}):string|null{
+ if(x.ticksReleased)return x.plans?nextWindowOpen(x.plans,x.captures??[],x.nowIso)?.at??null:null;
+ return nextPlannedRuns(x.nowIso,4).find(r=>r.kind==='collect')?.at??null;
+}
+
 export function collectionStatus(x:CollectionInput){
  const now=Date.parse(x.nowIso);const dayAgo=now-86400_000;
  const collects=x.runs.filter(r=>r.kind==='collect').sort((a,b)=>b.id-a.id);

@@ -154,3 +154,46 @@ test('capture ticks end to end: plan once, windows, duplicate triggers, rolling 
  assert.deepEqual(tD.summary.slates['2026-11-12'],{CAPTURED:2,NOT_SELECTED:1});
  const w=captureWindows(EV[0].commence_time);assert.ok(Date.parse(w.lateTo)<Date.parse('2026-11-13T04:10:00Z'));
 });
+
+test('accounting: the Nov 9->10 carryover refuses under v2 and prices exactly one game once v3 counts provider charges',
+ {skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {runCollect}=await import('./props-cycle.ts');
+ const DB2='props_v3_it';
+ const dir=mkdtempSync(join(tmpdir(),'props-v3-'));
+ const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+ resetDb(DB2,[schema('props_v1.sql'),schema('props_budget_v2.sql'),schema('props_market_v1.sql'),clockFile]);
+ const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+ clock='2026-11-12T00:00:00.000Z';
+ const store=propsStore(env,pgFetch(DB2,now));
+ const deps={store,odds,espn,model,now,worker:'test:v3',seasonStart:'2026-10-01T00:00:00Z',trigger:'manual'};
+ await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'v3 accounting test',p_actor:'owner-test'});
+ // The late Nov 9 collect, as recorded: events reserved 1 (provider charged 0), one game reserved 3 (charged 3).
+ const late=await store.rpc('props_begin_run',{p_kind:'collect',p_slot:'collect-2026-11-09T19-replay',p_worker:'test:carry',p_scheduled_for:null,p_lease_seconds:600});
+ const e1=await store.rpc('props_reserve_credits',{p_run:late.runId,p_endpoint:'events',p_event:null,p_credits:1});
+ await store.rpc('props_record_usage',{p_reservation:e1,p_http:200,p_remaining:485,p_used:15,p_last:0});
+ const o1=await store.rpc('props_reserve_credits',{p_run:late.runId,p_endpoint:'event_odds',p_event:'evtCARRY0001',p_credits:3});
+ await store.rpc('props_record_usage',{p_reservation:o1,p_http:200,p_remaining:482,p_used:18,p_last:3});
+ await store.rpc('props_finish_run',{p_run:late.runId,p_status:'completed',p_outcome:'COMPLETED',p_summary:{}});
+ const callsBefore=calls.odds.length;
+ // 19 hours later (the Nov 10 19:10 slot shape): v2 counts 4 reserved, a collect needs 4 -> refused, nothing spent.
+ clock='2026-11-12T19:00:00.000Z';
+ const v2=await runCollect(deps,'collect-v2-check',null);
+ assert.equal(v2.outcome,'BUDGET_EXHAUSTED',JSON.stringify(v2.summary));
+ assert.equal(v2.summary.budgetBefore.used24h,4);
+ assert.equal(calls.odds.length,callsBefore);
+ // Owner-approved v3 (same limits, provider-confirmed charges): effective use 3, so exactly one game fits; never two.
+ const v3sql=readFileSync(schema('props_budget_v3_actuals.sql'),'utf8');
+ assert.ok(psql(DB2,v3sql).ok);
+ assert.ok(psql(DB2,`INSERT INTO public.props_budget_policy(version,daily_credits,monthly_credits,provider_floor,active_from,count_provider_actuals)
+  VALUES('props-budget-v3',7,200,60,'2026-11-12T18:00:00Z',true)`).ok);
+ clock='2026-11-12T19:05:00.000Z';
+ const v3=await runCollect(deps,'collect-v3-check',null);
+ assert.equal(v3.outcome,'COMPLETED',JSON.stringify(v3.summary));
+ assert.deepEqual([v3.summary.budgetBefore.used24h,v3.summary.budgetBefore.policy,v3.summary.budgetBefore.countsProviderActuals],[3,'props-budget-v3',true]);
+ assert.equal(v3.summary.plan.chosen.length,1);
+ assert.equal(calls.odds.length,callsBefore+1);
+ // The database agrees with the worker: one more 3-credit request is refused by props_reserve_credits itself.
+ const extra=await store.rpc('props_begin_run',{p_kind:'collect',p_slot:'collect-v3-extra',p_worker:'test:x',p_scheduled_for:null,p_lease_seconds:600});
+ await assert.rejects(store.rpc('props_reserve_credits',{p_run:extra.runId,p_endpoint:'event_odds',p_event:'evtEXTRA001',p_credits:3}),
+  e=>e.code==='PROPS_BUDGET_DAILY_CAP');    // effective 0 + 3 + 0 + 3 = 6, so 3 more would be 9 > 7
+});

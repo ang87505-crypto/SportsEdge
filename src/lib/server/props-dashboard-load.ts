@@ -20,7 +20,11 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
  const since=encodeURIComponent(new Date(now-14*86400_000).toISOString());
  const [control,runs,credits,usage,observations,accounts,entries]=await Promise.all([
   store.select<Raw['control']&object>('props_control','select=state,reason,changed_at&id=eq.1'),
-  store.select<Raw['runs'][number]>('props_runs','select=id,kind,slot_key,status,outcome,started_at,finished_at,start_delay_seconds,summary&order=id.desc&limit=30'),
+  // Per kind: capture ticks write a collect run about every 30 minutes, which must never push settles out of view.
+  Promise.all([
+   store.select<Raw['runs'][number]>('props_runs','select=id,kind,slot_key,status,outcome,started_at,finished_at,start_delay_seconds,summary&kind=eq.collect&order=id.desc&limit=30'),
+   store.select<Raw['runs'][number]>('props_runs','select=id,kind,slot_key,status,outcome,started_at,finished_at,start_delay_seconds,summary&kind=in.(settle,backfill)&order=id.desc&limit=15')])
+   .then(([c,s])=>[...c,...s].sort((a,b)=>b.id-a.id)),
   store.select<Raw['credits'][number]>('props_credit_reservations','select=id,credits,reserved_at&reserved_at=gt.'+
    encodeURIComponent(new Date(now-30*86400_000).toISOString())+'&limit=10000'),
   store.select<{requests_remaining:number}>('props_provider_usage','select=requests_remaining&requests_remaining=not.is.null&order=recorded_at.desc,id.desc&limit=1'),

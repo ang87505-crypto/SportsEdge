@@ -8,9 +8,9 @@ import {OpsStatusPanel} from '@/components/ops-status-panel';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule';
-import {collectionStatus} from '@/lib/props/collection-status';
+import {collectionStatus,nextCollectionAt} from '@/lib/props/collection-status';
 import {timingStudy} from '@/lib/props/timing-study';
-import {ACTIVE_BUDGET_POLICY} from '@/lib/props/budget';
+import {effectiveBudgetPolicy} from '@/lib/props/budget';
 import {MODEL_VERSION} from '@/lib/props/contract';
 import {PropsCollectionPanel} from '@/components/props-collection-panel';
 import {buildView} from '@/lib/props/dashboard-view';
@@ -74,7 +74,8 @@ async function SportsStatus(){
  const pp=buildView(raw,'prizepicks'),p6=buildView(raw,'pick6');
  const sum=propsSummary(pp);
  const next=nextPlannedRuns(raw.nowIso,4);
- const collect=next.find(r=>r.kind==='collect'),settle=next.find(r=>r.kind==='settle');
+ const collectAt=nextCollectionAt({nowIso:raw.nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures});
+ const collect=collectAt?{at:collectAt}:null,settle=next.find(r=>r.kind==='settle');
  const last=pp.automation.lastCollect;
  const open=pp.entryStats.open+p6.entryStats.open,settled=pp.entryStats.settled+p6.entryStats.settled;
  return <Panel title="PrizePicks props" description="NBA player props · daily virtual entries (Pick6 tracked alongside)" actions={<Badge tone="info">$5 virtual entries</Badge>}>
@@ -99,7 +100,8 @@ async function SportsStatus(){
     <Link href="/paper-betting/props" className="button">Open PrizePicks and controls</Link>
     <a href="https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-daily.yml" className="button button-secondary" target="_blank" rel="noopener noreferrer">Run history on GitHub</a>
    </div>
-   <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1,raw.runCounts??null)}/>
+   {/* Once capture ticks are released the legacy collect slots stand down; the collection panel below covers collection. */}
+   <SlotTable rows={slotStatus(raw.runs,raw.nowIso,1,raw.runCounts??null).filter(r=>!(ticksReleased()&&r.kind==='collect'))}/>
    <p className="quiet small-print">{raw.accounts.length?`Up to ${raw.accounts.reduce((sum,a)=>sum+a.max_entries_per_day,0)} virtual entries a day across both platforms. `:''}Only qualifying picks are recorded.</p>
    <p className="quiet small-print">Read {mountainTime(raw.nowIso)} · saved lines cover the last 14 days.</p>
   </div>
@@ -112,9 +114,7 @@ async function CollectionSection(){
  let raw;
  try{raw=await loadOnce();}catch{return <Panel title="Props line collection" className="mt-12"><Empty title="Could not read collection receipts">Refresh to check again. Nothing is assumed.</Empty></Panel>;}
  const s=collectionStatus({nowIso:raw.nowIso,runs:raw.runs,credits:raw.credits,providerRemaining:raw.providerRemaining,runCounts:raw.runCounts??null,
-  plans:raw.capturePlans??null,captures:raw.captures??null,policy:raw.budgetPolicy?{dailyCredits:Number(raw.budgetPolicy.daily_credits),
-   monthlyCredits:Number(raw.budgetPolicy.monthly_credits),providerFloor:Number(raw.budgetPolicy.provider_floor),
-   countsProviderActuals:raw.budgetPolicy.count_provider_actuals}:ACTIVE_BUDGET_POLICY,ticksReleased:ticksReleased(),
+  plans:raw.capturePlans??null,captures:raw.captures??null,policy:{...effectiveBudgetPolicy(raw.budgetPolicy),countsProviderActuals:raw.budgetPolicy?.count_provider_actuals===true},ticksReleased:ticksReleased(),
   scheduledRunsEnabled:PROPS_RELEASE.scheduledRunsEnabled,controlState:raw.control?.state??null});
  const study=raw.capturePlans&&raw.captures?timingStudy({nowIso:raw.nowIso,observations:raw.observations.map(o=>({...o,run_id:o.run_id??-1})),
   predictions:raw.predictions,picks:raw.picks,results:raw.results,legs:raw.legs,entries:raw.entries,accounts:raw.accounts,settlements:raw.settlements,
