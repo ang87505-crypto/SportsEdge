@@ -12,7 +12,7 @@
    "forward": {
     "firstExecution": null,
     "sessions": 0,
-    "status": "NO_FORWARD_SESSIONS_YET",
+    "status": "NOT STARTED",
     "totalReturn": null
    },
    "historical": {
@@ -42,9 +42,9 @@
   {
    "active": false,
    "forward": {
-    "firstExecution": null,
-    "sessions": 0,
-    "status": "NO_FORWARD_SESSIONS_YET",
+    "firstExecution": "2026-11-10",
+    "sessions": 1,
+    "status": "INSUFFICIENT FORWARD SAMPLE",
     "totalReturn": null
    },
    "historical": null,
@@ -53,9 +53,9 @@
   {
    "active": false,
    "forward": {
-    "firstExecution": null,
-    "sessions": 0,
-    "status": "NO_FORWARD_SESSIONS_YET",
+    "firstExecution": "2026-11-10",
+    "sessions": 1,
+    "status": "INSUFFICIENT FORWARD SAMPLE",
     "totalReturn": null
    },
    "historical": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-10T09:59:51Z",
+  "forwardAt": "2026-11-11T09:34:05Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -95,10 +95,16 @@
    {
     "active": false,
     "forward": {
-     "firstExecution": null,
-     "lastTargets": null,
-     "sessions": 0,
-     "status": "NOT STARTED",
+     "firstExecution": "2026-11-10",
+     "lastTargets": {
+      "ACN": 0.2,
+      "COF": 0.2,
+      "GIS": 0.2,
+      "NVDA": 0.2,
+      "PM": 0.2
+     },
+     "sessions": 1,
+     "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": null
     },
     "historical": {
@@ -142,10 +148,16 @@
    {
     "active": false,
     "forward": {
-     "firstExecution": null,
-     "lastTargets": null,
-     "sessions": 0,
-     "status": "NOT STARTED",
+     "firstExecution": "2026-11-10",
+     "lastTargets": {
+      "AMZN": 0.2,
+      "CMG": 0.2,
+      "LOW": 0.2,
+      "MSFT": 0.2,
+      "NEM": 0.2
+     },
+     "sessions": 1,
+     "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": null
     },
     "historical": {
@@ -189,10 +201,10 @@
    {
     "active": false,
     "forward": {
-     "firstExecution": null,
-     "lastTargets": null,
-     "sessions": 0,
-     "status": "NOT STARTED",
+     "firstExecution": "2026-11-10",
+     "lastTargets": {},
+     "sessions": 1,
+     "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": null
     },
     "historical": {
@@ -230,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-10T09:59:43Z",
- "generatedAt": "2026-11-10T09:59:56Z",
+ "forwardAt": "2026-11-11T09:34:00Z",
+ "generatedAt": "2026-11-11T09:34:07Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "limitations": [
   "Historical results use previously inspected data and a survivorship-biased stock universe.",
@@ -249,14 +261,32 @@
   },
   {
    "id": "qmom-holdings",
-   "lastSuccessAt": "2026-11-10T09:59:38Z",
-   "retrievedAt": "2026-11-10T09:59:38Z",
+   "lastSuccessAt": "2026-11-11T09:33:59Z",
+   "retrievedAt": "2026-11-11T09:33:59Z",
+   "status": "OK"
+  },
+  {
+   "id": "sec-company-tickers",
+   "lastSuccessAt": "2026-11-10T17:34:55Z",
+   "retrievedAt": "2026-11-10T17:34:55Z",
    "status": "OK"
   },
   {
    "id": "sec-edgar-13f",
-   "lastSuccessAt": "2026-11-10T09:59:38Z",
-   "retrievedAt": "2026-11-10T09:59:38Z",
+   "lastSuccessAt": "2026-11-11T09:33:59Z",
+   "retrievedAt": "2026-11-11T09:33:59Z",
+   "status": "OK"
+  },
+  {
+   "id": "sec-form345-dataset",
+   "lastSuccessAt": "2026-11-10T17:34:55Z",
+   "retrievedAt": "2026-11-10T17:34:55Z",
+   "status": "FETCH_FAILED"
+  },
+  {
+   "id": "sec-xbrl-companyfacts",
+   "lastSuccessAt": "2026-11-10T17:34:55Z",
+   "retrievedAt": "2026-11-10T17:34:55Z",
    "status": "OK"
   }
  ],
