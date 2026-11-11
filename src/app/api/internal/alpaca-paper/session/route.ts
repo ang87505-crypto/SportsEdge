@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {OWNER_COOKIE,OWNER_SESSION_SECONDS,issueOwnerSession,ownerSecret,ownerSecretProblem,secureTextEquals} from '@/lib/server/alpaca-owner-session';
+import {OWNER_HINT_COOKIE} from '@/lib/owner-hint';
 
 const NO_STORE={'Cache-Control':'private, no-store','Pragma':'no-cache','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'};
 function json(value:Record<string,unknown>,status:number) {
@@ -31,11 +32,14 @@ export async function POST(req:NextRequest) {
   response.cookies.set(OWNER_COOKIE,issueOwnerSession(secret),{
     httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:OWNER_SESSION_SECONDS
   });
+  // Readable, non-secret hint so public pages skip owner-only calls for visitors; grants nothing by itself.
+  response.cookies.set(OWNER_HINT_COOKIE,'1',{httpOnly:false,secure:true,sameSite:'strict',path:'/',maxAge:OWNER_SESSION_SECONDS});
   return response;
 }
 export async function DELETE(req:NextRequest) {
   if(!sameOrigin(req))return json({status:'origin_rejected'},403);
   const response=json({status:'signed_out'},200);
   response.cookies.set(OWNER_COOKIE,'',{httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:0});
+  response.cookies.set(OWNER_HINT_COOKIE,'',{httpOnly:false,secure:true,sameSite:'strict',path:'/',maxAge:0});
   return response;
 }
