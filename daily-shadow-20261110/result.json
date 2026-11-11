@@ -1,0 +1,298 @@
+{
+ "activation": false,
+ "broker_orders": 0,
+ "graded_at": "2026-11-11T00:43:56.913350+00:00",
+ "input_sha256": "f679b407db187aa87e75ce469a1dc6ada6a2374e4c4365be75b58c0edfde9825",
+ "plan_sha256": "64f2747f69340c179411a8107935101229df22cef18795300301e9da9f79c051",
+ "qualification": "NOT_ASSESSED_ONE_SESSION",
+ "results": {
+  "gainers5": {
+   "pnl": {
+    "0": 712.97,
+    "10": 656.65,
+    "25": 572.16,
+    "5": 684.81
+   },
+   "simulated_fills": [
+    {
+     "entry": 502.8,
+     "exit": 515.21,
+     "limit": 523.84,
+     "previous_close": 508.58,
+     "shares": 11,
+     "symbol": "AMD"
+    },
+    {
+     "entry": 364.785,
+     "exit": 372.53,
+     "limit": 381.67,
+     "previous_close": 370.55,
+     "shares": 15,
+     "symbol": "AMAT"
+    },
+    {
+     "entry": 217.735,
+     "exit": 222.39,
+     "limit": 227.95,
+     "previous_close": 221.31,
+     "shares": 26,
+     "symbol": "LRCX"
+    },
+    {
+     "entry": 316.71,
+     "exit": 331.98,
+     "limit": 329.06,
+     "previous_close": 319.48,
+     "shares": 18,
+     "symbol": "AVGO"
+    },
+    {
+     "entry": 388.7,
+     "exit": 393.3,
+     "limit": 406.5,
+     "previous_close": 394.66,
+     "shares": 14,
+     "symbol": "ADI"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  },
+  "losers5": {
+   "pnl": {
+    "0": -218.39,
+    "10": -275.29,
+    "25": -360.65,
+    "5": -246.84
+   },
+   "simulated_fills": [
+    {
+     "entry": 173.97,
+     "exit": 168.89,
+     "limit": 184.03,
+     "previous_close": 178.67,
+     "shares": 32,
+     "symbol": "NVDA"
+    },
+    {
+     "entry": 195.83,
+     "exit": 194.25,
+     "limit": 198.91,
+     "previous_close": 193.12,
+     "shares": 30,
+     "symbol": "PM"
+    },
+    {
+     "entry": 253.375,
+     "exit": 258.51,
+     "limit": 262.0,
+     "previous_close": 254.37,
+     "shares": 22,
+     "symbol": "ACN"
+    },
+    {
+     "entry": 34.94,
+     "exit": 34.6,
+     "limit": 35.93,
+     "previous_close": 34.88,
+     "shares": 166,
+     "symbol": "GIS"
+    },
+    {
+     "entry": 198.08,
+     "exit": 195.84,
+     "limit": 204.54,
+     "previous_close": 198.58,
+     "shares": 29,
+     "symbol": "COF"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  },
+  "losers5-spy200": {
+   "pnl": {
+    "0": -218.39,
+    "10": -275.29,
+    "25": -360.65,
+    "5": -246.84
+   },
+   "simulated_fills": [
+    {
+     "entry": 173.97,
+     "exit": 168.89,
+     "limit": 184.03,
+     "previous_close": 178.67,
+     "shares": 32,
+     "symbol": "NVDA"
+    },
+    {
+     "entry": 195.83,
+     "exit": 194.25,
+     "limit": 198.91,
+     "previous_close": 193.12,
+     "shares": 30,
+     "symbol": "PM"
+    },
+    {
+     "entry": 253.375,
+     "exit": 258.51,
+     "limit": 262.0,
+     "previous_close": 254.37,
+     "shares": 22,
+     "symbol": "ACN"
+    },
+    {
+     "entry": 34.94,
+     "exit": 34.6,
+     "limit": 35.93,
+     "previous_close": 34.88,
+     "shares": 166,
+     "symbol": "GIS"
+    },
+    {
+     "entry": 198.08,
+     "exit": 195.84,
+     "limit": 204.54,
+     "previous_close": 198.58,
+     "shares": 29,
+     "symbol": "COF"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  },
+  "losers5-spy200-sector2": {
+   "pnl": {
+    "0": -218.39,
+    "10": -275.29,
+    "25": -360.65,
+    "5": -246.84
+   },
+   "simulated_fills": [
+    {
+     "entry": 173.97,
+     "exit": 168.89,
+     "limit": 184.03,
+     "previous_close": 178.67,
+     "shares": 32,
+     "symbol": "NVDA"
+    },
+    {
+     "entry": 195.83,
+     "exit": 194.25,
+     "limit": 198.91,
+     "previous_close": 193.12,
+     "shares": 30,
+     "symbol": "PM"
+    },
+    {
+     "entry": 253.375,
+     "exit": 258.51,
+     "limit": 262.0,
+     "previous_close": 254.37,
+     "shares": 22,
+     "symbol": "ACN"
+    },
+    {
+     "entry": 34.94,
+     "exit": 34.6,
+     "limit": 35.93,
+     "previous_close": 34.88,
+     "shares": 166,
+     "symbol": "GIS"
+    },
+    {
+     "entry": 198.08,
+     "exit": 195.84,
+     "limit": 204.54,
+     "previous_close": 198.58,
+     "shares": 29,
+     "symbol": "COF"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  },
+  "losers5-volz": {
+   "pnl": {
+    "0": -218.39,
+    "10": -275.29,
+    "25": -360.65,
+    "5": -246.84
+   },
+   "simulated_fills": [
+    {
+     "entry": 173.97,
+     "exit": 168.89,
+     "limit": 184.03,
+     "previous_close": 178.67,
+     "shares": 32,
+     "symbol": "NVDA"
+    },
+    {
+     "entry": 195.83,
+     "exit": 194.25,
+     "limit": 198.91,
+     "previous_close": 193.12,
+     "shares": 30,
+     "symbol": "PM"
+    },
+    {
+     "entry": 198.08,
+     "exit": 195.84,
+     "limit": 204.54,
+     "previous_close": 198.58,
+     "shares": 29,
+     "symbol": "COF"
+    },
+    {
+     "entry": 253.375,
+     "exit": 258.51,
+     "limit": 262.0,
+     "previous_close": 254.37,
+     "shares": 22,
+     "symbol": "ACN"
+    },
+    {
+     "entry": 34.94,
+     "exit": 34.6,
+     "limit": 35.93,
+     "previous_close": 34.88,
+     "shares": 166,
+     "symbol": "GIS"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  },
+  "spy-open-close": {
+   "pnl": {
+    "0": 75.24,
+    "10": 18.32,
+    "25": -67.06,
+    "5": 46.78
+   },
+   "simulated_fills": [
+    {
+     "entry": 747.94,
+     "exit": 749.92,
+     "limit": 775.27,
+     "previous_close": 752.69,
+     "shares": 38,
+     "symbol": "SPY"
+    }
+   ],
+   "status": "MEASURED",
+   "unfilled_gap": [],
+   "unresolved": []
+  }
+ },
+ "schema": "daily-shadow-result-v1",
+ "session": "2026-11-10"
+}
