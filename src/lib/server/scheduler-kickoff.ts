@@ -16,8 +16,10 @@ type Slot={hourUtc:number;weekdaysUtc?:number[];workflow:string;inputs:Record<st
  stock?:boolean;
  /** A one-session research trial must not be dispatched on later days. */
  dateUtc?:string;
- /** Skip when this workflow already succeeded this recently (non-props jobs without slot keys). */
- skipIfSucceededWithinHours?:number};
+ /** Skip only when this workflow already succeeded since this UTC time today (HH:MM, the GitHub slot it backs up).
+  * A rolling window is wrong here: GitHub often starts a slot many hours late, and a late run of yesterday's slot
+  * must not suppress today's backup (2026-11-11: a 09:59 run on 10 Nov blocked the 04:00 backup on 11 Nov). */
+ skipIfSucceededSinceUtc?:string};
 const REPO='ang87505-crypto/SportsEdge';
 const BASE='https://api.github.com/repos/'+REPO+'/actions/workflows/';
 const TOKEN=/^(github_pat_[A-Za-z0-9_]{20,255}|ghp_[A-Za-z0-9]{30,64})$/;
@@ -28,7 +30,7 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-settle-midday':{hourUtc:16,workflow:'props-daily.yml',inputs:{kind:'settle',cron:'20 15 * * *'},props:true},
  'props-collect-early':{hourUtc:20,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 19 * * *'},props:true},
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
- 'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededWithinHours:20},
+ 'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
  // Stock PAPER worker backups (weekdays). Execute hours sit inside 09:30 ET + 30 min to 16:00 ET - 20 min in both
  // offsets; the controller re-checks the exchange session, the owner gate and the same-day decision itself.
@@ -70,14 +72,15 @@ export async function handleSchedulerKickoff(req:Request,slotName:string,env:Env
  if(!TOKEN.test(token))return json({status:'dispatch_not_configured',slot:slotName},503);
  const headers={Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
   'User-Agent':'sportsedge-scheduler'};
- if(slot.skipIfSucceededWithinHours){
+ if(slot.skipIfSucceededSinceUtc){
+  const since=Date.parse(new Date(deps.now()).toISOString().slice(0,10)+'T'+slot.skipIfSucceededSinceUtc+':00Z');
   try{
    const r=await deps.fetcher(BASE+slot.workflow+'/runs?branch=main&status=success&per_page=5',
     {headers,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(10_000)});
    if(r.ok){
     const body=await r.json() as {workflow_runs?:{created_at:string}[]};
-    const recent=(body.workflow_runs??[]).some(x=>deps.now()-Date.parse(x.created_at)<slot.skipIfSucceededWithinHours!*3600_000);
-    if(recent)return json({status:'skipped',reason:'already_succeeded_recently',slot:slotName});
+    const done=(body.workflow_runs??[]).some(x=>Date.parse(x.created_at)>=since);
+    if(done)return json({status:'skipped',reason:'already_succeeded_since_slot',slot:slotName});
    }
   }catch{/* Could not check: dispatching a duplicate of these jobs is harmless. */}
  }
