@@ -9,13 +9,17 @@ import {normalize} from './understand.ts';
 import {VERDICT_TEXT,type LabView} from '../lab/view.ts';
 import {explainEntries,accuracyByBand,gradedPicks,reasonText} from '../lab/staking-view.ts';
 import {METHOD_TEXT,type Method} from '../lab/staking.ts';
+import {forwardPredictions,summarizeModels,decisionCategories,newestModel,type PredictionRow,type ModelSummary} from '../props/forward-predictions.ts';
 
-export type LabTopic='learned'|'features'|'player_fail'|'mistakes'|'better'|'calibration'|'psychology'|'money_vs_accuracy'|
+export type LabTopic='all_predictions'|'accuracy_by_model'|'newest_choices'|'learned'|'features'|'player_fail'|'mistakes'|'better'|'calibration'|'psychology'|'money_vs_accuracy'|
  'lineup_why'|'stake_why'|'stake_best_ev'|'stake_risk_today'|'stake_flat'|'stake_overconfident'|'skip_high_conf'|'overview';
 
 /** Lab questions are recognised before any other routing; null means "not a lab question". */
 export function labTopic(message:string):LabTopic|null{
  const t=normalize(message);
+ if(/\ball (of )?(our|the) predictions\b|\bevery prediction\b|\b(ones|the ones|those|predictions) we did not (bet|enter|play|pick)\b|\bincluding (the )?(ones|predictions) we\b/.test(t))return 'all_predictions';
+ if(/\baccuracy by model\b|\b(accuracy|hit rate|brier( score)?) (of|for|by|per) (each|every|the|our)? ?models?\b|\bwhich model (is|was) (the )?most accurate\b|\bcompare (the )?models\b/.test(t))return 'accuracy_by_model';
+ if(/\b(newest|latest|new|newer) (ai|model|challenger|learning model)\b.*\b(chose|choose|chosen|pick|picks|picked|select\w*)\b/.test(t))return 'newest_choices';
  if(/\bwhy did we (choose|pick|build|make|take|select|enter) (this|that|the|our|these|those|tonight is|today is|last night is)? ?(lineup|entry|entries|lineups)\b|\bwhy (this|that) (lineup|entry)\b/.test(t))return 'lineup_why';
  if(/\$\d+(\.\d+)? instead of \$\d+|\bentry (was|is) \$\d|\bwhy (was|is) (this|that|the) entry\b|\bstake (size|sizing)\b|\bwhy (did|was) (we|it) (stake|bet) \$/.test(t))return 'stake_why';
  if(/\b(highest|best|most) (estimated )?(expected value|ev)\b|\bexpected value\b.*\b(lineup|entry|entries)\b/.test(t))return 'stake_best_ev';
@@ -60,6 +64,48 @@ export function labAnswer(message:string,v:LabView,raw:Raw|null,nowIso:string):R
  const topic=labTopic(message)??'overview';
  const fwd=forwardLine(v);
  switch(topic){
+ case 'all_predictions':case 'accuracy_by_model':case 'newest_choices':{
+  if(!raw)return reply('Sports records are unavailable here, so no prediction is reported.');
+  const fp=forwardPredictions(raw);
+  const modelTable=(ms:ModelSummary[],title:string):Card=>({kind:'table',title,columns:['Model','Unique graded','Hit rate (95% CI)','Brier','Log loss','Qualifying picks hit'],
+   rows:ms.map(m=>[`${m.modelVersion}${m.role==='active'?' (active)':m.role==='challenger'?' (challenger)':''}`,String(m.graded),
+    m.hitRate===null?'—':`${pct(m.hitRate)} (${pct(m.hitLower,0)}–${pct(m.hitUpper,0)})`,m.brier?.toFixed(4)??'—',m.logLoss?.toFixed(4)??'—',
+    m.qualifying.graded?`${pct(m.qualifying.hitRate)} of ${m.qualifying.graded}`:'—'])});
+  if(topic==='all_predictions'){
+   const graded=(d:string)=>fp.rows.filter(x=>x.date===d&&x.outcome!=='pending');
+   const y=etDate(new Date(Date.parse(nowIso)-86400_000).toISOString());
+   const day=graded(y).length?y:[...new Set(fp.rows.filter(x=>x.outcome!=='pending').map(x=>x.date))].sort().pop();
+   if(!day)return reply('No saved prediction has been graded yet in the last 14 days.');
+   const rows=fp.rows.filter(x=>x.date===day);
+   const c=decisionCategories(rows),ms=summarizeModels(rows),base=ms.find(m=>m.modelVersion==='props-nb-minutes-rate-v1');
+   const cat=(label:string,g:{n:number;graded:number;wins:number;hitRate:number|null})=>`${label} ${g.n}${g.graded?` (hit ${pct(g.hitRate)} of ${g.graded} graded)`:''}`;
+   return reply(`${day===y?'Yesterday':'The latest graded slate'} (${day}, Eastern): the stats model forecast ${c.all.n} unique lines `+
+    `(${rows.filter(x=>x.duplicate&&x.modelVersion==='props-nb-minutes-rate-v1').length} more were the same line on a second platform and count once). `+
+    `${base?`Across ALL of them it hit ${pct(base.hitRate)} of ${base.wins+base.losses} graded (95% CI ${pct(base.hitLower,0)}–${pct(base.hitUpper,0)}), Brier ${base.brier?.toFixed(4)??'—'}. `:''}`+
+    `By decision: ${cat('entered in a $5 virtual entry',c.entered)}; ${cat('qualified but not entered',c.qualifiedNotEntered)}; ${cat('skipped by the pick rule',c.skipped)}; ${cat('recheck captures (observed only)',c.observeOnly)}. `+
+    'Unpicked lines are graded the same way from final box scores; hypothetical picks are research results, not returns.',
+    [modelTable(ms,`Every model on ${day} (unique lines)`)]);
+  }
+  if(topic==='accuracy_by_model'){
+   const ms=summarizeModels(fp.rows);
+   const lab=v.forwardVariants;
+   return reply(`Last 14 days, every saved prediction (not only entry legs), unique lines only: `+ms.map(m=>`${m.modelVersion} ${pct(m.hitRate)} hit on ${m.wins+m.losses} graded, Brier ${m.brier?.toFixed(4)??'—'}`).join('; ')+
+    `. ${lab?`Frozen lab variants (forward): `+lab.map(x=>`${x.label} Brier ${x.brier?.toFixed(4)??'—'}`).join('; ')+'. ':'Lab variants have no forward grades yet. '}`+
+    'Lower Brier and log loss mean better probabilities; hit rate alone never decides promotion, and overlapping intervals mean no model is proven better.',
+    [modelTable(ms,'Accuracy by model, last 14 days (all predictions)')]);
+  }
+  const newest=newestModel(fp.rows);
+  if(!newest)return reply('No learning challenger has scored lines in the last 14 days, so there is nothing for it to have chosen. The stats model and the frozen lab variants are the models on record.');
+  const mine=fp.rows.filter(x=>x.modelVersion===newest&&x.qualifies&&!x.duplicate);
+  const upcoming=mine.filter(x=>Date.parse(x.lockAt)>Date.parse(nowIso));
+  const list=(upcoming.length?upcoming:mine.slice(0,10)).sort((a,b)=>b.confidence-a.confidence).slice(0,10);
+  const done=mine.filter(x=>x.outcome==='win'||x.outcome==='loss'),w=done.filter(x=>x.outcome==='win').length;
+  const row=(x:PredictionRow)=>[x.player,`${x.side} ${x.line} ${x.stat}`,pct(x.confidence),x.outcome==='pending'?'pending':x.outcome,x.decision==='entered'?'yes':'no'];
+  return reply(`${newest} is the newest learning model (${fp.rows.find(x=>x.modelVersion===newest)?.role==='active'?'active':'shadow challenger — it does not make picks'}). `+
+   `${upcoming.length?`It would have chosen ${upcoming.length} upcoming line(s) under the 60–80% rule`:`No upcoming line qualifies for it right now; its most recent qualifying choices are listed`}. `+
+   `So far its hypothetical choices hit ${pct(done.length?w/done.length:null)} of ${done.length} graded. These are frozen research decisions, never entries.`,
+   [{kind:'table',title:`${newest}: lines it would have chosen`,columns:['Player','Pick','Confidence','Result','In a $5 entry?'],rows:list.map(row)}]);
+ }
  case 'features':{
   const helps=v.layers.filter(l=>l.retro[0]?.verdict==='helps').map(l=>l.label);
   const later=v.layers.filter(l=>l.retro[1]&&l.retro[1].verdict!=='not_tested');
