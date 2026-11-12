@@ -12,7 +12,7 @@ on:
         description: What to run
         required: true
         type: choice
-        options: [train, evaluate, review, learning_on, learning_off, auto_on, auto_off, approve, rollback]
+        options: [weekly, train, evaluate, review, learning_on, learning_off, auto_on, auto_off, approve, rollback]
       version:
         description: approve only (props-learn-vN)
         required: false
@@ -21,6 +21,12 @@ on:
         description: reason for owner actions
         required: false
         type: string
+      trigger:
+        description: manual, or backup for the Vercel scheduler standing in for a dropped Sunday schedule
+        required: false
+        type: choice
+        options: [manual, backup]
+        default: manual
 permissions:
   contents: read
 concurrency:
@@ -36,6 +42,7 @@ jobs:
       KIND: ${{ inputs.kind || 'weekly' }}
       VERSION: ${{ inputs.version }}
       REASON: ${{ inputs.reason }}
+      LEARN_TRIGGER: ${{ inputs.trigger || 'schedule' }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -39,6 +39,9 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
   {hourUtc:h,workflow:'props-tick.yml',inputs:{trigger:'backup'},tick:true} satisfies Slot])),
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
+ // Weekly learning backup (Sunday): GitHub's 10:00 UTC schedule is often late or dropped. Skips if today's run already
+ // succeeded or is running; a late GitHub run after this backup skips training itself (minDaysBetweenTrains).
+ 'props-learn-weekly':{hourUtc:16,weekdaysUtc:[0],workflow:'props-learn.yml',inputs:{kind:'weekly',trigger:'backup'},skipIfSucceededSinceUtc:'09:00'},
  // Stock PAPER worker backups (weekdays). Execute hours sit inside 09:30 ET + 30 min to 16:00 ET - 20 min in both
  // offsets; the controller re-checks the exchange session, the owner gate and the same-day decision itself.
  'stock-execute-early':{hourUtc:15,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
