@@ -10,7 +10,7 @@
  * evaluated forward only. This measures probability quality; it says nothing about virtual returns.
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {STATS,type Stat} from '../src/lib/props/contract.ts';
+import {STATS} from '../src/lib/props/contract.ts';
 import {decidePick} from '../src/lib/props/rules.ts';
 import type {ModelParams} from '../src/lib/props/model.ts';
 import {loadBoxCsv,priors,fitDispersion,MODEL_FIXED} from './lib/box-csv.ts';

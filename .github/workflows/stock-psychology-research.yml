@@ -1,0 +1,49 @@
+# AI Learning Lab: stock market psychology ablation (lab-stock-psychology-v1; analytics/stock_psychology_v1.py).
+# RESEARCH ONLY. Manual dispatch, never scheduled. Read-only market-data GETs with the first paper account's keys
+# (the same as the weekly backtest); no orders, no database writes, no account data, no new paid service.
+# It cannot change the live weekly strategy or the supervised Alpaca PAPER release.
+name: Stock psychology research (lab, manual)
+on:
+  workflow_dispatch:
+    inputs:
+      end:
+        description: Last session to include (YYYY-MM-DD)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: stock-psychology-research
+  cancel-in-progress: false
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      END: ${{ inputs.end }}
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate input
+        run: '[[ "$END" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid input"; exit 2; }'
+      - name: Download daily bars, raw and adjusted, 2016 onward (read-only)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_weekly_backtest_v1 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/bars.json.gz"
+      - name: Replay the base strategy and every psychology variant (no network)
+        run: |
+          python -m analytics.stock_psychology_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/psychology.json" --markdown "$RUNNER_TEMP/psychology.md"
+          cat "$RUNNER_TEMP/psychology.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-psychology-${{ inputs.end }}
+          path: ${{ runner.temp }}/psychology.*
+          if-no-files-found: ignore
+          retention-days: 30

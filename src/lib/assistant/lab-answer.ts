@@ -131,7 +131,7 @@ export function labAnswer(message:string,v:LabView,raw:Raw|null,nowIso:string):R
  }
  case 'psychology':{
   const s=v.stocks;
-  if(!s||s.state==='not_run')return reply('Not yet. The stock psychology layers (volume and volatility anomalies, momentum/reversal, earnings reactions, news sentiment, attention) are registered as research-only PAPER experiments, but no result exists, so there is no evidence either way. The weekly stock strategy and the Monday supervised PAPER release are unchanged.');
+  if(!s||s.state==='not_run')return reply('Not yet, and there is no evidence either way. Three psychology layers built from price and volume (attention spikes, volatility shocks, one-month overreaction) are registered as a research-only ablation on the live weekly strategy, with exposure-matched SPY benchmarks, 10 and 25 bps costs and Holm-adjusted tests; it runs only when the owner dispatches the manual research workflow. News sentiment, earnings surprises, search attention and crowd concentration are not tested because no lawful timestamped data is collected. The weekly stock strategy and the Monday supervised PAPER release are unchanged.');
   return reply(`${s.summary} The weekly stock strategy and the Monday supervised PAPER release are unchanged.`,s.verdicts?[{kind:'table',title:'Stock psychology layers (research only)',columns:['Layer','Verdict'],rows:s.verdicts.map(x=>[x.layer,x.verdict])}]:[]);
  }
  case 'money_vs_accuracy':{
