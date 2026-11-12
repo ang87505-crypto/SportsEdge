@@ -85,14 +85,18 @@ async function propsEvidence(){
  try{
   // Per kind: capture ticks add a collect run about every 30 minutes; settles must stay visible.
   const sel=u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&order=id.desc';
-  const [control,collects,settles]=await Promise.all([
+  // The last COMPLETED run of each kind is read directly: ticks write up to ~36 collect runs a day (mostly
+  // NOTHING_DUE), so a successful capture can fall out of any fixed recent window long before the 48 h alarm.
+  const done=u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&status=eq.completed&outcome=eq.COMPLETED&order=id.desc&limit=1';
+  const [control,collects,settles,doneCollect,doneSettle]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
-   getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers})]);
-  const bad=[collects,settles].find(r=>!r.ok||!Array.isArray(r.json));
+   getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers}),
+   getJson(done+'&kind=eq.collect',{headers}),getJson(done+'&kind=eq.settle',{headers})]);
+  const bad=[collects,settles,doneCollect,doneSettle].find(r=>!r.ok||!Array.isArray(r.json));
   if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
   const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
-  const okRun=kind=>{const r=runs.json.find(x=>x.kind===kind&&x.status==='completed'&&x.outcome==='COMPLETED');return r?r.finished_at:null;};
+  const okRun=kind=>(kind==='collect'?doneCollect:doneSettle).json[0]?.finished_at??null;
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),
    lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle')};
  }catch{return {state:'UNAVAILABLE'};}
