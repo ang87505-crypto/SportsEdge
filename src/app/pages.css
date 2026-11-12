@@ -509,3 +509,34 @@
 .chat-list li { display: grid; padding: 6px 0; border-top: 1px solid var(--line); }
 .chat-list small { color: var(--text-3); }
 @media (max-width: 640px) { .chat-msg { max-width: 100%; } }
+
+/* Overview briefing: Right now / Today / Results / Next / learning. */
+.briefing-health { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 8px; margin: 0 -8px 6px; border-radius: var(--r-md); }
+.briefing-health:hover { background: var(--hover); }
+.briefing-health strong { display: block; }
+.briefing-health small { display: block; color: var(--text-2); font-size: var(--fs-xs); margin-top: 2px; }
+.briefing-health .status-dot-v2 { margin-top: 6px; }
+.briefing-approvals { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 10px; overflow-wrap: anywhere; }
+.briefing-approvals ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.briefing-approvals li span { display: block; font-size: var(--fs-sm); }
+.briefing-approvals li small { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+.briefing-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--warn); margin: 0 0 6px; }
+.briefing-grid { margin-bottom: 12px; }
+.briefing-list { list-style: none; margin: 0; padding: 0 8px 8px; }
+.briefing-list a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-md); font-size: var(--fs-sm); }
+.briefing-list a:hover { background: var(--hover); }
+.briefing-list time, .briefing-next time { color: var(--text-3); font-size: var(--fs-xs); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.briefing-next { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.briefing-next li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); font-size: var(--fs-sm); }
+.briefing-next li:first-child { border-top: 0; padding-top: 0; }
+.briefing-learning { margin-bottom: 12px; }
+.briefing-learning-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .briefing-learning-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .briefing-list a { grid-template-columns: auto minmax(0, 1fr); }
+  .briefing-list time { grid-column: 2; }
+}
+/* The owner's status comes first: reasons wrap instead of truncating, and on phones the section shortcuts
+   (already in the bottom navigation) give way so "Right now" is visible without scrolling. */
+.briefing-now .status-copy small { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 720px) { .home-intro .home-sections { display: none; } }

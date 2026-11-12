@@ -277,8 +277,13 @@ try{
   if(!/Sign in/i.test(await askQuestion('Stock results')))throw Error('Anonymous stock query must require owner access');
   if(!/Historical window/.test(await askQuestion('Momentum research results')))throw Error('Missing historical research evidence');
   if(!/Failed checks/.test(await askQuestion('Why?')))throw Error('Research follow-up lost its domain');
-  const combined=await askQuestion('Is everything running?');
+  const combined=await askQuestion('How are sports and stocks doing?');
   if(!['Sports','Stock account','Stock research'].every(s=>combined.includes(s)))throw Error('Missing a domain in combined status');
+  // Whole-site briefing questions answer directly instead of asking which domain.
+  for(const q of ['Is everything running?','What happened today?','Are we ready for Monday?']){
+   const a=await askQuestion(q);
+   if(/Do you mean sports picks/.test(a)||!/PrizePicks|Stock PAPER|Release-gate|Status unknown/.test(a))throw Error('Briefing question not answered: '+q);
+  }
   // This fixture exercises browser privacy only. It never authenticates or contacts an account.
   await evaluate(send,"(()=>{window.__assistantRealFetch=window.fetch;window.__assistantUiOwner=true;window.fetch=async(input,init)=>{if(String(input)==='/api/assistant'){if(!init?.method||init.method==='GET')return Response.json({ownerAccess:window.__assistantUiOwner,ownerExpiresAt:Date.now()+60000});const b=JSON.parse(init.body);if(b.message==='TEST_PENDING')await new Promise(r=>window.__assistantRelease=r);return Response.json({status:'ok',ownerAccess:true,ownerExpiresAt:Date.now()+60000,reply:{text:'TEST_ONLY_PRIVATE_BALANCE',cards:[],suggestions:[],private:true,context:{domain:'stocks'}}});}return window.__assistantRealFetch(input,init);};return true})()");
   await askQuestion('TEST_PRIVATE');

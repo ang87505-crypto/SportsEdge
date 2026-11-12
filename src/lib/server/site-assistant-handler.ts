@@ -7,12 +7,17 @@ import type {Raw} from '../props/dashboard-view.ts';
 import type {ResearchView} from '../research/stock-summary.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
 import {understand} from '../assistant/understand.ts';
+import {propsStoreConfig} from './props-store.ts';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {handlePaperAutoGet} from './paper-auto-owner.ts';
 import {getAlpacaPaperSnapshot} from './alpaca-paper-reader.ts';
 import {loadStockResearch} from './stock-research-load.ts';
 import {loadOpsStatus} from './ops-status-load.ts';
 import {opsSummaryText,opsApprovalsText,type OpsView} from '../ops/status.ts';
+import {buildBriefing,propsInput} from '../briefing/briefing.ts';
+import {mondayReadiness} from '../briefing/monday.ts';
+import {briefingAnswer,BRIEFING_TOPICS,type BriefingTopic} from '../assistant/briefing-answer.ts';
+import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
 export function assistantAccess(cookie:string|undefined):AssistantAccess{
@@ -89,6 +94,28 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   catch{return simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'});}
  }
  if(q.topic==='jobs')return respond(await jobs());
+ if((BRIEFING_TOPICS as string[]).includes(q.topic)){
+  const topic=q.topic as BriefingTopic;
+  // Each source fails on its own; a missing one is reported as unavailable, never as zero.
+  const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
+  const [raw,ops,research]=await Promise.allSettled([propsConfigured?ports.sports(nowIso):Promise.resolve(null),
+   ports.ops?ports.ops(nowIso):Promise.resolve(null),ports.research(nowIso)]);
+  const b=buildBriefing({nowIso,props:propsInput(raw.status==='fulfilled'?raw.value:null),ops:ops.status==='fulfilled'?ops.value:null,
+   research:research.status==='fulfilled'?research.value:null});
+  // Owner-only stock details are read only with a validated owner session.
+  let stockText:string|null=null,ledger:PaperAutoLedger|null=null;
+  if(ports.access.ownerAccess&&(topic==='money'||topic==='opportunity'||topic==='ready')){
+   const a=await ports.accounts().catch(()=>({state:'unavailable' as const,ledgers:[],brokerWritesEnabled:null}));
+   ledger=a.state==='ready'?(a.ledgers.find((l):l is PaperAutoLedger=>l.registered)??null):null;
+   if(topic!=='ready')stockText=a.state==='ready'?stockAnswer({domain:'stocks',topic:topic==='money'?'performance':'picks'},a,null,nowIso).text:
+    'The stock ledger is unavailable right now; that does not mean zero.';
+  }
+  const range=understand(message,null,[],nowIso).range??(context?.topic===topic?context?.range:undefined)??undefined;
+  const readiness=topic==='ready'?mondayReadiness({nowIso,ops:ops.status==='fulfilled'?ops.value:null,ledger,ownerSignedIn:ports.access.ownerAccess}):null;
+  const out=briefingAnswer(topic,b,{readiness,stockText,range});
+  if(topic==='money'&&!ports.access.ownerAccess)out.text=out.text.replace('All figures are virtual','Stock PAPER results are owner-only; sign in to include them. All figures are virtual');
+  return respond(out);
+ }
  if(q.topic==='approvals'){
   if(!ports.ops)return respond(simple('Background job status is not connected here, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));
   try{return respond({...simple(opsApprovalsText(await ports.ops(nowIso)),{domain:'all',topic:'approvals'}),
