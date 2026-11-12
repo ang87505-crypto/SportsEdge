@@ -59,6 +59,16 @@ export const opsLabel=(s:string)=>OPS_LABELS[s]??{label:s,tone:'warning' as cons
 const MT=new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
 export const mt=(iso:string|null|undefined)=>iso&&Number.isFinite(Date.parse(iso))?MT.format(new Date(iso)):'none yet';
 
+/** What is waiting on the owner, from the monitor's live blockers (each with its exact next step). */
+export function opsApprovalsText(view:OpsView):string{
+ const s=view.status;
+ if(!s)return 'The operations monitor has not published a status yet, so I cannot list what is waiting on you.';
+ const when=`As of ${mt(s.generatedAt)}${view.monitorStale?' (this check is old)':''}`;
+ if(!s.blockers.length)return `${when}, the operations monitor lists nothing waiting on you.`;
+ return `${when}, ${s.blockers.length} item${s.blockers.length===1?'':'s'} need${s.blockers.length===1?'s':''} you:\n`+
+  s.blockers.map(b=>`- ${b.text} Next step: ${b.action}`).join('\n');
+}
+
 /** Plain-words summary for chat. Never calls a planned time a run. */
 export function opsSummaryText(view:OpsView):string{
  const s=view.status;

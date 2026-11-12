@@ -12,7 +12,7 @@ import {handlePaperAutoGet} from './paper-auto-owner.ts';
 import {getAlpacaPaperSnapshot} from './alpaca-paper-reader.ts';
 import {loadStockResearch} from './stock-research-load.ts';
 import {loadOpsStatus} from './ops-status-load.ts';
-import {opsSummaryText,type OpsView} from '../ops/status.ts';
+import {opsSummaryText,opsApprovalsText,type OpsView} from '../ops/status.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
 export function assistantAccess(cookie:string|undefined):AssistantAccess{
@@ -87,6 +87,13 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   if(!ports.ops)return simple('Background job status is not connected here.',{domain:'all'});
   try{return simple(opsSummaryText(await ports.ops(nowIso)),{domain:'all'});}
   catch{return simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'});}
+ }
+ if(q.topic==='jobs')return respond(await jobs());
+ if(q.topic==='approvals'){
+  if(!ports.ops)return respond(simple('Background job status is not connected here, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));
+  try{return respond({...simple(opsApprovalsText(await ports.ops(nowIso)),{domain:'all',topic:'approvals'}),
+   cards:[{kind:'links',items:[{label:'Automation status',href:'/automation'}]}]});}
+  catch{return respond(simple('Background job status is unavailable right now, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));}
  }
  const results=await Promise.allSettled([sports(),stocks(),research(),jobs()]);
  const names=['Sports','Stock account','Stock research','Background jobs'];

@@ -9,7 +9,7 @@ import {playerKey} from '../props/identity.ts';
 import type {AssistantDomain,AssistantTopic} from './domain.ts';
 import type {ResearchId} from '../research/stock-summary.ts';
 
-export type Intent='picks'|'why'|'results'|'record'|'player'|'entries'|'lineup'|'status'|'model'|'mistakes'|'future'|'help'|'smalltalk'|'bet'|'unknown';
+export type Intent='picks'|'nopicks'|'budget'|'why'|'results'|'record'|'player'|'entries'|'lineup'|'status'|'model'|'mistakes'|'future'|'help'|'smalltalk'|'bet'|'unknown';
 export type RangeKey='today'|'yesterday'|'week'|'all'|`date:${string}`;
 export type AssistantContext={intent?:Intent;player?:string;stat?:Stat;range?:RangeKey;lastPickIds?:number[];
  domain?:AssistantDomain;topic?:AssistantTopic;symbol?:string;strategyId?:ResearchId};
@@ -21,10 +21,13 @@ export const NICKNAMES:Record<string,string>={joker:'Nikola Jokic','greek freak'
  ad:'Anthony Davis',kd:'Kevin Durant',lebron:'LeBron James',bron:'LeBron James',king:'LeBron James',chef:'Stephen Curry',steph:'Stephen Curry'};
 
 type Rule={phrases:(string|RegExp)[];keywords:string[];weight?:number};
-const INTENT_ORDER:Exclude<Intent,'unknown'>[]=['picks','why','results','record','player','entries','lineup','status','model','mistakes','future','help','smalltalk','bet'];
+const INTENT_ORDER:Exclude<Intent,'unknown'>[]=['picks','nopicks','why','results','record','player','entries','lineup','status','budget','model','mistakes','future','help','smalltalk','bet'];
 const RULES:Record<Exclude<Intent,'unknown'>,Rule>={
  picks:{phrases:['who should i take','best pick','best picks','top plays','top picks','what do you like','who do you like','good picks','what are the picks',
-  'today is picks','tonight is picks'],keywords:['picks','plays','take','like']},
+  'today is picks','tonight is picks','player props','props qualified','picks qualified'],keywords:['picks','plays','take','like','qualified','qualify','qualifying']},
+ // "Why no picks today?": answered from the slot receipts (budget, no run, no qualifying line, entry rules), never guessed.
+ nopicks:{phrases:['no picks','no entries','zero picks','zero entries','did not we make','did we not make','why nothing','why are there no','not make any',
+  'did not make any','no bets','why no'],keywords:[],weight:3},
  why:{phrases:['how come','explain that','what makes you like','why do you like','why that','why is'],keywords:['explain','reason'],weight:2},
  results:{phrases:['how did we do','did my picks hit','how did it go','how did last night','did we win','did they hit','how did the picks',
   'how did the games','how did tonight','how did yesterday','how did the night','picks hit'],
@@ -36,6 +39,8 @@ const RULES:Record<Exclude<Intent,'unknown'>,Rule>={
  lineup:{phrases:['give me a lineup','copy lineup','build me an entry','make me a','build a lineup','build me a'],keywords:['lineup']},
  status:{phrases:['is it running','next run','did it collect','is everything working','is it on','is it paused'],
   keywords:['running','paused','status','working','collect','stopped']},
+ budget:{phrases:['odds api','api credits','credit budget','out of credits','credits left','budget exhausted','credits remaining','api budget'],
+  keywords:['budget','credits','credit','exhausted','quota'],weight:2},
  model:{phrases:['which model','is it learning','new model','what did the model learn','model doing'],
   keywords:['model','learning','challengers','challenger','learn']},
  mistakes:{phrases:['what went wrong','why did we lose','why did the picks miss','mistakes'],keywords:['mistakes','wrong','lose','miss'],weight:3},
