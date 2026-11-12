@@ -15,6 +15,7 @@ import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule'
 import {nextCollectionAt,collectionStatusFromRaw,type CollectionStatus} from '@/lib/props/collection-status';
 import {whyNoPicks} from '@/lib/props/no-picks';
 import {lineState,LINE_STATE,entryState,ENTRY_STATE} from '@/lib/props/pick-state';
+import {breakdown,MIN_GROUP,type Group} from '@/lib/props/breakdown';
 import {PropsCollectionPanel} from '@/components/props-collection-panel';
 import {pct,usdCents} from '@/lib/format';
 import {CalibrationChart} from '@/components/charts';
@@ -64,7 +65,7 @@ async function Body({searchParams}:{searchParams:Search}){
  try{status=collectionStatusFromRaw(raw);}catch{status=null;}
  return <>{tabs}{recordTabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view} status={status} raw={raw}/>
   {status?<PropsCollectionPanel s={status} study={null} ticksReleased={ticksReleased()}/>:null}<PropsOwnerControls/>
-  <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Lines v={view}/>
+  <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Performance v={view}/><Lines v={view}/>
   <RunHistory v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }
 
@@ -194,6 +195,30 @@ function Entries({v}:{v:PropsView}){
      <span className={e.settlement.profitCents>0?'tone-text-positive':e.settlement.profitCents<0?'tone-text-negative':undefined}>{e.settlement.outcome==='won'?'Won':e.settlement.outcome==='lost'?'Lost':e.settlement.outcome==='refund'?'Refunded':e.settlement.outcome} {usdCents(e.settlement.profitCents,{signed:true})}<small>returned {usdCents(e.settlement.returnCents)}</small></span>}</td>
    </tr>)}</tbody>
   </table></div>:<div className="panel-pad"><p className="quiet">No simulated {PLATFORM_LABEL[v.platform]} entries yet.</p></div>}
+ </Panel>;
+}
+
+function Performance({v}:{v:PropsView}){
+ const b=breakdown(v);
+ const table=(title:string,groups:Group[])=><div className="table-wrap table-scroll mt-12"><table className="data-table ledger-table">
+  <caption className="quiet">{title}</caption>
+  <thead><tr><th scope="col">Group</th><th scope="col" className="num">Graded</th><th scope="col" className="num">Hit rate</th><th scope="col" className="num">95% range</th>
+   <th scope="col" className="num">Stated confidence</th><th scope="col" className="num">Gap</th></tr></thead>
+  <tbody>{groups.map(g=><tr key={g.key}>
+   <td data-label="Group">{g.label}{g.tooSmall&&<small>Too few to read</small>}</td>
+   <td data-label="Graded" className="num">{g.hits} of {g.n}</td>
+   <td data-label="Hit rate" className="num">{pct(g.hitRate,1)}</td>
+   <td data-label="95% range" className="num">{g.low===null||g.high===null?'—':`${pct(g.low,0)}–${pct(g.high,0)}`}</td>
+   <td data-label="Stated confidence" className="num">{pct(g.meanConfidence,1)}</td>
+   <td data-label="Gap" className="num"><span className={g.gap!==null&&!g.tooSmall&&g.gap>0.05?'tone-text-warning':undefined}>{g.gap===null?'—':pct(g.gap,1,{signed:true})}</span></td>
+  </tr>)}</tbody>
+ </table></div>;
+ return <Panel title="Pick performance breakdown" description={`${PLATFORM_LABEL[v.platform]} recorded picks graded on real box scores (last 14 days): ${b.graded} graded, ${b.pending} pending, ${b.voided} void. Gap is stated confidence minus hit rate; positive means overconfident.`}
+  actions={<Evidence kind="recorded"/>}>
+  {b.graded?<>
+   {table('By stat',b.byStat)}{table('By stated confidence',b.byBand)}{table('By side',b.bySide)}{table('By model version',b.byModel)}
+   <p className="quiet mt-12">{b.note} Groups under {MIN_GROUP} graded picks are labelled too few to read. Same-game entries: {b.sameGameEntries} (the entry rule requires different games).</p>
+  </>:<p className="quiet">No graded picks in this window yet. Results appear after the next grading run; pending picks are never counted as hits or misses.</p>}
  </Panel>;
 }
 

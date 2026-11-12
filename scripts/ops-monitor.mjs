@@ -167,9 +167,13 @@ async function siteChecks(){
  await check('Chat: research and follow-up',async()=>{const r=await ask('Momentum research results');
   if(r?.context?.domain!=='research')throw new Error('not routed to research');
   const f=await ask('Why?',r.context);if(!/Failed checks|failed|check/i.test(f?.text??''))throw new Error('follow-up lost its topic');return 'answered';});
- await check('Chat: combined status',async()=>{const r=await ask('Is everything running?');
+ await check('Chat: combined status',async()=>{const r=await ask('How are sports and stocks doing?');
   for(const h of ['Sports','Stock account','Stock research','Background jobs'])if(!r?.text?.includes(h))throw new Error('missing '+h);
   if(/Background jobs\n(The operations monitor has not published|Background job status is unavailable)/.test(r.text))throw new Error('chat cannot read the job status');return 'answered';});
+ // "Is everything running?" is answered from the shared briefing (the Overview's read model) and must see this monitor's status.
+ await check('Chat: health briefing',async()=>{const r=await ask('Is everything running?');
+  if(r?.context?.topic!=='health')throw new Error('not answered as a health briefing');
+  if(/Status unknown/.test(r.text??''))throw new Error('chat cannot read the job status');return 'answered';});
  await check('Owner protection: stock account in chat',async()=>{const r=await ask('Stock results');
   if(!/Sign in/i.test(r?.text??''))throw new Error('stock account answered without owner sign-in');if(r.private)throw new Error('private flag on anonymous reply');return 'requires sign-in';});
  await check('Owner protection: session probe',async()=>{const r=await getJson(base+'/api/assistant');

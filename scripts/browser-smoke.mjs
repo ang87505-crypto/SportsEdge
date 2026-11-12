@@ -6,6 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 const base=process.env.BASE_URL??'http://127.0.0.1:3100';
+// SMOKE_TARGET=production: the same route/viewport checks against the live site with real data, then data-populated
+// checks instead of the local-only interaction checks (those assume an uncredentialed server). GET page loads only.
+const PRODUCTION=process.env.SMOKE_TARGET==='production';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
 const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
@@ -137,6 +140,27 @@ try{
    }catch(error){const reason=`${label}: ${error instanceof Error?error.message:String(error)}`;failures.push(reason);console.error('FAIL '+reason);}
   }
  }
+ if(PRODUCTION){
+  try{
+   await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+   await send('Page.navigate',{url:base+'/'});
+   await until(async()=>evaluate(send,`!!document.querySelector('.briefing-now .briefing-health') && !!document.querySelector('.briefing-learning')`),'overview briefing',30000);
+   const home=await evaluate(send,`(()=>{const now=document.querySelector('.briefing-now').innerText,board=document.querySelector('main').innerText;
+    return {now,ledger:!/props ledger could not be read/.test(board),balance:/Virtual balance/.test(board),learning:/Pick hit rate/.test(board),
+     realMoney:now.includes('Real-money execution')&&now.includes('Not available')};})()`);
+   console.log('PRODUCTION overview right now:\n'+home.now.replace(/\n+/g,' | ').slice(0,900));
+   if(!home.ledger||!home.balance||!home.learning)throw Error('Overview did not render the real ledger (results and learning)');
+   if(!home.realMoney)throw Error('Overview must state that real-money execution is not available');
+   await send('Page.navigate',{url:base+'/paper-betting/props'});
+   await until(async()=>evaluate(send,`[...document.querySelectorAll('h2')].some(h=>h.textContent.includes('Pick performance breakdown'))`),'props breakdown',30000);
+   const props=await evaluate(send,`(()=>{const h=[...document.querySelectorAll('h2')].find(h=>h.textContent.includes('Pick performance breakdown'));const p=h.closest('section');
+    return {text:p.innerText.slice(0,600),rows:p.querySelectorAll('tbody tr').length};})()`);
+   console.log('PRODUCTION props breakdown: '+props.rows+' rows | '+props.text.replace(/\n+/g,' | ').slice(0,400));
+   console.log('PASS production: overview briefing and props breakdown render real ledger data');
+  }catch(error){const message='Production data check: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ }
+ checks:{
+ if(PRODUCTION)break checks;
  // Exercise actual navigation, not only anchor presence. No forms or mutations are submitted.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
@@ -342,6 +366,7 @@ try{
   await until(async()=>evaluate(send,`document.querySelector('nav[aria-label="Sports AI pages"] a[aria-current="page"]')?.getAttribute('href')==='/research/nba'`),'mobile section tabs');
   console.log('PASS section tabs: phone users can switch between Sports AI pages');
  }catch(error){const message='Motion and wayfinding: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ }
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);
  if(failures.length){for(const f of failures)console.error(f);process.exitCode=1;}

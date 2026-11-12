@@ -6,6 +6,7 @@ import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/c
 import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
+import {paperRisk} from '@/lib/stocks/paper-risk';
 import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
 
 type View='checking'|'login'|'unconfigured'|'error'|'ready';
@@ -22,6 +23,31 @@ const when=(iso:string|null)=>iso?new Date(iso).toLocaleString():'—';
 const trim=(v:string)=>v.includes('.')?v.replace(/\.?0+$/,''):v;
 const VERDICT_TEXT:Record<MarkVerdict,string>={VERIFIED:'Verified',UNRECONCILED_SKIPPED:'Unreconciled (skipped)',
  CONTAMINATED:'Contaminated (chain ends)',AFTER_CONTAMINATION:'After contamination'};
+/** Planned vs filled, fill price vs limit, exposure and concentration, and what did not trade. From the ledger only. */
+function RiskPanel({l,practice}:{l:PaperAutoLedger;practice:boolean}){
+ const r=paperRisk(l);
+ const bps=(x:number|null)=>x===null?'—':`${x>0?'+':''}${x.toFixed(1)} bps`;
+ const skipped=Object.entries(r.skippedRuns);
+ return <Panel title="Risk and execution" description="From the autopilot's own records. A plan or an unfilled order is never counted as a fill.">
+  <MetricGrid columns={4}>
+   <Metric label="Orders this week" value={r.planned?`${r.filled} of ${r.planned} filled`:'None'}
+    detail={r.planned?`${r.partial} partly filled · ${r.unfilled} not filled${r.latestSession?` · since ${r.latestSession}`:''}`:practice?'Paper orders are off; runs record plans only':'Orders appear after a TARGETS pick'}/>
+   <Metric label="Fill vs limit price" value={bps(r.fillVsLimitBps)} detail={r.fillVsLimitBps===null?'No fills yet':'Share-weighted; negative is better than the limit'}/>
+   <Metric label="Invested" value={r.exposure?`${(r.exposure.share*100).toFixed(1)}%`:'—'}
+    detail={r.exposure?`${money(r.exposure.stocksCents)} of ${money(r.exposure.equityCents)} at the ${r.exposure.session} close`:'Needs a verified after-close result'}/>
+   <Metric label="Largest position" value={r.concentration[0]?`${r.concentration[0].symbol} ${(r.concentration[0].share*100).toFixed(0)}%`:'—'}
+    detail={r.concentration[0]?`Of holdings at cost, ${r.concentration.length} stock${r.concentration.length===1?'':'s'}`:'No holdings'}/>
+  </MetricGrid>
+  {(r.notTraded.length>0||skipped.length>0||r.openIssues.unresolvedIntents>0||r.openIssues.criticalAlerts>0)&&<ul className="quiet mt-12">
+   {r.notTraded.map(d=><li key={d.session}>{d.session}: no trade ({d.outcome.replaceAll('_',' ').toLowerCase()}){d.reasons.length?` — ${d.reasons.slice(0,2).join('; ')}`:''}</li>)}
+   {skipped.length>0&&<li>Runs that did not trade: {skipped.map(([k,n])=>`${k.replaceAll('_',' ').toLowerCase()} ×${n}`).join(', ')}</li>}
+   {r.openIssues.unresolvedIntents>0&&<li>{r.openIssues.unresolvedIntents} order(s) waiting to be confirmed with Alpaca: new orders are blocked until reconciled.</li>}
+   {r.openIssues.criticalAlerts>0&&<li>{r.openIssues.criticalAlerts} critical alert(s) to review.</li>}
+  </ul>}
+  <p className="quiet small-print">Alpaca PAPER fills are simulated (no market impact or queue position). Realized and unrealized results, the SPY comparison and drawdown are above and under Technical details; nothing here is annualized.</p>
+ </Panel>;
+}
+
 function nyTime(t:number){
  if(!Number.isFinite(t))return '—';
  const et=new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',
@@ -253,6 +279,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <td>{i.brokerStatus??i.status}</td>
      <td>{trim(i.filledQty)}{i.filledAvgPrice?` at $${trim(i.filledAvgPrice)}`:''}</td></tr>)}</tbody>
    </table></div></Panel>}
+
+  <RiskPanel l={l} practice={practice}/>
 
   {l.alerts.some(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code))&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
    <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code)).map(a=><li key={a.alertId}>
