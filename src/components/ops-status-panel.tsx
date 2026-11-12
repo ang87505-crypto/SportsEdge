@@ -20,7 +20,7 @@ export async function OpsStatusPanel(){
   actions={<Badge tone={tone} dot>{s.overall.state==='OK'?'Healthy':s.overall.state==='WARN'?'Working, with warnings':'Needs attention'}</Badge>}>
   <p className="quiet small-print">Checked {mt(s.generatedAt)}{s.monitorRun?<> by <a className="text-link" href={s.monitorRun.url} target="_blank" rel="noopener noreferrer">this monitor run</a></>:null}.
    {view.monitorStale?' This check is old; the monitor itself may be running late.':''} &ldquo;Next planned&rdquo; is a schedule, not a run.</p>
-  {s.blockers.length?<div className="mt-12"><h3>Needs attention</h3><ul>{s.blockers.map(b=><li key={b.id}><strong>{b.text}</strong> {b.action}</li>)}</ul></div>:null}
+  {s.blockers.length?<div className="mt-12 ops-blockers"><h3>Needs attention</h3><ul>{s.blockers.map(b=><li key={b.id}><strong>{b.text}</strong> {b.action}</li>)}</ul></div>:null}
   <div className="table-wrap table-scroll mt-12">
    <table className="data-table">
     <thead><tr><th scope="col">Job</th><th scope="col">State</th><th scope="col">Last success</th><th scope="col">Last failure</th><th scope="col">Missed planned times (7 days)</th><th scope="col">Next planned</th></tr></thead>
