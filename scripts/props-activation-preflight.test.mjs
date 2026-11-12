@@ -64,3 +64,14 @@ test('regression 2026-11-12 (real ledger): 11 credits on Nov 7 was under v1 (12/
  const later=rows.map(x=>({...x,reserved_at:x.reserved_at.replace('2026-11-07','2026-11-09')}));
  assert.equal(creditUse(later,new Map(),false,Date.parse('2026-11-12T00:33:00Z'),policies).capBreaches.at(-1).credits,11);
 });
+
+test('capture receipts: duplicate claims or plans, or a claim left without an outcome, fail the check',()=>{
+ const base={project:'vfyzbliksooljxrlfadp',nowMs:Date.parse('2026-11-12T06:00:00Z'),activePolicy:{version:'v2',daily_credits:7,monthly_credits:200,provider_floor:60},
+  credits:{worstRolling24h:7,capBreaches:[]},providerRemaining:476,duplicateRuns:[],entryCapBreaches:[],lastCompletedSettleAt:'2026-11-11T16:29:00Z',
+  captureTables:{props_capture_plans:'PRESENT',props_captures:'PRESENT',props_capture_outcomes:'PRESENT'},v3Column:'PRESENT'};
+ const state=f=>Object.fromEntries(verdict(f).map(x=>[x.id,x.state]))['capture-claims-unique'];
+ assert.equal(state(base),undefined,'not judged before receipts are read');
+ assert.equal(state({...base,duplicateClaims:[],duplicatePlans:[],claimsWithoutOutcome:0}),'PASS');
+ assert.equal(state({...base,duplicateClaims:[{key:'7|primary',count:2}],duplicatePlans:[],claimsWithoutOutcome:0}),'FAIL');
+ assert.equal(state({...base,duplicateClaims:[],duplicatePlans:[],claimsWithoutOutcome:1}),'FAIL');
+});
