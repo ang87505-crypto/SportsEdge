@@ -80,6 +80,10 @@
     {
       "path": "/api/internal/scheduler/stock-monitor",
       "schedule": "0 22 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/props-learn-weekly",
+      "schedule": "0 16 * * 0"
     }
   ],
   "git": {

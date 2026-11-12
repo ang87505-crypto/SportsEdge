@@ -39,7 +39,9 @@ try{
   const h=buildHistoricalItems(prior,season,'2100-01-01T00:00:00Z');
   const historical:TrainItem[]=h.items.map(x=>({stat:x.stat,input:{base:x.base,market:null,matchup:x.matchup},y:x.y,at:x.at,
    key:x.key,eventId:x.eventId,date:x.date}));
-  const r=await runTrain({store,now,historical});
+  // Scheduled or Vercel-backup weekly runs skip if already trained within 3 days; an owner's manual train always runs.
+  const automatic=process.env.GITHUB_EVENT_NAME==='schedule'||process.env.LEARN_TRIGGER==='backup';
+  const r=await runTrain({store,now,historical,minDaysBetweenTrains:automatic?3:undefined});
   emit({kind,...r,history:{items:h.items.length,leakage:{checked:h.checked,violations:h.violations},sources:h.sources}},
    String(r.status).startsWith('FAILED')?1:0);
  }

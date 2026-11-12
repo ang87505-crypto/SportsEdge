@@ -263,6 +263,10 @@ test('weekly learning loop: settle brake, train, evaluate, auto-switch, review a
  const evs=psql(db,`SELECT string_agg(event,',' ORDER BY id) FROM props_model_events WHERE version='props-learn-v2'`).out;
  assert.ok(evs==='created,shadow_start'||evs==='created,dropped',evs);
 
+ // Idempotency for scheduled/backup weekly runs: a second automatic train within 3 days creates no new challenger.
+ const again=await runTrain({...learn,historical,minDaysBetweenTrains:3});
+ assert.equal(again.status,'SKIPPED_RECENT_TRAIN');assert.equal(again.version,'props-learn-v2');
+ assert.equal(psql(db,`SELECT count(*) FROM props_model_artifacts`).out,'2');
  // A broken fit writes nothing.
  const bad=historical.map((h,i)=>i===0?{...h,input:{...h.input,base:{pMore:NaN,pLess:NaN,pTie:0}}}:h);
  assert.equal((await runTrain({...learn,historical:bad})).status,'FAILED_INVALID_ARTIFACT');

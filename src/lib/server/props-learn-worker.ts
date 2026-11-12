@@ -131,12 +131,20 @@ async function control(store:PropsStore):Promise<Control>{
 }
 const brier=(rows:{p:Probs;y:0|1}[])=>rows.length?rows.reduce((a,r)=>a+properScore(r.p,r.y?'more':'less').brier,0)/rows.length:null;
 
-export type LearnDeps={store:PropsStore;now:()=>string;historical:TrainItem[]};
+export type LearnDeps={store:PropsStore;now:()=>string;historical:TrainItem[];
+ /** Scheduled and backup runs only: skip if the learning loop already trained within this many days, so a late GitHub
+  * run after its Vercel backup (or two deliveries) cannot create a duplicate challenger. Owner-started trains omit it. */
+ minDaysBetweenTrains?:number};
 
 export async function runTrain(d:LearnDeps){
  const c=await control(d.store);
  if(!c.learning_enabled)return {status:'LEARNING_DISABLED'};
  const now=d.now();
+ if(d.minDaysBetweenTrains){
+  const recent=await d.store.select<{version:string;at:string}>('props_model_events',
+   'select=version,at&event=eq.created&actor=eq.system:learn&at=gt.'+encodeURIComponent(ago(now,d.minDaysBetweenTrains))+'&order=id.desc&limit=1');
+  if(recent.length)return {status:'SKIPPED_RECENT_TRAIN',version:recent[0].version,trainedAt:recent[0].at};
+ }
  const active=await loadActiveModel(d.store);
  const [lines,teamRows]=await Promise.all([loadForwardLines(d.store,ago(now,180)),loadTeamRows(d.store,ago(now,275))]);
  // Hold out the newest 14 days of forward lines and the newest 20% of history to check the challenger.
