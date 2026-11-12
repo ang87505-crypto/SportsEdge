@@ -1,10 +1,10 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-12T05:48:01.960Z",
+ "generatedAt": "2026-11-12T05:59:23.047Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 43163756226,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43163756226",
+  "id": 43164981391,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43164981391",
   "event": "workflow_dispatch"
  },
  "overall": {
@@ -150,8 +150,8 @@
    "workflow": "props-tick.yml",
    "note": "Released off until the owner activates props-capture-v1; while off, each tick exits before any database or provider call.",
    "historyUrl": "https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-tick.yml",
-   "status": "RELEASED_OFF",
-   "detail": "Released off by its owner switch: each run exits before any database or provider call, so this job collects nothing yet.",
+   "status": "MISSED_SLOT",
+   "detail": "The latest planned time passed without a run; GitHub may have dropped it.",
    "workflowState": "active",
    "running": null,
    "lastRun": {
@@ -575,34 +575,34 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 43163756226,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43163756226",
+    "id": 43164981391,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43164981391",
     "event": "workflow_dispatch",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-12T05:47:54.000Z",
+    "startedAt": "2026-11-12T05:59:17.000Z",
     "finishedAt": null,
-    "headSha": "998e7d8c00be1f5c62d50af373334795dc142cae"
+    "headSha": "51eebfd8efb78091f1165e871d2bdea21a37a888"
    },
    "lastRun": {
-    "id": 43163756226,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43163756226",
+    "id": 43164981391,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43164981391",
     "event": "workflow_dispatch",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-12T05:47:54.000Z",
+    "startedAt": "2026-11-12T05:59:17.000Z",
     "finishedAt": null,
-    "headSha": "998e7d8c00be1f5c62d50af373334795dc142cae"
+    "headSha": "51eebfd8efb78091f1165e871d2bdea21a37a888"
    },
    "lastSuccess": {
-    "id": 43160984501,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43160984501",
+    "id": 43163756226,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43163756226",
     "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-12T05:22:43.000Z",
-    "finishedAt": "2026-11-12T05:23:17.000Z",
-    "headSha": "7e2b11ddf0549c0139d560c43c6ccd4b78dbb9d8"
+    "startedAt": "2026-11-12T05:47:54.000Z",
+    "finishedAt": "2026-11-12T05:48:24.000Z",
+    "headSha": "998e7d8c00be1f5c62d50af373334795dc142cae"
    },
    "lastFailure": null,
    "lastScheduledSuccess": {
@@ -753,94 +753,94 @@
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-12T05:48:18.203Z",
+  "checkedAt": "2026-11-12T05:59:36.935Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 2263,
+    "ms": 2341,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 226,
+    "ms": 176,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 1784,
+    "ms": 1440,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 381,
+    "ms": 226,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 1851,
+    "ms": 1345,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 1951,
+    "ms": 1612,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 235,
+    "ms": 155,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 150,
+    "ms": 85,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 115,
+    "ms": 71,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 114,
+    "ms": 79,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 131,
+    "ms": 85,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 340,
+    "ms": 351,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 116,
+    "ms": 75,
     "detail": "HTTP 401"
    }
   ],
   "deployment": {
    "state": "MATCHES_MAIN",
-   "detail": "Production serves main 998e7d8.",
-   "deployedSha": "998e7d8c00be1f5c62d50af373334795dc142cae",
+   "detail": "Production serves main 51eebfd.",
+   "deployedSha": "51eebfd8efb78091f1165e871d2bdea21a37a888",
    "deployedRef": "main",
-   "mainSha": "998e7d8c00be1f5c62d50af373334795dc142cae"
+   "mainSha": "51eebfd8efb78091f1165e871d2bdea21a37a888"
   }
  },
  "credentials": [
@@ -926,11 +926,6 @@
    "id": "stock-first-session",
    "text": "PR #102 (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: not passed (STOCK_SUPERVISED_EXECUTE_REQUIRED).",
    "action": "See docs/AUTOMATION_OPERATIONS_2026_11_10.md → \"First supervised stock paper session\". Nothing is automatic about this step."
-  },
-  {
-   "id": "props-capture-activation",
-   "text": "Event-aware props capture (props-capture-v1) is merged but released off: the legacy two-slot collection keeps running unchanged.",
-   "action": "Owner decision: follow docs/PROPS_CAPTURE_ACTIVATION_CHECKLIST_2026_11_11.md (apply props_capture_v1.sql, optional v3 accounting at the same 7/200 limits, one supervised tick, then tickEnabled:true)."
   }
  ],
  "notes": [
