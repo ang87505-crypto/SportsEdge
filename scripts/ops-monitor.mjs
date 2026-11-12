@@ -9,6 +9,7 @@ import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
 import {compareDeployment} from '../src/lib/deployment-identity.ts';
+import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -227,6 +228,10 @@ function blockers(jobs,props,research,release,site,creds){
  if(release.state==='open'&&!release.merged)
   add('stock-first-session',`PR #${release.pr} (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: ${release.stockGate?.ready?'passed — ready for your review and merge':'not passed ('+(release.stockGate?.reason??'unknown')+')'}.`,
    'See docs/AUTOMATION_OPERATIONS_2026_11_10.md → "First supervised stock paper session". Nothing is automatic about this step.');
+ // Read from the reviewed source on main, so the item disappears by itself once activation is merged.
+ if((PROPS_COLLECTION_V2.tickEnabled)!==true)
+  add('props-capture-activation','Event-aware props capture (props-capture-v1) is merged but released off: the legacy two-slot collection keeps running unchanged.',
+   'Owner decision: follow docs/PROPS_CAPTURE_ACTIVATION_CHECKLIST_2026_11_11.md (apply props_capture_v1.sql, optional v3 accounting at the same 7/200 limits, one supervised tick, then tickEnabled:true).');
  if(['BEHIND_MAIN','WRONG_BRANCH'].includes(site.deployment?.state))
   add('deployment',site.deployment.detail,'Vercel → sports-edge project → Deployments: open the latest Production build for main and read its error (or Promote the correct main deployment).');
  if(!site.ok)add('site',`Live site checks failed: ${site.checks.filter(c=>!c.ok).map(c=>c.name).join(', ')}.`,'Open the site and the latest Vercel deployment.');
