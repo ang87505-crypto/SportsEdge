@@ -1,10 +1,10 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-12T03:23:26.267Z",
+ "generatedAt": "2026-11-12T04:44:04.714Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 43147864131,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43147864131",
+  "id": 43156705963,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43156705963",
   "event": "workflow_run"
  },
  "overall": {
@@ -371,24 +371,24 @@
    "workflowState": "active",
    "running": null,
    "lastRun": {
-    "id": 42996202521,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42996202521",
-    "event": "schedule",
+    "id": 43156640692,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43156640692",
+    "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-11T09:33:39.000Z",
-    "finishedAt": "2026-11-11T09:34:11.000Z",
-    "headSha": "cd2eec4b35875c5c5d1d21b4b8fb88dd77ec3ea2"
+    "startedAt": "2026-11-12T04:43:21.000Z",
+    "finishedAt": "2026-11-12T04:43:56.000Z",
+    "headSha": "471ed67529e0b3602afd84565959e72d9ff0e3f1"
    },
    "lastSuccess": {
-    "id": 42996202521,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/42996202521",
-    "event": "schedule",
+    "id": 43156640692,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43156640692",
+    "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-11T09:33:39.000Z",
-    "finishedAt": "2026-11-11T09:34:11.000Z",
-    "headSha": "cd2eec4b35875c5c5d1d21b4b8fb88dd77ec3ea2"
+    "startedAt": "2026-11-12T04:43:21.000Z",
+    "finishedAt": "2026-11-12T04:43:56.000Z",
+    "headSha": "471ed67529e0b3602afd84565959e72d9ff0e3f1"
    },
    "lastFailure": {
     "id": 42746331463,
@@ -500,13 +500,13 @@
    },
    "consecutiveFailures": 0,
    "slots7d": {
-    "due": 92,
-    "missed": 77,
-    "lastMissedAt": "2026-11-11T23:43:00.000Z"
+    "due": 94,
+    "missed": 79,
+    "lastMissedAt": "2026-11-12T01:43:00.000Z"
    },
    "nextPlanned": [
-    "2026-11-12T03:43:00.000Z",
-    "2026-11-12T04:43:00.000Z"
+    "2026-11-12T05:43:00.000Z",
+    "2026-11-12T06:43:00.000Z"
    ],
    "schedule": [
     "43 * * * *"
@@ -525,33 +525,33 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 43147864131,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43147864131",
+    "id": 43156705963,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43156705963",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-12T03:23:19.000Z",
+    "startedAt": "2026-11-12T04:43:59.000Z",
     "finishedAt": null,
     "headSha": "471ed67529e0b3602afd84565959e72d9ff0e3f1"
    },
    "lastRun": {
-    "id": 43147864131,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43147864131",
+    "id": 43156705963,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43156705963",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-12T03:23:19.000Z",
+    "startedAt": "2026-11-12T04:43:59.000Z",
     "finishedAt": null,
     "headSha": "471ed67529e0b3602afd84565959e72d9ff0e3f1"
    },
    "lastSuccess": {
-    "id": 43146368055,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43146368055",
+    "id": 43147864131,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43147864131",
     "event": "workflow_run",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-12T03:10:16.000Z",
-    "finishedAt": "2026-11-12T03:10:54.000Z",
+    "startedAt": "2026-11-12T03:23:19.000Z",
+    "finishedAt": "2026-11-12T03:23:54.000Z",
     "headSha": "471ed67529e0b3602afd84565959e72d9ff0e3f1"
    },
    "lastFailure": null,
@@ -605,9 +605,9 @@
   "research": {
    "state": "OK",
    "schemaVersion": "stock-research-summary-v1",
-   "generatedAt": "2026-11-11T09:34:07Z",
+   "generatedAt": "2026-11-12T04:43:52Z",
    "overall": "NONE QUALIFIES",
-   "forwardAt": "2026-11-11T09:34:00Z",
+   "forwardAt": "2026-11-12T04:43:39Z",
    "sources": [
     {
      "id": "openfigi-cusip",
@@ -619,8 +619,8 @@
     {
      "id": "qmom-holdings",
      "status": "OK",
-     "retrievedAt": "2026-11-11T09:33:59Z",
-     "lastSuccessAt": "2026-11-11T09:33:59Z",
+     "retrievedAt": "2026-11-12T04:43:39Z",
+     "lastSuccessAt": "2026-11-12T04:43:39Z",
      "failedKeys": []
     },
     {
@@ -633,8 +633,8 @@
     {
      "id": "sec-edgar-13f",
      "status": "OK",
-     "retrievedAt": "2026-11-11T09:33:59Z",
-     "lastSuccessAt": "2026-11-11T09:33:59Z",
+     "retrievedAt": "2026-11-12T04:43:39Z",
+     "lastSuccessAt": "2026-11-12T04:43:39Z",
      "failedKeys": []
     },
     {
@@ -642,7 +642,16 @@
      "status": "FETCH_FAILED",
      "retrievedAt": "2026-11-10T17:34:55Z",
      "lastSuccessAt": "2026-11-10T17:34:55Z",
-     "failedKeys": []
+     "failedKeys": [
+      {
+       "key": "2026q2",
+       "error": "HTTP_404"
+      },
+      {
+       "key": "2026q3",
+       "error": "HTTP_404"
+      }
+     ]
     },
     {
      "id": "sec-xbrl-companyfacts",
@@ -665,14 +674,14 @@
      "active": false,
      "verdict": "NOT_EVALUATED",
      "forwardStatus": "INSUFFICIENT FORWARD SAMPLE",
-     "forwardSessions": 1
+     "forwardSessions": 2
     },
     {
      "id": "berkshire-13f-top5-paper-v1",
      "active": false,
      "verdict": "FAILS",
      "forwardStatus": "INSUFFICIENT FORWARD SAMPLE",
-     "forwardSessions": 1
+     "forwardSessions": 2
     }
    ]
   },
@@ -694,85 +703,85 @@
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-12T03:23:48.611Z",
+  "checkedAt": "2026-11-12T04:44:24.132Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 4811,
+    "ms": 4045,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 251,
+    "ms": 147,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 3390,
+    "ms": 3025,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 377,
+    "ms": 127,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 3216,
+    "ms": 2819,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 3968,
+    "ms": 3051,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 352,
+    "ms": 123,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 120,
+    "ms": 46,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 104,
+    "ms": 37,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 103,
+    "ms": 32,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 124,
+    "ms": 32,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 748,
+    "ms": 756,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 120,
+    "ms": 51,
     "detail": "HTTP 401"
    }
   ],
@@ -860,7 +869,7 @@
  "blockers": [
   {
    "id": "research-source:sec-form345-dataset",
-   "text": "Research source sec-form345-dataset last reported FETCH_FAILED at 2026-11-10 17:34 UTC; last success 2026-11-10.",
+   "text": "Research source sec-form345-dataset last reported FETCH_FAILED at 2026-11-10 17:34 UTC (failed: 2026q2 HTTP_404, 2026q3 HTTP_404); last success 2026-11-10.",
    "action": "Research only: no active strategy uses it. Open the research-data branch manifest.jsonl for the exact URL and error; a 404 for a recent quarter usually means the file is not published yet."
   },
   {
