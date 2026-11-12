@@ -1,0 +1,52 @@
+# Daily open-to-close PAPER backtest, v2 corrections (research only;
+# docs/STOCK_DAILY_OC_BACKTEST_V2_CORRECTIONS_2026_11_09.md). Runs on pushes to its research branch and
+# by manual dispatch; never scheduled. Read-only Alpaca market-data GETs (daily bars and corporate
+# actions) with the first paper account's keys; no orders, no account data, no database. The base
+# dataset must reproduce the v1 fingerprint or the run stops.
+name: Stock daily backtest v2 (research)
+on:
+  push:
+    branches: [research/stock-daily-oc-20261109]
+    paths:
+      - analytics/stock_daily_oc_backtest_v2.py
+      - analytics/test_stock_daily_oc_backtest_v2.py
+      - .github/workflows/stock-daily-backtest-v2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: stock-daily-backtest
+  cancel-in-progress: false
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      END: '2026-11-06'
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+      EXPECTED_BASE_FINGERPRINT: de8a61bddce7e07d9a9dce94d63649528bda44b4007b1eefe55e744c3748f085
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Unit tests (synthetic data, no network)
+        run: python -m unittest analytics.test_stock_daily_oc_backtest_v2 analytics.test_stock_daily_oc_backtest_v1 analytics.test_stock_weekly_backtest_v1
+      - name: Download daily bars and the identity audit, verify the base fingerprint (read-only)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_daily_oc_backtest_v2 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/bars.json.gz" --expect-base-fingerprint "$EXPECTED_BASE_FINGERPRINT"
+      - name: Replay with the v2 corrections, gross and break-even (no network)
+        run: |
+          python -m analytics.stock_daily_oc_backtest_v2 run --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --end "$END" --output "$RUNNER_TEMP/results.json" --markdown "$RUNNER_TEMP/results.md"
+          cat "$RUNNER_TEMP/results.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-daily-backtest-v2-${{ github.run_id }}
+          path: ${{ runner.temp }}/results.*
+          if-no-files-found: ignore
+          retention-days: 30
