@@ -6,7 +6,7 @@
 import {propsStoreConfig} from './props-store.ts';
 import {buildView,type Raw} from '../props/dashboard-view.ts';
 import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '../props/schedule.ts';
-import {nextCollectionAt} from '../props/collection-status.ts';
+import {nextCollectionAt,collectionStatusFromRaw} from '../props/collection-status.ts';
 import {slotStatus} from '../props/slot-status.ts';
 import {STATS} from '../props/contract.ts';
 import {understand,type AssistantContext,type Intent} from '../assistant/understand.ts';
@@ -81,7 +81,8 @@ export async function handleAssistant(req:{contentType:string|null;text:()=>Prom
  const dayAgo=Date.parse(nowIso)-86400_000;
  const counted=raw.credits.filter(c=>Date.parse(c.reserved_at)>dayAgo&&Number(c.effective_credits??c.credits)>0).map(c=>Date.parse(c.reserved_at)).sort((a,b)=>a-b);
  const creditsRollOffAt=counted.length?new Date(counted[0]+86400_000).toISOString():null;
- const reply=answer(parsed,{nowIso,pp,p6,control:raw.control,context,slots,creditsRollOffAt,
+ let collection=null;try{collection=collectionStatusFromRaw(raw);}catch{collection=null;}
+ const reply=answer(parsed,{nowIso,pp,p6,control:raw.control,context,slots,creditsRollOffAt,collection,
   nextCollect:running?nextCollectionAt({nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures}):null,nextSettle:running?next.find(r=>r.kind==='settle')?.at??null:null});
  return json({status:'ok',reply});
 }

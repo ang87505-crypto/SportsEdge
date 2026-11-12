@@ -8,9 +8,8 @@ import {OpsStatusPanel} from '@/components/ops-status-panel';
 import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {PAPER_AUTO_RELEASE} from '@/lib/stocks/paper-auto-release';
 import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule';
-import {collectionStatus,nextCollectionAt} from '@/lib/props/collection-status';
+import {collectionStatusFromRaw,nextCollectionAt} from '@/lib/props/collection-status';
 import {timingStudy} from '@/lib/props/timing-study';
-import {effectiveBudgetPolicy} from '@/lib/props/budget';
 import {MODEL_VERSION} from '@/lib/props/contract';
 import {PropsCollectionPanel} from '@/components/props-collection-panel';
 import {buildView,dailyEntryCap} from '@/lib/props/dashboard-view';
@@ -49,7 +48,7 @@ export default function AutomationPage(){
   <div className="mt-12"><Suspense fallback={<Panel title="Background jobs"><Loading label="Reading the operations monitor…"/></Panel>}><OpsStatusPanel/></Suspense></div>
   <Panel title="What the controls mean" className="mt-12">
    <div className="automation-guide">
-    <div><h3>Already running</h3><p>PrizePicks collects lines twice each afternoon and grades results overnight and again in the morning, every day, with no click needed. Stocks needs one owner Start after checking the paper account.</p></div>
+    <div><h3>Already running</h3><p>PrizePicks captures each selected game&apos;s lines inside its own window before tip-off (capture ticks every 30 minutes with Vercel backups, within the daily credit cap) and grades results overnight and again in the morning, every day, with no click needed. Stocks needs one owner Start after checking the paper account.</p></div>
     <div><h3>Follow the results</h3><p>PrizePicks grades picks after final box scores. Stocks records its account after each close. A scheduled run may find no qualifying pick or order; that is normal.</p></div>
     <div><h3>Pause or stop</h3><p>PrizePicks: sign in on its page and press Pause, Resume or Stop. Stocks: use its Autopilot page. Stopping stocks blocks new orders; existing holdings stay in the account.</p></div>
    </div>
@@ -113,9 +112,7 @@ async function CollectionSection(){
  if(!propsDashboardConfigured())return null;
  let raw;
  try{raw=await loadOnce();}catch{return <Panel title="Props line collection" className="mt-12"><Empty title="Could not read collection receipts">Refresh to check again. Nothing is assumed.</Empty></Panel>;}
- const s=collectionStatus({nowIso:raw.nowIso,runs:raw.runs,credits:raw.credits,providerRemaining:raw.providerRemaining,runCounts:raw.runCounts??null,
-  plans:raw.capturePlans??null,captures:raw.captures??null,policy:{...effectiveBudgetPolicy(raw.budgetPolicy),countsProviderActuals:raw.budgetPolicy?.count_provider_actuals===true},ticksReleased:ticksReleased(),
-  scheduledRunsEnabled:PROPS_RELEASE.scheduledRunsEnabled,controlState:raw.control?.state??null});
+ const s=collectionStatusFromRaw(raw);
  const study=raw.capturePlans&&raw.captures?timingStudy({nowIso:raw.nowIso,observations:raw.observations.map(o=>({...o,run_id:o.run_id??-1})),
   predictions:raw.predictions,picks:raw.picks,results:raw.results,legs:raw.legs,entries:raw.entries,accounts:raw.accounts,settlements:raw.settlements,
   plans:raw.capturePlans,captures:raw.captures,modelVersion:MODEL_VERSION}):null;

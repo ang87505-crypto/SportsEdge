@@ -12,7 +12,10 @@ import {PropsOwnerControls} from '@/components/props-owner-controls';
 import {AutomationRefresh} from '@/components/automation-refresh';
 import {PLATFORMS,PLATFORM_LABEL,MODEL_VERSION,SELECTION_VERSION,type Platform} from '@/lib/props/contract';
 import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule';
-import {nextCollectionAt} from '@/lib/props/collection-status';
+import {nextCollectionAt,collectionStatusFromRaw,type CollectionStatus} from '@/lib/props/collection-status';
+import {whyNoPicks} from '@/lib/props/no-picks';
+import {lineState,LINE_STATE,entryState,ENTRY_STATE} from '@/lib/props/pick-state';
+import {PropsCollectionPanel} from '@/components/props-collection-panel';
 import {pct,usdCents} from '@/lib/format';
 import {CalibrationChart} from '@/components/charts';
 import {calibrationBins,brierEdge,type BacktestSummary} from '@/lib/props/backtest-view';
@@ -57,7 +60,10 @@ async function Body({searchParams}:{searchParams:Search}){
   <Link href={`/paper-betting/props?platform=${platform}`} aria-current={record==='current'?'page':undefined}>Current record</Link>
   <Link href={`/paper-betting/props?platform=${platform}&record=v1`} aria-current={record==='v1'?'page':undefined}>Stats-model record (v1)</Link>
  </nav>:null;
- return <>{tabs}{recordTabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view}/><PropsOwnerControls/>
+ let status:CollectionStatus|null=null;
+ try{status=collectionStatusFromRaw(raw);}catch{status=null;}
+ return <>{tabs}{recordTabs}<SafetyBrakeBanner control={raw.control}/><Summary raw={raw} v={view}/><TodaysPicks v={view} status={status} raw={raw}/>
+  {status?<PropsCollectionPanel s={status} study={null} ticksReleased={ticksReleased()}/>:null}<PropsOwnerControls/>
   <PropsModelPanel v={view}/><PropsReviewCard v={view}/><Entries v={view}/><Lines v={view}/>
   <RunHistory v={view}/><HistoricalCheck platform={platform} cal={cal}/><Limits/></>;
 }
@@ -68,7 +74,7 @@ function NotConnected(){
    <p className="quiet">This deployment has no props ledger configured, so there are no observed lines, model estimates or simulated results to show. Nothing has been filled in with examples.</p>
    <KeyValues items={[['Daily schedule',PROPS_RELEASE.scheduledRunsEnabled?'On':'Off'],['Model',MODEL_VERSION],['Selection rule',SELECTION_VERSION]]}/>
   </Panel>
-  <Panel title="Daily cycle" description="Fixed UTC slots; local times shift with daylight saving." className="mt-12"><Schedule/></Panel>
+  <Panel title="Daily cycle" description="Grading runs at fixed UTC slots (local times shift with daylight saving); line collection follows each game's capture window." className="mt-12"><Schedule/></Panel>
  </>;
 }
 
@@ -102,14 +108,17 @@ function Summary({raw,v}:{raw:Raw;v:PropsView}){
  </Panel>;
 }
 
-function TodaysPicks({v}:{v:PropsView}){
+function TodaysPicks({v,status,raw}:{v:PropsView;status:CollectionStatus|null;raw:Raw}){
  const picks=propsSummary(v).upcoming.slice(0,8);
+ const why=picks.length?null:whyNoPicks({view:v,status,nowIso:raw.nowIso,control:raw.control});
  return <Panel title="Upcoming picks" description="Recorded picks for games that have not started, most confident first. A pick is a model estimate, not a sure thing." actions={<Evidence kind="recorded"/>} className="mt-12">
   {picks.length?<ol className="props-picks">{picks.map(p=><li key={p.id}>
    <span><strong>{p.player} · {p.side==='more'?'More':'Less'} {p.line} {p.stat}</strong><small>{p.game} · locks {mtShort(p.lockAt)}</small>
     {whyLine(p)&&<small className="props-why">{whyLine(p)}</small>}<Flags flags={p.market?.flags??[]}/></span>
    <strong className="prob">{pct(p.probability,0)}</strong>
-  </li>)}</ol>:<p className="quiet">No upcoming picks right now. New picks appear after the next line collection if any line passes the selection rule (60–80% model confidence).</p>}
+  </li>)}</ol>:<div className="props-why-none" role="status"><p><strong>No upcoming picks.</strong> {why?.headline}.</p>
+   {why?.detail?<p className="quiet">{why.detail}</p>:null}
+   <p className="quiet small-print">Reason from the run ledger and capture receipts ({why?.code.toLowerCase().replace(/_/g,' ')}). A pick needs 60–80% model confidence; days with none are expected.</p></div>}
  </Panel>;
 }
 
@@ -166,7 +175,8 @@ function Lines({v}:{v:PropsView}){
     <td data-label="Model estimate" className="num">{l.pMore===null?<span className="quiet">Unscorable ({(l.predictionReason??'missing').replace(/_/g,' ')})</span>
      :<>More {pct(l.pMore,0)} · Less {pct(l.pLess,0)}<small>{whyLine(l)||`mean ${l.mean?.toFixed(1)}`} · {l.modelVersion}</small><Flags flags={l.market?.flags??[]}/></>}</td>
     <td data-label="Decision">{l.decision==='recorded'?<Badge tone="info">{l.side==='more'?'More':'Less'}</Badge>:<span className="quiet">Skipped</span>}<small>{(l.decisionReason??'no decision').replace(/_/g,' ')}</small></td>
-    <td data-label="Result" className={l.correct===true?'tone-text-positive':l.correct===false?'tone-text-negative':undefined}>{outcomeText(l)}</td>
+    <td data-label="Result" className={l.correct===true?'tone-text-positive':l.correct===false?'tone-text-negative':undefined}>
+     {l.decision==='recorded'?<Badge tone={LINE_STATE[lineState(l)].tone}>{LINE_STATE[lineState(l)].label}</Badge>:null}<small>{outcomeText(l)}</small></td>
    </tr>)}</tbody>
   </table></div>:<div className="panel-pad"><p className="quiet">No {PLATFORM_LABEL[v.platform]} lines recorded in the last 14 days.</p></div>}
  </Panel>;
@@ -178,8 +188,8 @@ function Entries({v}:{v:PropsView}){
    <thead><tr><th scope="col">Entry</th><th scope="col">Legs</th><th scope="col">Simulated result</th></tr></thead>
    <tbody>{v.entries.slice(0,60).map(e=><tr key={e.id}>
     <td data-label="Entry"><strong>#{e.id} · {usdCents(e.stakeCents)}</strong><small>Recorded {mtShort(e.createdAt)}</small></td>
-    <td data-label="Legs">{e.legs.map(l=><div key={l.id}>{l.player} {l.side==='more'?'More':'Less'} {l.line} {l.stat}<small>{outcomeText(l)}</small></div>)}</td>
-    <td data-label="Simulated result">{!e.settlement?<span className="quiet">Open</span>:e.settlement.profitCents===null?
+    <td data-label="Legs">{e.legs.map(l=><div key={l.id}>{l.player} {l.side==='more'?'More':'Less'} {l.line} {l.stat} <Badge tone={LINE_STATE[lineState(l)].tone}>{LINE_STATE[lineState(l)].label}</Badge><small>{outcomeText(l)}</small></div>)}</td>
+    <td data-label="Simulated result"><Badge tone={ENTRY_STATE[entryState(e)].tone}>{ENTRY_STATE[entryState(e)].label}</Badge>{!e.settlement?<small>Locks {mtShort(e.legs.map(l=>l.lockAt).sort()[0]??'')}</small>:e.settlement.profitCents===null?
      <>Payout unknown<small>{e.settlement.wins} correct, {e.settlement.losses} wrong, {e.settlement.voids} void</small></>:
      <span className={e.settlement.profitCents>0?'tone-text-positive':e.settlement.profitCents<0?'tone-text-negative':undefined}>{e.settlement.outcome==='won'?'Won':e.settlement.outcome==='lost'?'Lost':e.settlement.outcome==='refund'?'Refunded':e.settlement.outcome} {usdCents(e.settlement.profitCents,{signed:true})}<small>returned {usdCents(e.settlement.returnCents)}</small></span>}</td>
    </tr>)}</tbody>
@@ -193,14 +203,18 @@ const nmTime=(hour:number,minute:number)=>{
 };
 function Schedule(){
  const b=ACTIVE_BUDGET_POLICY;
- const rows=[...PROPS_SCHEDULE].sort((x,y)=>x.hour*60+x.minute-(y.hour*60+y.minute));
+ const ticks=ticksReleased();
+ // With capture ticks released, the fixed collect slots stand down (SUPERSEDED_BY_TICK): list only grading slots.
+ const rows=[...PROPS_SCHEDULE].filter(r=>!ticks||r.kind!=='collect').sort((x,y)=>x.hour*60+x.minute-(y.hour*60+y.minute));
  return <>
   <ol className="props-schedule">{rows.map(r=><li key={r.cron}>
    <Badge tone={r.kind==='collect'?'info':'accent'}>{r.kind==='collect'?'Collect lines':'Grade and settle'}</Badge>
    <span><strong>{nmTime(r.hour,r.minute)} New Mexico</strong><small>{String(r.hour).padStart(2,'0')}:{String(r.minute).padStart(2,'0')} UTC daily</small></span>
   </li>)}</ol>
+  {ticks?<p style={{marginTop:8}}><Badge tone="info">Collect lines</Badge> Event-aware capture: each slate is planned once from the free events list, and each selected game is captured inside its own window (EARLY 8–4 hours or LATE 3 hours to 35 minutes before tip-off). Capture ticks run every 30 minutes from about 4 AM to 9:40 PM New Mexico time, with Vercel backups at fixed hours when GitHub drops a tick.</p>:null}
   <p className="quiet" style={{marginTop:8}}>{PROPS_RELEASE.scheduledRunsEnabled?'The daily schedule is on. ':'The daily schedule is off: runs happen only when started by hand. '}
-   Data budget {b.version}: up to {b.maxEventsPerRun} games per collection, {b.dailyCredits} provider credits per rolling 24 hours, {b.monthlyCredits} per 30 days, and a stop when the provider reports fewer than {b.providerFloor} credits left. The later collection only spends if the earlier one could not.</p>
+   Data budget {b.version}: {b.dailyCredits} provider credits per rolling 24 hours, {b.monthlyCredits} per 30 days, and a stop when the provider reports fewer than {b.providerFloor} credits left.
+   {ticks?' Each captured game costs 3 credits, so at most two games a day; the events list is free.':` Up to ${b.maxEventsPerRun} games per collection; the later collection only spends if the earlier one could not.`}</p>
  </>;
 }
 

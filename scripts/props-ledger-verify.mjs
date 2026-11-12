@@ -96,7 +96,7 @@ for(const p of recPicks){const pr=rp.get(Number(p.prediction_id)),o=pr&&rObs.get
  t.recorded++;
  if(!r){t.pending++;continue;}
  const leg=legOf(p.side,r.outcome);if(leg==='void'){t.voids++;continue;}
- t.graded++;const hit=leg==='win';hit?t.hits++:t.misses++;
+ t.graded++;const hit=leg==='win';if(hit)t.hits++;else t.misses++;
  const q=p.side==='more'?Number(pr.p_more):Number(pr.p_less);t.brierSum+=(q-(hit?1:0))**2;
  for(const [m,key] of [[t.byStat,o.stat],[t.bySide,p.side]]){const b=m[key]??={graded:0,hits:0,meanP:0};b.graded++;if(hit)b.hits++;b.meanP+=q;}
 }

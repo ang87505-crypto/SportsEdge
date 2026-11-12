@@ -101,3 +101,16 @@ test('approvals and failed workflows come from the monitor only; no monitor mean
  const {ops,...noOps}=ports;void ops;
  assert.match((await q('What requires my approval?',noOps)).text,/cannot list what is waiting on you/);
 });
+
+test('with capture ticks live, "why no picks" gives the capture-window reason and lists the selected games',()=>{
+ const raw=makeRaw({nowIso:NOW,tonight:false});raw.runs=[];
+ const collection={mode:'ticks',capturesAvailable:true,lastSuccess:null,next:null,executions:[],noEntryReasons:[],missing:[],stages:{},
+  budget:{daily:7,monthly:200,used24h:7,used30d:29,remaining24h:0,remaining30d:171,providerRemaining:476,providerFloor:60,nextRelease:{at:'2026-11-12T20:11:00Z',credits:7}},
+  slates:[{date:'2026-11-12',arm:'late',gamesExamined:4,selected:2,captured:0,linesObserved:0,qualifyingPicks:0,entries:0,games:[
+   {event:'a',matchup:'Mavericks @ Timberwolves',tipoff:'2026-11-13T01:10:00Z',arm:'early',state:'WAITING_FOR_WINDOW',window:{from:'2026-11-12T17:10:00Z',to:'2026-11-12T21:10:00Z'},captures:[]},
+   {event:'b',matchup:'Pistons @ Wizards',tipoff:'2026-11-13T00:10:00Z',arm:'late',state:'WAITING_FOR_WINDOW',window:{from:'2026-11-12T21:10:00Z',to:'2026-11-12T23:35:00Z'},captures:[]}]}]};
+ const r=answer(understand('Why no picks today?',null,[],NOW),{...data(raw),collection});
+ assert.match(r.text,/next opens .*Mavericks @ Timberwolves, EARLY/);
+ assert.match(r.text,/Only 0 of 7 credits are free right now/);
+ assert.match(r.text,/Selected games for 2026-11-12:\n- Mavericks @ Timberwolves: waiting for window/);
+});
