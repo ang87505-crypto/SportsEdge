@@ -5,7 +5,7 @@
  * any violation throws. PROXY lines (floor of last-10 median + 0.5), never platform lines.
  */
 import {readFileSync} from 'node:fs';
-import {predictLine,type GameLog,type ModelParams} from '../../src/lib/props/model.ts';
+import {predictLine,type GameLog,type ModelParams,type PriorSummary} from '../../src/lib/props/model.ts';
 import {STATS,type Stat} from '../../src/lib/props/contract.ts';
 import {matchupFeatures,type TeamGameRow,type Matchup} from '../../src/lib/props/features.ts';
 import type {Probabilities} from '../../src/lib/props/research.ts';
@@ -25,6 +25,13 @@ export function buildHistoricalItems(priorPath:string,seasonPath:string,dispersi
  const pr=priors(prior.rows);
  const dispersion=fitDispersion(season.rows,pr,Date.parse(dispersionThrough));
  const params:ModelParams={...MODEL_FIXED,leagueRate:pr.leagueRate,dispersion};
+ const built=itemsFromSeason(season.rows,params,a=>pr.players.get(a)??null);
+ return {...built,dispersion,sources:[prior,season].map(f=>({file:f.file,sha256:f.sha256}))};
+}
+
+/** Scored items for one season's rows with given layer-1 params and priors; every input is checked to be pre-game. */
+export function itemsFromSeason(seasonRows:BoxRow[],params:ModelParams,priorOf:(athlete:string)=>PriorSummary|null){
+ const season={rows:seasonRows};
  
  // Team rows, time-sorted, so each game's matchup sees only a 60-day window before it.
  const teamRows:TeamGameRow[]=season.rows.map(r=>({espnEventId:r.game,teamAbbr:r.team,opponentAbbr:r.opponent,gameStart:r.start,
@@ -54,7 +61,7 @@ export function buildHistoricalItems(priorPath:string,seasonPath:string,dispersi
     const y=statOf(r.log,s);
     if(y===null||y===undefined)continue;
     const line=proxyLine(history,s);if(line===null)continue;
-    const p=predictLine({logs:history,prior:pr.players.get(r.athlete)??null,stat:s,line,cutoff:r.start,params});
+    const p=predictLine({logs:history,prior:priorOf(r.athlete),stat:s,line,cutoff:r.start,params});
     if(p.status!=='scored')continue;
     items.push({key:[r.game,r.athlete,s,line].join('|'),eventId:r.game,date:r.start.slice(0,10),stat:s,at:r.start,
      base:{pMore:p.pMore,pLess:p.pLess,pTie:p.pTie},matchup:matchupFor(r,s),y:y>line?1:0});
@@ -62,7 +69,5 @@ export function buildHistoricalItems(priorPath:string,seasonPath:string,dispersi
   });
  }
  if(violations!==0)throw new Error('LEAKAGE: '+violations+' inputs at or after lock');
- 
- 
- return {items,checked,violations,dispersion,sources:[prior,season].map(f=>({file:f.file,sha256:f.sha256}))};
+ return {items,checked,violations};
 }

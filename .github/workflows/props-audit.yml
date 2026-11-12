@@ -1,0 +1,34 @@
+# Read-only audit of the props ledger: shadow-line status, grading, identity, team, game time, minutes,
+# revisions, and the real captured-line comparison (layer 1 vs props-nb-role-minutes-v1 vs same-line books).
+# Never writes to the ledger and never calls a paid provider.
+name: Props ledger audit (read-only)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/props-ledger-audit.ts
+      - .github/workflows/props-audit.yml
+permissions:
+  contents: read
+jobs:
+  audit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Audit (read-only)
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: node --experimental-strip-types --no-warnings scripts/props-ledger-audit.ts props-audit.json > /dev/null && cat props-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: props-ledger-audit
+          path: props-audit.json
+          retention-days: 30

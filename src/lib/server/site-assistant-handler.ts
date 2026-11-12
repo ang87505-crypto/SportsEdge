@@ -1,0 +1,103 @@
+/** Whole-site read-only orchestration. Domain failures are isolated; private data is never cached. */
+import {handleAssistant,parseContext} from './assistant-handler.ts';
+import {routeQuestion} from '../assistant/domain.ts';
+import {stockAnswer,researchAnswer,type StockAccounts,type BrokerView} from '../assistant/stock-answer.ts';
+import type {Reply} from '../assistant/answer.ts';
+import type {Raw} from '../props/dashboard-view.ts';
+import type {ResearchView} from '../research/stock-summary.ts';
+import type {AssistantContext} from '../assistant/understand.ts';
+import {understand} from '../assistant/understand.ts';
+import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
+import {handlePaperAutoGet} from './paper-auto-owner.ts';
+import {getAlpacaPaperSnapshot} from './alpaca-paper-reader.ts';
+import {loadStockResearch} from './stock-research-load.ts';
+import {loadOpsStatus} from './ops-status-load.ts';
+import {opsSummaryText,opsApprovalsText,type OpsView} from '../ops/status.ts';
+type Env=Readonly<Record<string,string|undefined>>;
+export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
+export function assistantAccess(cookie:string|undefined):AssistantAccess{
+ const secret=ownerSecret(),ownerAccess=!!secret&&validOwnerSession(cookie,secret);
+ return {ownerAccess,ownerExpiresAt:ownerAccess?Number(cookie!.split('.')[1]):null};
+}
+export type SiteRequest={url:string;contentType:string|null;origin:string|null;ownerCookie?:string;text:()=>Promise<string>};
+export type SitePorts={access:AssistantAccess;sports:(nowIso:string)=>Promise<Raw>;
+ accounts:()=>Promise<StockAccounts>;broker:()=>Promise<BrokerView>;research:(nowIso:string)=>Promise<ResearchView>;
+ /** Public background-job status from the operations monitor. */
+ ops?:(nowIso:string)=>Promise<OpsView>};
+export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):SitePorts{
+ const access=assistantAccess(req.ownerCookie);
+ return {access,sports,research:loadStockResearch,ops:loadOpsStatus,
+  async accounts(){
+   if(!access.ownerAccess)return {state:'owner_required',ledgers:[],brokerWritesEnabled:null};
+   const response=await handlePaperAutoGet({...req,ownerCookie:req.ownerCookie},env);
+   const body=await response.json();
+   if(!response.ok||body.status!=='ok')return {state:'unavailable',ledgers:[],brokerWritesEnabled:null};
+   return {state:'ready',ledgers:body.experiments,brokerWritesEnabled:typeof body.release?.brokerWritesEnabled==='boolean'?body.release.brokerWritesEnabled:null};
+  },
+  async broker(){
+   if(!access.ownerAccess)return {state:'owner_required'};
+   if(!env.ALPACA_PAPER_KEY_ID||!env.ALPACA_PAPER_SECRET_KEY)return {state:'unavailable'};
+   try{return {state:'ready',snapshot:await getAlpacaPaperSnapshot({keyId:env.ALPACA_PAPER_KEY_ID,secretKey:env.ALPACA_PAPER_SECRET_KEY})};}
+   catch{return {state:'unavailable'};}
+  }};
+}
+const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store','Pragma':'no-cache','X-Content-Type-Options':'nosniff'}});
+const simple=(text:string,context:AssistantContext={}):Reply=>({text,cards:[],suggestions:["Tonight's picks",'Stock results','Research results','Is everything running?'],context});
+export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'text'>,env:Env,nowIso:string,ports:SitePorts):Promise<Response>{
+ if(req.contentType?.split(';')[0]?.trim()!=='application/json')return json({status:'invalid_request'},400);
+ let body:unknown;
+ try{const raw=await req.text();if(new TextEncoder().encode(raw).length>2000)return json({status:'invalid_request'},400);body=JSON.parse(raw);}
+ catch{return json({status:'invalid_request'},400);}
+ if(!body||typeof body!=='object'||Array.isArray(body))return json({status:'invalid_request'},400);
+ const b=body as Record<string,unknown>;
+ if(Object.keys(b).some(k=>k!=='message'&&k!=='context')||typeof b.message!=='string'||b.message.length>300)return json({status:'invalid_request'},400);
+ const context=parseContext(b.context);
+ if(context===undefined)return json({status:'invalid_request'},400);
+ const message=b.message,q=routeQuestion(message,context);
+ const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
+ if(!q.domain)return respond(simple('Do you mean sports picks, your stock account, or strategy research? Choose one below.'));
+ if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, stock paper-account results and positions, strategy research, and the last recorded automation status. Ask a question or choose a topic.',{domain:'all',topic:'help'}),
+  cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'}]}]});
+ async function sports():Promise<Reply>{
+  try{
+   const safeContext=context?.domain&&context.domain!=='sports'?null:context;
+   const r=await handleAssistant({contentType:'application/json',text:async()=>JSON.stringify({message,context:safeContext})},env,ports.sports,nowIso);
+   const out=await r.json() as {reply:Reply};
+   return {...out.reply,context:{...out.reply.context,domain:'sports'}};
+  }catch{return simple('Sports records are unavailable right now.',{domain:'sports'});}
+ }
+ async function stocks():Promise<Reply>{
+  const ownerRequired:StockAccounts={state:'owner_required',ledgers:[],brokerWritesEnabled:null};
+  if(!ports.access.ownerAccess)return stockAnswer({...q,domain:'stocks'},ownerRequired,null,nowIso);
+  // Do not even invoke private loaders unless this request has a validated owner session.
+  const [a,p]=await Promise.allSettled([ports.accounts(),q.topic==='holdings'?ports.broker():Promise.resolve(null)]);
+  const accounts=a.status==='fulfilled'?a.value:{state:'unavailable' as const,ledgers:[],brokerWritesEnabled:null};
+  const broker=p.status==='fulfilled'?p.value:{state:'unavailable' as const};
+  const range=understand(message,null,[],nowIso).range??(q.domain===context?.domain?context?.range:undefined);
+  return stockAnswer({...q,domain:'stocks'},accounts,broker,nowIso,range??undefined);
+ }
+ async function research():Promise<Reply>{
+  try{return researchAnswer({...q,domain:'research'},await ports.research(nowIso));}
+  catch{return simple('Research records are unavailable right now. Your stock account and sports records are separate.',{domain:'research'});}
+ }
+ if(q.domain==='sports')return respond(await sports());
+ if(q.domain==='stocks')return respond(await stocks());
+ if(q.domain==='research')return respond(await research());
+ async function jobs():Promise<Reply>{
+  if(!ports.ops)return simple('Background job status is not connected here.',{domain:'all'});
+  try{return simple(opsSummaryText(await ports.ops(nowIso)),{domain:'all'});}
+  catch{return simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'});}
+ }
+ if(q.topic==='jobs')return respond(await jobs());
+ if(q.topic==='approvals'){
+  if(!ports.ops)return respond(simple('Background job status is not connected here, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));
+  try{return respond({...simple(opsApprovalsText(await ports.ops(nowIso)),{domain:'all',topic:'approvals'}),
+   cards:[{kind:'links',items:[{label:'Automation status',href:'/automation'}]}]});}
+  catch{return respond(simple('Background job status is unavailable right now, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));}
+ }
+ const results=await Promise.allSettled([sports(),stocks(),research(),jobs()]);
+ const names=['Sports','Stock account','Stock research','Background jobs'];
+ const replies=results.map((r,i)=>r.status==='fulfilled'?r.value:simple(names[i]+' records are unavailable.'));
+ return respond({text:replies.map((r,i)=>names[i]+'\n'+r.text).join('\n\n'),cards:replies.flatMap(r=>r.cards),
+  suggestions:["Tonight's picks",'Stock results','Research results','Stock bot status'],context:{domain:'all',topic:q.topic},private:replies.some(r=>r.private)});
+}

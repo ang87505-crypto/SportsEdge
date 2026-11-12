@@ -100,6 +100,30 @@ export function buildEntries(cands:EntryCandidate[],o:{platform:Platform;picksPe
  return entries;
 }
 
+export type NoEntryReason='DAILY_ENTRY_LIMIT_REACHED'|'NO_QUALIFYING_PICKS'|'PICKS_TOO_CLOSE_TO_LOCK'|
+ 'TOO_FEW_DISTINCT_GAMES'|'TOO_FEW_DISTINCT_PLAYERS'|'NO_VALID_COMBINATION';
+export const NO_ENTRY_TEXT:Record<NoEntryReason,string>={
+ DAILY_ENTRY_LIMIT_REACHED:'The account already made its maximum entries today.',
+ NO_QUALIFYING_PICKS:'No line met the pick rules, so there was nothing to combine.',
+ PICKS_TOO_CLOSE_TO_LOCK:'Every qualifying pick was too close to its game lock.',
+ TOO_FEW_DISTINCT_GAMES:'Qualifying picks came from fewer different games than an entry needs.',
+ TOO_FEW_DISTINCT_PLAYERS:'Qualifying picks came from fewer different players than an entry needs.',
+ NO_VALID_COMBINATION:'No combination met the different-game and different-player rules.',
+};
+/** Why buildEntries made no entry for this platform, or null when it made at least one. Never relaxes a rule. */
+export function explainNoEntries(cands:EntryCandidate[],o:{platform:Platform;picksPerEntry:number;maxEntries:number;nowIso:string;lockBufferMs:number}):
+ {reason:NoEntryReason;eligiblePicks:number;usablePicks:number;distinctGames:number}|null{
+ if(buildEntries(cands,o).length)return null;
+ const now=Date.parse(o.nowIso);
+ const mine=cands.filter(c=>c.platform===o.platform);
+ const usable=mine.filter(c=>Date.parse(c.lockAt)-now>o.lockBufferMs);
+ const games=new Set(usable.map(c=>c.eventId)).size,players=new Set(usable.map(c=>c.playerKey)).size;
+ const reason:NoEntryReason=o.maxEntries<=0?'DAILY_ENTRY_LIMIT_REACHED':!mine.length?'NO_QUALIFYING_PICKS':
+  !usable.length?'PICKS_TOO_CLOSE_TO_LOCK':games<o.picksPerEntry?'TOO_FEW_DISTINCT_GAMES':
+  players<o.picksPerEntry?'TOO_FEW_DISTINCT_PLAYERS':'NO_VALID_COMBINATION';
+ return {reason,eligiblePicks:mine.length,usablePicks:usable.length,distinctGames:games};
+}
+
 // ---------------------------------------------------------------- settlement
 export const PRIZEPICKS_TERMS_V1={version:'prizepicks-power-standard-20261107',
  source:'https://www.prizepicks.com/help-center/payouts',retrieved:'2026-11-07',

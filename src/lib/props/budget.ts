@@ -95,3 +95,18 @@ export function providerUsage(headers:{get(name:string):string|null}){
  const n=(k:string)=>{const v=headers.get(k);if(v===null||!/^\d{1,9}$/.test(v.trim()))return null;return Number(v.trim());};
  return {remaining:n('x-requests-remaining'),used:n('x-requests-used'),last:n('x-requests-last')};
 }
+
+/**
+ * The limits a worker may actually spend under: the stricter of the active database policy row and the reviewed
+ * source policy above. A database row alone can never raise spending (an increase also needs a reviewed code
+ * change); it can only tighten it, or switch on provider-confirmed accounting (props_budget_v3_actuals.sql).
+ */
+export function effectiveBudgetPolicy(db:{version:string;daily_credits:number;monthly_credits:number;provider_floor:number}|null|undefined,
+ source:BudgetPolicy=ACTIVE_BUDGET_POLICY):BudgetPolicy{
+ if(!db)return source;
+ const n=(v:unknown)=>{if(v===null||v===undefined||v==="")return null;const x=Number(v);return Number.isFinite(x)&&x>=0?x:null;};
+ const d=n(db.daily_credits),m=n(db.monthly_credits),f=n(db.provider_floor);
+ return {version:String(db.version),dailyCredits:d===null?source.dailyCredits:Math.min(d,source.dailyCredits),
+  monthlyCredits:m===null?source.monthlyCredits:Math.min(m,source.monthlyCredits),
+  providerFloor:f===null?source.providerFloor:Math.max(f,source.providerFloor),maxEventsPerRun:source.maxEventsPerRun};
+}

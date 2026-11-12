@@ -5,14 +5,17 @@
  */
 import {propsStoreConfig} from './props-store.ts';
 import {buildView,type Raw} from '../props/dashboard-view.ts';
-import {PROPS_RELEASE,nextPlannedRuns} from '../props/schedule.ts';
+import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '../props/schedule.ts';
+import {nextCollectionAt} from '../props/collection-status.ts';
+import {slotStatus} from '../props/slot-status.ts';
 import {STATS} from '../props/contract.ts';
 import {understand,type AssistantContext,type Intent} from '../assistant/understand.ts';
 import {answer,type Reply} from '../assistant/answer.ts';
+import {RESEARCH_IDS,type ResearchId} from '../research/stock-summary.ts';
 
 export const CACHE_MS=60_000;
 const MAX_BODY=2000,MAX_MESSAGE=300;
-const INTENTS:Intent[]=['picks','why','results','record','player','entries','lineup','status','model','mistakes','future','help','smalltalk','bet','unknown'];
+const INTENTS:Intent[]=['picks','nopicks','budget','why','results','record','player','entries','lineup','status','model','mistakes','future','help','smalltalk','bet','unknown'];
 const RANGE=/^(today|yesterday|week|all|date:\d{4}-\d\d-\d\d)$/;
 type Env=Readonly<Record<string,string|undefined>>;
 
@@ -34,6 +37,10 @@ export function parseContext(v:unknown):AssistantContext|null|undefined{
   else if(k==='stat'&&typeof val==='string'&&(STATS as readonly string[]).includes(val))out.stat=val as AssistantContext['stat'];
   else if(k==='range'&&typeof val==='string'&&RANGE.test(val))out.range=val as AssistantContext['range'];
   else if(k==='lastPickIds'&&Array.isArray(val)&&val.length<=10&&val.every(n=>Number.isSafeInteger(n)&&n>0))out.lastPickIds=val as number[];
+  else if(k==='domain'&&['sports','stocks','research','all'].includes(val as string))out.domain=val as AssistantContext['domain'];
+  else if(k==='topic'&&['overview','performance','holdings','picks','automation','explain','controls','help','approvals','jobs'].includes(val as string))out.topic=val as AssistantContext['topic'];
+  else if(k==='symbol'&&typeof val==='string'&&/^[A-Z]{1,5}(\.[A-Z])?$/.test(val))out.symbol=val;
+  else if(k==='strategyId'&&RESEARCH_IDS.includes(val as ResearchId))out.strategyId=val as ResearchId;
   else return undefined;
  }
  return out;
@@ -69,7 +76,12 @@ export async function handleAssistant(req:{contentType:string|null;text:()=>Prom
  const next=nextPlannedRuns(nowIso,4);
  const players=[...new Set([...pp.lines,...p6.lines].map(l=>l.player))];
  const parsed=understand(b.message,context,players,nowIso);
- const reply=answer(parsed,{nowIso,pp,p6,control:raw.control,context,
-  nextCollect:running?next.find(r=>r.kind==='collect')?.at??null:null,nextSettle:running?next.find(r=>r.kind==='settle')?.at??null:null});
+ // Receipts for "why no picks" and "is the budget used up": the same slot table and credit rows the PrizePicks page shows.
+ const slots=slotStatus(raw.runs,nowIso,1,raw.runCounts??null);
+ const dayAgo=Date.parse(nowIso)-86400_000;
+ const counted=raw.credits.filter(c=>Date.parse(c.reserved_at)>dayAgo&&Number(c.effective_credits??c.credits)>0).map(c=>Date.parse(c.reserved_at)).sort((a,b)=>a-b);
+ const creditsRollOffAt=counted.length?new Date(counted[0]+86400_000).toISOString():null;
+ const reply=answer(parsed,{nowIso,pp,p6,control:raw.control,context,slots,creditsRollOffAt,
+  nextCollect:running?nextCollectionAt({nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures}):null,nextSettle:running?next.find(r=>r.kind==='settle')?.at??null:null});
  return json({status:'ok',reply});
 }

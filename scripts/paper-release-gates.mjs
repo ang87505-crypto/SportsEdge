@@ -3,7 +3,7 @@ import {settleEntry,legResult} from '../src/lib/props/rules.ts';
 import {parseLedger} from '../src/lib/stocks/paper-auto-ledger.ts';
 
 export const NOT_BEFORE=Date.parse('2026-11-08T16:00:00Z');
-export const EXPIRES=Date.parse('2026-11-11T07:00:00Z'); // end of Nov 10 in New Mexico
+export const EXPIRES=Date.parse('2026-11-21T07:00:00Z'); // end of Fri Nov 20 in New Mexico (re-pinned 2026-11-10)
 const ms=x=>typeof x==='string'?Date.parse(x):NaN;
 const id=x=>Number.isSafeInteger(Number(x))&&Number(x)>0?Number(x):NaN;
 const no=reason=>({ready:false,reason});

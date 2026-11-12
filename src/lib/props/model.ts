@@ -28,12 +28,14 @@ export type ModelParams={
  leagueRate:Record<Stat,number>;// per-minute fallback prior
  dispersion:Record<Stat,number>;// k_stat (NB size at fixed minutes)
  maxMinutes:number;
+ /** Challenger props-nb-role-minutes-v1 only: follow a consistent recent shift in minutes (role change). Absent = layer 1. */
+ roleChange?:{recentGames:number;minShift:number};
 };
 
 export type Prediction=
  |{status:'scored';reason:'ok';mean:number;pMore:number;pLess:number;pTie:number;
    inputs:{games:number;expMinutes:number;sdMinutes:number;rate:number;priorRate:number;priorSource:'player'|'league';
-    size:number;lastPlayed:string;cutoff:string}}
+    size:number;lastPlayed:string;cutoff:string;roleShift?:boolean}}
  |{status:'unscorable';reason:'insufficient_history'|'stale_history'|'missing_stat'|'invalid_line'|'invalid_input';
    inputs:{games:number;cutoff:string}};
 
@@ -87,10 +89,24 @@ export function predictLine(input:{logs:GameLog[];prior:PriorSummary|null;stat:S
  const wM=(i:number)=>Math.pow(0.5,i/P.minutesHalfLife),wR=(i:number)=>Math.pow(0.5,i/P.rateHalfLife);
  let sw=0,sm=0;
  played.slice(0,10).forEach((g,i)=>{const m=Math.min(g.minutes!,P.maxMinutes);sw+=wM(i);sm+=wM(i)*m;});
- const expMinutes=sm/sw;
+ let expMinutes=sm/sw,expMinutesOverride:number|null=null;
  let sv=0;
  played.slice(0,10).forEach((g,i)=>{const m=Math.min(g.minutes!,P.maxMinutes);sv+=wM(i)*(m-expMinutes)**2;});
- const sdMinutes=Math.sqrt(sv/sw);
+ let sdMinutes=Math.sqrt(sv/sw);
+ // Role change: the last few games all moved the same way, by enough to matter. Earlier games only.
+ let roleShift=false;
+ if(P.roleChange){
+  const k=P.roleChange.recentGames,mins=played.slice(0,10).map(g=>Math.min(g.minutes!,P.maxMinutes));
+  const recent=mins.slice(0,k),older=mins.slice(k);
+  if(recent.length===k&&older.length>=3){
+   const r=recent.reduce((a,b)=>a+b,0)/k,o=older.reduce((a,b)=>a+b,0)/older.length;
+   if(Math.abs(r-o)>=P.roleChange.minShift&&recent.every(m=>Math.sign(m-o)===Math.sign(r-o))){
+    const sdRecent=Math.sqrt(recent.reduce((a,m)=>a+(m-r)**2,0)/k);
+    expMinutesOverride=r;sdMinutes=Math.max(sdMinutes,sdRecent);roleShift=true;
+   }
+  }
+ }
+ if(expMinutesOverride!==null)expMinutes=expMinutesOverride;
  const priorOwn=input.prior&&input.prior.minutes>=P.priorMinMinutes?input.prior[stat]/input.prior.minutes:null;
  const priorRate=priorOwn??P.leagueRate[stat];
  let num=P.priorStrengthMinutes*priorRate,den=P.priorStrengthMinutes;
@@ -105,7 +121,8 @@ export function predictLine(input:{logs:GameLog[];prior:PriorSummary|null;stat:S
  const pm=Math.round(p.pMore*1e9)/1e9,pt=Math.round(p.pTie*1e9)/1e9;
  return {status:'scored',reason:'ok',mean:r6(mean),pMore:pm,pTie:pt,pLess:Math.round((1-pm-pt)*1e9)/1e9,
   inputs:{games:played.length,expMinutes:r6(expMinutes),sdMinutes:r6(sdMinutes),rate:r6(rate),priorRate:r6(priorRate),
-   priorSource:priorOwn===null?'league':'player',size:Number.isFinite(size)?r6(size):1e9,lastPlayed,cutoff:input.cutoff}};
+   priorSource:priorOwn===null?'league':'player',size:Number.isFinite(size)?r6(size):1e9,lastPlayed,cutoff:input.cutoff,
+   ...(P.roleChange?{roleShift}:{})}};
 }
 
 /** Simple baselines for comparison only (never used for recorded picks). */

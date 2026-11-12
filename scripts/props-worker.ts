@@ -2,6 +2,7 @@
  * NBA player-prop PAPER worker (GitHub Actions or a manual shell).
  *   node --experimental-strip-types scripts/props-worker.ts <kind> [options]
  *     collect                      price upcoming games, predict, record picks/entries before lock
+ *     tick                         event-aware capture (props-capture-v1); scheduled ticks need PROPS_COLLECTION_V2.tickEnabled
  *     settle                       box scores -> grade lines -> settle entries
  *     backfill --from D --to D     current-season box scores (player logs), at most 25 dates
  *     status                       read-only: control, recent runs, budget
@@ -14,16 +15,29 @@ import {propsStore,PropsStoreError} from '../src/lib/server/props-store.ts';
 import {theOddsApiClient} from '../src/lib/server/props-odds-client.ts';
 import {espnClient} from '../src/lib/server/props-espn-client.ts';
 import {runCollect,runSettle,type ModelArtifact,type CycleDeps} from '../src/lib/server/props-cycle.ts';
-import {PROPS_RELEASE,scheduledInstant,slotKey} from '../src/lib/props/schedule.ts';
+import {runTick} from '../src/lib/server/props-tick.ts';
+import {PROPS_RELEASE,PROPS_COLLECTION_V2,scheduledInstant,slotKey,slotCronMatches,tickSlotKey,ticksReleased} from '../src/lib/props/schedule.ts';
 import {MODEL_VERSION,PROPS_SEASON_START} from '../src/lib/props/contract.ts';
 
 function emit(v:Record<string,unknown>,code:number):never{process.stdout.write(JSON.stringify(v)+'\n');process.exit(code);}
 const arg=(n:string)=>{const i=process.argv.indexOf('--'+n);return i>0?process.argv[i+1]:undefined;};
 const kind=process.argv[2]??'';
-const KINDS=['collect','settle','backfill','status','pause','resume','stop'];
+const KINDS=['collect','tick','settle','backfill','status','pause','resume','stop'];
 if(!KINDS.includes(kind))emit({status:'USAGE',usage:'props-worker.ts <'+KINDS.join('|')+'>'},2);
-const scheduled=process.env.GITHUB_EVENT_NAME==='schedule';
-if(scheduled&&!['collect','settle'].includes(kind))emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind},1);
+// A backup trigger (the Vercel scheduler) may dispatch a run for a named scheduled slot. It gets the same
+// slot key as the GitHub schedule, so whichever starts second is recorded as DUPLICATE and does nothing.
+const slotDispatch=process.env.GITHUB_EVENT_NAME==='workflow_dispatch'&&!!process.env.SCHEDULE_CRON;
+const scheduled=process.env.GITHUB_EVENT_NAME==='schedule'||slotDispatch;
+// A tick from props-tick.yml: its own schedule, or a Vercel backup dispatch (TICK_TRIGGER=backup). Slot-free by design.
+const tickBackup=kind==='tick'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch'&&process.env.TICK_TRIGGER==='backup';
+const tickScheduled=kind==='tick'&&(process.env.GITHUB_EVENT_NAME==='schedule'||tickBackup);
+if(scheduled&&kind!=='tick'&&!['collect','settle'].includes(kind))emit({status:'OWNER_ACTION_NOT_SCHEDULABLE',kind},1);
+if(kind==='tick'&&slotDispatch)emit({status:'UNKNOWN_SCHEDULE',kind},1);
+// Released off: exit before any database or provider call (the default until the owner approves).
+if(tickScheduled&&!ticksReleased())emit({status:'TICK_RELEASED_OFF',kind,providerCalls:0},0);
+// Once ticks are released, the legacy scheduled collect slots stand down so both never spend the same credits.
+if(scheduled&&kind==='collect'&&(PROPS_COLLECTION_V2.tickEnabled as boolean)===true)emit({status:'SUPERSEDED_BY_TICK',kind,providerCalls:0},0);
+if(slotDispatch&&kind!=='tick'&&!slotCronMatches(kind,process.env.SCHEDULE_CRON??''))emit({status:'UNKNOWN_SCHEDULE',kind,cron:process.env.SCHEDULE_CRON},1);
 if(scheduled&&(PROPS_RELEASE.scheduledRunsEnabled as boolean)!==true)emit({status:'SCHEDULED_RUNS_RELEASED_OFF',kind,providerCalls:0},0);
 if(!PROPS_RELEASE.paperOnly||PROPS_RELEASE.realMoneyEnabled)emit({status:'RELEASE_INVALID'},1);
 
@@ -52,12 +66,23 @@ try{
  const model=JSON.parse(readFileSync(new URL('../src/data/props/model_v1.json',import.meta.url),'utf8')) as ModelArtifact;
  if(model.modelVersion!==MODEL_VERSION)emit({status:'MODEL_ARTIFACT_MISMATCH'},1);
  const key=process.env.ODDS_API_KEY??'';
- const deps:CycleDeps={store,odds:kind==='collect'&&key?theOddsApiClient(key):null,espn:espnClient(),model,now,worker,seasonStart:PROPS_SEASON_START};
+ const trigger=process.env.GITHUB_EVENT_NAME==='schedule'?'github-schedule':(slotDispatch||tickBackup)?'backup-dispatch':'manual';
+ const deps:CycleDeps={store,odds:(kind==='collect'||kind==='tick')&&key?theOddsApiClient(key):null,espn:espnClient(),model,now,worker,seasonStart:PROPS_SEASON_START,trigger};
  const cron=process.env.SCHEDULE_CRON??'';
- const scheduledFor=scheduled?scheduledInstant(cron,now()):null;
- if(scheduled&&!scheduledFor)emit({status:'UNKNOWN_SCHEDULE',cron},1);
+ const scheduledFor=scheduled&&kind!=='tick'?scheduledInstant(cron,now()):null;
+ if(scheduled&&kind!=='tick'&&!scheduledFor)emit({status:'UNKNOWN_SCHEDULE',cron},1);
  const slot=(arg('slot')??(scheduledFor?slotKey(kind,scheduledFor):`${kind}-manual-${process.env.GITHUB_RUN_ID??Date.now()}`)).slice(0,80);
  let result;
+ if(kind==='tick'){
+  // A backup tick names the hour its Vercel cron was scheduled for, so the ledger shows actual vs scheduled.
+  const hour=process.env.TICK_SCHEDULED_HOUR??'';
+  const sched=tickBackup&&/^\d{4}-\d\d-\d\dT\d\d:00:00Z$/.test(hour)&&Date.parse(hour)<=Date.now()?new Date(hour).toISOString():null;
+  const tickSlot=tickScheduled?tickSlotKey(now()):`collect-tick-manual-${process.env.GITHUB_RUN_ID??Date.now()}`;
+  result=await runTick(deps,tickSlot.slice(0,80),sched);
+  const attention=result.outcome.startsWith('FAILED')||['ODDS_NOT_CONFIGURED','EVENTS_LIST_CHARGED','PROVIDER_EVENTS_FAILED'].includes(result.outcome);
+  if(attention)process.stdout.write(`::warning::props tick ${result.outcome}\n`);
+  emit({status:result.outcome,kind,runId:result.runId,slot:tickSlot,summary:result.summary},attention?1:0);
+ }
  if(kind==='collect')result=await runCollect(deps,slot,scheduledFor);
  else if(kind==='settle')result=await runSettle(deps,slot,scheduledFor);
  else{
