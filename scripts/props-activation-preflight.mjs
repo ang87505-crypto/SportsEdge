@@ -37,6 +37,18 @@ for(const t of CAPTURE_TABLES){
  facts.captureTables[t]=r.ok?'PRESENT':missingRelation(r.code)?'MISSING':`ERROR_${r.status}_${r.code??''}`;
  if(r.ok)facts.captureRows[t]=r.count;
 }
+// 1b. Capture receipts (only when the schema exists): plans, claims, outcomes; claims must be unique per plan and purpose.
+if(Object.values(facts.captureTables).every(v=>v==='PRESENT')){
+ const plans=await get('props_capture_plans?select=id,run_id,plan_version,slate_date,provider_event_id,home_team,away_team,commence_time,selected,selection_rank,arm,reason,planned_at&order=id.desc&limit=60');
+ const claims=await get('props_captures?select=id,plan_id,run_id,provider_event_id,capture_key,window_name,claimed_at&order=id.desc&limit=500');
+ const outs=await get('props_capture_outcomes?select=capture_id,outcome,minutes_to_tip,dfs_lines,provider_cost_last&order=capture_id.desc&limit=500');
+ facts.capturePlans=plans.rows.map(p=>({slate:p.slate_date,event:p.provider_event_id,game:p.away_team+' @ '+p.home_team,tip:p.commence_time,
+  selected:p.selected,arm:p.arm,reason:p.reason,run:p.run_id,plannedAt:p.planned_at}));
+ facts.captureClaims=claims.rows.length;facts.captureOutcomes=outs.rows.map(o=>({capture:o.capture_id,outcome:o.outcome,minutesToTip:o.minutes_to_tip,dfsLines:o.dfs_lines,cost:o.provider_cost_last}));
+ facts.duplicateClaims=duplicates(claims.rows,c=>c.plan_id+'|'+c.capture_key);
+ facts.claimsWithoutOutcome=claims.rows.filter(c=>!outs.rows.some(o=>Number(o.capture_id)===Number(c.id))&&nowMs-Date.parse(c.claimed_at)>15*60_000).length;
+ facts.duplicatePlans=duplicates(plans.rows,p=>p.plan_version+'|'+p.provider_event_id);
+}
 // 2. v3 accounting (props_budget_v3_actuals.sql): the count_provider_actuals column.
 const v3=await get('props_budget_policy?select=count_provider_actuals&limit=1');
 facts.v3Column=v3.ok?'PRESENT':missingColumn(v3.code)?'MISSING':`ERROR_${v3.status}_${v3.code??''}`;
@@ -64,6 +76,8 @@ const runs=await get('props_runs?select=id,kind,slot_key,status,outcome,started_
 facts.duplicateRuns=runs.ok?duplicates(runs.rows,r=>r.kind+'|'+r.slot_key):null;
 facts.recentRuns=runs.rows.slice(0,16).map(r=>({id:r.id,kind:r.kind,slot:r.slot_key,status:r.status,outcome:r.outcome,startedAt:r.started_at}));
 facts.tickRuns14d=runs.rows.filter(r=>String(r.slot_key).startsWith('collect-tick-')).length;
+facts.tickRuns=runs.rows.filter(r=>String(r.slot_key).startsWith('collect-tick-')).slice(0,10).map(r=>({id:r.id,slot:r.slot_key,status:r.status,outcome:r.outcome,startedAt:r.started_at,
+ reservations:res30.rows.filter(x=>Number(x.run_id)===Number(r.id)).length,credits:res30.rows.filter(x=>Number(x.run_id)===Number(r.id)).reduce((a,x)=>a+Number(x.credits),0)}));
 facts.lastCompletedSettleAt=runs.rows.find(r=>r.kind==='settle'&&r.status==='completed'&&r.outcome==='COMPLETED')?.finished_at??null;
 facts.lastCompletedCollectAt=runs.rows.find(r=>r.kind==='collect'&&r.status==='completed'&&r.outcome==='COMPLETED')?.finished_at??null;
 facts.control=(await get('props_control?select=state,reason,changed_at&id=eq.1')).rows[0]??null;

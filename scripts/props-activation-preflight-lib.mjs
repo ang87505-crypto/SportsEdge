@@ -66,6 +66,8 @@ export function verdict(f){
  const present=CAPTURE_TABLES.filter(t=>caps[t]==='PRESENT').length;
  out.push({id:'capture-schema',state:present===3?'APPLIED':present===0&&CAPTURE_TABLES.every(t=>caps[t]==='MISSING')?'NOT_APPLIED':'UNKNOWN',
   detail:CAPTURE_TABLES.map(t=>`${t}: ${caps[t]??'UNKNOWN'}`).join(', ')});
+ if(f.duplicateClaims)ok('capture-claims-unique',f.duplicateClaims.length===0&&(f.duplicatePlans??[]).length===0&&!f.claimsWithoutOutcome,
+  `${f.duplicateClaims.length} duplicate claims, ${(f.duplicatePlans??[]).length} duplicate plans, ${f.claimsWithoutOutcome??0} claims without an outcome after 15 min.`);
  out.push({id:'v3-accounting',state:f.v3Column==='PRESENT'?(p?.count_provider_actuals===true?'APPLIED_AND_ACTIVE':'APPLIED_NOT_ACTIVE'):f.v3Column==='MISSING'?'NOT_APPLIED':'UNKNOWN',
   detail:`count_provider_actuals column: ${f.v3Column??'UNKNOWN'}.`});
  return out;

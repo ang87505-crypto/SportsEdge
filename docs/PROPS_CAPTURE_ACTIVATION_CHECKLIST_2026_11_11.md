@@ -1,12 +1,28 @@
 # Props capture ticks: migration and activation checklist (owner)
 
 This turns on event-aware line capture (props-capture-v1, PR #135, merged released-off in #140). Every step is the
-owner's. As of 2026-11-12 none of steps 1–4 has been done (verified below). PAPER only: no real-money entry, no DFS account, no private PrizePicks/Pick6 endpoint.
+owner's. Status 2026-11-12 05:39 UTC: **step 1 done, step 2 SQL applied but not opted in, step 3 done (zero-credit), step 4
+not done** (verified below). PAPER only: no real-money entry, no DFS account, no private PrizePicks/Pick6 endpoint.
 
 The steps are ordered so that each one can be verified, and stopped, before the next one.
 
 **Project.** Props use the Supabase project `vfyzbliksooljxrlfadp` (`scripts/paper-release.mjs` refuses any
 other). It was confirmed reachable on 2026-11-11. Run all SQL below in that project's SQL editor.
+
+## Update 2026-11-12 05:39 UTC: steps 1 to 3 (verified against the real database)
+
+| Item | Result |
+|---|---|
+| Step 1, `props_capture_v1.sql` | **APPLIED**: all three tables present ([preflight 43162082822](https://github.com/ang87505-crypto/SportsEdge/actions/runs/43162082822)) |
+| Step 2, `props_budget_v3_actuals.sql` | **Applied, not opted in**: `count_provider_actuals` exists, but no `props-budget-v3` row was inserted, so `props-budget-v2` (7/200/60) still governs and every request counts in full. To opt in, run the step-2 `insert` (same 7/200/60). |
+| Step 3, one manual tick | Done with owner approval while it provably could not spend: 24 h use was 7/7 and no window was open. [Run 43162681228](https://github.com/ang87505-crypto/SportsEdge/actions/runs/43162681228): `NOTHING_DUE`; events list `costLast 0`, provider 476 before and after |
+| Tick receipts | [Preflight 43162785980](https://github.com/ang87505-crypto/SportsEdge/actions/runs/43162785980). Run 20 reserved **0** credits. 4 plans for the 2026-11-12 slate: Mavericks @ Timberwolves `selected_anchor` (early), Pistons @ Wizards `selected_nearest_tip` (late), 2 `budget_games_per_slate`. 0 claims, 0 duplicate plans or claims |
+| RLS and grants | Not readable through PostgREST. Paste the step-1 verification SQL output into the activation PR, or confirm `rls = true` for the three tables and `INSERT,SELECT` for `service_role` only |
+| Step 4 | Not done. PR #142 waits for owner approval |
+
+What step 4 starts: GitHub ticks every 30 minutes (11:00 to 04:59 UTC, often dropped or late) plus 7 Vercel backup hours; the
+legacy collect slots stand down. With v2 accounting, a capture costs 3 credits per game; the daily cap of 7 allows two games per
+rolling 24 h. The free events list is never reserved by ticks.
 
 ## State verified 2026-11-12 (read-only, against the real props database)
 
