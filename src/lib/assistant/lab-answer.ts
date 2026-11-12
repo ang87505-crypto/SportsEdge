@@ -91,7 +91,7 @@ export function labAnswer(message:string,v:LabView,raw:Raw|null,nowIso:string):R
    const lab=v.forwardVariants;
    return reply(`Last 14 days, every saved prediction (not only entry legs), unique lines only: `+ms.map(m=>`${m.modelVersion} ${pct(m.hitRate)} hit on ${m.wins+m.losses} graded, Brier ${m.brier?.toFixed(4)??'—'}`).join('; ')+
     `. ${lab?`Frozen lab variants (forward): `+lab.map(x=>`${x.label} Brier ${x.brier?.toFixed(4)??'—'}`).join('; ')+'. ':'Lab variants have no forward grades yet. '}`+
-    'Lower Brier and log loss mean better probabilities; hit rate alone never decides promotion, and overlapping intervals mean no model is proven better.',
+    'Models can score different sets of lines (a challenger only scores lines after it starts shadowing), so these are not paired comparisons; the promotion gate compares models on the same lines. Lower Brier and log loss mean better probabilities (a 50/50 guess scores 0.25); hit rate alone never decides promotion, and overlapping intervals mean no model is proven better.',
     [modelTable(ms,'Accuracy by model, last 14 days (all predictions)')]);
   }
   const newest=newestModel(fp.rows);
@@ -177,7 +177,7 @@ export function labAnswer(message:string,v:LabView,raw:Raw|null,nowIso:string):R
  }
  case 'psychology':{
   const s=v.stocks;
-  if(!s||s.state==='not_run')return reply('Not yet, and there is no evidence either way. Three psychology layers built from price and volume (attention spikes, volatility shocks, one-month overreaction) are registered as a research-only ablation on the live weekly strategy, with exposure-matched SPY benchmarks, 10 and 25 bps costs and Holm-adjusted tests; it runs only when the owner dispatches the manual research workflow. News sentiment, earnings surprises, search attention and crowd concentration are not tested because no lawful timestamped data is collected. The weekly stock strategy and the Monday supervised PAPER release are unchanged.');
+  if(!s||s.state==='not_run')return reply('Not yet, and there is no evidence either way. Four stock behaviour layers built from price and volume (market regime: SPY below its 200-day mean; attention spikes; volatility shocks; one-month overreaction) are registered as a research-only ablation on the live weekly strategy, with exposure-matched SPY benchmarks, 10 and 25 bps costs and Holm-adjusted tests. The nightly research run produces the first historical result and freezes each variant\'s weekly picks before every open, starting with the week of November 16; nothing is called validated before 26 graded weeks. News sentiment, earnings surprises, search attention and crowd concentration are not tested because no lawful timestamped data is collected. The weekly stock strategy and the Monday supervised PAPER release are unchanged.');
   return reply(`${s.summary} The weekly stock strategy and the Monday supervised PAPER release are unchanged.`,s.verdicts?[{kind:'table',title:'Stock psychology layers (research only)',columns:['Layer','Verdict'],rows:s.verdicts.map(x=>[x.layer,x.verdict])}]:[]);
  }
  case 'money_vs_accuracy':{
