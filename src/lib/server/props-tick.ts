@@ -50,6 +50,18 @@ export async function runTick(d:CycleDeps,slot:string,scheduledFor:string|null=n
  try{
   if(!d.odds){await finish(d,runId,false,'ODDS_NOT_CONFIGURED',s);return {kind:'collect',outcome:'ODDS_NOT_CONFIGURED',runId,summary:s};}
   const odds=d.odds;const now=d.now();
+  // Activation order is schema first, then the release switch. If the switch is ever on without
+  // props_capture_v1.sql, stop before any provider call and say exactly why (no events list, no reservation).
+  try{await d.store.select('props_capture_plans','select=id&limit=1');}
+  catch(e){
+   const code=e instanceof PropsStoreError?e.code:'UNEXPECTED';
+   if(code==='STORE_HTTP_404'||code==='DB_42P01'){
+    s.reason='props_capture_v1.sql is not applied: apply it (activation checklist step 1) or set tickEnabled back to false';
+    await finish(d,runId,false,'CAPTURE_SCHEMA_MISSING',s);
+    return {kind:'collect',outcome:'CAPTURE_SCHEMA_MISSING',runId,summary:s};
+   }
+   throw e;
+  }
   // 1. Free events list for the next 36 hours (no reservation; a non-zero charge stops all spending).
   let ev;
   try{ev=await odds.events({from:now,to:new Date(Date.parse(now)+CAPTURE_PLAN_V1.eventsHorizonHours*3600_000).toISOString()});}
