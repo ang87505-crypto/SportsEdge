@@ -8,6 +8,9 @@ import {captureState,nextWindowOpen,planWindows,CAPTURE_PLAN_V1,type PlanRow,typ
 import {nextPlannedRuns} from './schedule.ts';
 import {slotStatus,type LedgerRun,type RunCounts} from './slot-status.ts';
 import {NO_ENTRY_TEXT,type NoEntryReason} from './rules.ts';
+import {PROPS_RELEASE,ticksReleased} from './schedule.ts';
+import {effectiveBudgetPolicy} from './budget.ts';
+import type {Raw} from './dashboard-view.ts';
 
 export type CollectionInput={nowIso:string;
  runs:(LedgerRun&{id:number})[];
@@ -122,3 +125,11 @@ export function collectionStatus(x:CollectionInput){
   missing:missing.sort((a,b)=>b.when.localeCompare(a.when)).slice(0,12),noEntryReasons,stages};
 }
 export type CollectionStatus=ReturnType<typeof collectionStatus>;
+
+/** The collection status from a loaded dashboard ledger, with the live release switches. Shared by every page and the assistant. */
+export function collectionStatusFromRaw(raw:Raw):CollectionStatus{
+ return collectionStatus({nowIso:raw.nowIso,runs:raw.runs as CollectionInput['runs'],credits:raw.credits,providerRemaining:raw.providerRemaining,runCounts:raw.runCounts??null,
+  plans:(raw.capturePlans??null) as CollectionInput['plans'],captures:(raw.captures??null) as CollectionInput['captures'],
+  policy:{...effectiveBudgetPolicy(raw.budgetPolicy),countsProviderActuals:raw.budgetPolicy?.count_provider_actuals===true},
+  ticksReleased:ticksReleased(),scheduledRunsEnabled:PROPS_RELEASE.scheduledRunsEnabled,controlState:raw.control?.state??null});
+}

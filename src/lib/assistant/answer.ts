@@ -10,6 +10,8 @@ import {playerKey} from '../props/identity.ts';
 import {pct,usdCents} from '../format.ts';
 import type {AssistantContext,Parsed,RangeKey} from './understand.ts';
 import type {SlotRow} from '../props/slot-status.ts';
+import type {CollectionStatus} from '../props/collection-status.ts';
+import {whyNoPicks} from '../props/no-picks.ts';
 import {canSpend,EVENTS_LIST_COST,eventOddsWorstCost} from '../props/budget.ts';
 
 export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{state:string;reason:string}|null;
@@ -18,6 +20,8 @@ export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{stat
  slots?:SlotRow[];
  /** When the oldest credit counted in the rolling 24 hours rolls off (frees budget), or null. */
  creditsRollOffAt?:string|null;
+ /** Capture-window and budget status (src/lib/props/collection-status.ts); absent = not loaded. */
+ collection?:CollectionStatus|null;
  /** The previous turn's context, so "why?" can refer to the last answer's picks. */
  context?:AssistantContext|null};
 export type Card={kind:'picks';items:{id:number;text:string;detail:string}[]}|{kind:'entries';items:{id:number;text:string;detail:string}[]}|
@@ -263,6 +267,14 @@ function slotSentence(s:SlotRow):string{
 /** Why there are (or are not) picks today: each of today's collection slots from its receipt, newest first. */
 function nopicks(p:Parsed,d:AssistantData):Reply{
  const sugg=["Tonight's picks",'Is the Odds API budget used up?','Is it running?'];
+ // Capture ticks: the same receipt-based reason the PrizePicks page shows.
+ if(d.collection?.mode==='ticks'){
+  const w=whyNoPicks({view:d.pp,status:d.collection,nowIso:d.nowIso,control:d.control});
+  const slate=d.collection.slates[0];
+  const games=slate?slate.games.map(g=>`- ${g.matchup}: ${g.state.toLowerCase().replace(/_/g,' ')} (${String(g.arm).toUpperCase()} window ${mtShort(g.window.from)} to ${mtShort(g.window.to)})`).join('\n'):'';
+  return reply(`${w.headline}.${w.detail?' '+w.detail:''}${games?`\nSelected games for ${slate!.date}:\n${games}`:''}`,sugg,ctx(p),
+   [{kind:'links',items:[{label:'Capture receipts',href:'/paper-betting/props'}]}]);
+ }
  const c=d.control;
  if(c&&c.state!=='RUNNING')return reply(`Picking is ${c.state==='PAUSED'?'paused':'stopped'} (${c.reason}), so no new picks are made until it is resumed on the PrizePicks page.`,sugg,ctx(p));
  const queued=upcoming(d.pp,null).length;
