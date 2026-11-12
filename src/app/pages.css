@@ -456,6 +456,8 @@
 .automation-facts > div { display: grid; grid-template-columns: minmax(100px, .9fr) minmax(0, 1.3fr); gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
 .automation-facts dt { color: var(--text-3); }
 .automation-facts dd { margin: 0; overflow-wrap: anywhere; }
+/* Monitor blockers carry file paths and run ids that cannot wrap at spaces (390 px overflow, 2026-11-12). */
+.ops-blockers { overflow-wrap: anywhere; }
 .automation-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .automation-guide h3 { margin: 0 0 8px; font-size: var(--fs-lg); }
 .automation-guide p { margin: 0; color: var(--text-2); }
