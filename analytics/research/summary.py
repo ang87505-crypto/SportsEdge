@@ -16,8 +16,14 @@ def build_summary(hist, fwd, manifest, runs, generated_at, source_commit=None):
     for sid in sorted({r['source_id'] for r in manifest}):
         rows = [r for r in manifest if r['source_id'] == sid]
         ok = [r for r in rows if r['status'] in ('OK', 'UNCHANGED')]
+        # Keyed sources (one file per quarter, filer or symbol) are retrieved in batches; name the keys of the latest
+        # batch that failed, with their error, so a status like FETCH_FAILED says which file and why.
+        batch = [r for r in rows if r['retrieved_at'] == rows[-1]['retrieved_at']]
+        failed = [{'key': r.get('key'), 'error': (r.get('error') or '')[:120] or None} for r in batch
+                  if r['status'] not in ('OK', 'UNCHANGED') and r.get('key')]
         sources.append({'id': sid, 'status': rows[-1]['status'], 'retrievedAt': rows[-1]['retrieved_at'],
-                        'lastSuccessAt': ok[-1]['retrieved_at'] if ok else None})
+                        'lastSuccessAt': ok[-1]['retrieved_at'] if ok else None,
+                        'lastBatch': {'items': len(batch), 'failed': failed[:10]}})
     last_forward = next((r for r in reversed(runs) if r.get('command') == 'forward'), {})
     candidates = []
     for sid in IDS:

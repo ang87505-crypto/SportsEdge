@@ -101,7 +101,8 @@ async function researchEvidence(){
   if(!r.ok||!r.json)return {state:r.status===404?'NOT_PUBLISHED':'UNAVAILABLE'};
   const s=r.json;
   return {state:'OK',schemaVersion:s.schemaVersion??null,generatedAt:s.generatedAt??null,overall:s.overall??null,
-   forwardAt:s.forwardAt??null,sources:(s.sources||[]).slice(0,12).map(x=>({id:x.id,status:x.status,lastSuccessAt:x.lastSuccessAt??null})),
+   forwardAt:s.forwardAt??null,sources:(s.sources||[]).slice(0,12).map(x=>({id:x.id,status:x.status,retrievedAt:x.retrievedAt??null,lastSuccessAt:x.lastSuccessAt??null,
+    failedKeys:Array.isArray(x.lastBatch?.failed)?x.lastBatch.failed.slice(0,6).map(f=>({key:String(f.key).slice(0,40),error:f.error?String(f.error).split(' ')[0].slice(0,40):null})):[]})),
    candidates:(s.candidates||[]).slice(0,3).map(c=>({id:c.id,active:c.active,verdict:c.historical?.verdict??'NOT_EVALUATED',forwardStatus:c.forward?.status??null,forwardSessions:c.forward?.sessions??0}))};
  }catch{return {state:'UNAVAILABLE'};}
 }
@@ -222,7 +223,10 @@ function blockers(jobs,props,research,release,site,creds){
   add('props-control',`Sports props automation is ${props.controlState} by its owner control.`,'PrizePicks page → Controls → Resume (owner sign-in), when you want it running.');
  for(const b of propsReceiptBlockers(props,nowMs))add(b.id,b.text,b.action);
  if(research.state==='OK')for(const s of research.sources)if(['NOT_CONFIGURED','FETCH_FAILED','PARSE_FAILED','SCHEMA_CHANGED','BLOCKED'].includes(s.status))
-  add('research-source:'+s.id,`Research source ${s.id} last reported ${s.status}.`,'Open the latest research-collect run.');
+  add('research-source:'+s.id,`Research source ${s.id} last reported ${s.status}${s.retrievedAt?' at '+s.retrievedAt.slice(0,16).replace('T',' ')+' UTC':''}`+
+   (s.failedKeys?.length?` (failed: ${s.failedKeys.map(f=>f.key+(f.error?' '+f.error:'')).join(', ')})`:'')+
+   `; last success ${s.lastSuccessAt?s.lastSuccessAt.slice(0,10):'never'}.`,
+   'Research only: no active strategy uses it. Open the research-data branch manifest.jsonl for the exact URL and error; a 404 for a recent quarter usually means the file is not published yet.');
  if(research.state==='OK'&&research.generatedAt&&nowMs-Date.parse(research.generatedAt)>100*3600_000)
   add('research-stale',`The research summary is older than 100 hours (${research.generatedAt}).`,'Check the research-collect workflow.');
  if(release.state==='open'&&!release.merged)
