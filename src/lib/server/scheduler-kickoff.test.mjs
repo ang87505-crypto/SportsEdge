@@ -38,10 +38,21 @@ test('refuses without the cron secret, outside production, for unknown slots, qu
 test('research collect is skipped when today\'s slot already succeeded, and only Tue-Sat UTC', async()=>{
  const calls=[];
  const skip=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-10T04:20:00Z'),
-  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T02:40:00Z'}]})});
+  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T02:40:00Z',status:'completed',conclusion:'success'}]})});
  assert.equal((await skip.json()).reason,'already_succeeded_since_slot');
+ // Today's slot is queued or running: covered, do not stack a duplicate behind it.
+ const busy=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
+  fetcher:fetcher([],{runs:[{created_at:'2026-11-11T04:05:00Z',status:'in_progress',conclusion:null}]})});
+ assert.equal((await busy.json()).reason,'already_running_since_slot');
+ // Today's slot failed: the backup retries it once.
+ const retry=[];
+ const failed=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
+  fetcher:fetcher(retry,{runs:[{created_at:'2026-11-11T02:41:00Z',status:'completed',conclusion:'failure'}]})});
+ assert.equal(failed.status,202);
+ assert.match(retry.at(-1).url,/research-collect\.yml\/dispatches$/);
+ assert.doesNotMatch(retry[0].url,/status=success/);
  const run=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-10T04:20:00Z'),
-  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-08T02:40:00Z'}]})});
+  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-08T02:40:00Z',status:'completed',conclusion:'success'}]})});
  assert.equal(run.status,202);
  const sunday=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-08T04:20:00Z'),fetcher:fetcher(calls)});
  assert.equal((await sunday.json()).reason,'outside_slot_hour');
@@ -108,11 +119,11 @@ test('regression 2026-11-11: a late run of yesterday\'s research slot does not s
  // GitHub started the 10 Nov 02:17 slot at 09:59; the 11 Nov 02:17 slot was dropped. The 04:00 backup must run.
  const calls=[];
  const r=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
-  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T09:59:25Z'}]})});
+  fetcher:fetcher(calls,{runs:[{created_at:'2026-11-10T09:59:25Z',status:'completed',conclusion:'success'}]})});
  assert.equal(r.status,202);
  // Today's own slot already succeeded (even if late, before the backup): skip.
  const skip=await handleSchedulerKickoff(req(),'research-collect',env,{now:at('2026-11-11T04:20:00Z'),
-  fetcher:fetcher([],{runs:[{created_at:'2026-11-11T02:41:00Z'}]})});
+  fetcher:fetcher([],{runs:[{created_at:'2026-11-11T02:41:00Z',status:'completed',conclusion:'success'}]})});
  assert.equal((await skip.json()).reason,'already_succeeded_since_slot');
 });
 

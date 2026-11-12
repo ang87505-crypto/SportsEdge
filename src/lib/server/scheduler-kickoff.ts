@@ -82,14 +82,18 @@ export async function handleSchedulerKickoff(req:Request,slotName:string,env:Env
  if(slot.skipIfSucceededSinceUtc){
   const since=Date.parse(new Date(deps.now()).toISOString().slice(0,10)+'T'+slot.skipIfSucceededSinceUtc+':00Z');
   try{
-   const r=await deps.fetcher(BASE+slot.workflow+'/runs?branch=main&status=success&per_page=5',
+   // All recent runs, not only successes: a run of today's slot that GitHub already started (queued or in
+   // progress) also covers it, so the backup does not stack a second copy behind it. A failed or cancelled run
+   // today does not: the backup then retries once.
+   const r=await deps.fetcher(BASE+slot.workflow+'/runs?branch=main&per_page=10',
     {headers,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(10_000)});
    if(r.ok){
-    const body=await r.json() as {workflow_runs?:{created_at:string}[]};
-    const done=(body.workflow_runs??[]).some(x=>Date.parse(x.created_at)>=since);
-    if(done)return json({status:'skipped',reason:'already_succeeded_since_slot',slot:slotName});
+    const body=await r.json() as {workflow_runs?:{created_at:string;status?:string;conclusion?:string|null}[]};
+    const today=(body.workflow_runs??[]).filter(x=>Date.parse(x.created_at)>=since);
+    if(today.some(x=>x.conclusion==='success'))return json({status:'skipped',reason:'already_succeeded_since_slot',slot:slotName});
+    if(today.some(x=>x.status!=='completed'))return json({status:'skipped',reason:'already_running_since_slot',slot:slotName});
    }
-  }catch{/* Could not check: dispatching a duplicate of these jobs is harmless. */}
+  }catch{/* Could not check: dispatching a duplicate of these jobs is harmless (append-only, idempotent per session). */}
  }
  let res:Response;
  try{
