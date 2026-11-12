@@ -102,4 +102,21 @@ for(const t of Object.values(tally)){t.hitRate=t.graded?t.hits/t.graded:null;t.b
  for(const m of [t.byStat,t.bySide])for(const b of Object.values(m)){b.hitRate=b.hits/b.graded;b.meanP=b.meanP/b.graded;}}
 out.pickRecord=tally;
 if(process.argv[2])writeFileSync(process.argv[2],JSON.stringify(out,null,1));
-console.log(JSON.stringify(out,null,1));
+// Compact report (the full JSON goes to the file): one line per run, entry and leg.
+const L=[];const $=c=>c===null||c===undefined?'n/a':(c<0?'-':'')+'$'+(Math.abs(c)/100).toFixed(2);
+L.push(`LEDGER ${out.from}..${out.to} at ${out.at}`);
+for(const r of out.runs)L.push(`RUN ${r.id} ${r.kind} ${r.slot} ${r.status}/${r.outcome} start=${r.startedAt}`+
+ (r.budgetBefore?` budget=${JSON.stringify(r.budgetBefore)}`:'')+(r.reason?` reason=${r.reason}`:'')+
+ (r.receipt?` receipt=${JSON.stringify(r.receipt)}`:'')+(r.entries?` entries=${JSON.stringify(r.entries)}`:'')+(r.settlement?` settlement=${JSON.stringify(r.settlement)}`:''));
+for(const e of out.entries){
+ L.push(`ENTRY #${e.id} ${e.account} stake=${$(e.stake)} created=${e.created} lock=${e.lock} run=${e.run} AUDIT=${e.audit.state}`+
+  ` stored=${e.settlement?`${e.settlement.outcome} w${e.settlement.wins}/l${e.settlement.losses}/v${e.settlement.voids} profit=${$(e.settlement.profit_cents===null?null:Number(e.settlement.profit_cents))}`:'unsettled'}`+
+  ` recomputed=${e.audit.expected?`${e.audit.expected.outcome} profit=${$(e.audit.expected.profitCents)}`:'n/a'}`+(e.audit.problems.length?` PROBLEMS=${e.audit.problems.join(' | ')}`:''));
+ for(const l of e.legs)L.push(`  LEG pick=${l.pickId} ${l.player} ${l.side} ${l.line} ${l.stat} (${l.game}) p=${l.pSide?.toFixed(3)} mean=${l.mean?.toFixed?.(2)} decided=${l.pickDecidedAt} lock=${l.lockAt}`+
+  ` | stored=${l.stored?`${l.stored.outcome}(${l.stored.actual}) r${l.stored.revision}`:'none'}`+
+  ` | box=${l.boxScore?`${l.boxScore.status}${l.boxScore.dnp?' DNP':''} min=${l.boxScore.minutes} pts=${l.boxScore.points} reb=${l.boxScore.rebounds} ast=${l.boxScore.assists} (${l.boxScore.source} r${l.boxScore.revision} ${l.boxScore.retrievedAt})`:'none'}`+
+  ` | regrade=${l.regrade.state==='graded'?`${l.regrade.outcome}(${l.regrade.actual})`:l.regrade.state} leg=${l.leg??'n/a'}`);
+}
+for(const b of out.bankrolls)L.push(`BANKROLL ${b.account} (${b.selection}) entries=${b.entries} settled=${b.settled} open=${b.open} record=${JSON.stringify(b.record)} profit=${$(b.profitCents)} staked=${$(b.stakedCents)} roi=${b.roi===null?'n/a':(b.roi*100).toFixed(1)+'%'} bankroll=${$(b.bankrollCents)} of ${$(b.initialCents)}`);
+for(const [k,t] of Object.entries(out.pickRecord))L.push(`PICKS ${k} ${JSON.stringify(t)}`);
+console.log(L.join('\n'));
