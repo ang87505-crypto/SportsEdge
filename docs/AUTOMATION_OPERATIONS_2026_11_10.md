@@ -102,6 +102,13 @@ Pressing Start again does not change that.
 merged before that day's 09:00 UTC decision, so it no longer applies and must not be backfilled. Monday
 2026-11-16 is the next ordinary weekly decision and needs no rule change; the watcher window (to 2026-11-21) covers it.
 
+### Nov 16 plan (verified 2026-11-12)
+
+- The release branch `release/stock-paper-orders` at `9e23e63` differs from `main` in the worker path only by `brokerWritesEnabled:true` (`paperOnly:true`, `realMoneyEnabled:false`). Controller, store, broker adapter and decision bridge are identical.
+- On 2026-11-12 the release gate reported `STOCK_SUPERVISED_EXECUTE_REQUIRED`, meaning the earlier checks passed: owner ARM recorded and the account clean. Every remaining requirement needs real events on one session: a `TARGETS` decision; a manual execute on the pinned head with `posts>0` and filled intents; an owner Stop then Start; a CLEAN reconcile between them; and the after-close mark.
+- The decision comes from the Vercel 09:00 UTC kickoff, which waits for the 08:00 ET capture. GitHub's own 11:20 UTC schedule ran about 7 h late on Nov 10–11.
+- A scheduled session check-in at 14:38 UTC (7:38 AM MT) dispatches the execute at most once, and only if: the decision is `TARGETS`, the gate still shows the owner ARM, #102's head is unchanged, and the market is open. The owner's Stop/Start (before the close) stays a website action.
+
 ### Steps on the session day
 
 | When (Mountain) | Who | What |
@@ -109,7 +116,7 @@ merged before that day's 09:00 UTC decision, so it no longer applies and must no
 | Before 7:30 AM | automatic | Weekly decision at 6:00 AM MT (08:00 ET) records `TARGETS` (or HOLD; then no order day) |
 | Before 7:30 AM | owner | Open https://sports-edge-eta.vercel.app/stocks/paper-auto. If it is not already armed, press **Start** (it checks the account, then arms) |
 | After 7:30 AM | Claude (scheduled check-in) or owner | GitHub → Actions → *Recurring PAPER worker (manual)* → **Run workflow** → branch **`release/stock-paper-orders`**, kind **execute**, experiment `stock-v2-weekly-1`. Its log must show `posts` > 0; the Autopilot page then shows real paper orders and fills |
-| After the fills | owner | Press **Stop autopilot**, then **Start** (Start runs a fresh reconcile before re-arming) |
+| After the fills, **before the 2:00 PM MT close** | owner | Press **Stop autopilot**, then **Start** (Start runs a fresh reconcile before re-arming). The gate needs the after-close mark to be captured *after* your restart, so a Stop/Start after the close cannot pass for that session (`scripts/paper-release-gates.mjs`, `STOCK_SAME_SESSION_CLOSE_REQUIRED`). |
 | After 2:00 PM close | automatic | Monitor (GitHub 1:35/2:35 PM, Vercel backup 3 PM hour) records the day's mark |
 | Then | automatic / Claude | The release watcher verifies every receipt on the pinned head and merges PR #102; production then sends PAPER orders on schedule |
 
