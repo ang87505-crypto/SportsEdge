@@ -5,7 +5,7 @@ import {AssistantChat} from '@/components/assistant-chat';
 import {CommandStrip} from '@/components/command-strip';
 import {BriefingNow,BriefingBoard} from '@/components/briefing-home';
 
-const HOME_STARTERS=['How much did we make yesterday?','What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
+const HOME_STARTERS=['How much did we make yesterday?',"How did all our predictions do yesterday, including ones we didn't bet?",'What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
  'Which features actually improve our predictions?','How accurate are our 80% predictions actually?','Would flat staking have performed better?','Is everything running?'];
 
 function StripFallback(){

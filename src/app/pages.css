@@ -578,3 +578,4 @@
 .lab-page .evidence-list li > span:first-child { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
 .lab-page .evidence-list li > .badge { flex: 0 0 auto; }
 .lab-page { min-width: 0; } .lab-page > * { min-width: 0; max-width: 100%; }
+.predictions-table tr.quiet th, .predictions-table tr.quiet td { opacity: .6; }
