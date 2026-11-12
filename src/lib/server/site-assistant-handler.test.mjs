@@ -273,3 +273,26 @@ test('whole-site money and Monday answers read the stock ledger only with an own
  assert.equal(m.reply.context.topic,'ready');
  assert.doesNotMatch(m.reply.text,/Sign in as the owner to check this/);
 });
+
+test('controls: chat only proposes allowlisted owner actions; visitors, stock Start and trades get no action card', async()=>{
+ const visitor=setup();
+ const v=await ask('Pause the props',visitor);
+ assert.match(v.reply.text,/Only the signed-in owner/);
+ assert.ok(!v.reply.cards.some(c=>c.kind==='action'));
+ const s=setup(true);s.ports.accounts=async()=>{s.calls.accounts++;const a=account();a.ledgers[0].experimentId='test-weekly';a.ledgers[0].status.gateMode='ARMED';return a;};
+ const p=await ask('Pause the props',s);
+ const card=p.reply.cards.find(c=>c.kind==='action');
+ assert.equal(card.action,'props-pause');assert.equal(card.from,'RUNNING');assert.equal(p.reply.private,true);
+ assert.match(p.reply.text,/Nothing has changed yet/);
+ const r=await ask('resume the picks',s);
+ assert.match(r.reply.text,/already running/);assert.ok(!r.reply.cards.some(c=>c.kind==='action'));
+ const stop=await ask('Stop the autopilot',s);
+ const sc=stop.reply.cards.find(c=>c.kind==='action');
+ assert.equal(sc.action,'stock-stop');assert.equal(sc.experimentId,'test-weekly');assert.equal(sc.from,'RUNNING');
+ const start=await ask('Start the stock autopilot',s);
+ assert.match(start.reply.text,/never from chat/);assert.ok(!start.reply.cards.some(c=>c.kind==='action'));
+ const buy=await ask('Buy OXY',s);
+ assert.match(buy.reply.text,/has not submitted/);assert.ok(!buy.reply.cards.some(c=>c.kind==='action'));
+ const vague=await ask('pause everything',s);
+ assert.match(vague.reply.text,/Which one/);assert.ok(!vague.reply.cards.some(c=>c.kind==='action'));
+});

@@ -18,6 +18,7 @@ import {buildBriefing,propsInput} from '../briefing/briefing.ts';
 import {mondayReadiness} from '../briefing/monday.ts';
 import {briefingAnswer,BRIEFING_TOPICS,type BriefingTopic} from '../assistant/briefing-answer.ts';
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
+import {CHAT_ACTIONS,parseControlRequest,type ChatActionId} from '../assistant/actions.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
 export function assistantAccess(cookie:string|undefined):AssistantAccess{
@@ -84,6 +85,37 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  async function research():Promise<Reply>{
   try{return researchAnswer({...q,domain:'research'},await ports.research(nowIso));}
   catch{return simple('Research records are unavailable right now. Your stock account and sports records are separate.',{domain:'research'});}
+ }
+ // Owner controls: chat can only PROPOSE an allowlisted change; the confirm button calls the existing owner endpoint.
+ if(q.topic==='controls'){
+  const c=parseControlRequest(message);
+  if(c&&c.verb!=='trade')return respond(await controlProposal(c));
+ }
+ async function controlProposal(c:NonNullable<ReturnType<typeof parseControlRequest>>):Promise<Reply>{
+  const ctx:AssistantContext={domain:'all',topic:'controls'};
+  if(!c.target)return {...simple('Which one should change: the PrizePicks paper picks or the stock PAPER autopilot? Nothing has changed.',ctx),
+   suggestions:[`${c.verb==='start'?'Resume':c.verb[0].toUpperCase()+c.verb.slice(1)} PrizePicks picks`,`${c.verb==='start'||c.verb==='resume'?'Start':c.verb[0].toUpperCase()+c.verb.slice(1)} the stock autopilot`]};
+  if(!ports.access.ownerAccess)return {...simple('Only the signed-in owner can change controls. Sign in on the Paper account page, then ask again. Nothing has changed.',ctx),
+   cards:[{kind:'links',items:[{label:'Owner sign-in',href:'/stocks/alpaca'}]}]};
+  const propose=(id:ChatActionId,from:string|null,experimentId?:string):Reply=>{
+   const a=CHAT_ACTIONS[id];
+   if(from===a.to)return {...simple(`${a.label.replace(/^(Pause|Resume|Stop) /,'')} is already ${a.to.toLowerCase()}. Nothing to change.`,ctx),private:true};
+   return {text:`Proposed change: ${a.label}.${from?` Now: ${from.toLowerCase()} → ${a.to.toLowerCase()}.`:''} ${a.effect}\n\nNothing has changed yet. Press Confirm to apply it; the server re-checks your owner session, applies its own validation and records the change.`,
+    cards:[{kind:'action',action:id,label:a.label,effect:a.effect,from,to:a.to,...(experimentId?{experimentId}:{})}],suggestions:['Is everything running?'],context:ctx,private:true};
+  };
+  if(c.target==='props'){
+   const verb=c.verb==='start'?'resume':c.verb;
+   let from:string|null=null;
+   try{from=(await ports.sports(nowIso)).control?.state??null;}catch{from=null;}
+   return propose(`props-${verb}` as ChatActionId,from);
+  }
+  if(c.verb==='start'||c.verb==='resume')return {...simple('Starting the stock autopilot re-checks the Alpaca PAPER account and re-arms paper orders, so it is only done on the Autopilot page, never from chat. Nothing has changed.',ctx),
+   cards:[{kind:'links',items:[{label:'Stock autopilot',href:'/stocks/paper-auto'}]}],private:true};
+  const a=await ports.accounts().catch(()=>({state:'unavailable' as const,ledgers:[],brokerWritesEnabled:null}));
+  const l=a.state==='ready'?a.ledgers.find((x):x is PaperAutoLedger=>x.registered):undefined;
+  if(!l)return {...simple('The stock autopilot record is unavailable right now, so I cannot propose a change. Use the Autopilot page; its Stop button always works. Nothing has changed.',ctx),
+   cards:[{kind:'links',items:[{label:'Stock autopilot',href:'/stocks/paper-auto'}]}],private:true};
+  return propose(c.verb==='pause'?'stock-pause':'stock-stop',l.status.gateMode==='ARMED'?'RUNNING':l.status.gateMode,l.experimentId);
  }
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());

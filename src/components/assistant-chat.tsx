@@ -3,6 +3,7 @@ import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {Card,Reply} from '@/lib/assistant/answer';
 import type {AssistantContext} from '@/lib/assistant/understand';
 import {currentOwnerAccess} from '@/lib/assistant/session';
+import {chatActionRequest} from '@/lib/assistant/actions';
 
 type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
@@ -83,7 +84,7 @@ export function AssistantChat(){
    {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
     {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
      <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
-     {m.cards?.map((c,j)=><ChatCard key={j} card={c}/>)}
+     {m.cards?.map((c,j)=><ChatCard key={j} card={c} owner={access.ownerAccess&&!checking}/>)}
     </>}
    </div>)}
    {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
@@ -98,11 +99,48 @@ export function AssistantChat(){
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence. Chat cannot place bets or stock orders. This conversation stays in this tab.</p>
+  <p className="quiet small-print">Answers use recorded evidence. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
  </div>;
 }
-function ChatCard({card}:{card:Card}){
+/**
+ * Owner control proposal. The button sends only the allowlisted request for this action id to the existing owner
+ * endpoint, which re-checks the session, validates and records the change; the reply shown is that endpoint's.
+ */
+function ActionCard({card,owner}:{card:Extract<Card,{kind:'action'}>;owner:boolean}){
+ const [state,setState]=useState<'idle'|'working'|'done'|'failed'|'cancelled'>('idle');
+ const [note,setNote]=useState('');
+ async function confirm(){
+  const req=chatActionRequest(card.action,card.experimentId);
+  if(!req||!owner||state!=='idle')return;
+  setState('working');
+  try{
+   const res=await fetch(req.endpoint,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)});
+   const d=await res.json().catch(()=>null) as {status?:string;code?:string}|null;
+   if(res.status===401){setState('failed');setNote('Your owner session expired. Nothing was changed. Sign in and ask again.');return;}
+   if(!res.ok){setState('failed');setNote(d?.status==='outcome_unknown'?'The database did not confirm the change. Check the status page; retrying is safe.':`Not changed${d?.code?` (${d.code})`:d?.status?` (${d.status})`:''}.`);return;}
+   // Read the state back from the same owner endpoint: the receipt is what the server now reports.
+   let now='';
+   try{
+    const g=await fetch(req.endpoint,{cache:'no-store',credentials:'same-origin'});const x=await g.json();
+    now=req.endpoint.includes('props')?x?.control?.state??'':(x?.experiments?.find((e:{experimentId?:string})=>e.experimentId===card.experimentId)?.status?.gateMode??'');
+   }catch{now='';}
+   setState('done');setNote(`Done. The server recorded the change${now?`; it now reports ${String(now).toLowerCase()}`:''}.`);
+  }catch{setState('failed');setNote('The request did not complete. Check the status page; retrying is safe.');}
+ }
+ return <div className="chat-card">
+  <p><strong>{card.label}</strong>{card.from?<> · now {card.from.toLowerCase()} → {card.to.toLowerCase()}</>:null}</p>
+  <p className="quiet small-print">{card.effect}</p>
+  {state==='idle'||state==='working'?<div className="button-row">
+   <button type="button" className="button" disabled={!owner||state==='working'} onClick={()=>void confirm()}>{state==='working'?'Applying…':'Confirm'}</button>
+   <button type="button" className="button button-secondary" disabled={state==='working'} onClick={()=>{setState('cancelled');setNote('Cancelled. Nothing was changed.');}}>Cancel</button>
+  </div>:<p role="status" className={state==='done'?'tone-text-positive':state==='failed'?'tone-text-warning':'quiet'}>{note}</p>}
+  {!owner&&state==='idle'&&<p className="quiet small-print">Owner sign-in is needed to confirm.</p>}
+ </div>;
+}
+
+function ChatCard({card,owner}:{card:Card;owner:boolean}){
  const [copied,setCopied]=useState(false);
+ if(card.kind==='action')return <ActionCard card={card} owner={owner}/>;
  if(card.kind==='links')return <div className="chat-chips">{card.items.map(it=><a key={it.href} className="chat-chip" href={it.href}>{it.label}</a>)}</div>;
  if(card.kind==='facts')return <dl className="chat-card">{card.items.map(it=><div key={it.label} className="mb-3"><dt>{it.label}</dt><dd><strong>{it.value}</strong>{it.detail&&<p className="quiet small-print">{it.detail}</p>}</dd></div>)}</dl>;
  if(card.kind==='lineup'){

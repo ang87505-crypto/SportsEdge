@@ -26,7 +26,9 @@ export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{stat
  context?:AssistantContext|null};
 export type Card={kind:'picks';items:{id:number;text:string;detail:string}[]}|{kind:'entries';items:{id:number;text:string;detail:string}[]}|
  {kind:'lineup';text:string}|{kind:'links';items:{label:string;href:string}[]}|
- {kind:'facts';items:{label:string;value:string;detail?:string}[]};
+ {kind:'facts';items:{label:string;value:string;detail?:string}[]}|
+ /** An owner control PROPOSAL; only the chat UI's confirm button (owner session, fixed allowlisted request) can apply it. */
+ {kind:'action';action:import('./actions.ts').ChatActionId;label:string;effect:string;from:string|null;to:string;experimentId?:string};
 export type Reply={text:string;cards:Card[];suggestions:string[];context:AssistantContext;private?:boolean};
 type Line=PropsView['lines'][number];
 
