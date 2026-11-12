@@ -29,8 +29,13 @@ try{
  const research=await ask('Momentum research results');
  assert.equal(research.reply.context.domain,'research');assert.match(research.reply.text,/historical/i);
  assert.match((await ask('Why?',research.reply.context)).reply.text,/Failed checks/);
- const all=await ask('Is everything running?');
+ const all=await ask('How are sports and stocks doing?');
  for(const heading of ['Sports','Stock account','Stock research'])assert.ok(all.reply.text.includes(heading));
+ // Whole-site briefing: answered directly, never "which domain", and visitors see owner-only items as such.
+ const health=await ask('Is everything running?');
+ assert.equal(health.reply.context.topic,'health');assert.doesNotMatch(health.reply.text,/Do you mean/);
+ const monday=await ask('Are we ready for Monday?');
+ assert.equal(monday.reply.context.topic,'ready');assert.match(monday.reply.text,/Sign in as the owner/);
  assert.match((await ask('Buy OXY')).reply.text,/has not submitted/);
  const login=await fetch(base+'/api/internal/alpaca-paper/session',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin},body:JSON.stringify({ownerKey:key})});
  assert.equal(login.status,200);const cookie=login.headers.get('set-cookie').split(';')[0];
