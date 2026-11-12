@@ -51,7 +51,7 @@ export function nextPlannedRuns(nowIso:string,count=4){
  * collects stand down (SUPERSEDED_BY_TICK) so the two never compete for the same credits; settles are unchanged.
  * Rollback: set tickEnabled back to false (plans, claims and outcomes are append-only and stay as receipts).
  */
-export const PROPS_COLLECTION_V2={tickEnabled:false,planVersion:'props-capture-v1'} as const;
+export const PROPS_COLLECTION_V2={tickEnabled:true,planVersion:'props-capture-v1'} as const;
 /** GitHub tick crons (props-tick.yml). Off-minute to avoid the top-of-hour queue; harmless while released off. */
 export const PROPS_TICK_CRONS=['7,37 11-23 * * *','7,37 0-4 * * *'] as const;
 /** Tick slot key: one per 30-minute bucket of the actual start, so GitHub and Vercel starts in one bucket dedupe. */
