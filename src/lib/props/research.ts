@@ -12,7 +12,7 @@ export type ResearchRaw={nowIso:string;windowStart:string;control:{state:string;
  observations:{id:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;
   player_name:string;stat:Stat;line:number;provider_last_update:string;ingested_at:string;recorded_at:string}[];
  predictions:{id:number;observation_id:number;model_version:string;status:string;athlete_id:string|null;
-  p_more:number|null;p_less:number|null;p_tie:number|null;data_cutoff:string;predicted_at:string}[];
+  p_more:number|null;p_less:number|null;p_tie:number|null;data_cutoff:string;predicted_at:string;mean?:number|null}[];
  picks:{id:number;prediction_id:number;selection_version:string;status:string;side:'more'|'less'|null}[];
  results:{observation_id:number;revision:number;outcome:string;actual:number|null;graded_at:string}[];
  entryLegs:{entry_id:number;pick_id:number}[]};
@@ -71,11 +71,13 @@ export function pairedInterval(rows:EvaluationRow[],replicates=1000,seed=2026110
  return {lower95:diffs[Math.floor(replicates*0.025)],upper95:diffs[Math.min(replicates-1,Math.floor(replicates*0.975))],games:blocks.length};
 }
 
-type Scored={o:ResearchRaw['observations'][number];p:ResearchRaw['predictions'][number];base:Probabilities;
- candidate:Probabilities;key:string;pick:ResearchRaw['picks'][number]|undefined};
-export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
- if(a.baselineVersion!==MODEL_VERSION)throw new Error('RESEARCH_BASELINE_MISMATCH');
- const now=Date.parse(r.nowIso);if(!Number.isFinite(now))throw new Error('RESEARCH_INVALID_CLOCK');
+/**
+ * Forward evaluation rows under the registered admission rules (shared by every candidate so none is judged on looser
+ * terms): first archived forecast per exact line, ingested before lock and at/after `forwardStartsAt`, final result
+ * graded after lock and consistent with the box-score actual. `candidateOf` maps the baseline forecast to the candidate.
+ */
+function forwardRows(r:ResearchRaw,now:number,forwardStartsAt:string,
+ candidateOf:(base:Probabilities,o:ResearchRaw['observations'][number],p:ResearchRaw['predictions'][number])=>Probabilities){
  const prediction=new Map(r.predictions.filter(p=>p.model_version===MODEL_VERSION).map(p=>[p.observation_id,p]));
  const pick=new Map(r.picks.filter(p=>p.selection_version===SELECTION_VERSION).map(p=>[p.prediction_id,p]));
  const results=new Map<number,ResearchRaw['results'][number]>();
@@ -93,7 +95,7 @@ export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
    Date.parse(o.ingested_at)>Date.parse(o.recorded_at)||Date.parse(o.recorded_at)>=Date.parse(o.lock_at)||
    Date.parse(p.predicted_at)>now||Date.parse(p.predicted_at)>=Date.parse(o.lock_at)||Date.parse(p.data_cutoff)>Date.parse(p.predicted_at)||
    Date.parse(o.ingested_at)>Date.parse(p.predicted_at)||!Number.isFinite(Number(o.line))){invalid++;continue;}
-  scored.push({o,p,base,candidate:temperatureScale(base,a.temperatures[o.stat]),
+  scored.push({o,p,base,candidate:candidateOf(base,o,p),
    key:[o.provider_event_id,p.athlete_id,o.stat,Number(o.line)].join('|'),pick:pick.get(p.id)});
  }
  // Forward evaluation always uses the FIRST archived forecast for an exact line, across both platforms.
@@ -101,7 +103,7 @@ export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
  for(const s of [...scored].sort((a,b)=>Date.parse(a.o.ingested_at)-Date.parse(b.o.ingested_at)||a.o.id-b.o.id))if(!first.has(s.key))first.set(s.key,s);
  const evaluation:EvaluationRow[]=[];let pending=0,voided=0,preRegistration=0;
  for(const s of first.values()){
-  if(Date.parse(s.o.ingested_at)<Date.parse(a.forwardStartsAt)){preRegistration++;continue;}
+  if(Date.parse(s.o.ingested_at)<Date.parse(forwardStartsAt)){preRegistration++;continue;}
   const result=results.get(s.o.id);if(!result){pending++;continue;}
   if(!['more','less','tie'].includes(result.outcome)){voided++;continue;}
   // A final result can only be admitted after the associated game locked.
@@ -111,6 +113,15 @@ export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
   evaluation.push({key:s.key,eventId:s.o.provider_event_id,date:slateDate.format(new Date(s.o.lock_at)),stat:s.o.stat,
    baseline:s.base,candidate:s.candidate,outcome:result.outcome as EvaluationRow['outcome']});
  }
+ return {scored,first,evaluation,results,pick,pending,voided,preRegistration,invalid,unscorable};
+}
+type Scored={o:ResearchRaw['observations'][number];p:ResearchRaw['predictions'][number];base:Probabilities;
+ candidate:Probabilities;key:string;pick:ResearchRaw['picks'][number]|undefined};
+export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
+ if(a.baselineVersion!==MODEL_VERSION)throw new Error('RESEARCH_BASELINE_MISMATCH');
+ const now=Date.parse(r.nowIso);if(!Number.isFinite(now))throw new Error('RESEARCH_INVALID_CLOCK');
+ const {scored,first,evaluation,results,pending,voided,preRegistration,invalid,unscorable}=
+  forwardRows(r,now,a.forwardStartsAt,(base,o)=>temperatureScale(base,a.temperatures[o.stat]));
  const baseline=summarize(evaluation.map(x=>({p:x.baseline,outcome:x.outcome})));
  const candidate=summarize(evaluation.map(x=>({p:x.candidate,outcome:x.outcome})));
  const dates=new Set(evaluation.map(x=>x.date)).size,games=new Set(evaluation.map(x=>x.eventId)).size;
@@ -150,3 +161,40 @@ export function buildResearch(r:ResearchRaw,a:ResearchArtifact){
    candidate:summarize(evaluation.filter(x=>x.stat===stat).map(x=>({p:x.candidate,outcome:x.outcome})))}]))};
 }
 export type PropsResearchView=ReturnType<typeof buildResearch>;
+
+/**
+ * Research-only challenger props-gap-shrink-v1 (docs/PROPS_CHALLENGER_GAP_SHRINK_2026_11_12.md). Hypothesis: when the
+ * model's mean is far from the DFS line, the line reflects information the model lacks (role, injury, rotation), so the
+ * model's conditional More/Less edge should shrink toward 50%. Ties keep their explicit probability. Pure; frozen rule.
+ */
+export type GapShrinkRule={noShrinkBelow:number;fullShrinkAt:number;minKeep:number};
+export function gapShrink(p:Probabilities,mean:number,line:number,rule:GapShrinkRule):Probabilities{
+ if(!validProbabilities(p)||!Number.isFinite(mean)||!(line>0)||!(rule.fullShrinkAt>rule.noShrinkBelow)||rule.minKeep<0||rule.minKeep>1)
+  throw new Error('INVALID_GAP_SHRINK_INPUT');
+ if(p.pTie===1)return {...p};
+ const gap=Math.abs(mean-line)/line;
+ const keep=Math.max(rule.minKeep,Math.min(1,1-(gap-rule.noShrinkBelow)/(rule.fullShrinkAt-rule.noShrinkBelow)));
+ const active=1-p.pTie,q=p.pMore/active,shrunk=0.5+(q-0.5)*keep;
+ return {pMore:shrunk*active,pLess:(1-shrunk)*active,pTie:p.pTie};
+}
+export type ChallengerSpec={version:string;protocolId:string;registeredAt:string;forwardStartsAt:string;rule:GapShrinkRule;
+ reviewGate:{minGradedLines:number;minDates:number;minGames:number;maxBrierDifferenceUpper95:number;bootstrapReplicates:number;bootstrapSeed:number}};
+/** Prospective score of the gap-shrink challenger against the live model on the same admitted lines. Never promotes. */
+export function evaluateGapChallenger(r:ResearchRaw,spec:ChallengerSpec){
+ const now=Date.parse(r.nowIso);if(!Number.isFinite(now))throw new Error('RESEARCH_INVALID_CLOCK');
+ let missingMean=0;
+ const {evaluation,pending,voided,preRegistration,invalid}=forwardRows(r,now,spec.forwardStartsAt,(base,o,p)=>{
+  const mean=p.mean===null||p.mean===undefined?NaN:Number(p.mean);
+  if(!Number.isFinite(mean)){missingMean++;return base;}
+  return gapShrink(base,mean,Number(o.line),spec.rule);});
+ const baseline=summarize(evaluation.map(x=>({p:x.baseline,outcome:x.outcome})));
+ const candidate=summarize(evaluation.map(x=>({p:x.candidate,outcome:x.outcome})));
+ const dates=new Set(evaluation.map(x=>x.date)).size,games=new Set(evaluation.map(x=>x.eventId)).size,g=spec.reviewGate;
+ const enough=baseline.n>=g.minGradedLines&&dates>=g.minDates&&games>=g.minGames;
+ const interval=enough?pairedInterval(evaluation,g.bootstrapReplicates,g.bootstrapSeed):null;
+ const better=!!(interval&&interval.upper95<g.maxBrierDifferenceUpper95&&candidate.logLoss!==null&&baseline.logLoss!==null&&candidate.logLoss<=baseline.logLoss);
+ return {version:spec.version,protocolId:spec.protocolId,forwardStartsAt:spec.forwardStartsAt,
+  baseline:{n:baseline.n,brier:baseline.brier,logLoss:baseline.logLoss},candidate:{n:candidate.n,brier:candidate.brier,logLoss:candidate.logLoss},
+  progress:{dates,games,pending,voided,preRegistration,invalid,missingMean},interval,
+  status:!enough?'collecting':better?'ready_for_review':'no_improvement_yet',promotionEnabled:false as const,profitabilityDemonstrated:false as const};
+}

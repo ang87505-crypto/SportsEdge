@@ -22,7 +22,7 @@ export async function loadPropsResearch(store:Pick<PropsStore,'select'>=propsSto
   readResearchRows<ResearchRaw['observations'][number]>(store,'props_observations',
    'select=id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at,recorded_at&is_fixture=eq.false'+bounds('recorded_at')+'&order=id.asc'),
   readResearchRows<ResearchRaw['predictions'][number]>(store,'props_predictions',
-   'select=id,observation_id,model_version,status,athlete_id,p_more,p_less,p_tie,data_cutoff,predicted_at&model_version=eq.'+MODEL_VERSION+bounds('predicted_at')+'&order=id.asc'),
+   'select=id,observation_id,model_version,status,athlete_id,p_more,p_less,p_tie,mean,data_cutoff,predicted_at&model_version=eq.'+MODEL_VERSION+bounds('predicted_at')+'&order=id.asc'),
   readResearchRows<ResearchRaw['picks'][number]>(store,'props_picks',
    'select=id,prediction_id,selection_version,status,side&selection_version=eq.'+SELECTION_VERSION+bounds('decided_at')+'&order=id.asc'),
   readResearchRows<ResearchRaw['results'][number]>(store,'props_line_results',
