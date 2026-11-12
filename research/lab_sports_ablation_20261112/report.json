@@ -1,0 +1,2675 @@
+{
+ "generatedBy": "scripts/lab-sports-ablation.ts",
+ "experimentId": "lab-sports-ablation-v1",
+ "specSha256": "552023777e55b436ed180965e8391c05bf39f9b5595ad2eb372b72cf26c77c58",
+ "evidence": "retrospective",
+ "caveats": [
+  "Proxy lines, not platform lines: these results rank hypotheses and cannot promote anything.",
+  "Fold 1 reuses a season earlier studies inspected; fold 2 (2026-27 to date) is out-of-season for every trained weight.",
+  "No sportsbook history: the market layer is tested on forward lines only. No injury feed: the injury/rotation layer is not tested.",
+  "Probability quality only: no virtual or real returns are implied."
+ ],
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+   "pinned": true
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89",
+   "pinned": true
+  },
+  {
+   "file": "player_box_2027.csv",
+   "sha256": "11486b54adec54235f3dc804500cdbcd4817d16a19661b94bfe81818c9e7bee2",
+   "pinned": false,
+   "note": "live 2026-27 file as downloaded for this run"
+  }
+ ],
+ "leakage": {
+  "checked": 92769654,
+  "violations": 0
+ },
+ "features": [
+  {
+   "id": "stats_logit",
+   "version": "props-nb-minutes-rate-v1",
+   "domain": "sports",
+   "layer": "base",
+   "description": "Layer-1 negative-binomial minutes×rate probability (log-odds of More, ties excluded)",
+   "source": "ESPN box scores (props_player_games) + model_v1 priors",
+   "timestampRule": "games that started before the line was captured",
+   "availability": "historical_and_forward",
+   "dependsOn": [],
+   "learnIndex": 1
+  },
+  {
+   "id": "bias",
+   "version": "v1",
+   "domain": "sports",
+   "layer": "recalibration",
+   "description": "Per-stat intercept refit on training data",
+   "source": "derived",
+   "timestampRule": "training rows only",
+   "availability": "historical_and_forward",
+   "dependsOn": [
+    "stats_logit"
+   ],
+   "learnIndex": 0
+  },
+  {
+   "id": "role_minutes",
+   "version": "props-nb-role-minutes-v1",
+   "domain": "sports",
+   "layer": "role_minutes",
+   "description": "Expected minutes switch to the last-3 mean after a sustained 6+ minute role change",
+   "source": "ESPN box scores",
+   "timestampRule": "games that started before the line was captured",
+   "availability": "historical_and_forward",
+   "dependsOn": [
+    "stats_logit"
+   ]
+  },
+  {
+   "id": "opp_allowed_ratio",
+   "version": "v1",
+   "domain": "sports",
+   "layer": "matchup_rest",
+   "description": "Opponent per-minute stat allowed vs league, last 15 opponent games",
+   "source": "ESPN box scores",
+   "timestampRule": "games that started before the line was captured",
+   "availability": "historical_and_forward",
+   "dependsOn": [],
+   "learnIndex": 5
+  },
+  {
+   "id": "home",
+   "version": "v1",
+   "domain": "sports",
+   "layer": "matchup_rest",
+   "description": "Home team indicator",
+   "source": "schedule",
+   "timestampRule": "known before lock",
+   "availability": "historical_and_forward",
+   "dependsOn": [],
+   "learnIndex": 6
+  },
+  {
+   "id": "rest_days",
+   "version": "v1",
+   "domain": "sports",
+   "layer": "matchup_rest",
+   "description": "Team rest days (capped at 3)",
+   "source": "ESPN box scores",
+   "timestampRule": "previous team game before lock",
+   "availability": "historical_and_forward",
+   "dependsOn": [],
+   "learnIndex": 7
+  },
+  {
+   "id": "back_to_back",
+   "version": "v1",
+   "domain": "sports",
+   "layer": "matchup_rest",
+   "description": "Second night of a back-to-back",
+   "source": "ESPN box scores",
+   "timestampRule": "previous team game before lock",
+   "availability": "historical_and_forward",
+   "dependsOn": [
+    "rest_days"
+   ],
+   "learnIndex": 8
+  },
+  {
+   "id": "books_p_more",
+   "version": "props-market-v1",
+   "domain": "sports",
+   "layer": "market",
+   "description": "No-vig sportsbook probability of More at the same line",
+   "source": "The Odds API quotes captured in the SAME paid request as the DFS line (no extra requests)",
+   "timestampRule": "quote captured before lock",
+   "availability": "forward_only",
+   "dependsOn": [],
+   "learnIndex": 2
+  },
+  {
+   "id": "injury_status",
+   "version": "none",
+   "domain": "sports",
+   "layer": "injury_rotation",
+   "description": "Official pre-game injury/rotation status",
+   "source": "NOT COLLECTED: no reliable, timestamped pre-lock injury feed is stored yet",
+   "timestampRule": "n/a",
+   "availability": "unavailable",
+   "dependsOn": []
+  }
+ ],
+ "layers": [
+  {
+   "id": "recalibration",
+   "domain": "sports",
+   "label": "Recalibration",
+   "description": "Refit intercept and slope on the stats model log-odds",
+   "features": [
+    "bias",
+    "stats_logit"
+   ],
+   "mechanism": "learned_weights"
+  },
+  {
+   "id": "role_minutes",
+   "domain": "sports",
+   "label": "Role / minutes",
+   "description": "Role-change minutes rule inside the stats model",
+   "features": [
+    "role_minutes"
+   ],
+   "mechanism": "base_swap"
+  },
+  {
+   "id": "matchup_rest",
+   "domain": "sports",
+   "label": "Matchup, rest & opponent",
+   "description": "Opponent allowed rate, home, rest days, back-to-back",
+   "features": [
+    "opp_allowed_ratio",
+    "home",
+    "rest_days",
+    "back_to_back"
+   ],
+   "mechanism": "learned_weights"
+  },
+  {
+   "id": "market",
+   "domain": "sports",
+   "label": "Sportsbook market",
+   "description": "Pre-registered 50/50 log-odds blend with the no-vig sportsbook probability when books quote the same line",
+   "features": [
+    "books_p_more"
+   ],
+   "mechanism": "fixed_rule"
+  },
+  {
+   "id": "injury_rotation",
+   "domain": "sports",
+   "label": "Injury / rotation",
+   "description": "Official injury and rotation news before lock",
+   "features": [
+    "injury_status"
+   ],
+   "mechanism": "learned_weights"
+  }
+ ],
+ "spec": {
+  "id": "lab-sports-ablation-v1",
+  "domain": "sports",
+  "registeredAt": "2026-11-12T20:00:00Z",
+  "hypothesis": "Each predictive layer (recalibration, role/minutes, matchup/rest/opponent, sportsbook market) improves the probability quality (Brier, log loss) of NBA player-prop forecasts when added to the base model, and its removal from the combined model makes forecasts worse.",
+  "modelFamily": "ridge-logistic-v1",
+  "layers": [
+   "recalibration",
+   "role_minutes",
+   "matchup_rest",
+   "market",
+   "injury_rotation"
+  ],
+  "unsupportedLayers": [
+   {
+    "id": "injury_rotation",
+    "reason": "No reliable, timestamped pre-lock injury or rotation feed is collected, so this layer cannot be tested without inventing data."
+   },
+   {
+    "id": "market",
+    "reason": "No sportsbook history exists for these seasons; the market layer is tested on forward lines only."
+   }
+  ],
+  "variants": [
+   {
+    "id": "base",
+    "label": "Base model",
+    "layers": [],
+    "role": "base"
+   },
+   {
+    "id": "base+recalibration",
+    "label": "Base + recalibration",
+    "layers": [
+     "recalibration"
+    ],
+    "role": "single_layer"
+   },
+   {
+    "id": "base+recalibration+role_minutes",
+    "label": "Base + role_minutes",
+    "layers": [
+     "recalibration",
+     "role_minutes"
+    ],
+    "role": "single_layer"
+   },
+   {
+    "id": "base+recalibration+matchup_rest",
+    "label": "Base + matchup_rest",
+    "layers": [
+     "recalibration",
+     "matchup_rest"
+    ],
+    "role": "single_layer"
+   },
+   {
+    "id": "combined-market",
+    "label": "Combined (available layers)",
+    "layers": [
+     "recalibration",
+     "role_minutes",
+     "matchup_rest"
+    ],
+    "role": "combined"
+   }
+  ],
+  "forwardStartsAt": "2026-11-13T00:00:00Z",
+  "trainingData": {
+   "description": "2025-26 NBA regular season (layer-1 priors from 2024-25), SportsDataverse ESPN player box scores, proxy lines",
+   "through": "2026-04-30T00:00:00Z",
+   "sources": [
+    {
+     "file": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "file": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ]
+  },
+  "metrics": {
+   "primary": "brier",
+   "secondary": [
+    "logLoss",
+    "ece",
+    "decisionHitRate"
+   ]
+  },
+  "gate": {
+   "minGradedLines": 500,
+   "minDates": 14,
+   "minGames": 50,
+   "minCandidateDecisions": 100,
+   "maxBrierDifferenceUpper95": -0.002,
+   "requireNoWorseLogLoss": true,
+   "multipleTesting": "holm",
+   "familyAlpha": 0.05,
+   "bootstrapReplicates": 1000,
+   "bootstrapSeed": 20261112
+  },
+  "limits": {
+   "maxVariants": 10,
+   "productionShadowLimit": 3,
+   "paidRequestsPerVariant": 0
+  },
+  "researchOnly": true
+ },
+ "artifactSha256": "cb270daf6a11b5a9c9b1d75e5caf2330f9f708ee68388012b0fb8fc7e7912c86",
+ "folds": [
+  {
+   "label": "fold1-2025-26-second-half",
+   "train": {
+    "rows": 26379,
+    "from": "2025-10-27",
+    "to": "2025-12-31"
+   },
+   "test": {
+    "rows": 45216,
+    "from": "2026-01-01",
+    "to": "2026-04-13"
+   },
+   "comparison": {
+    "experimentId": "lab-sports-ablation-v1",
+    "evidence": "retrospective",
+    "n": 45216,
+    "dates": 96,
+    "clusters": 739,
+    "sampleMinimumsMet": true,
+    "variants": [
+     {
+      "id": "base",
+      "label": "Base model",
+      "layers": [],
+      "n": 45216,
+      "brier": 0.239463,
+      "logLoss": 0.674552,
+      "hitRate": 0.59187,
+      "decisions": 21686,
+      "decisionHitRate": 0.63746,
+      "ece": 0.03011,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 21606,
+        "meanConfidence": 0.5485,
+        "hitRate": 0.5362
+       },
+       {
+        "from": 0.6,
+        "n": 15279,
+        "meanConfidence": 0.6452,
+        "hitRate": 0.6165
+       },
+       {
+        "from": 0.7,
+        "n": 6407,
+        "meanConfidence": 0.7408,
+        "hitRate": 0.6874
+       },
+       {
+        "from": 0.8,
+        "n": 1446,
+        "meanConfidence": 0.8358,
+        "hitRate": 0.7123
+       },
+       {
+        "from": 0.9,
+        "n": 478,
+        "meanConfidence": 0.937,
+        "hitRate": 0.6736
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration",
+      "label": "Base + recalibration",
+      "layers": [
+       "recalibration"
+      ],
+      "n": 45216,
+      "brier": 0.236923,
+      "logLoss": 0.666389,
+      "hitRate": 0.59101,
+      "decisions": 18687,
+      "decisionHitRate": 0.65768,
+      "ece": 0.0153,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 26026,
+        "meanConfidence": 0.5484,
+        "hitRate": 0.5395
+       },
+       {
+        "from": 0.6,
+        "n": 14417,
+        "meanConfidence": 0.6411,
+        "hitRate": 0.6388
+       },
+       {
+        "from": 0.7,
+        "n": 4270,
+        "meanConfidence": 0.7383,
+        "hitRate": 0.7213
+       },
+       {
+        "from": 0.8,
+        "n": 491,
+        "meanConfidence": 0.827,
+        "hitRate": 0.776
+       },
+       {
+        "from": 0.9,
+        "n": 12,
+        "meanConfidence": 0.9352,
+        "hitRate": 0.9167
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "label": "Base + role_minutes",
+      "layers": [
+       "recalibration",
+       "role_minutes"
+      ],
+      "n": 45216,
+      "brier": 0.236522,
+      "logLoss": 0.665537,
+      "hitRate": 0.59313,
+      "decisions": 18714,
+      "decisionHitRate": 0.6586,
+      "ece": 0.01329,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 25889,
+        "meanConfidence": 0.5482,
+        "hitRate": 0.5409
+       },
+       {
+        "from": 0.6,
+        "n": 14300,
+        "meanConfidence": 0.6413,
+        "hitRate": 0.6407
+       },
+       {
+        "from": 0.7,
+        "n": 4414,
+        "meanConfidence": 0.7385,
+        "hitRate": 0.7166
+       },
+       {
+        "from": 0.8,
+        "n": 596,
+        "meanConfidence": 0.8298,
+        "hitRate": 0.797
+       },
+       {
+        "from": 0.9,
+        "n": 17,
+        "meanConfidence": 0.9286,
+        "hitRate": 0.9412
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "label": "Base + matchup_rest",
+      "layers": [
+       "recalibration",
+       "matchup_rest"
+      ],
+      "n": 45216,
+      "brier": 0.23657,
+      "logLoss": 0.665634,
+      "hitRate": 0.59298,
+      "decisions": 18891,
+      "decisionHitRate": 0.65857,
+      "ece": 0.01404,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 25776,
+        "meanConfidence": 0.5485,
+        "hitRate": 0.5408
+       },
+       {
+        "from": 0.6,
+        "n": 14343,
+        "meanConfidence": 0.6415,
+        "hitRate": 0.6382
+       },
+       {
+        "from": 0.7,
+        "n": 4548,
+        "meanConfidence": 0.7382,
+        "hitRate": 0.7227
+       },
+       {
+        "from": 0.8,
+        "n": 536,
+        "meanConfidence": 0.828,
+        "hitRate": 0.7817
+       },
+       {
+        "from": 0.9,
+        "n": 13,
+        "meanConfidence": 0.937,
+        "hitRate": 0.9231
+       }
+      ]
+     },
+     {
+      "id": "combined-market",
+      "label": "Combined (available layers)",
+      "layers": [
+       "recalibration",
+       "role_minutes",
+       "matchup_rest"
+      ],
+      "n": 45216,
+      "brier": 0.236154,
+      "logLoss": 0.664759,
+      "hitRate": 0.59404,
+      "decisions": 18931,
+      "decisionHitRate": 0.65876,
+      "ece": 0.01265,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 25617,
+        "meanConfidence": 0.5483,
+        "hitRate": 0.5407
+       },
+       {
+        "from": 0.6,
+        "n": 14344,
+        "meanConfidence": 0.6418,
+        "hitRate": 0.6396
+       },
+       {
+        "from": 0.7,
+        "n": 4587,
+        "meanConfidence": 0.739,
+        "hitRate": 0.7186
+       },
+       {
+        "from": 0.8,
+        "n": 648,
+        "meanConfidence": 0.8304,
+        "hitRate": 0.8009
+       },
+       {
+        "from": 0.9,
+        "n": 20,
+        "meanConfidence": 0.9272,
+        "hitRate": 0.95
+       }
+      ]
+     }
+    ],
+    "comparisons": [
+     {
+      "candidate": "base+recalibration",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.00253982811725088,
+       "lower95": -0.003191024726638956,
+       "upper95": -0.0019026919836585285,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.008162772800748553,
+       "lower95": -0.009821693824680225,
+       "upper95": -0.006480387944644998,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "base+recalibration+role_minutes",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0029404336179553753,
+       "lower95": -0.0036678483757700783,
+       "upper95": -0.0021899436985052885,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.009014694528238148,
+       "lower95": -0.010926790688310546,
+       "upper95": -0.007136144207133557,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "base+recalibration+matchup_rest",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0028923862563321333,
+       "lower95": -0.00355041814739707,
+       "upper95": -0.0022455688990610386,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.008917293734487911,
+       "lower95": -0.010586778280340211,
+       "upper95": -0.0072256316998801405,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.003308536970946862,
+       "lower95": -0.004069295344635498,
+       "upper95": -0.0025891326833502666,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.009792496714684195,
+       "lower95": -0.011721881138237277,
+       "upper95": -0.00792623607175073,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "base+recalibration",
+      "reference": "base",
+      "kind": "layer_added",
+      "layer": "recalibration",
+      "brier": {
+       "mean": -0.00253982811725088,
+       "lower95": -0.003191024726638956,
+       "upper95": -0.0019026919836585285,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.008162772800748553,
+       "lower95": -0.009821693824680225,
+       "upper95": -0.006480387944644998,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "base+recalibration+role_minutes",
+      "reference": "base+recalibration",
+      "kind": "layer_added",
+      "layer": "role_minutes",
+      "brier": {
+       "mean": -0.00040060550070450987,
+       "lower95": -0.0007446635207612954,
+       "upper95": -0.00004013172762402963,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.00999000999000999
+      },
+      "logLoss": {
+       "mean": -0.0008519217274894895,
+       "lower95": -0.0015997404114845189,
+       "upper95": -0.0000738377472274357,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.013986013986013986
+      },
+      "pAdjusted": 0.017982
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base+recalibration+matchup_rest",
+      "kind": "layer_removed",
+      "layer": "role_minutes",
+      "brier": {
+       "mean": -0.0004161507146147459,
+       "lower95": -0.0007629337246229379,
+       "upper95": -0.00005264270251480188,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.008991008991008992
+      },
+      "logLoss": {
+       "mean": -0.000875202980196405,
+       "lower95": -0.0016303495334994834,
+       "upper95": -0.00008414404154050732,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.00999000999000999
+      },
+      "pAdjusted": 0.017982
+     },
+     {
+      "candidate": "base+recalibration+matchup_rest",
+      "reference": "base+recalibration",
+      "kind": "layer_added",
+      "layer": "matchup_rest",
+      "brier": {
+       "mean": -0.000352558139081226,
+       "lower95": -0.0005043674477645778,
+       "upper95": -0.0002111654614748717,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.0007545209337391957,
+       "lower95": -0.0010770187303252637,
+       "upper95": -0.00044709725568199113,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base+recalibration+role_minutes",
+      "kind": "layer_removed",
+      "layer": "matchup_rest",
+      "brier": {
+       "mean": -0.00036810335299146277,
+       "lower95": -0.0005257659643983612,
+       "upper95": -0.0002288009312264271,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "logLoss": {
+       "mean": -0.0007778021864460996,
+       "lower95": -0.001108440816388715,
+       "upper95": -0.00046769100613206616,
+       "clusters": 739,
+       "n": 45216,
+       "pImprove": 0.000999000999000999
+      },
+      "pAdjusted": 0.008991
+     }
+    ],
+    "layers": [
+     {
+      "layer": "recalibration",
+      "added": {
+       "candidate": "base+recalibration",
+       "reference": "base",
+       "kind": "layer_added",
+       "layer": "recalibration",
+       "brier": {
+        "mean": -0.00253982811725088,
+        "lower95": -0.003191024726638956,
+        "upper95": -0.0019026919836585285,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "logLoss": {
+        "mean": -0.008162772800748553,
+        "lower95": -0.009821693824680225,
+        "upper95": -0.006480387944644998,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "pAdjusted": 0.008991
+      },
+      "removed": null,
+      "verdict": "helps",
+      "explanation": "adding: Brier -0.00254 (95% CI -0.00319 to -0.00190, Holm p=0.0090)"
+     },
+     {
+      "layer": "role_minutes",
+      "added": {
+       "candidate": "base+recalibration+role_minutes",
+       "reference": "base+recalibration",
+       "kind": "layer_added",
+       "layer": "role_minutes",
+       "brier": {
+        "mean": -0.00040060550070450987,
+        "lower95": -0.0007446635207612954,
+        "upper95": -0.00004013172762402963,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.00999000999000999
+       },
+       "logLoss": {
+        "mean": -0.0008519217274894895,
+        "lower95": -0.0015997404114845189,
+        "upper95": -0.0000738377472274357,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.013986013986013986
+       },
+       "pAdjusted": 0.017982
+      },
+      "removed": {
+       "candidate": "combined-market",
+       "reference": "base+recalibration+matchup_rest",
+       "kind": "layer_removed",
+       "layer": "role_minutes",
+       "brier": {
+        "mean": -0.0004161507146147459,
+        "lower95": -0.0007629337246229379,
+        "upper95": -0.00005264270251480188,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.008991008991008992
+       },
+       "logLoss": {
+        "mean": -0.000875202980196405,
+        "lower95": -0.0016303495334994834,
+        "upper95": -0.00008414404154050732,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.00999000999000999
+       },
+       "pAdjusted": 0.017982
+      },
+      "verdict": "helps",
+      "explanation": "adding: Brier -0.00040 (95% CI -0.00074 to -0.00004, Holm p=0.0180); removing from the combined model: Brier -0.00042 (95% CI -0.00076 to -0.00005, Holm p=0.0180)"
+     },
+     {
+      "layer": "matchup_rest",
+      "added": {
+       "candidate": "base+recalibration+matchup_rest",
+       "reference": "base+recalibration",
+       "kind": "layer_added",
+       "layer": "matchup_rest",
+       "brier": {
+        "mean": -0.000352558139081226,
+        "lower95": -0.0005043674477645778,
+        "upper95": -0.0002111654614748717,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "logLoss": {
+        "mean": -0.0007545209337391957,
+        "lower95": -0.0010770187303252637,
+        "upper95": -0.00044709725568199113,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "pAdjusted": 0.008991
+      },
+      "removed": {
+       "candidate": "combined-market",
+       "reference": "base+recalibration+role_minutes",
+       "kind": "layer_removed",
+       "layer": "matchup_rest",
+       "brier": {
+        "mean": -0.00036810335299146277,
+        "lower95": -0.0005257659643983612,
+        "upper95": -0.0002288009312264271,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "logLoss": {
+        "mean": -0.0007778021864460996,
+        "lower95": -0.001108440816388715,
+        "upper95": -0.00046769100613206616,
+        "clusters": 739,
+        "n": 45216,
+        "pImprove": 0.000999000999000999
+       },
+       "pAdjusted": 0.008991
+      },
+      "verdict": "helps",
+      "explanation": "adding: Brier -0.00035 (95% CI -0.00050 to -0.00021, Holm p=0.0090); removing from the combined model: Brier -0.00037 (95% CI -0.00053 to -0.00023, Holm p=0.0090)"
+     },
+     {
+      "layer": "market",
+      "added": null,
+      "removed": null,
+      "verdict": "not_tested",
+      "explanation": "No sportsbook history exists for these seasons; the market layer is tested on forward lines only."
+     },
+     {
+      "layer": "injury_rotation",
+      "added": null,
+      "removed": null,
+      "verdict": "not_tested",
+      "explanation": "No reliable, timestamped pre-lock injury or rotation feed is collected, so this layer cannot be tested without inventing data."
+     }
+    ],
+    "familySize": 9,
+    "familyAlpha": 0.05,
+    "notes": [
+     "Retrospective evidence on pinned history with PROXY lines (not platform lines). It ranks hypotheses; it cannot promote anything.",
+     "Holm adjustment across 9 comparisons (family alpha 0.05)."
+    ]
+   },
+   "byStat": {
+    "points": [
+     {
+      "id": "base",
+      "brier": 0.248032,
+      "logLoss": 0.697596,
+      "ece": 0.05387
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.242803,
+      "logLoss": 0.678859,
+      "ece": 0.02927
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.242217,
+      "logLoss": 0.677525,
+      "ece": 0.02617
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.24263,
+      "logLoss": 0.678499,
+      "ece": 0.0291
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.242035,
+      "logLoss": 0.677147,
+      "ece": 0.02498
+     }
+    ],
+    "rebounds": [
+     {
+      "id": "base",
+      "brier": 0.237495,
+      "logLoss": 0.668177,
+      "ece": 0.03173
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.23596,
+      "logLoss": 0.664382,
+      "ece": 0.01668
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.235771,
+      "logLoss": 0.664065,
+      "ece": 0.01497
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.235386,
+      "logLoss": 0.663177,
+      "ece": 0.01539
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.23518,
+      "logLoss": 0.662841,
+      "ece": 0.01522
+     }
+    ],
+    "assists": [
+     {
+      "id": "base",
+      "brier": 0.232862,
+      "logLoss": 0.657882,
+      "ece": 0.02297
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.232006,
+      "logLoss": 0.655925,
+      "ece": 0.01121
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.23158,
+      "logLoss": 0.65502,
+      "ece": 0.01137
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.231696,
+      "logLoss": 0.655227,
+      "ece": 0.00937
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.231248,
+      "logLoss": 0.65429,
+      "ece": 0.01095
+     }
+    ]
+   },
+   "riskFlags": {
+    "rules": {
+     "version": "lab-risk-flags-v1",
+     "minGames": 10,
+     "absenceDays": 7,
+     "minutesShift": 4,
+     "minutesCv": 0.3,
+     "booksLean": 0.05,
+     "lineGap": 0.25,
+     "sameGameMax": 1
+    },
+    "coverageGaps": [
+     "No official injury or rotation feed is stored before lock, so injury risk is unknown, not absent."
+    ],
+    "selectedPicks": 21686,
+    "effects": [
+     {
+      "flag": "insufficient_history",
+      "flagged": 1154,
+      "flaggedHitRate": 0.5893,
+      "flaggedInterval": {
+       "lower": 0.5606190727614314,
+       "upper": 0.6172981829322662
+      },
+      "unflaggedHitRate": 0.6402,
+      "skipRule": {
+       "missesAvoided": 474,
+       "goodPicksRejected": 680,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6402
+      },
+      "pAdjusted": 0.000927,
+      "verdict": "would_help"
+     },
+     {
+      "flag": "long_absence",
+      "flagged": 1652,
+      "flaggedHitRate": 0.5708,
+      "flaggedInterval": {
+       "lower": 0.5468178532939997,
+       "upper": 0.5945000118931052
+      },
+      "unflaggedHitRate": 0.643,
+      "skipRule": {
+       "missesAvoided": 709,
+       "goodPicksRejected": 943,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.643
+      },
+      "pAdjusted": 0,
+      "verdict": "would_help"
+     },
+     {
+      "flag": "minutes_shift",
+      "flagged": 1554,
+      "flaggedHitRate": 0.6429,
+      "flaggedInterval": {
+       "lower": 0.6187079687074276,
+       "upper": 0.666301752434953
+      },
+      "unflaggedHitRate": 0.637,
+      "skipRule": {
+       "missesAvoided": 555,
+       "goodPicksRejected": 999,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.637
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "high_minutes_uncertainty",
+      "flagged": 5822,
+      "flaggedHitRate": 0.6099,
+      "flaggedInterval": {
+       "lower": 0.5973298542347296,
+       "upper": 0.6223808910762999
+      },
+      "unflaggedHitRate": 0.6476,
+      "skipRule": {
+       "missesAvoided": 2271,
+       "goodPicksRejected": 3551,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6476
+      },
+      "pAdjusted": 0.000001,
+      "verdict": "would_help"
+     },
+     {
+      "flag": "books_disagree",
+      "flagged": 0,
+      "flaggedHitRate": null,
+      "flaggedInterval": null,
+      "unflaggedHitRate": 0.6375,
+      "skipRule": {
+       "missesAvoided": 0,
+       "goodPicksRejected": 0,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6375
+      },
+      "pAdjusted": 1,
+      "verdict": "too_few"
+     },
+     {
+      "flag": "large_line_gap",
+      "flagged": 9302,
+      "flaggedHitRate": 0.6238,
+      "flaggedInterval": {
+       "lower": 0.6139506960313685,
+       "upper": 0.6336357232345686
+      },
+      "unflaggedHitRate": 0.6477,
+      "skipRule": {
+       "missesAvoided": 3499,
+       "goodPicksRejected": 5803,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6477
+      },
+      "pAdjusted": 0.00075,
+      "verdict": "would_help"
+     },
+     {
+      "flag": "poor_category_calibration",
+      "flagged": 9218,
+      "flaggedHitRate": 0.6206,
+      "flaggedInterval": {
+       "lower": 0.6106795342890581,
+       "upper": 0.6304870457137909
+      },
+      "unflaggedHitRate": 0.6499,
+      "skipRule": {
+       "missesAvoided": 3497,
+       "goodPicksRejected": 5721,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6499
+      },
+      "pAdjusted": 0.000028,
+      "verdict": "would_help"
+     },
+     {
+      "flag": "same_game_exposure",
+      "flagged": 0,
+      "flaggedHitRate": null,
+      "flaggedInterval": null,
+      "unflaggedHitRate": 0.6375,
+      "skipRule": {
+       "missesAvoided": 0,
+       "goodPicksRejected": 0,
+       "hitRateBefore": 0.6375,
+       "hitRateAfter": 0.6375
+      },
+      "pAdjusted": 1,
+      "verdict": "too_few"
+     }
+    ]
+   },
+   "calibrationTable": [
+    {
+     "stat": "points",
+     "band": "0.55-0.60",
+     "n": 2024,
+     "meanConfidence": 0.5741,
+     "hitRate": 0.5608,
+     "overconfident": false
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.70-0.80",
+     "n": 1053,
+     "meanConfidence": 0.7391,
+     "hitRate": 0.7284,
+     "overconfident": false
+    },
+    {
+     "stat": "assists",
+     "band": "0.80-1.00",
+     "n": 333,
+     "meanConfidence": 0.8355,
+     "hitRate": 0.8619,
+     "overconfident": false
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.60-0.65",
+     "n": 1756,
+     "meanConfidence": 0.6238,
+     "hitRate": 0.6093,
+     "overconfident": false
+    },
+    {
+     "stat": "assists",
+     "band": "0.70-0.80",
+     "n": 1568,
+     "meanConfidence": 0.7406,
+     "hitRate": 0.7385,
+     "overconfident": false
+    },
+    {
+     "stat": "assists",
+     "band": "0.55-0.60",
+     "n": 1925,
+     "meanConfidence": 0.5751,
+     "hitRate": 0.5621,
+     "overconfident": false
+    },
+    {
+     "stat": "points",
+     "band": "0.60-0.65",
+     "n": 1711,
+     "meanConfidence": 0.623,
+     "hitRate": 0.5885,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.65-0.70",
+     "n": 1378,
+     "meanConfidence": 0.6732,
+     "hitRate": 0.6248,
+     "overconfident": true
+    },
+    {
+     "stat": "points",
+     "band": "0.80-1.00",
+     "n": 538,
+     "meanConfidence": 0.8781,
+     "hitRate": 0.6636,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.55-0.60",
+     "n": 2082,
+     "meanConfidence": 0.5748,
+     "hitRate": 0.5672,
+     "overconfident": false
+    },
+    {
+     "stat": "points",
+     "band": "0.70-0.80",
+     "n": 1032,
+     "meanConfidence": 0.7407,
+     "hitRate": 0.6657,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.80-1.00",
+     "n": 242,
+     "meanConfidence": 0.8469,
+     "hitRate": 0.7934,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.65-0.70",
+     "n": 1268,
+     "meanConfidence": 0.6727,
+     "hitRate": 0.6751,
+     "overconfident": false
+    },
+    {
+     "stat": "points",
+     "band": "0.65-0.70",
+     "n": 1166,
+     "meanConfidence": 0.6738,
+     "hitRate": 0.6424,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.60-0.65",
+     "n": 1650,
+     "meanConfidence": 0.6241,
+     "hitRate": 0.62,
+     "overconfident": false
+    }
+   ],
+   "mistakes": {
+    "picks": 21686,
+    "misses": 7862,
+    "hitRate": 0.6375,
+    "patterns": [
+     {
+      "pattern": "production_rate_miss",
+      "what": "Minutes were as expected, but production per minute missed",
+      "misses": 2839,
+      "shareOfMisses": 0.3611,
+      "rateAmongHits": 0.4126,
+      "lift": 0.875,
+      "evidence": {
+       "meanExpectedMinutes": 25.99,
+       "meanActualMinutes": 26.32,
+       "meanConfidence": 0.6632
+      },
+      "candidateFeature": "Usage/role and matchup detail",
+      "availableBeforeLock": "Matchup features are pre-lock; per-minute variance itself is largely noise",
+      "bestPreLockSignal": {
+       "flag": "poor_category_calibration",
+       "flaggedMisses": 1282,
+       "skipRule": {
+        "missesAvoided": 3497,
+        "goodPicksRejected": 5721
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 727,
+        "wouldAlsoRejectGood": 3235
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 865,
+        "wouldAlsoRejectGood": 3826
+       }
+      ]
+     },
+     {
+      "pattern": "unexplained",
+      "what": "No measurable cause among the stored signals",
+      "misses": 2280,
+      "shareOfMisses": 0.29,
+      "rateAmongHits": 0.3681,
+      "lift": 0.788,
+      "evidence": {
+       "meanExpectedMinutes": 23.17,
+       "meanActualMinutes": 24.18,
+       "meanConfidence": 0.6648
+      },
+      "candidateFeature": "None identified; may be ordinary variance",
+      "availableBeforeLock": "n/a",
+      "bestPreLockSignal": {
+       "flag": "poor_category_calibration",
+       "flaggedMisses": 1047,
+       "skipRule": {
+        "missesAvoided": 3497,
+        "goodPicksRejected": 5721
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 747,
+        "wouldAlsoRejectGood": 3235
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 833,
+        "wouldAlsoRejectGood": 3826
+       }
+      ]
+     },
+     {
+      "pattern": "minutes_collapse",
+      "what": "Played far fewer minutes than expected (under 60%)",
+      "misses": 1359,
+      "shareOfMisses": 0.1729,
+      "rateAmongHits": 0.1097,
+      "lift": 1.575,
+      "evidence": {
+       "meanExpectedMinutes": 15.44,
+       "meanActualMinutes": 4.96,
+       "meanConfidence": 0.681
+      },
+      "candidateFeature": "Injury/rotation status before lock; game-script (spread) context",
+      "availableBeforeLock": "Only partly: absence and minutes-variability flags are pre-lock; the collapse itself is only known after the game",
+      "bestPreLockSignal": {
+       "flag": "large_line_gap",
+       "flaggedMisses": 1305,
+       "skipRule": {
+        "missesAvoided": 3499,
+        "goodPicksRejected": 5803
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 708,
+        "wouldAlsoRejectGood": 3235
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 781,
+        "wouldAlsoRejectGood": 3826
+       }
+      ]
+     },
+     {
+      "pattern": "minutes_surge",
+      "what": "Played far more minutes than expected (over 135%), hurting a Less pick",
+      "misses": 731,
+      "shareOfMisses": 0.093,
+      "rateAmongHits": 0.0273,
+      "lift": 3.409,
+      "evidence": {
+       "meanExpectedMinutes": 19.11,
+       "meanActualMinutes": 30.21,
+       "meanConfidence": 0.6715
+      },
+      "candidateFeature": "Teammate injury / rotation news before lock",
+      "availableBeforeLock": "Not collected: teammate absences are not stored before lock",
+      "bestPreLockSignal": {
+       "flag": "high_minutes_uncertainty",
+       "flaggedMisses": 297,
+       "skipRule": {
+        "missesAvoided": 2271,
+        "goodPicksRejected": 3551
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 56,
+        "wouldAlsoRejectGood": 3235
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 137,
+        "wouldAlsoRejectGood": 3826
+       }
+      ]
+     },
+     {
+      "pattern": "matchup_against",
+      "what": "The opponent normally allows less of this stat (for More) or more (for Less)",
+      "misses": 653,
+      "shareOfMisses": 0.0831,
+      "rateAmongHits": 0.0823,
+      "lift": 1.009,
+      "evidence": {
+       "meanExpectedMinutes": 24.89,
+       "meanActualMinutes": 25.42,
+       "meanConfidence": 0.6677
+      },
+      "candidateFeature": "Matchup layer",
+      "availableBeforeLock": "Yes: opponent allowed rate uses games before lock",
+      "bestPreLockSignal": {
+       "flag": "large_line_gap",
+       "flaggedMisses": 243,
+       "skipRule": {
+        "missesAvoided": 3499,
+        "goodPicksRejected": 5803
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 143,
+        "wouldAlsoRejectGood": 3235
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 229,
+        "wouldAlsoRejectGood": 3826
+       }
+      ]
+     }
+    ],
+    "caveats": [
+     "Patterns describe measured differences between expected and actual minutes, production and market signals; they are not explanations of player intent.",
+     "A pattern that is equally common among hits (lift near 1) is not a cause of failure."
+    ]
+   }
+  },
+  {
+   "label": "fold2-2026-27-to-date",
+   "train": {
+    "rows": 71595,
+    "from": "2025-10-27",
+    "to": "2026-04-13"
+   },
+   "test": {
+    "rows": 6867,
+    "from": "2026-10-25",
+    "to": "2026-11-12"
+   },
+   "comparison": {
+    "experimentId": "lab-sports-ablation-v1",
+    "evidence": "retrospective",
+    "n": 6867,
+    "dates": 18,
+    "clusters": 128,
+    "sampleMinimumsMet": true,
+    "variants": [
+     {
+      "id": "base",
+      "label": "Base model",
+      "layers": [],
+      "n": 6867,
+      "brier": 0.23151,
+      "logLoss": 0.655948,
+      "hitRate": 0.60696,
+      "decisions": 3397,
+      "decisionHitRate": 0.65734,
+      "ece": 0.03047,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 3057,
+        "meanConfidence": 0.5476,
+        "hitRate": 0.5231
+       },
+       {
+        "from": 0.6,
+        "n": 2298,
+        "meanConfidence": 0.6456,
+        "hitRate": 0.6379
+       },
+       {
+        "from": 0.7,
+        "n": 1099,
+        "meanConfidence": 0.7432,
+        "hitRate": 0.6979
+       },
+       {
+        "from": 0.8,
+        "n": 354,
+        "meanConfidence": 0.8394,
+        "hitRate": 0.8107
+       },
+       {
+        "from": 0.9,
+        "n": 59,
+        "meanConfidence": 0.9368,
+        "hitRate": 0.8305
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration",
+      "label": "Base + recalibration",
+      "layers": [
+       "recalibration"
+      ],
+      "n": 6867,
+      "brier": 0.230536,
+      "logLoss": 0.652702,
+      "hitRate": 0.61439,
+      "decisions": 2851,
+      "decisionHitRate": 0.68783,
+      "ece": 0.01288,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 3877,
+        "meanConfidence": 0.5472,
+        "hitRate": 0.553
+       },
+       {
+        "from": 0.6,
+        "n": 2124,
+        "meanConfidence": 0.6428,
+        "hitRate": 0.6629
+       },
+       {
+        "from": 0.7,
+        "n": 727,
+        "meanConfidence": 0.7397,
+        "hitRate": 0.7607
+       },
+       {
+        "from": 0.8,
+        "n": 126,
+        "meanConfidence": 0.8306,
+        "hitRate": 0.8095
+       },
+       {
+        "from": 0.9,
+        "n": 13,
+        "meanConfidence": 0.9189,
+        "hitRate": 0.9231
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "label": "Base + role_minutes",
+      "layers": [
+       "recalibration",
+       "role_minutes"
+      ],
+      "n": 6867,
+      "brier": 0.230581,
+      "logLoss": 0.652813,
+      "hitRate": 0.61381,
+      "decisions": 2808,
+      "decisionHitRate": 0.69053,
+      "ece": 0.01437,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 3931,
+        "meanConfidence": 0.5472,
+        "hitRate": 0.5528
+       },
+       {
+        "from": 0.6,
+        "n": 2150,
+        "meanConfidence": 0.6423,
+        "hitRate": 0.6647
+       },
+       {
+        "from": 0.7,
+        "n": 658,
+        "meanConfidence": 0.7395,
+        "hitRate": 0.7751
+       },
+       {
+        "from": 0.8,
+        "n": 120,
+        "meanConfidence": 0.8306,
+        "hitRate": 0.7917
+       },
+       {
+        "from": 0.9,
+        "n": 8,
+        "meanConfidence": 0.9178,
+        "hitRate": 1
+       }
+      ]
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "label": "Base + matchup_rest",
+      "layers": [
+       "recalibration",
+       "matchup_rest"
+      ],
+      "n": 6867,
+      "brier": 0.230567,
+      "logLoss": 0.652758,
+      "hitRate": 0.61701,
+      "decisions": 2981,
+      "decisionHitRate": 0.67762,
+      "ece": 0.01195,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 3739,
+        "meanConfidence": 0.5472,
+        "hitRate": 0.5603
+       },
+       {
+        "from": 0.6,
+        "n": 2193,
+        "meanConfidence": 0.6426,
+        "hitRate": 0.6516
+       },
+       {
+        "from": 0.7,
+        "n": 788,
+        "meanConfidence": 0.7394,
+        "hitRate": 0.75
+       },
+       {
+        "from": 0.8,
+        "n": 134,
+        "meanConfidence": 0.8317,
+        "hitRate": 0.8209
+       },
+       {
+        "from": 0.9,
+        "n": 13,
+        "meanConfidence": 0.919,
+        "hitRate": 0.9231
+       }
+      ]
+     },
+     {
+      "id": "combined-market",
+      "label": "Combined (available layers)",
+      "layers": [
+       "recalibration",
+       "role_minutes",
+       "matchup_rest"
+      ],
+      "n": 6867,
+      "brier": 0.230581,
+      "logLoss": 0.652789,
+      "hitRate": 0.61643,
+      "decisions": 2902,
+      "decisionHitRate": 0.67884,
+      "ece": 0.01382,
+      "reliability": [
+       {
+        "from": 0.5,
+        "n": 3826,
+        "meanConfidence": 0.5474,
+        "hitRate": 0.5617
+       },
+       {
+        "from": 0.6,
+        "n": 2181,
+        "meanConfidence": 0.6426,
+        "hitRate": 0.652
+       },
+       {
+        "from": 0.7,
+        "n": 721,
+        "meanConfidence": 0.7383,
+        "hitRate": 0.7601
+       },
+       {
+        "from": 0.8,
+        "n": 131,
+        "meanConfidence": 0.8306,
+        "hitRate": 0.8092
+       },
+       {
+        "from": 0.9,
+        "n": 8,
+        "meanConfidence": 0.9167,
+        "hitRate": 1
+       }
+      ]
+     }
+    ],
+    "comparisons": [
+     {
+      "candidate": "base+recalibration",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0009741898027269029,
+       "lower95": -0.0022986162620977197,
+       "upper95": 0.0004256217043981761,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.0919080919080919
+      },
+      "logLoss": {
+       "mean": -0.0032454683534740517,
+       "lower95": -0.00670932364657389,
+       "upper95": 0.00047459616748279216,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.03796203796203796
+      },
+      "pAdjusted": 0.827173
+     },
+     {
+      "candidate": "base+recalibration+role_minutes",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0009297245311438994,
+       "lower95": -0.00246958926519315,
+       "upper95": 0.000664397404769083,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.12987012987012986
+      },
+      "logLoss": {
+       "mean": -0.0031348614505060336,
+       "lower95": -0.00700070142747539,
+       "upper95": 0.0008608548436096967,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.06993006993006994
+      },
+      "pAdjusted": 0.827173
+     },
+     {
+      "candidate": "base+recalibration+matchup_rest",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0009437281675004455,
+       "lower95": -0.002517670585538508,
+       "upper95": 0.0006213767561326168,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.10589410589410589
+      },
+      "logLoss": {
+       "mean": -0.003189549525163188,
+       "lower95": -0.0070172297712850955,
+       "upper95": 0.0006027964010521738,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.055944055944055944
+      },
+      "pAdjusted": 0.827173
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base",
+      "kind": "vs_base",
+      "layer": null,
+      "brier": {
+       "mean": -0.0009297402563669228,
+       "lower95": -0.002667841645504698,
+       "upper95": 0.0006878863573236198,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.1258741258741259
+      },
+      "logLoss": {
+       "mean": -0.0031587036271597795,
+       "lower95": -0.007385613575752584,
+       "upper95": 0.0010286290501250984,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.07792207792207792
+      },
+      "pAdjusted": 0.827173
+     },
+     {
+      "candidate": "base+recalibration",
+      "reference": "base",
+      "kind": "layer_added",
+      "layer": "recalibration",
+      "brier": {
+       "mean": -0.0009741898027269029,
+       "lower95": -0.0022986162620977197,
+       "upper95": 0.0004256217043981761,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.0919080919080919
+      },
+      "logLoss": {
+       "mean": -0.0032454683534740517,
+       "lower95": -0.00670932364657389,
+       "upper95": 0.00047459616748279216,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.03796203796203796
+      },
+      "pAdjusted": 0.827173
+     },
+     {
+      "candidate": "base+recalibration+role_minutes",
+      "reference": "base+recalibration",
+      "kind": "layer_added",
+      "layer": "role_minutes",
+      "brier": {
+       "mean": 0.000044465271583004134,
+       "lower95": -0.0004549257897448353,
+       "upper95": 0.0005986759888201134,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5804195804195804
+      },
+      "logLoss": {
+       "mean": 0.00011060690296801425,
+       "lower95": -0.000983419469695195,
+       "upper95": 0.0013232394671600883,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5824175824175825
+      },
+      "pAdjusted": 1
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base+recalibration+matchup_rest",
+      "kind": "layer_removed",
+      "layer": "role_minutes",
+      "brier": {
+       "mean": 0.000013987911133520553,
+       "lower95": -0.00046885594200906733,
+       "upper95": 0.0005732412907686458,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5254745254745254
+      },
+      "logLoss": {
+       "mean": 0.00003084589800338778,
+       "lower95": -0.0010460991570534635,
+       "upper95": 0.001255595667631024,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5264735264735265
+      },
+      "pAdjusted": 1
+     },
+     {
+      "candidate": "base+recalibration+matchup_rest",
+      "reference": "base+recalibration",
+      "kind": "layer_added",
+      "layer": "matchup_rest",
+      "brier": {
+       "mean": 0.000030461635226458764,
+       "lower95": -0.0006543772443906417,
+       "upper95": 0.0007064988960697189,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5074925074925075
+      },
+      "logLoss": {
+       "mean": 0.00005591882831088043,
+       "lower95": -0.0013934436858667515,
+       "upper95": 0.0014795497038246922,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.5044955044955045
+      },
+      "pAdjusted": 1
+     },
+     {
+      "candidate": "combined-market",
+      "reference": "base+recalibration+role_minutes",
+      "kind": "layer_removed",
+      "layer": "matchup_rest",
+      "brier": {
+       "mean": -1.5725223025037905e-8,
+       "lower95": -0.0006897028848032584,
+       "upper95": 0.000682084560833271,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.47652347652347654
+      },
+      "logLoss": {
+       "mean": -0.00002384217665374849,
+       "lower95": -0.001476254814957681,
+       "upper95": 0.001407115814689677,
+       "clusters": 128,
+       "n": 6867,
+       "pImprove": 0.45454545454545453
+      },
+      "pAdjusted": 1
+     }
+    ],
+    "layers": [
+     {
+      "layer": "recalibration",
+      "added": {
+       "candidate": "base+recalibration",
+       "reference": "base",
+       "kind": "layer_added",
+       "layer": "recalibration",
+       "brier": {
+        "mean": -0.0009741898027269029,
+        "lower95": -0.0022986162620977197,
+        "upper95": 0.0004256217043981761,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.0919080919080919
+       },
+       "logLoss": {
+        "mean": -0.0032454683534740517,
+        "lower95": -0.00670932364657389,
+        "upper95": 0.00047459616748279216,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.03796203796203796
+       },
+       "pAdjusted": 0.827173
+      },
+      "removed": null,
+      "verdict": "no_clear_effect",
+      "explanation": "adding: Brier -0.00097 (95% CI -0.00230 to 0.00043, Holm p=0.8272)"
+     },
+     {
+      "layer": "role_minutes",
+      "added": {
+       "candidate": "base+recalibration+role_minutes",
+       "reference": "base+recalibration",
+       "kind": "layer_added",
+       "layer": "role_minutes",
+       "brier": {
+        "mean": 0.000044465271583004134,
+        "lower95": -0.0004549257897448353,
+        "upper95": 0.0005986759888201134,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5804195804195804
+       },
+       "logLoss": {
+        "mean": 0.00011060690296801425,
+        "lower95": -0.000983419469695195,
+        "upper95": 0.0013232394671600883,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5824175824175825
+       },
+       "pAdjusted": 1
+      },
+      "removed": {
+       "candidate": "combined-market",
+       "reference": "base+recalibration+matchup_rest",
+       "kind": "layer_removed",
+       "layer": "role_minutes",
+       "brier": {
+        "mean": 0.000013987911133520553,
+        "lower95": -0.00046885594200906733,
+        "upper95": 0.0005732412907686458,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5254745254745254
+       },
+       "logLoss": {
+        "mean": 0.00003084589800338778,
+        "lower95": -0.0010460991570534635,
+        "upper95": 0.001255595667631024,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5264735264735265
+       },
+       "pAdjusted": 1
+      },
+      "verdict": "no_clear_effect",
+      "explanation": "adding: Brier +0.00004 (95% CI -0.00045 to 0.00060, Holm p=1.0000); removing from the combined model: Brier +0.00001 (95% CI -0.00047 to 0.00057, Holm p=1.0000)"
+     },
+     {
+      "layer": "matchup_rest",
+      "added": {
+       "candidate": "base+recalibration+matchup_rest",
+       "reference": "base+recalibration",
+       "kind": "layer_added",
+       "layer": "matchup_rest",
+       "brier": {
+        "mean": 0.000030461635226458764,
+        "lower95": -0.0006543772443906417,
+        "upper95": 0.0007064988960697189,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5074925074925075
+       },
+       "logLoss": {
+        "mean": 0.00005591882831088043,
+        "lower95": -0.0013934436858667515,
+        "upper95": 0.0014795497038246922,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.5044955044955045
+       },
+       "pAdjusted": 1
+      },
+      "removed": {
+       "candidate": "combined-market",
+       "reference": "base+recalibration+role_minutes",
+       "kind": "layer_removed",
+       "layer": "matchup_rest",
+       "brier": {
+        "mean": -1.5725223025037905e-8,
+        "lower95": -0.0006897028848032584,
+        "upper95": 0.000682084560833271,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.47652347652347654
+       },
+       "logLoss": {
+        "mean": -0.00002384217665374849,
+        "lower95": -0.001476254814957681,
+        "upper95": 0.001407115814689677,
+        "clusters": 128,
+        "n": 6867,
+        "pImprove": 0.45454545454545453
+       },
+       "pAdjusted": 1
+      },
+      "verdict": "no_clear_effect",
+      "explanation": "adding: Brier +0.00003 (95% CI -0.00065 to 0.00071, Holm p=1.0000); removing from the combined model: Brier -0.00000 (95% CI -0.00069 to 0.00068, Holm p=1.0000)"
+     },
+     {
+      "layer": "market",
+      "added": null,
+      "removed": null,
+      "verdict": "not_tested",
+      "explanation": "No sportsbook history exists for these seasons; the market layer is tested on forward lines only."
+     },
+     {
+      "layer": "injury_rotation",
+      "added": null,
+      "removed": null,
+      "verdict": "not_tested",
+      "explanation": "No reliable, timestamped pre-lock injury or rotation feed is collected, so this layer cannot be tested without inventing data."
+     }
+    ],
+    "familySize": 9,
+    "familyAlpha": 0.05,
+    "notes": [
+     "Retrospective evidence on pinned history with PROXY lines (not platform lines). It ranks hypotheses; it cannot promote anything.",
+     "Holm adjustment across 9 comparisons (family alpha 0.05)."
+    ]
+   },
+   "byStat": {
+    "points": [
+     {
+      "id": "base",
+      "brier": 0.237467,
+      "logLoss": 0.670968,
+      "ece": 0.05057
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.236322,
+      "logLoss": 0.665461,
+      "ece": 0.03618
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.236645,
+      "logLoss": 0.66609,
+      "ece": 0.03498
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.236329,
+      "logLoss": 0.665386,
+      "ece": 0.03326
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.236638,
+      "logLoss": 0.665991,
+      "ece": 0.03159
+     }
+    ],
+    "rebounds": [
+     {
+      "id": "base",
+      "brier": 0.230628,
+      "logLoss": 0.653415,
+      "ece": 0.02753
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.229536,
+      "logLoss": 0.650564,
+      "ece": 0.01278
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.229404,
+      "logLoss": 0.650219,
+      "ece": 0.01606
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.229649,
+      "logLoss": 0.650809,
+      "ece": 0.01189
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.229446,
+      "logLoss": 0.650303,
+      "ece": 0.00748
+     }
+    ],
+    "assists": [
+     {
+      "id": "base",
+      "brier": 0.226437,
+      "logLoss": 0.64346,
+      "ece": 0.02363
+     },
+     {
+      "id": "base+recalibration",
+      "brier": 0.22575,
+      "logLoss": 0.642082,
+      "ece": 0.01614
+     },
+     {
+      "id": "base+recalibration+role_minutes",
+      "brier": 0.225693,
+      "logLoss": 0.64213,
+      "ece": 0.01573
+     },
+     {
+      "id": "base+recalibration+matchup_rest",
+      "brier": 0.225722,
+      "logLoss": 0.64208,
+      "ece": 0.01766
+     },
+     {
+      "id": "combined-market",
+      "brier": 0.225658,
+      "logLoss": 0.642074,
+      "ece": 0.02124
+     }
+    ]
+   },
+   "riskFlags": {
+    "rules": {
+     "version": "lab-risk-flags-v1",
+     "minGames": 10,
+     "absenceDays": 7,
+     "minutesShift": 4,
+     "minutesCv": 0.3,
+     "booksLean": 0.05,
+     "lineGap": 0.25,
+     "sameGameMax": 1
+    },
+    "coverageGaps": [
+     "No official injury or rotation feed is stored before lock, so injury risk is unknown, not absent."
+    ],
+    "selectedPicks": 3397,
+    "effects": [
+     {
+      "flag": "insufficient_history",
+      "flagged": 3126,
+      "flaggedHitRate": 0.6564,
+      "flaggedInterval": {
+       "lower": 0.6395989987462998,
+       "upper": 0.672876878627175
+      },
+      "unflaggedHitRate": 0.6679,
+      "skipRule": {
+       "missesAvoided": 1074,
+       "goodPicksRejected": 2052,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6679
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "long_absence",
+      "flagged": 42,
+      "flaggedHitRate": 0.5952,
+      "flaggedInterval": {
+       "lower": 0.4449404552817742,
+       "upper": 0.7295735232879093
+      },
+      "unflaggedHitRate": 0.6581,
+      "skipRule": {
+       "missesAvoided": 17,
+       "goodPicksRejected": 25,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6581
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "minutes_shift",
+      "flagged": 68,
+      "flaggedHitRate": 0.6471,
+      "flaggedInterval": {
+       "lower": 0.5284083420991774,
+       "upper": 0.7499818941984553
+      },
+      "unflaggedHitRate": 0.6576,
+      "skipRule": {
+       "missesAvoided": 24,
+       "goodPicksRejected": 44,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6576
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "high_minutes_uncertainty",
+      "flagged": 486,
+      "flaggedHitRate": 0.6296,
+      "flaggedInterval": {
+       "lower": 0.5858358774265109,
+       "upper": 0.6713901319610136
+      },
+      "unflaggedHitRate": 0.662,
+      "skipRule": {
+       "missesAvoided": 180,
+       "goodPicksRejected": 306,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.662
+      },
+      "pAdjusted": 0.657257,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "books_disagree",
+      "flagged": 0,
+      "flaggedHitRate": null,
+      "flaggedInterval": null,
+      "unflaggedHitRate": 0.6573,
+      "skipRule": {
+       "missesAvoided": 0,
+       "goodPicksRejected": 0,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6573
+      },
+      "pAdjusted": 1,
+      "verdict": "too_few"
+     },
+     {
+      "flag": "large_line_gap",
+      "flagged": 1433,
+      "flaggedHitRate": 0.6518,
+      "flaggedInterval": {
+       "lower": 0.6267366658391496,
+       "upper": 0.676010693368713
+      },
+      "unflaggedHitRate": 0.6614,
+      "skipRule": {
+       "missesAvoided": 499,
+       "goodPicksRejected": 934,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6614
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "poor_category_calibration",
+      "flagged": 3032,
+      "flaggedHitRate": 0.658,
+      "flaggedInterval": {
+       "lower": 0.6409052643335331,
+       "upper": 0.6746579719038251
+      },
+      "unflaggedHitRate": 0.6521,
+      "skipRule": {
+       "missesAvoided": 1037,
+       "goodPicksRejected": 1995,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6521
+      },
+      "pAdjusted": 1,
+      "verdict": "no_evidence"
+     },
+     {
+      "flag": "same_game_exposure",
+      "flagged": 0,
+      "flaggedHitRate": null,
+      "flaggedInterval": null,
+      "unflaggedHitRate": 0.6573,
+      "skipRule": {
+       "missesAvoided": 0,
+       "goodPicksRejected": 0,
+       "hitRateBefore": 0.6573,
+       "hitRateAfter": 0.6573
+      },
+      "pAdjusted": 1,
+      "verdict": "too_few"
+     }
+    ]
+   },
+   "calibrationTable": [
+    {
+     "stat": "points",
+     "band": "0.55-0.60",
+     "n": 5511,
+     "meanConfidence": 0.5744,
+     "hitRate": 0.5558,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.70-0.80",
+     "n": 2958,
+     "meanConfidence": 0.7389,
+     "hitRate": 0.711,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.80-1.00",
+     "n": 761,
+     "meanConfidence": 0.8331,
+     "hitRate": 0.8331,
+     "overconfident": false
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.60-0.65",
+     "n": 4623,
+     "meanConfidence": 0.6242,
+     "hitRate": 0.6096,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.70-0.80",
+     "n": 4114,
+     "meanConfidence": 0.7402,
+     "hitRate": 0.7217,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.55-0.60",
+     "n": 5185,
+     "meanConfidence": 0.5751,
+     "hitRate": 0.5661,
+     "overconfident": false
+    },
+    {
+     "stat": "points",
+     "band": "0.60-0.65",
+     "n": 4623,
+     "meanConfidence": 0.624,
+     "hitRate": 0.5879,
+     "overconfident": true
+    },
+    {
+     "stat": "assists",
+     "band": "0.65-0.70",
+     "n": 3743,
+     "meanConfidence": 0.6735,
+     "hitRate": 0.6452,
+     "overconfident": true
+    },
+    {
+     "stat": "points",
+     "band": "0.80-1.00",
+     "n": 1564,
+     "meanConfidence": 0.8796,
+     "hitRate": 0.6554,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.55-0.60",
+     "n": 5790,
+     "meanConfidence": 0.5745,
+     "hitRate": 0.5646,
+     "overconfident": false
+    },
+    {
+     "stat": "points",
+     "band": "0.70-0.80",
+     "n": 2894,
+     "meanConfidence": 0.7417,
+     "hitRate": 0.6489,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.80-1.00",
+     "n": 628,
+     "meanConfidence": 0.8436,
+     "hitRate": 0.7532,
+     "overconfident": true
+    },
+    {
+     "stat": "points",
+     "band": "0.65-0.70",
+     "n": 3169,
+     "meanConfidence": 0.6735,
+     "hitRate": 0.6273,
+     "overconfident": true
+    },
+    {
+     "stat": "rebounds",
+     "band": "0.65-0.70",
+     "n": 3346,
+     "meanConfidence": 0.6729,
+     "hitRate": 0.6641,
+     "overconfident": false
+    },
+    {
+     "stat": "assists",
+     "band": "0.60-0.65",
+     "n": 4682,
+     "meanConfidence": 0.6241,
+     "hitRate": 0.6064,
+     "overconfident": true
+    }
+   ],
+   "mistakes": {
+    "picks": 3397,
+    "misses": 1164,
+    "hitRate": 0.6573,
+    "patterns": [
+     {
+      "pattern": "production_rate_miss",
+      "what": "Minutes were as expected, but production per minute missed",
+      "misses": 476,
+      "shareOfMisses": 0.4089,
+      "rateAmongHits": 0.4335,
+      "lift": 0.943,
+      "evidence": {
+       "meanExpectedMinutes": 25.75,
+       "meanActualMinutes": 25.94,
+       "meanConfidence": 0.6688
+      },
+      "candidateFeature": "Usage/role and matchup detail",
+      "availableBeforeLock": "Matchup features are pre-lock; per-minute variance itself is largely noise",
+      "bestPreLockSignal": {
+       "flag": "insufficient_history",
+       "flaggedMisses": 436,
+       "skipRule": {
+        "missesAvoided": 1074,
+        "goodPicksRejected": 2052
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 138,
+        "wouldAlsoRejectGood": 583
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 148,
+        "wouldAlsoRejectGood": 647
+       }
+      ]
+     },
+     {
+      "pattern": "unexplained",
+      "what": "No measurable cause among the stored signals",
+      "misses": 387,
+      "shareOfMisses": 0.3325,
+      "rateAmongHits": 0.3695,
+      "lift": 0.9,
+      "evidence": {
+       "meanExpectedMinutes": 22.9,
+       "meanActualMinutes": 23.4,
+       "meanConfidence": 0.6722
+      },
+      "candidateFeature": "None identified; may be ordinary variance",
+      "availableBeforeLock": "n/a",
+      "bestPreLockSignal": {
+       "flag": "insufficient_history",
+       "flaggedMisses": 365,
+       "skipRule": {
+        "missesAvoided": 1074,
+        "goodPicksRejected": 2052
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 146,
+        "wouldAlsoRejectGood": 583
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 141,
+        "wouldAlsoRejectGood": 647
+       }
+      ]
+     },
+     {
+      "pattern": "minutes_surge",
+      "what": "Played far more minutes than expected (over 135%), hurting a Less pick",
+      "misses": 111,
+      "shareOfMisses": 0.0954,
+      "rateAmongHits": 0.0322,
+      "lift": 2.958,
+      "evidence": {
+       "meanExpectedMinutes": 18.52,
+       "meanActualMinutes": 29.55,
+       "meanConfidence": 0.68
+      },
+      "candidateFeature": "Teammate injury / rotation news before lock",
+      "availableBeforeLock": "Not collected: teammate absences are not stored before lock",
+      "bestPreLockSignal": {
+       "flag": "insufficient_history",
+       "flaggedMisses": 104,
+       "skipRule": {
+        "missesAvoided": 1074,
+        "goodPicksRejected": 2052
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 13,
+        "wouldAlsoRejectGood": 583
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 16,
+        "wouldAlsoRejectGood": 647
+       }
+      ]
+     },
+     {
+      "pattern": "matchup_against",
+      "what": "The opponent normally allows less of this stat (for More) or more (for Less)",
+      "misses": 99,
+      "shareOfMisses": 0.0851,
+      "rateAmongHits": 0.0945,
+      "lift": 0.9,
+      "evidence": {
+       "meanExpectedMinutes": 24.73,
+       "meanActualMinutes": 25.05,
+       "meanConfidence": 0.6607
+      },
+      "candidateFeature": "Matchup layer",
+      "availableBeforeLock": "Yes: opponent allowed rate uses games before lock",
+      "bestPreLockSignal": {
+       "flag": "poor_category_calibration",
+       "flaggedMisses": 91,
+       "skipRule": {
+        "missesAvoided": 1037,
+        "goodPicksRejected": 1995
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 26,
+        "wouldAlsoRejectGood": 583
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 52,
+        "wouldAlsoRejectGood": 647
+       }
+      ]
+     },
+     {
+      "pattern": "minutes_collapse",
+      "what": "Played far fewer minutes than expected (under 60%)",
+      "misses": 91,
+      "shareOfMisses": 0.0782,
+      "rateAmongHits": 0.0703,
+      "lift": 1.112,
+      "evidence": {
+       "meanExpectedMinutes": 17.3,
+       "meanActualMinutes": 6.46,
+       "meanConfidence": 0.6871
+      },
+      "candidateFeature": "Injury/rotation status before lock; game-script (spread) context",
+      "availableBeforeLock": "Only partly: absence and minutes-variability flags are pre-lock; the collapse itself is only known after the game",
+      "bestPreLockSignal": {
+       "flag": "insufficient_history",
+       "flaggedMisses": 88,
+       "skipRule": {
+        "missesAvoided": 1074,
+        "goodPicksRejected": 2052
+       }
+      },
+      "alternativeModels": [
+       {
+        "variant": "base+recalibration",
+        "wouldHaveAvoided": 55,
+        "wouldAlsoRejectGood": 583
+       },
+       {
+        "variant": "combined-market",
+        "wouldHaveAvoided": 53,
+        "wouldAlsoRejectGood": 647
+       }
+      ]
+     }
+    ],
+    "caveats": [
+     "Patterns describe measured differences between expected and actual minutes, production and market signals; they are not explanations of player intent.",
+     "A pattern that is equally common among hits (lift near 1) is not a cause of failure."
+    ]
+   }
+  }
+ ],
+ "runtimeSeconds": 123
+}
