@@ -108,6 +108,17 @@ test('review fix: the model summary knows when it last trained',()=>{
  assert.equal(buildView(r,'prizepicks').model.lastTrainedAt,'2026-11-08T10:00:00Z');
 });
 
+test('budget limits: the stricter of the active database policy and the reviewed source policy',()=>{
+ const fallback=buildView(raw,'prizepicks').automation.budget;
+ assert.deepEqual([fallback.daily,fallback.monthly,fallback.floor,fallback.policyVersion,fallback.countsProviderActuals],[7,200,60,'props-budget-v2',false]);
+ const live=buildView({...raw,credits:[{credits:3,effective_credits:0,reserved_at:'2026-11-07T19:10:00Z'}],
+  budgetPolicy:{version:'props-budget-v9',daily_credits:13,monthly_credits:400,provider_floor:50,count_provider_actuals:true}},'prizepicks').automation.budget;
+ // A looser database row never raises the limits shown (or spent under); actual-charge accounting does apply.
+ assert.deepEqual([live.daily,live.monthly,live.floor,live.policyVersion,live.countsProviderActuals,live.used24h],[7,200,60,'props-budget-v9',true,0]);
+ const tight=buildView({...raw,budgetPolicy:{version:'props-budget-v10',daily_credits:4,monthly_credits:90,provider_floor:80,count_provider_actuals:false}},'prizepicks').automation.budget;
+ assert.deepEqual([tight.daily,tight.monthly,tight.floor],[4,90,80]);
+});
+
 test('daily entry cap counts only the active selection version accounts, not every account row',async()=>{
  const {dailyEntryCap}=await import('./dashboard-view.ts');
  const accounts=[{id:1,slug:'props-prizepicks-v1',platform:'prizepicks',selection_version:'props-select-v1',initial_cents:50000,stake_cents:500,max_entries_per_day:3},

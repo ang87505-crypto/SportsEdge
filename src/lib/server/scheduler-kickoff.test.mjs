@@ -115,3 +115,30 @@ test('regression 2026-11-11: a late run of yesterday\'s research slot does not s
   fetcher:fetcher([],{runs:[{created_at:'2026-11-11T02:41:00Z'}]})});
  assert.equal((await skip.json()).reason,'already_succeeded_since_slot');
 });
+
+test('props capture ticks: inert while released off; when released they dispatch with their scheduled hour',async()=>{
+ const {PROPS_COLLECTION_V2}=await import('../props/schedule.ts');
+ const calls=[];
+ const r=await handleSchedulerKickoff(req(),'props-tick-17',env,{now:at('2026-11-10T17:31:00Z'),fetcher:fetcher(calls)});
+ if(PROPS_COLLECTION_V2.tickEnabled){
+  assert.equal(r.status,202);
+  assert.deepEqual(calls[0].body,{ref:'main',inputs:{trigger:'backup',scheduled_hour:'2026-11-10T17:00:00Z'}});
+  assert.match(calls[0].url,/props-tick\.yml\/dispatches$/);
+ }else{
+  assert.deepEqual(await r.json(),{status:'skipped',reason:'props_tick_off',slot:'props-tick-17'});
+  assert.equal(calls.length,0);
+ }
+ assert.equal((await (await handleSchedulerKickoff(req(),'props-tick-17',env,{now:at('2026-11-10T18:01:00Z'),fetcher:fetcher(calls)})).json()).reason,'outside_slot_hour');
+});
+
+test('tick backup hours cover a window of every evening tip-off from 22:00 to 04:30 UTC',async()=>{
+ const {captureWindows}=await import('../props/capture-plan.ts');
+ const hours=Object.values(SCHEDULER_SLOTS).filter(s=>s.tick).map(s=>s.hourUtc);
+ for(let m=22*60;m<=28*60+30;m+=30){
+  const tip=new Date(Date.UTC(2026,10,10,0,m)).toISOString();const w=captureWindows(tip);
+  // A Vercel cron fires somewhere inside its hour: require a whole backup hour inside the LATE window or the EARLY one.
+  const covered=[w.lateFrom,w.earlyFrom].some((from,i)=>{const to=Date.parse(i?w.earlyTo:w.lateTo);
+   return hours.some(h=>{for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s>=Date.parse(from)&&s+3600_000<=to)return true;}return false;});});
+  assert.ok(covered,'no whole backup hour inside a window for tip '+tip);
+ }
+});

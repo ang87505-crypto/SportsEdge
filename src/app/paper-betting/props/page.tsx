@@ -11,7 +11,8 @@ import {propsAutomationStatus} from '@/lib/paper-automation-view';
 import {PropsOwnerControls} from '@/components/props-owner-controls';
 import {AutomationRefresh} from '@/components/automation-refresh';
 import {PLATFORMS,PLATFORM_LABEL,MODEL_VERSION,SELECTION_VERSION,type Platform} from '@/lib/props/contract';
-import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
+import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '@/lib/props/schedule';
+import {nextCollectionAt} from '@/lib/props/collection-status';
 import {pct,usdCents} from '@/lib/format';
 import {CalibrationChart} from '@/components/charts';
 import {calibrationBins,brierEdge,type BacktestSummary} from '@/lib/props/backtest-view';
@@ -77,7 +78,8 @@ function Summary({raw,v}:{raw:Raw;v:PropsView}){
  const s=propsSummary(v);
  const running=PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING';
  const next=nextPlannedRuns(raw.nowIso,4);
- const collect=next.find(r=>r.kind==='collect'),settle=next.find(r=>r.kind==='settle');
+ const collectAt=nextCollectionAt({nowIso:raw.nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures});
+ const collect=collectAt?{at:collectAt}:null,settle=next.find(r=>r.kind==='settle');
  const pp=v.platform==='prizepicks';
  const r=s.record;
  return <Panel title={`${PLATFORM_LABEL[v.platform]} at a glance`} description={`Read ${mtShort(raw.nowIso)} (New Mexico time). Lines and picks cover the last 14 days.`} actions={<Evidence kind={pp?'simulated':'recorded'}/>}>

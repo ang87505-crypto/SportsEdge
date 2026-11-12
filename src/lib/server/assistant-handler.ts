@@ -5,7 +5,8 @@
  */
 import {propsStoreConfig} from './props-store.ts';
 import {buildView,type Raw} from '../props/dashboard-view.ts';
-import {PROPS_RELEASE,nextPlannedRuns} from '../props/schedule.ts';
+import {PROPS_RELEASE,nextPlannedRuns,ticksReleased} from '../props/schedule.ts';
+import {nextCollectionAt} from '../props/collection-status.ts';
 import {STATS} from '../props/contract.ts';
 import {understand,type AssistantContext,type Intent} from '../assistant/understand.ts';
 import {answer,type Reply} from '../assistant/answer.ts';
@@ -75,6 +76,6 @@ export async function handleAssistant(req:{contentType:string|null;text:()=>Prom
  const players=[...new Set([...pp.lines,...p6.lines].map(l=>l.player))];
  const parsed=understand(b.message,context,players,nowIso);
  const reply=answer(parsed,{nowIso,pp,p6,control:raw.control,context,
-  nextCollect:running?next.find(r=>r.kind==='collect')?.at??null:null,nextSettle:running?next.find(r=>r.kind==='settle')?.at??null:null});
+  nextCollect:running?nextCollectionAt({nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures}):null,nextSettle:running?next.find(r=>r.kind==='settle')?.at??null:null});
  return json({status:'ok',reply});
 }

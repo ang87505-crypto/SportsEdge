@@ -14,6 +14,11 @@ on:
       - 'scripts/lib/**'
       - 'scripts/box-csv.test.mjs'
       - '.github/workflows/props-*.yml'
+      - 'src/lib/server/scheduler-kickoff*'
+      - 'src/components/props-*'
+      - 'src/app/automation/**'
+      - 'vercel.json'
+      - 'research/props_collection_timing_*/**'
 permissions:
   contents: read
 jobs:
@@ -28,7 +33,7 @@ jobs:
         with:
           node-version: '24'
       - name: Unit tests (normalizer, budget, model, grading, entries, schedule)
-        run: node --experimental-strip-types --test src/lib/props/*.test.mjs scripts/box-csv.test.mjs src/lib/assistant/*.test.mjs src/lib/server/assistant-handler.test.mjs src/lib/server/props-owner.test.mjs src/lib/server/props-active-model.test.mjs src/lib/server/props-learn-worker.test.mjs src/lib/server/props-learn-dispatch.test.mjs src/lib/server/props-learn-data.test.mjs src/lib/server/props-dashboard-load.test.mjs scripts/props-learn.test.mjs src/lib/paper-automation-view.test.mjs
+        run: node --experimental-strip-types --test src/lib/props/*.test.mjs scripts/box-csv.test.mjs src/lib/assistant/*.test.mjs src/lib/server/assistant-handler.test.mjs src/lib/server/props-owner.test.mjs src/lib/server/props-active-model.test.mjs src/lib/server/props-learn-worker.test.mjs src/lib/server/props-learn-dispatch.test.mjs src/lib/server/props-learn-data.test.mjs src/lib/server/props-dashboard-load.test.mjs scripts/props-learn.test.mjs src/lib/paper-automation-view.test.mjs src/lib/server/scheduler-kickoff.test.mjs
       - name: SQL contract and end-to-end tests on disposable PostgreSQL
         run: |
           sudo systemctl start postgresql.service

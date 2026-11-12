@@ -43,3 +43,21 @@ export function nextPlannedRuns(nowIso:string,count=4){
  }
  return out.sort((a,b)=>a.at.localeCompare(b.at));
 }
+
+/**
+ * Event-aware collection (props-capture-v1, src/lib/props/capture-plan.ts). OFF until the owner approves:
+ * while tickEnabled is false every scheduled or backup tick exits before any database or provider call,
+ * and the legacy collect slots above keep running unchanged. When it is turned on, the legacy scheduled
+ * collects stand down (SUPERSEDED_BY_TICK) so the two never compete for the same credits; settles are unchanged.
+ * Rollback: set tickEnabled back to false (plans, claims and outcomes are append-only and stay as receipts).
+ */
+export const PROPS_COLLECTION_V2={tickEnabled:false,planVersion:'props-capture-v1'} as const;
+/** GitHub tick crons (props-tick.yml). Off-minute to avoid the top-of-hour queue; harmless while released off. */
+export const PROPS_TICK_CRONS=['7,37 11-23 * * *','7,37 0-4 * * *'] as const;
+/** Tick slot key: one per 30-minute bucket of the actual start, so GitHub and Vercel starts in one bucket dedupe. */
+export function tickSlotKey(nowIso:string){
+ const t=Date.parse(nowIso);if(!Number.isFinite(t))throw new Error('PROPS_INVALID_CLOCK');
+ const b=new Date(Math.floor(t/1_800_000)*1_800_000).toISOString();
+ return `collect-tick-${b.slice(0,16)}`;
+}
+export const ticksReleased=()=>(PROPS_COLLECTION_V2.tickEnabled as boolean)===true&&(PROPS_RELEASE.scheduledRunsEnabled as boolean)===true;

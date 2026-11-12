@@ -79,10 +79,14 @@ async function propsEvidence(){
  if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co'))return {state:'INVALID_CONFIG'};
  const headers={apikey:key,...(key.startsWith('eyJ')?{Authorization:'Bearer '+key}:{}),Accept:'application/json'};
  try{
-  const [control,runs]=await Promise.all([
+  // Per kind: capture ticks add a collect run about every 30 minutes; settles must stay visible.
+  const sel=u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&order=id.desc';
+  const [control,collects,settles]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
-   getJson(u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&order=id.desc&limit=40',{headers})]);
-  if(!control.ok||!runs.ok||!Array.isArray(runs.json))return {state:'UNAVAILABLE',httpStatus:runs.status};
+   getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers})]);
+  const bad=[collects,settles].find(r=>!r.ok||!Array.isArray(r.json));
+  if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
+  const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
   const okRun=kind=>{const r=runs.json.find(x=>x.kind===kind&&x.status==='completed'&&x.outcome==='COMPLETED');return r?r.finished_at:null;};
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),

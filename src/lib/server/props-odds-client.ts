@@ -11,7 +11,8 @@ import {providerUsage} from '../props/budget.ts';
 export type ProviderReply={ok:boolean;httpStatus:number;body:unknown;receivedAt:string;
  usage:{remaining:number|null;used:number|null;last:number|null}};
 export interface PropsOddsClient{
- events():Promise<ProviderReply>;
+ /** The events list (free per the provider docs and our receipts). Optional ISO window narrows it. */
+ events(window?:{from:string;to:string}):Promise<ProviderReply>;
  eventOdds(eventId:string):Promise<ProviderReply>;
 }
 export class ProviderError extends Error{
@@ -44,7 +45,11 @@ export function theOddsApiClient(apiKey:string,fetcher:typeof fetch=fetch,clock:
   return {ok:response.ok,httpStatus:response.status,body,receivedAt,usage:providerUsage(response.headers)};
  }
  return {
-  events:()=>get('/events',{dateFormat:'iso'}),
+  events:(w?:{from:string;to:string})=>{
+   if(!w)return get('/events',{dateFormat:'iso'});
+   const z=(x:string)=>{const t=Date.parse(x);if(!Number.isFinite(t))throw new ProviderError('INVALID_WINDOW');return new Date(t).toISOString().slice(0,19)+'Z';};
+   return get('/events',{dateFormat:'iso',commenceTimeFrom:z(w.from),commenceTimeTo:z(w.to)});
+  },
   eventOdds:(id:string)=>{
    if(!/^[A-Za-z0-9_-]{6,80}$/.test(id))throw new ProviderError('INVALID_EVENT_ID');
    return get('/events/'+id+'/odds',eventOddsParams());

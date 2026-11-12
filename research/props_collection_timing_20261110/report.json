@@ -1,0 +1,989 @@
+{
+ "generatedBy": "scripts/props-collection-replay.ts",
+ "inputs": "research/props_collection_timing_20261110/inputs.json",
+ "assumptions": [
+  "PrizePicks/Pick6 lines exist whenever a game is priced (seen for all 6 priced games, 60-360 min before tip; earlier is unverified).",
+  "GitHub delays cycle through every delay observed Nov 8-10; Vercel backups start 61-73 min after their slot hour (observed).",
+  "Coverage only: whether a priced game yields qualifying picks is not modelled (observed qualifying rate 10/36, 20/78, 24/106 lines)."
+ ],
+ "actual": [
+  {
+   "gha": 42404093295,
+   "runId": 3,
+   "slot": "collect-manual (Nov 7)",
+   "started": "2026-11-07T19:00:51Z",
+   "delayMin": null,
+   "policy": "props-budget-v1",
+   "credits": 10,
+   "priced": [
+    [
+     "DEN vs IND",
+     37,
+     26,
+     11
+    ],
+    [
+     "BKN @ ATL",
+     37,
+     27,
+     10
+    ],
+    [
+     "NY @ CLE",
+     32,
+     23,
+     9
+    ]
+   ],
+   "qualifyingPicks": 24,
+   "entries": {
+    "prizepicks": 3,
+    "pick6": 3
+   },
+   "providerRemaining": {
+    "before": 500,
+    "afterEachEvent": [
+     497,
+     494,
+     491
+    ]
+   }
+  },
+  {
+   "gha": 42532179682,
+   "runId": 6,
+   "slot": "collect-2026-11-08T19",
+   "started": "2026-11-08T22:50:03Z",
+   "delayMin": 220,
+   "policy": "props-budget-v2",
+   "credits": 7,
+   "priced": [
+    [
+     "UTAH @ MIN",
+     38,
+     28,
+     10
+    ],
+    [
+     "BKN @ DAL",
+     40,
+     33,
+     7
+    ]
+   ],
+   "qualifyingPicks": 20,
+   "entries": {
+    "prizepicks": 3,
+    "pick6": 0
+   },
+   "providerRemaining": {
+    "before": 491,
+    "afterEachEvent": [
+     488,
+     485
+    ]
+   }
+  },
+  {
+   "gha": 42546966254,
+   "runId": 7,
+   "slot": "collect-2026-11-08T22",
+   "started": "2026-11-09T01:42:25Z",
+   "delayMin": 212,
+   "outcome": "BUDGET_EXHAUSTED",
+   "credits": 0
+  },
+  {
+   "gha": 42739655657,
+   "runId": 10,
+   "slot": "collect-2026-11-09T19",
+   "started": "2026-11-10T02:00:07Z",
+   "delayMin": 410,
+   "policy": "props-budget-v2",
+   "credits": 4,
+   "priced": [
+    [
+     "NO @ GS",
+     36,
+     29,
+     7
+    ]
+   ],
+   "qualifyingPicks": 10,
+   "entries": {
+    "prizepicks": 0,
+    "pick6": 0
+   },
+   "noEntryReason": "TOO_FEW_DISTINCT_GAMES (one game priced)",
+   "providerRemaining": {
+    "before": 485,
+    "afterEachEvent": [
+     482
+    ]
+   }
+  },
+  {
+   "gha": 42753467042,
+   "runId": 11,
+   "slot": "collect-2026-11-09T22",
+   "started": "2026-11-10T04:04:29Z",
+   "delayMin": 354,
+   "outcome": "BUDGET_EXHAUSTED",
+   "credits": 0
+  },
+  {
+   "gha": 42892767595,
+   "runId": 14,
+   "slot": "collect-2026-11-10T19",
+   "started": "2026-11-10T20:11:29Z",
+   "delayMin": 61,
+   "trigger": "backup-dispatch",
+   "outcome": "BUDGET_EXHAUSTED",
+   "credits": 0,
+   "budgetBefore": {
+    "used24h": 4,
+    "used30d": 22,
+    "providerRemaining": 482
+   }
+  }
+ ],
+ "strategies": [
+  {
+   "strategy": "legacy slots, on time (19:10 + 22:10 UTC)",
+   "notes": "Best case for the current schedule.",
+   "creditsReserved": 42,
+   "creditsCharged": 36,
+   "gamesPriced": 12,
+   "slatesWithEntryPossible": 6,
+   "slates": 6,
+   "medianMinutesToTip": 290,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      170,
+      320
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      80,
+      230
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      290,
+      290
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      320,
+      350
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      290,
+      290
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      290,
+      290
+     ]
+    }
+   ]
+  },
+  {
+   "strategy": "legacy slots, observed GitHub delays, no backup (Nov 8-9 reality)",
+   "notes": "As it ran before the 150-minute late rule and the Vercel backups.",
+   "creditsReserved": 24,
+   "creditsCharged": 18,
+   "gamesPriced": 6,
+   "slatesWithEntryPossible": 2,
+   "slates": 6,
+   "medianMinutesToTip": 78,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      100,
+      130
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 0,
+     "entryPossible": false,
+     "minutesToTip": []
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 1,
+     "entryPossible": false,
+     "minutesToTip": [
+      25
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 1,
+     "entryPossible": false,
+     "minutesToTip": [
+      22
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 0,
+     "entryPossible": false,
+     "minutesToTip": []
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      78,
+      78
+     ]
+    }
+   ]
+  },
+  {
+   "strategy": "legacy slots + 150-min late rule + Vercel backup (current production)",
+   "notes": "The backup fires 61-73 min after the slot; GitHub always later.",
+   "creditsReserved": 35,
+   "creditsCharged": 30,
+   "gamesPriced": 10,
+   "slatesWithEntryPossible": 5,
+   "slates": 6,
+   "medianMinutesToTip": 162,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      109,
+      259
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      162,
+      222
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      217,
+      217
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      72,
+      102
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      37,
+      37
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 0,
+     "entryPossible": false,
+     "minutesToTip": []
+    }
+   ]
+  },
+  {
+   "strategy": "legacy slots, events list not reserved",
+   "notes": "Same schedule; the free events call no longer reserves 1 credit.",
+   "creditsReserved": 30,
+   "creditsCharged": 30,
+   "gamesPriced": 10,
+   "slatesWithEntryPossible": 5,
+   "slates": 6,
+   "medianMinutesToTip": 162,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      109,
+      259
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      162,
+      222
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      217,
+      217
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      72,
+      102
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      37,
+      37
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 0,
+     "entryPossible": false,
+     "minutesToTip": []
+    }
+   ]
+  },
+  {
+   "strategy": "one early fixed slot 16:10 UTC (9:10 AM MT) + backup",
+   "notes": "Early-day collection, same 2-game cap.",
+   "creditsReserved": 30,
+   "creditsCharged": 30,
+   "gamesPriced": 10,
+   "slatesWithEntryPossible": 5,
+   "slates": 6,
+   "medianMinutesToTip": 397,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      289,
+      439
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      192,
+      342
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      397,
+      397
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 0,
+     "entryPossible": false,
+     "minutesToTip": []
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      402,
+      402
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      397,
+      397
+     ]
+    }
+   ]
+  },
+  {
+   "strategy": "three fixed slots 16:10/19:10/22:10 + backups",
+   "notes": "Multiple timed collections; the daily cap is shared, so later slots only help when earlier ones could not spend.",
+   "creditsReserved": 36,
+   "creditsCharged": 36,
+   "gamesPriced": 12,
+   "slatesWithEntryPossible": 6,
+   "slates": 6,
+   "medianMinutesToTip": 282,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      289,
+      439
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      192,
+      342
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      397,
+      397
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      252,
+      282
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      217,
+      217
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      42,
+      42
+     ]
+    }
+   ]
+  },
+  {
+   "strategy": "PROPOSED: event-aware ticks, Vercel backups only (GitHub assumed dropped)",
+   "notes": "props-capture-v1 with the current 7/day, 200/30-day policy.",
+   "creditsReserved": 33,
+   "creditsCharged": 33,
+   "gamesPriced": 11,
+   "slatesWithEntryPossible": 5,
+   "slates": 6,
+   "medianMinutesToTip": 270,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      540
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      420
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      390
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      390
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 1,
+     "entryPossible": false,
+     "minutesToTip": [
+      270
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      450
+     ]
+    }
+   ],
+   "armBySlate": {
+    "2026-11-07": "late",
+    "2026-11-08": "late",
+    "2026-11-09": "late",
+    "2026-11-10": "late",
+    "2026-11-11": "late",
+    "2026-11-12": "early"
+   },
+   "windows": {
+    "early": 6,
+    "late": 5
+   }
+  },
+  {
+   "strategy": "PROPOSED: event-aware ticks, Vercel + GitHub every 30 min",
+   "notes": "GitHub ticks add chances; dedupe makes extras harmless.",
+   "creditsReserved": 36,
+   "creditsCharged": 36,
+   "gamesPriced": 12,
+   "slatesWithEntryPossible": 6,
+   "slates": 6,
+   "medianMinutesToTip": 360,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      180,
+      630
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      180,
+      510
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      180,
+      480
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      180,
+      480
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      60,
+      360
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      180,
+      420
+     ]
+    }
+   ],
+   "armBySlate": {
+    "2026-11-07": "late",
+    "2026-11-08": "late",
+    "2026-11-09": "late",
+    "2026-11-10": "late",
+    "2026-11-11": "late",
+    "2026-11-12": "early"
+   },
+   "windows": {
+    "early": 6,
+    "late": 6
+   }
+  },
+  {
+   "strategy": "allocation: ticks with props share raised to 13/day, 400/30 days (owner decision)",
+   "notes": "Within the same 500-credit plan only if the moneyline refresh keeps < 40/30 days (it used 0 this period on this key).",
+   "creditsReserved": 66,
+   "creditsCharged": 66,
+   "gamesPriced": 22,
+   "slatesWithEntryPossible": 6,
+   "slates": 6,
+   "medianMinutesToTip": 390,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      330,
+      540,
+      570
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      90,
+      150,
+      540,
+      570
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      150,
+      390,
+      420
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      90,
+      150,
+      510,
+      570
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 2,
+     "entryPossible": true,
+     "minutesToTip": [
+      390,
+      450
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      270,
+      390,
+      450
+     ]
+    }
+   ],
+   "armBySlate": {
+    "2026-11-07": "late",
+    "2026-11-08": "late",
+    "2026-11-09": "late",
+    "2026-11-10": "late",
+    "2026-11-11": "late",
+    "2026-11-12": "early"
+   },
+   "windows": {
+    "early": 12,
+    "late": 10
+   }
+  },
+  {
+   "strategy": "larger plan: 20K credits/month, props 24/day (all games, one snapshot)",
+   "notes": "Not purchased.",
+   "creditsReserved": 111,
+   "creditsCharged": 111,
+   "gamesPriced": 37,
+   "slatesWithEntryPossible": 6,
+   "slates": 6,
+   "medianMinutesToTip": 330,
+   "perSlate": [
+    {
+     "slate": "2026-11-07",
+     "games": 7,
+     "priced": 6,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      330,
+      390,
+      540,
+      570,
+      600
+     ]
+    },
+    {
+     "slate": "2026-11-08",
+     "games": 7,
+     "priced": 6,
+     "entryPossible": true,
+     "minutesToTip": [
+      90,
+      150,
+      270,
+      540,
+      570,
+      630
+     ]
+    },
+    {
+     "slate": "2026-11-09",
+     "games": 8,
+     "priced": 6,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      150,
+      210,
+      390,
+      420,
+      480
+     ]
+    },
+    {
+     "slate": "2026-11-10",
+     "games": 6,
+     "priced": 9,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      180,
+      210,
+      210,
+      270,
+      270,
+      510,
+      570,
+      630
+     ]
+    },
+    {
+     "slate": "2026-11-11",
+     "games": 10,
+     "priced": 6,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      210,
+      210,
+      390,
+      390,
+      450
+     ]
+    },
+    {
+     "slate": "2026-11-12",
+     "games": 4,
+     "priced": 4,
+     "entryPossible": true,
+     "minutesToTip": [
+      150,
+      270,
+      390,
+      450
+     ]
+    }
+   ],
+   "armBySlate": {
+    "2026-11-07": "late",
+    "2026-11-08": "late",
+    "2026-11-09": "late",
+    "2026-11-10": "late",
+    "2026-11-11": "late",
+    "2026-11-12": "early"
+   },
+   "windows": {
+    "early": 17,
+    "late": 20
+   }
+  }
+ ],
+ "planArithmetic": [
+  {
+   "plan": "Starter",
+   "usdPerMonth": 0,
+   "creditsPerMonth": 500,
+   "assumedPropsShare": 200,
+   "snapshotsPerDay": 2,
+   "gamesPerDayOneSnapshot": 2,
+   "snapshotsPerGamePerDay": 0,
+   "historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare": 0
+  },
+  {
+   "plan": "20K",
+   "usdPerMonth": 30,
+   "creditsPerMonth": 20000,
+   "assumedPropsShare": 15000,
+   "snapshotsPerDay": 166,
+   "gamesPerDayOneSnapshot": 7.5,
+   "snapshotsPerGamePerDay": 22,
+   "historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare": 13
+  },
+  {
+   "plan": "100K",
+   "usdPerMonth": 59,
+   "creditsPerMonth": 100000,
+   "assumedPropsShare": 75000,
+   "snapshotsPerDay": 833,
+   "gamesPerDayOneSnapshot": 7.5,
+   "snapshotsPerGamePerDay": 111,
+   "historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare": 69
+  },
+  {
+   "plan": "5M",
+   "usdPerMonth": 119,
+   "creditsPerMonth": 5000000,
+   "assumedPropsShare": 3750000,
+   "snapshotsPerDay": 41666,
+   "gamesPerDayOneSnapshot": 7.5,
+   "snapshotsPerGamePerDay": 5555,
+   "historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare": 3472
+  },
+  {
+   "plan": "15M",
+   "usdPerMonth": 249,
+   "creditsPerMonth": 15000000,
+   "assumedPropsShare": 11250000,
+   "snapshotsPerDay": 125000,
+   "gamesPerDayOneSnapshot": 7.5,
+   "snapshotsPerGamePerDay": 16666,
+   "historicalAvailabilityStudyGamesPerMonthWithQuarterOfShare": 10416
+  }
+ ]
+}
