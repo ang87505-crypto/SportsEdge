@@ -26,7 +26,7 @@ export async function OpsStatusPanel(){
     <thead><tr><th scope="col">Job</th><th scope="col">State</th><th scope="col">Last success</th><th scope="col">Last failure</th><th scope="col">Missed planned times (7 days)</th><th scope="col">Next planned</th></tr></thead>
     <tbody>{s.jobs.map(j=>{const l=opsLabel(j.status);return <tr key={j.id}>
      <th scope="row"><a className="text-link" href={j.historyUrl} target="_blank" rel="noopener noreferrer">{j.label}</a>{j.required?null:<span className="quiet"> (optional)</span>}</th>
-     <td><Badge tone={l.tone}>{l.label}</Badge>{j.status==='OK'?null:<div className="quiet small-print">{j.detail}</div>}</td>
+     <td><Badge tone={l.tone}>{l.label}</Badge>{j.status==='OK'&&!j.stuckQueued?null:<div className="quiet small-print">{j.detail}</div>}</td>
      <td><RunLink run={j.lastSuccess} empty="No successful run yet"/></td>
      <td><RunLink run={j.lastFailure} empty="None recorded"/></td>
      <td>{j.slots7d.due?`${j.slots7d.missed} of ${j.slots7d.due}`:'—'}</td>
@@ -36,5 +36,6 @@ export async function OpsStatusPanel(){
   </div>
   <p className="quiet small-print">Live site check: {s.site.ok?'all pages, chat answers and owner protections passed':'failed: '+s.site.checks.filter(c=>!c.ok).map(c=>c.name).join(', ')} ({mt(s.site.checkedAt)}).
    GitHub can start scheduled jobs late or skip them; Vercel backup triggers re-run the time-sensitive sports and research slots, and duplicates are refused by the ledgers.</p>
+  {s.site.deployment&&s.site.deployment.state!=='UNKNOWN'?<p className="quiet small-print">Deployment: {s.site.deployment.detail}</p>:null}
  </Panel>;
 }

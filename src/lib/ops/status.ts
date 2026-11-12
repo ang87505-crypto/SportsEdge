@@ -4,7 +4,9 @@
 export type OpsRun={id:number;url:string;event:string;status:string;conclusion:string|null;startedAt:string|null;finishedAt:string|null};
 export type OpsJob={id:string;label:string;area:string;required:boolean;status:string;detail:string;historyUrl:string;
  lastRun:OpsRun|null;lastSuccess:OpsRun|null;lastFailure:OpsRun|null;running:OpsRun|null;
- slots7d:{due:number;missed:number;lastMissedAt:string|null};nextPlanned:string[];note:string|null};
+ slots7d:{due:number;missed:number;lastMissedAt:string|null};nextPlanned:string[];note:string|null;
+ /** Runs GitHub queued over 2 hours ago that never started (absent in older files). */
+ stuckQueued?:number};
 export type OpsBlocker={id:string;text:string;action:string};
 export type OpsStatus={schemaVersion:'ops-status-v1';generatedAt:string;monitorRun:{id:number;url:string;event:string|null}|null;
  overall:{state:'OK'|'WARN'|'ATTENTION';attention:string[]};jobs:OpsJob[];blockers:OpsBlocker[];
