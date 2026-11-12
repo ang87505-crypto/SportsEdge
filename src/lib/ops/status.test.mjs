@@ -38,3 +38,15 @@ test('loader: live file, unavailable feed and stale monitor', async () => {
   const old = await loadOpsStatus('2026-11-10T20:00:00.000Z', async () => new Response(JSON.stringify(status())));
   assert.equal(old.monitorStale, true);
 });
+
+test('chat summary reports which commit production serves only when the monitor checked it',async()=>{
+ const {opsSummaryText}=await import('./status.ts');
+ const status={schemaVersion:'ops-status-v1',generatedAt:'2026-11-12T00:00:00Z',monitorRun:null,overall:{state:'OK',attention:[]},jobs:[],blockers:[],
+  site:{url:'x',checkedAt:'2026-11-12T00:00:00Z',ok:true,checks:[]},evidence:{},credentials:[]};
+ const view={status,mode:'live',checkedAt:'2026-11-12T00:00:00Z',monitorStale:false};
+ assert.doesNotMatch(opsSummaryText(view),/Deployment:/);
+ status.site.deployment={state:'UNKNOWN',detail:'Deployment identity or main head unavailable.',deployedSha:null,deployedRef:null,mainSha:null};
+ assert.doesNotMatch(opsSummaryText(view),/Deployment:/);
+ status.site.deployment={state:'BEHIND_MAIN',detail:'Production serves aaaaaaa; main is bbbbbbb (90 min old).',deployedSha:'a'.repeat(40),deployedRef:'main',mainSha:'b'.repeat(40)};
+ assert.match(opsSummaryText(view),/Deployment: Production serves aaaaaaa; main is bbbbbbb/);
+});

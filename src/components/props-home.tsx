@@ -7,7 +7,8 @@ import {loadPropsDashboard,propsDashboardConfigured} from '@/lib/server/props-da
 import {buildView} from '@/lib/props/dashboard-view';
 import {propsSummary,mtShort,learningStatus} from '@/lib/props/summary';
 import {propsAutomationStatus} from '@/lib/paper-automation-view';
-import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
+import {PROPS_RELEASE,ticksReleased} from '@/lib/props/schedule';
+import {nextCollectionAt} from '@/lib/props/collection-status';
 import {pct,usdCents} from '@/lib/format';
 
 /** One ledger read per request, shared by the card and the status row. */
@@ -31,7 +32,8 @@ export async function PropsHomeCard(){
   {foot('—')}
  </Panel>;
  const {s,v,raw,status}=d;
- const next=nextPlannedRuns(raw.nowIso,4).find(r=>r.kind==='collect');
+ const nextAt=nextCollectionAt({nowIso:raw.nowIso,ticksReleased:ticksReleased(),plans:raw.capturePlans,captures:raw.captures});
+ const next=nextAt?{at:nextAt}:null;
  const running=PROPS_RELEASE.scheduledRunsEnabled&&raw.control?.state==='RUNNING';
  return <Panel {...head}>
   <div className="props-status-line"><Badge tone={status.tone} dot>{status.label}</Badge><p className="small-print" style={{margin:0}}>{learningStatus(v.model)}</p></div>

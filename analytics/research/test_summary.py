@@ -15,3 +15,13 @@ class Summary(unittest.TestCase):
         s = build_summary(None, None, rows, [], '2026-11-09T23:00:00Z')
         self.assertEqual(s['sources'][0]['status'], 'FETCH_FAILED')
         self.assertEqual(s['sources'][0]['lastSuccessAt'], '2026-11-09T21:00:00Z')
+    def test_keyed_batch_names_failed_keys_and_errors(self):
+        at = '2026-11-10T17:34:55Z'
+        rows = [{'source_id': 'TEST-345', 'key': q, 'retrieved_at': at, 'status': 'OK', 'error': None} for q in ('2025q4', '2026q1')]
+        rows += [{'source_id': 'TEST-345', 'key': q, 'retrieved_at': at, 'status': 'FETCH_FAILED', 'error': 'HTTP_404 https://example.invalid/' + q}
+                 for q in ('2026q2', '2026q3')]
+        src = build_summary(None, None, rows, [], '2026-11-11T00:00:00Z')['sources'][0]
+        self.assertEqual(src['status'], 'FETCH_FAILED')
+        self.assertEqual(src['lastBatch']['items'], 4)
+        self.assertEqual([f['key'] for f in src['lastBatch']['failed']], ['2026q2', '2026q3'])
+        self.assertTrue(src['lastBatch']['failed'][0]['error'].startswith('HTTP_404'))

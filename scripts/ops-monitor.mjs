@@ -4,10 +4,12 @@
  * job, places an order or prints a secret. Usage: node scripts/ops-monitor.mjs <out-dir>
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {workflowCrons,evaluateJob,rollUp,keyExpiry} from './ops-monitor-lib.mjs';
+import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers} from './ops-monitor-lib.mjs';
 import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
+import {compareDeployment} from '../src/lib/deployment-identity.ts';
+import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -79,10 +81,14 @@ async function propsEvidence(){
  if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co'))return {state:'INVALID_CONFIG'};
  const headers={apikey:key,...(key.startsWith('eyJ')?{Authorization:'Bearer '+key}:{}),Accept:'application/json'};
  try{
-  const [control,runs]=await Promise.all([
+  // Per kind: capture ticks add a collect run about every 30 minutes; settles must stay visible.
+  const sel=u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&order=id.desc';
+  const [control,collects,settles]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
-   getJson(u.origin+'/rest/v1/props_runs?select=id,kind,status,outcome,started_at,finished_at&order=id.desc&limit=40',{headers})]);
-  if(!control.ok||!runs.ok||!Array.isArray(runs.json))return {state:'UNAVAILABLE',httpStatus:runs.status};
+   getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers})]);
+  const bad=[collects,settles].find(r=>!r.ok||!Array.isArray(r.json));
+  if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
+  const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
   const okRun=kind=>{const r=runs.json.find(x=>x.kind===kind&&x.status==='completed'&&x.outcome==='COMPLETED');return r?r.finished_at:null;};
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),
@@ -95,7 +101,8 @@ async function researchEvidence(){
   if(!r.ok||!r.json)return {state:r.status===404?'NOT_PUBLISHED':'UNAVAILABLE'};
   const s=r.json;
   return {state:'OK',schemaVersion:s.schemaVersion??null,generatedAt:s.generatedAt??null,overall:s.overall??null,
-   forwardAt:s.forwardAt??null,sources:(s.sources||[]).slice(0,12).map(x=>({id:x.id,status:x.status,lastSuccessAt:x.lastSuccessAt??null})),
+   forwardAt:s.forwardAt??null,sources:(s.sources||[]).slice(0,12).map(x=>({id:x.id,status:x.status,retrievedAt:x.retrievedAt??null,lastSuccessAt:x.lastSuccessAt??null,
+    failedKeys:Array.isArray(x.lastBatch?.failed)?x.lastBatch.failed.slice(0,6).map(f=>({key:String(f.key).slice(0,40),error:f.error?String(f.error).split(' ')[0].slice(0,40):null})):[]})),
    candidates:(s.candidates||[]).slice(0,3).map(c=>({id:c.id,active:c.active,verdict:c.historical?.verdict??'NOT_EVALUATED',forwardStatus:c.forward?.status??null,forwardSessions:c.forward?.sessions??0}))};
  }catch{return {state:'UNAVAILABLE'};}
 }
@@ -168,7 +175,16 @@ async function siteChecks(){
  await check('Owner protection: backup scheduler',async()=>{const r=await getJson(base+'/api/internal/scheduler/ops-monitor',{attempts:1});
   if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
  await retryFailures();
- return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks};
+ return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks,deployment:await deploymentCheck(base)};
+}
+/** Which commit production serves, against main's head. Informational until /api/version is deployed (UNKNOWN). */
+async function deploymentCheck(base){
+ try{
+  const [v,head]=await Promise.all([getJson(base+'/api/version',{attempts:2}),gh('/commits/main')]);
+  const id=v.ok&&v.json?.schemaVersion==='deployment-identity-v1'?v.json:null;
+  const main=head?.sha?{sha:head.sha,committedAt:head.commit?.committer?.date??''}:null;
+  return {...compareDeployment(id,main,nowMs),deployedSha:id?.commitSha??null,deployedRef:id?.commitRef??null,mainSha:main?.sha??null};
+ }catch{return {state:'UNKNOWN',detail:'Could not read the deployment identity.',deployedSha:null,deployedRef:null,mainSha:null};}
 }
 
 // ---------- credentials (presence and expiry only; values never leave the process) ----------
@@ -205,13 +221,23 @@ function blockers(jobs,props,research,release,site,creds){
  }
  if(props.state==='OK'&&props.controlState&&props.controlState!=='RUNNING')
   add('props-control',`Sports props automation is ${props.controlState} by its owner control.`,'PrizePicks page → Controls → Resume (owner sign-in), when you want it running.');
+ for(const b of propsReceiptBlockers(props,nowMs))add(b.id,b.text,b.action);
  if(research.state==='OK')for(const s of research.sources)if(['NOT_CONFIGURED','FETCH_FAILED','PARSE_FAILED','SCHEMA_CHANGED','BLOCKED'].includes(s.status))
-  add('research-source:'+s.id,`Research source ${s.id} last reported ${s.status}.`,'Open the latest research-collect run.');
+  add('research-source:'+s.id,`Research source ${s.id} last reported ${s.status}${s.retrievedAt?' at '+s.retrievedAt.slice(0,16).replace('T',' ')+' UTC':''}`+
+   (s.failedKeys?.length?` (failed: ${s.failedKeys.map(f=>f.key+(f.error?' '+f.error:'')).join(', ')})`:'')+
+   `; last success ${s.lastSuccessAt?s.lastSuccessAt.slice(0,10):'never'}.`,
+   'Research only: no active strategy uses it. Open the research-data branch manifest.jsonl for the exact URL and error; a 404 for a recent quarter usually means the file is not published yet.');
  if(research.state==='OK'&&research.generatedAt&&nowMs-Date.parse(research.generatedAt)>100*3600_000)
   add('research-stale',`The research summary is older than 100 hours (${research.generatedAt}).`,'Check the research-collect workflow.');
  if(release.state==='open'&&!release.merged)
   add('stock-first-session',`PR #${release.pr} (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: ${release.stockGate?.ready?'passed — ready for your review and merge':'not passed ('+(release.stockGate?.reason??'unknown')+')'}.`,
    'See docs/AUTOMATION_OPERATIONS_2026_11_10.md → "First supervised stock paper session". Nothing is automatic about this step.');
+ // Read from the reviewed source on main, so the item disappears by itself once activation is merged.
+ if((PROPS_COLLECTION_V2.tickEnabled)!==true)
+  add('props-capture-activation','Event-aware props capture (props-capture-v1) is merged but released off: the legacy two-slot collection keeps running unchanged.',
+   'Owner decision: follow docs/PROPS_CAPTURE_ACTIVATION_CHECKLIST_2026_11_11.md (apply props_capture_v1.sql, optional v3 accounting at the same 7/200 limits, one supervised tick, then tickEnabled:true).');
+ if(['BEHIND_MAIN','WRONG_BRANCH'].includes(site.deployment?.state))
+  add('deployment',site.deployment.detail,'Vercel → sports-edge project → Deployments: open the latest Production build for main and read its error (or Promote the correct main deployment).');
  if(!site.ok)add('site',`Live site checks failed: ${site.checks.filter(c=>!c.ok).map(c=>c.name).join(', ')}.`,'Open the site and the latest Vercel deployment.');
  return out;
 }

@@ -5,6 +5,7 @@ import {useEffect,useState} from 'react';
 import {Badge,Empty,StatusDot,type Tone} from '@/components/ui';
 import {headline,latestPicks,type AutopilotRelease} from '@/lib/stocks/autopilot-view';
 import type {PaperAutoLedger} from '@/lib/stocks/paper-auto-ledger';
+import {ownerHintPresent} from '@/lib/owner-hint';
 
 type Summary={state:'owner';label:string;tone:Tone;practice:boolean;picks:string[];session:string|null}|
  {state:'signed-out'}|{state:'unavailable'};
@@ -16,6 +17,8 @@ async function readSummary(fresh=false):Promise<Summary>{
   const cached=sessionStorage.getItem(CACHE);
   if(cached&&!fresh){const c=JSON.parse(cached) as {at:number;s:Summary};if(Date.now()-c.at<60_000)return c.s;}
  }catch{/* storage unavailable: read fresh */}
+ // Visitors without an owner session hint never call the owner-only API (no 401 on every page view).
+ if(!ownerHintPresent(document.cookie))return {state:'signed-out'};
  let s:Summary;
  try{
   const res=await fetch('/api/internal/paper-auto',{cache:'no-store',credentials:'same-origin'});

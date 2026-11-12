@@ -5,15 +5,17 @@
  */
 import {MODEL_VERSION,type Platform,type Stat} from './contract.ts';
 import {playerKey} from './identity.ts';
-import {ACTIVE_BUDGET_POLICY} from './budget.ts';
+import {effectiveBudgetPolicy} from './budget.ts';
 
 export type Raw={
  nowIso:string;
  control:{state:string;reason:string;changed_at:string}|null;
  runs:{id:number;kind:string;slot_key:string;status:string;outcome:string;started_at:string;finished_at:string|null;start_delay_seconds:number|null;summary:Record<string,unknown>}[];
- credits:{credits:number;reserved_at:string}[];
+ credits:{id?:number;credits:number;reserved_at:string;effective_credits?:number}[];
+ /** Active database policy; null when it cannot be read. */
+ budgetPolicy?:{version:string;daily_credits:number;monthly_credits:number;provider_floor:number;count_provider_actuals:boolean}|null;
  providerRemaining:number|null;
- observations:{id:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;player_name:string;stat:Stat;
+ observations:{id:number;run_id?:number;platform:Platform;provider_event_id:string;home_team:string;away_team:string;lock_at:string;player_name:string;stat:Stat;
   line:number;provider_last_update:string;ingested_at:string}[];
  predictions:{id:number;observation_id:number;model_version:string;status:string;reason:string;p_more:number|null;p_less:number|null;p_tie:number|null;mean:number|null;
   inputs?:Record<string,unknown>|null}[];
@@ -29,6 +31,11 @@ export type Raw={
  model?:{active:string;previous:string|null;learningEnabled:boolean;autoSwitchEnabled:boolean;weights:Record<Stat,number[]>|null;
   events:{id:number;version:string;event:string;reason:string;detail:Record<string,unknown>;at:string}[]}|null;
  views?:{observation_id:number;books_at_same_line:number;p_more_books:number|null;line_gap:number|null;nearest_book_line:number|null;flags:string[]}[];
+ /** props-capture-v1 plans and claims with outcomes; null/absent until props_capture_v1.sql is applied. */
+ capturePlans?:{plan_version:string;slate_date:string;provider_event_id:string;home_team:string;away_team:string;commence_time:string;
+  selected:boolean;selection_rank:number;arm:'early'|'late'|null;reason:string;planned_at:string}[]|null;
+ captures?:{run_id:number;provider_event_id:string;capture_key:'primary'|'retry'|'recheck';window_name:'early'|'late';claimed_at:string;
+  outcome:string|null;dfs_lines:number|null;minutes_to_tip:number|null;lines_by_platform:Record<string,number>|null}[]|null;
  report?:{period_from:string;period_to:string;model_version:string;at:string;report:{misses:Record<string,number>;voidsExcluded:number;overconfidentBands:string[]}&Record<string,unknown>}|null;
 };
 
@@ -93,8 +100,8 @@ export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}=
   balanceCents:Number(account.initial_cents)+profit,openStakeCents:openStake,settledKnown:known.length}:null;
 
  const day=r.nowIso.slice(0,10);
- const used24h=r.credits.filter(c=>now-Date.parse(c.reserved_at)<86400_000).reduce((a,c)=>a+Number(c.credits),0);
- const used30d=r.credits.reduce((a,c)=>a+Number(c.credits),0);
+ const used24h=r.credits.filter(c=>now-Date.parse(c.reserved_at)<86400_000).reduce((a,c)=>a+Number(c.effective_credits??c.credits),0);
+ const used30d=r.credits.reduce((a,c)=>a+Number(c.effective_credits??c.credits),0);
  const runs=[...r.runs].sort((a,b)=>b.id-a.id);
  const lastOk=(k:string)=>runs.find(x=>x.kind===k&&x.status==='completed'&&x.outcome==='COMPLETED')??null;
  const lastFailure=runs.find(x=>x.status==='failed'||x.status==='abandoned')??null;
@@ -120,6 +127,13 @@ export function buildView(r:Raw,platform:Platform,opts:{record?:'current'|'v1'}=
    allLegsHit:settled.filter(e=>e.settlement!.losses===0&&e.settlement!.wins>0).length,payoutUnknown:unknownPayout.length},
   bankroll,account,
   automation:{control:r.control,runs:runs.slice(0,12),lastCollect:lastOk('collect'),lastSettle:lastOk('settle'),lastFailure,
-   budget:{used24h,used30d,daily:ACTIVE_BUDGET_POLICY.dailyCredits,monthly:ACTIVE_BUDGET_POLICY.monthlyCredits,floor:ACTIVE_BUDGET_POLICY.providerFloor,providerRemaining:r.providerRemaining}}};
+   budget:{used24h,used30d,
+   // The same limits the worker spends under: the stricter of the database row and the reviewed source policy.
+   daily:effectiveBudgetPolicy(r.budgetPolicy).dailyCredits,monthly:effectiveBudgetPolicy(r.budgetPolicy).monthlyCredits,
+   floor:effectiveBudgetPolicy(r.budgetPolicy).providerFloor,policyVersion:effectiveBudgetPolicy(r.budgetPolicy).version,countsProviderActuals:r.budgetPolicy?.count_provider_actuals===true,
+   providerRemaining:r.providerRemaining}}};
 }
 export type PropsView=ReturnType<typeof buildView>;
+/** Entries the worker can actually make per day: only the accounts of the active selection version (one per platform). */
+export const dailyEntryCap=(...accounts:(PropsView['account']|null|undefined)[])=>
+ accounts.reduce((sum,a)=>sum+(a?Number(a.max_entries_per_day):0),0);

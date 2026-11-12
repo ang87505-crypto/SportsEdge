@@ -51,3 +51,14 @@ test('v2 is active: one collect prices at most two games inside 7 credits per 24
  assert.equal(canSpend(BUDGET_POLICY_V2,{used24h:0,used30d:196,providerRemaining:300},4).reason,'OK');
  assert.equal(canSpend(BUDGET_POLICY_V2,{used24h:0,used30d:197,providerRemaining:300},4).reason,'MONTHLY_CAP');
 });
+
+test('effective policy: stricter of database row and reviewed source; a DB row alone never raises spending',async()=>{
+ const {effectiveBudgetPolicy,ACTIVE_BUDGET_POLICY}=await import('./budget.ts');
+ assert.equal(effectiveBudgetPolicy(null),ACTIVE_BUDGET_POLICY);
+ const loose=effectiveBudgetPolicy({version:'props-budget-v1',daily_credits:12,monthly_credits:200,provider_floor:60});
+ assert.deepEqual([loose.version,loose.dailyCredits,loose.monthlyCredits,loose.providerFloor,loose.maxEventsPerRun],['props-budget-v1',7,200,60,2]);
+ const tight=effectiveBudgetPolicy({version:'props-budget-v9',daily_credits:3,monthly_credits:50,provider_floor:100});
+ assert.deepEqual([tight.dailyCredits,tight.monthlyCredits,tight.providerFloor],[3,50,100]);
+ const junk=effectiveBudgetPolicy({version:'x',daily_credits:'n/a',monthly_credits:null,provider_floor:undefined});
+ assert.deepEqual([junk.dailyCredits,junk.monthlyCredits,junk.providerFloor],[7,200,60]);
+});

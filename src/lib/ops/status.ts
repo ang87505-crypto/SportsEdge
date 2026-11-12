@@ -4,11 +4,15 @@
 export type OpsRun={id:number;url:string;event:string;status:string;conclusion:string|null;startedAt:string|null;finishedAt:string|null};
 export type OpsJob={id:string;label:string;area:string;required:boolean;status:string;detail:string;historyUrl:string;
  lastRun:OpsRun|null;lastSuccess:OpsRun|null;lastFailure:OpsRun|null;running:OpsRun|null;
- slots7d:{due:number;missed:number;lastMissedAt:string|null};nextPlanned:string[];note:string|null};
+ slots7d:{due:number;missed:number;lastMissedAt:string|null};nextPlanned:string[];note:string|null;
+ /** Runs GitHub queued over 2 hours ago that never started (absent in older files). */
+ stuckQueued?:number};
 export type OpsBlocker={id:string;text:string;action:string};
 export type OpsStatus={schemaVersion:'ops-status-v1';generatedAt:string;monitorRun:{id:number;url:string;event:string|null}|null;
  overall:{state:'OK'|'WARN'|'ATTENTION';attention:string[]};jobs:OpsJob[];blockers:OpsBlocker[];
- site:{url:string;checkedAt:string;ok:boolean;checks:{name:string;ok:boolean;ms:number;detail:string|null}[]};
+ site:{url:string;checkedAt:string;ok:boolean;checks:{name:string;ok:boolean;ms:number;detail:string|null}[];
+  /** Which commit production serves vs main (absent in files written before the check existed). */
+  deployment?:{state:string;detail:string;deployedSha:string|null;deployedRef:string|null;mainSha:string|null}};
  evidence:{props?:{state:string;controlState?:string|null;lastCompletedCollectAt?:string|null;lastCompletedSettleAt?:string|null};
   research?:{state:string;generatedAt?:string|null;overall?:string|null};
   release?:{pr:number;state:string;draft?:boolean;merged?:boolean;url?:string}};
@@ -48,6 +52,7 @@ export const OPS_STATUS_URL='https://raw.githubusercontent.com/ang87505-crypto/S
 export const OPS_LABELS:Record<string,{label:string;tone:'positive'|'warning'|'negative'|'neutral'|'info'}>={
  OK:{label:'Healthy',tone:'positive'},RUNNING:{label:'Running now',tone:'info'},
  PENDING_FIRST_RUN:{label:'First run pending',tone:'neutral'},MISSED_SLOT:{label:'Missed a planned time',tone:'warning'},
+ RAN_LATE:{label:'Ran late',tone:'warning'},
  STALE:{label:'Stale',tone:'negative'},FAILING:{label:'Failing',tone:'negative'},DISABLED:{label:'Disabled',tone:'negative'},
  EXPIRED:{label:'Window ended',tone:'neutral'},RETIRED:{label:'Retired',tone:'neutral'},UNKNOWN:{label:'Unknown',tone:'warning'},
 };
@@ -55,6 +60,16 @@ export const opsLabel=(s:string)=>OPS_LABELS[s]??{label:s,tone:'warning' as cons
 
 const MT=new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
 export const mt=(iso:string|null|undefined)=>iso&&Number.isFinite(Date.parse(iso))?MT.format(new Date(iso)):'none yet';
+
+/** What is waiting on the owner, from the monitor's live blockers (each with its exact next step). */
+export function opsApprovalsText(view:OpsView):string{
+ const s=view.status;
+ if(!s)return 'The operations monitor has not published a status yet, so I cannot list what is waiting on you.';
+ const when=`As of ${mt(s.generatedAt)}${view.monitorStale?' (this check is old)':''}`;
+ if(!s.blockers.length)return `${when}, the operations monitor lists nothing waiting on you.`;
+ return `${when}, ${s.blockers.length} item${s.blockers.length===1?'':'s'} need${s.blockers.length===1?'s':''} you:\n`+
+  s.blockers.map(b=>`- ${b.text} Next step: ${b.action}`).join('\n');
+}
 
 /** Plain-words summary for chat. Never calls a planned time a run. */
 export function opsSummaryText(view:OpsView):string{
@@ -68,5 +83,7 @@ export function opsSummaryText(view:OpsView):string{
  }
  if(s.blockers.length)lines.push('Needs attention: '+s.blockers.map(b=>b.text).join(' '));
  lines.push(`Live site check: ${s.site.ok?'all pages and chat answered':'some checks failed'}.`);
+ const d=s.site.deployment;
+ if(d&&obj(d)&&str(d.state,40)&&str(d.detail,400)&&d.state!=='UNKNOWN')lines.push(`Deployment: ${d.detail}`);
  return lines.join('\n');
 }

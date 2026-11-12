@@ -9,9 +9,15 @@ import {PLATFORM_LABEL} from '../props/contract.ts';
 import {playerKey} from '../props/identity.ts';
 import {pct,usdCents} from '../format.ts';
 import type {AssistantContext,Parsed,RangeKey} from './understand.ts';
+import type {SlotRow} from '../props/slot-status.ts';
+import {canSpend,EVENTS_LIST_COST,eventOddsWorstCost} from '../props/budget.ts';
 
 export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{state:string;reason:string}|null;
  nextCollect:string|null;nextSettle:string|null;
+ /** Scheduled slots joined to their runs (src/lib/props/slot-status.ts), newest first. Absent = not loaded. */
+ slots?:SlotRow[];
+ /** When the oldest credit counted in the rolling 24 hours rolls off (frees budget), or null. */
+ creditsRollOffAt?:string|null;
  /** The previous turn's context, so "why?" can refer to the last answer's picks. */
  context?:AssistantContext|null};
 export type Card={kind:'picks';items:{id:number;text:string;detail:string}[]}|{kind:'entries';items:{id:number;text:string;detail:string}[]}|
@@ -235,6 +241,59 @@ function status(p:Parsed,d:AssistantData):Reply{
   sugg,ctx(p));
 }
 
+const SLOT_OUTCOME:Record<string,string>={
+ BUDGET_EXHAUSTED:'skipped: the rolling 24-hour Odds API credit cap was already used, so nothing was spent',
+ SKIPPED_LATE:'skipped: it started too late for its slot, so it spent nothing',
+ CONTROL_PAUSED:'skipped: paused by the owner control',CONTROL_STOPPED:'skipped: stopped by the owner control',
+ SCHEDULED_RUNS_RELEASED_OFF:'skipped: scheduled runs are released off',ODDS_NOT_CONFIGURED:'failed: the Odds API key is not configured',
+ SUPERSEDED_BY_TICK:'stood down for the event-aware capture ticks',
+};
+function slotSentence(s:SlotRow):string{
+ const when=mtShort(s.scheduledFor);
+ if(s.state==='NO_RUN_RECORDED')return `${when}: no run recorded (GitHub and the backup did not start it, or it is still late).`;
+ if(s.state==='RUNNING')return `${when}: running now.`;
+ if(s.state==='FAILED')return `${when}: failed (${s.outcome??'unknown outcome'}).`;
+ if(s.state==='SKIPPED')return `${when}: ${SLOT_OUTCOME[s.outcome??'']??'skipped ('+s.outcome+')'}.`;
+ const counts=s.decisions===null?'counts not recorded':
+  `${s.decisions} line decision${s.decisions===1?'':'s'}, ${s.qualifyingPicks??'unknown'} qualifying pick${s.qualifyingPicks===1?'':'s'}, ${s.entriesCreated??'unknown'} entr${s.entriesCreated===1?'y':'ies'}`;
+ const why=s.noEntryReasons.length?' No entry: '+s.noEntryReasons.map(r=>`${PLATFORM_LABEL[r.platform as keyof typeof PLATFORM_LABEL]??r.platform} — ${r.text}`).join(' '):'';
+ const out=s.outcome&&s.outcome!=='COMPLETED'?` (${SLOT_OUTCOME[s.outcome]??s.outcome})`:'';
+ return `${when}: collected${out} — ${counts}.${why}`;
+}
+/** Why there are (or are not) picks today: each of today's collection slots from its receipt, newest first. */
+function nopicks(p:Parsed,d:AssistantData):Reply{
+ const sugg=["Tonight's picks",'Is the Odds API budget used up?','Is it running?'];
+ const c=d.control;
+ if(c&&c.state!=='RUNNING')return reply(`Picking is ${c.state==='PAUSED'?'paused':'stopped'} (${c.reason}), so no new picks are made until it is resumed on the PrizePicks page.`,sugg,ctx(p));
+ const queued=upcoming(d.pp,null).length;
+ if(!d.slots)return reply(`I can't read today's collection receipts. ${queued?`There are ${queued} queued picks for tonight.`:''}`.trim(),sugg,ctx(p));
+ const today=rangeBounds('today',d.nowIso);
+ const mine=d.slots.filter(s=>s.kind==='collect'&&s.scheduledFor>=today.from&&s.scheduledFor<today.to&&s.state!=='PLANNED');
+ const head=queued?`There ${queued===1?'is 1 queued pick':`are ${queued} queued picks`} for tonight.`:'No picks are queued for tonight.';
+ const next=`Next collection ${d.nextCollect?mtShort(d.nextCollect):'not scheduled'} (planned, not yet run).`;
+ if(!mine.length)return reply(`${head} No collection slot has come due yet today. ${next}`,sugg,ctx(p));
+ return reply(`${head} Today's collection slots:\n${mine.map(s=>'- '+slotSentence(s)).join('\n')}\n${next}`,sugg,ctx(p),
+  [{kind:'links',items:[{label:'Collection receipts',href:'/paper-betting/props'}]}]);
+}
+
+/** The Odds API props budget: rolling 24 h and 30 day use against the reviewed limits, and the provider's own count. */
+function budget(p:Parsed,d:AssistantData):Reply{
+ const b=d.pp.automation.budget;
+ const sugg=["Why no picks today?",'Is it running?',"Tonight's picks"];
+ const state={used24h:b.used24h,used30d:b.used30d,providerRemaining:b.providerRemaining};
+ const need=EVENTS_LIST_COST+eventOddsWorstCost();
+ const can=canSpend({version:b.policyVersion,dailyCredits:b.daily,monthlyCredits:b.monthly,providerFloor:b.floor,maxEventsPerRun:0},state,need);
+ const WHY:Record<string,string>={DAILY_CAP:'the rolling 24-hour cap is used up',MONTHLY_CAP:'the rolling 30-day cap is used up',
+  PROVIDER_FLOOR:"the provider's remaining credits are at the reserve floor",INVALID:'the budget records are inconsistent'};
+ const used=`${b.used24h} of ${b.daily} credits used in the last 24 hours and ${b.used30d} of ${b.monthly} in 30 days`;
+ const provider=b.providerRemaining===null?'The provider has not reported its remaining credits yet.':
+  `The Odds API last reported ${b.providerRemaining} credits remaining (reserve floor ${b.floor}).`;
+ const acct=b.countsProviderActuals?'Provider-confirmed charges are counted; unknown charges stay reserved in full.':'Every request is counted at its worst-case cost.';
+ const verdict=can.allowed?`Not exhausted: a collection can still spend (it needs up to ${need}).`:
+  `Exhausted for now: ${WHY[can.reason]}, so collections spend nothing.${can.reason==='DAILY_CAP'&&d.creditsRollOffAt?` The oldest counted credits roll off ${mtShort(d.creditsRollOffAt)}.`:''}`;
+ return reply(`${verdict} ${used} (policy ${b.policyVersion}). ${provider} ${acct}`,sugg,ctx(p));
+}
+
 function model(p:Parsed,d:AssistantData):Reply{
  const m=d.pp.model;
  const sugg=["What went wrong this week?","Tonight's picks",'Is it running?'];
@@ -288,6 +347,8 @@ export function answer(p:Parsed,d:AssistantData):Reply{
   case 'entries':return entries(p,d);
   case 'lineup':return lineup(p,d);
   case 'status':return status(p,d);
+  case 'nopicks':return nopicks(p,d);
+  case 'budget':return budget(p,d);
   case 'model':return model(p,d);
   case 'mistakes':return mistakes(p,d);
   case 'future':return future(p,d);

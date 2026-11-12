@@ -8,7 +8,8 @@ import {loadPropsResearch} from '@/lib/server/props-research-data';
 import {propsDashboardConfigured} from '@/lib/server/props-dashboard';
 import {buildResearch,type PropsResearchView} from '@/lib/props/research';
 import {PLATFORM_LABEL,type Platform} from '@/lib/props/contract';
-import {PROPS_RELEASE,nextPlannedRuns} from '@/lib/props/schedule';
+import {PROPS_RELEASE,ticksReleased} from '@/lib/props/schedule';
+import {nextCollectionAt} from '@/lib/props/collection-status';
 import {pct} from '@/lib/format';
 import artifact from '@/data/props/research_v2.json';
 import baselineArtifact from '@/data/props/model_v1.json';
@@ -47,7 +48,9 @@ async function Live({searchParams}:{searchParams:Search}){
   if(createHash('sha256').update(JSON.stringify(baselineArtifact)).digest('hex')!==artifact.baselineCanonicalSha256)throw new Error('BASELINE_CHANGED');
   v=buildResearch(await loadPropsResearch(),artifact);
  }catch{return <>{tabs}<Panel className="mt-12"><Empty title="The research snapshot is unavailable">Refresh to try again. No picks or forward results have been filled in.</Empty></Panel></>;}
- const next=nextPlannedRuns(v.asOf,4).find(x=>x.kind==='collect');
+ // The research snapshot carries no capture plans: with ticks released this shows no time rather than a stale slot.
+ const nextAt=nextCollectionAt({nowIso:v.asOf,ticksReleased:ticksReleased(),plans:null,captures:null});
+ const next=nextAt?{at:nextAt}:null;
  return <>{tabs}
   <Panel title="Automatic paper selection" className="mt-12" actions={<Evidence kind="recorded"/>}>
    <MetricGrid columns={3}>
