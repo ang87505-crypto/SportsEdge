@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry} from './ops-monitor-lib.mjs';
+import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers} from './ops-monitor-lib.mjs';
 
 const T = s => Date.parse(s);
 const run = (startedAt, conclusion = 'success', event = 'schedule', status = 'completed') =>
@@ -75,6 +75,21 @@ test('a manual or early dispatch covers a slot when the job allows it', () => {
   assert.equal(late.status, 'MISSED_SLOT');
 });
 
+test('regression 2026-11-11: a slot GitHub started 7 h late is RAN_LATE, not a silent miss or plain OK', () => {
+  const research = {...job, staleAfterHours: 100, graceMinutes: 180};
+  const crons = ['17 2 * * 2-6'];
+  const e = evaluateJob(research, {workflowState: 'active', crons, nowMs: T('2026-11-11T23:25Z'),
+    runs: [run('2026-11-11T09:33Z'), run('2026-11-10T09:59Z')]});
+  assert.equal(e.status, 'RAN_LATE');
+  assert.match(e.detail, /02:17 UTC\) ran 7\.3 h late/);
+  assert.equal(e.slots7d.missed >= 1, true);
+  assert.deepEqual(rollUp([{...e, id: 'research-collect'}]), {state: 'OK', attention: []});
+  // A late run that failed is not "ran late": the slot is still missed (and the failure shows as FAILING).
+  const failed = evaluateJob(research, {workflowState: 'active', crons, nowMs: T('2026-11-11T23:25Z'),
+    runs: [run('2026-11-11T09:33Z', 'cancelled'), run('2026-11-10T09:59Z')]});
+  assert.equal(failed.status, 'MISSED_SLOT');
+});
+
 test('disabled workflows and expired temporary jobs', () => {
   const now = T('2026-11-12T00:00Z');
   assert.equal(evaluateJob(job, {workflowState: 'disabled_inactivity', crons: daily, nowMs: now, runs: [run('2026-11-11T22:20Z')]}).status, 'DISABLED');
@@ -111,4 +126,19 @@ test('alert: owner-pending steps are not alerts; the body carries a stable probl
   assert.match(body, /<!-- ops-alert-ids: job:props-daily,site -->/);
   assert.match(body, /Posted automatically/);
   assert.equal(alertProblems({blockers: [{id: 'props-control', text: '', action: ''}]}).length, 0);
+});
+
+test('props receipts: green workflows that collect nothing for two days are surfaced; quiet days are not', () => {
+  const now = T('2026-11-12T00:00Z');
+  const base = {state: 'OK', controlState: 'RUNNING', lastCollect: {kind: 'collect', status: 'completed', outcome: 'BUDGET_EXHAUSTED'},
+    lastSettle: {kind: 'settle', status: 'completed', outcome: 'COMPLETED'}, lastCompletedSettleAt: '2026-11-11T16:29Z'};
+  assert.deepEqual(propsReceiptBlockers({...base, lastCompletedCollectAt: '2026-11-11T20:11Z'}, now), []);
+  const stuck = propsReceiptBlockers({...base, lastCompletedCollectAt: '2026-11-09T20:11Z'}, now);
+  assert.deepEqual(stuck.map(b => b.id), ['props-no-collect']);
+  assert.match(stuck[0].text, /BUDGET_EXHAUSTED/);
+  assert.deepEqual(propsReceiptBlockers({...base, lastCompletedCollectAt: null, lastCompletedSettleAt: null}, now).map(b => b.id),
+    ['props-no-collect', 'props-no-settle']);
+  // Paused by the owner, or receipts unreadable: no receipt-level claim either way.
+  assert.deepEqual(propsReceiptBlockers({...base, controlState: 'PAUSED', lastCompletedCollectAt: null}, now), []);
+  assert.deepEqual(propsReceiptBlockers({state: 'UNAVAILABLE'}, now), []);
 });

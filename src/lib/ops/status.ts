@@ -8,7 +8,9 @@ export type OpsJob={id:string;label:string;area:string;required:boolean;status:s
 export type OpsBlocker={id:string;text:string;action:string};
 export type OpsStatus={schemaVersion:'ops-status-v1';generatedAt:string;monitorRun:{id:number;url:string;event:string|null}|null;
  overall:{state:'OK'|'WARN'|'ATTENTION';attention:string[]};jobs:OpsJob[];blockers:OpsBlocker[];
- site:{url:string;checkedAt:string;ok:boolean;checks:{name:string;ok:boolean;ms:number;detail:string|null}[]};
+ site:{url:string;checkedAt:string;ok:boolean;checks:{name:string;ok:boolean;ms:number;detail:string|null}[];
+  /** Which commit production serves vs main (absent in files written before the check existed). */
+  deployment?:{state:string;detail:string;deployedSha:string|null;deployedRef:string|null;mainSha:string|null}};
  evidence:{props?:{state:string;controlState?:string|null;lastCompletedCollectAt?:string|null;lastCompletedSettleAt?:string|null};
   research?:{state:string;generatedAt?:string|null;overall?:string|null};
   release?:{pr:number;state:string;draft?:boolean;merged?:boolean;url?:string}};
@@ -48,6 +50,7 @@ export const OPS_STATUS_URL='https://raw.githubusercontent.com/ang87505-crypto/S
 export const OPS_LABELS:Record<string,{label:string;tone:'positive'|'warning'|'negative'|'neutral'|'info'}>={
  OK:{label:'Healthy',tone:'positive'},RUNNING:{label:'Running now',tone:'info'},
  PENDING_FIRST_RUN:{label:'First run pending',tone:'neutral'},MISSED_SLOT:{label:'Missed a planned time',tone:'warning'},
+ RAN_LATE:{label:'Ran late',tone:'warning'},
  STALE:{label:'Stale',tone:'negative'},FAILING:{label:'Failing',tone:'negative'},DISABLED:{label:'Disabled',tone:'negative'},
  EXPIRED:{label:'Window ended',tone:'neutral'},RETIRED:{label:'Retired',tone:'neutral'},UNKNOWN:{label:'Unknown',tone:'warning'},
 };
@@ -68,5 +71,7 @@ export function opsSummaryText(view:OpsView):string{
  }
  if(s.blockers.length)lines.push('Needs attention: '+s.blockers.map(b=>b.text).join(' '));
  lines.push(`Live site check: ${s.site.ok?'all pages and chat answered':'some checks failed'}.`);
+ const d=s.site.deployment;
+ if(d&&obj(d)&&str(d.state,40)&&str(d.detail,400)&&d.state!=='UNKNOWN')lines.push(`Deployment: ${d.detail}`);
  return lines.join('\n');
 }

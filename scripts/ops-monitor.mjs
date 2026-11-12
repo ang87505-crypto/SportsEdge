@@ -4,10 +4,11 @@
  * job, places an order or prints a secret. Usage: node scripts/ops-monitor.mjs <out-dir>
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {workflowCrons,evaluateJob,rollUp,keyExpiry} from './ops-monitor-lib.mjs';
+import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers} from './ops-monitor-lib.mjs';
 import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
+import {compareDeployment} from '../src/lib/deployment-identity.ts';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -172,7 +173,16 @@ async function siteChecks(){
  await check('Owner protection: backup scheduler',async()=>{const r=await getJson(base+'/api/internal/scheduler/ops-monitor',{attempts:1});
   if(r.status!==401)throw new Error('HTTP '+r.status+' without cron secret');return 'HTTP 401';});
  await retryFailures();
- return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks};
+ return {url:base,checkedAt:new Date().toISOString(),ok:checks.every(c=>c.ok),checks,deployment:await deploymentCheck(base)};
+}
+/** Which commit production serves, against main's head. Informational until /api/version is deployed (UNKNOWN). */
+async function deploymentCheck(base){
+ try{
+  const [v,head]=await Promise.all([getJson(base+'/api/version',{attempts:2}),gh('/commits/main')]);
+  const id=v.ok&&v.json?.schemaVersion==='deployment-identity-v1'?v.json:null;
+  const main=head?.sha?{sha:head.sha,committedAt:head.commit?.committer?.date??''}:null;
+  return {...compareDeployment(id,main,nowMs),deployedSha:id?.commitSha??null,deployedRef:id?.commitRef??null,mainSha:main?.sha??null};
+ }catch{return {state:'UNKNOWN',detail:'Could not read the deployment identity.',deployedSha:null,deployedRef:null,mainSha:null};}
 }
 
 // ---------- credentials (presence and expiry only; values never leave the process) ----------
@@ -209,6 +219,7 @@ function blockers(jobs,props,research,release,site,creds){
  }
  if(props.state==='OK'&&props.controlState&&props.controlState!=='RUNNING')
   add('props-control',`Sports props automation is ${props.controlState} by its owner control.`,'PrizePicks page → Controls → Resume (owner sign-in), when you want it running.');
+ for(const b of propsReceiptBlockers(props,nowMs))add(b.id,b.text,b.action);
  if(research.state==='OK')for(const s of research.sources)if(['NOT_CONFIGURED','FETCH_FAILED','PARSE_FAILED','SCHEMA_CHANGED','BLOCKED'].includes(s.status))
   add('research-source:'+s.id,`Research source ${s.id} last reported ${s.status}.`,'Open the latest research-collect run.');
  if(research.state==='OK'&&research.generatedAt&&nowMs-Date.parse(research.generatedAt)>100*3600_000)
@@ -216,6 +227,8 @@ function blockers(jobs,props,research,release,site,creds){
  if(release.state==='open'&&!release.merged)
   add('stock-first-session',`PR #${release.pr} (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: ${release.stockGate?.ready?'passed — ready for your review and merge':'not passed ('+(release.stockGate?.reason??'unknown')+')'}.`,
    'See docs/AUTOMATION_OPERATIONS_2026_11_10.md → "First supervised stock paper session". Nothing is automatic about this step.');
+ if(['BEHIND_MAIN','WRONG_BRANCH'].includes(site.deployment?.state))
+  add('deployment',site.deployment.detail,'Vercel → sports-edge project → Deployments: open the latest Production build for main and read its error (or Promote the correct main deployment).');
  if(!site.ok)add('site',`Live site checks failed: ${site.checks.filter(c=>!c.ok).map(c=>c.name).join(', ')}.`,'Open the site and the latest Vercel deployment.');
  return out;
 }
