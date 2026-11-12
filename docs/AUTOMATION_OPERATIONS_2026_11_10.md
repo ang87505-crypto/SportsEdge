@@ -98,9 +98,9 @@ Pressing Start again does not change that.
 
 **Where Nov 16 comes from:** it is the next first-session-of-week. The date is not just written in the docs.
 
-**Earlier option:** a one-day commissioning session on Wed Nov 11 is proposed in draft PR #130
-(`docs/STOCK_PAPER_COMMISSIONING_2026_11_10.md`). It changes a registered rule and is active only if the owner
-merges it.
+**Earlier option (expired):** draft PR #130 proposed a one-day commissioning session on Wed Nov 11. It was not
+merged before that day's 09:00 UTC decision, so it no longer applies and must not be backfilled. Monday
+2026-11-16 is the next ordinary weekly decision and needs no rule change; the watcher window (to 2026-11-21) covers it.
 
 ### Steps on the session day
 
