@@ -8,6 +8,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import {PROPS_RELEASE,ticksReleased} from '../props/schedule.ts';
 import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
+import {dispatchWorkflow} from './github-dispatch.ts';
 
 type Env=Readonly<Record<string,string|undefined>>;
 type Deps={now:()=>number;fetcher:typeof fetch};
@@ -95,13 +96,9 @@ export async function handleSchedulerKickoff(req:Request,slotName:string,env:Env
    }
   }catch{/* Could not check: dispatching a duplicate of these jobs is harmless (append-only, idempotent per session). */}
  }
- let res:Response;
- try{
-  res=await deps.fetcher(BASE+slot.workflow+'/dispatches',{method:'POST',redirect:'error',cache:'no-store',
-   headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({ref:'main',inputs:slot.tick?{...slot.inputs,scheduled_hour:now.toISOString().slice(0,13)+':00:00Z'}:slot.inputs}),
-   signal:AbortSignal.timeout(10_000)});
- }catch{return json({status:'dispatch_outcome_unknown',slot:slotName,workflow:slot.workflow},503);}
- if(res.status!==204)return json({status:res.status>=500||res.status===429?'dispatch_outcome_unknown':'dispatch_refused',
-  slot:slotName,workflow:slot.workflow,httpStatus:res.status},503);
- return json({status:'dispatched',slot:slotName,workflow:slot.workflow},202);
+ const r=await dispatchWorkflow(deps.fetcher,token,slot.workflow,
+  slot.tick?{...slot.inputs,scheduled_hour:now.toISOString().slice(0,13)+':00:00Z'}:slot.inputs,'sportsedge-scheduler');
+ const extra={...(r.reenabled?{reenabled:true}:{}),...(r.workflowState?{workflowState:r.workflowState}:{})};
+ if(r.status!=='dispatched')return json({status:r.status,slot:slotName,workflow:slot.workflow,...(r.httpStatus?{httpStatus:r.httpStatus}:{}),...extra},503);
+ return json({status:'dispatched',slot:slotName,workflow:slot.workflow,...extra},202);
 }

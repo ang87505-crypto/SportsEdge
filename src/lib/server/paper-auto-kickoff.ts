@@ -2,10 +2,10 @@
 import {timingSafeEqual} from 'node:crypto';
 import {nyDate,nyMinutes} from './paper-auto-time.ts';
 import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
+import {dispatchWorkflow} from './github-dispatch.ts';
 
 type Env=Readonly<Record<string,string|undefined>>;
 type Deps={now:()=>number;fetcher:typeof fetch;sportsReady:()=>Promise<boolean>};
-const BASE='https://api.github.com/repos/ang87505-crypto/SportsEdge/actions/workflows/';
 const TOKEN=/^(github_pat_[A-Za-z0-9_]{20,255}|ghp_[A-Za-z0-9]{30,64})$/;
 const json=(body:Record<string,unknown>,status=200)=>Response.json(body,{status,
  headers:{'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'}});
@@ -40,14 +40,8 @@ export async function handlePaperKickoff(req:Request,env:Env,deps:Deps):Promise<
  }else return json({status:'skipped',reason:'no_kickoff_today',session:date});
  const token=env.SPORTSEDGE_GITHUB_DISPATCH_TOKEN??'';
  if(!TOKEN.test(token))return json({status:'dispatch_not_configured'},503);
- let res:Response;
- try{
-  res=await deps.fetcher(BASE+workflow+'/dispatches',{method:'POST',redirect:'error',cache:'no-store',
-   headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
-    'Content-Type':'application/json','User-Agent':'sportsedge-paper-kickoff'},
-   body:JSON.stringify({ref:'main',inputs}),signal:AbortSignal.timeout(10_000)});
- }catch{return json({status:'dispatch_outcome_unknown',workflow,session:date},503);}
- if(res.status!==204)return json({status:res.status>=500||res.status===429?'dispatch_outcome_unknown':'dispatch_refused',
-  workflow,httpStatus:res.status,session:date},503);
- return json({status:'dispatched',workflow,session:date},202);
+ const r=await dispatchWorkflow(deps.fetcher,token,workflow,inputs,'sportsedge-paper-kickoff');
+ const extra={...(r.reenabled?{reenabled:true}:{}),...(r.workflowState?{workflowState:r.workflowState}:{})};
+ if(r.status!=='dispatched')return json({status:r.status,workflow,...(r.httpStatus?{httpStatus:r.httpStatus}:{}),session:date,...extra},503);
+ return json({status:'dispatched',workflow,session:date,...extra},202);
 }

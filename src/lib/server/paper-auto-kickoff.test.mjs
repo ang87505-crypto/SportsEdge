@@ -42,6 +42,9 @@ test('sports validation is confined to Nov 8 and a running real-collection ledge
 });
 test('GitHub failures and lost replies are reported after exactly one attempt',async()=>{
  for(const reply of [403,429,500,'lost']){
-  const r=await run('2026-11-09T09:05:00Z',{reply});assert.equal(r.status,503);assert.equal(r.calls.length,1);
+  const r=await run('2026-11-09T09:05:00Z',{reply});assert.equal(r.status,503);
+  // Exactly one dispatch; a definite refusal (403) may add one read-only GET of the workflow's state.
+  assert.equal(r.calls.filter(c=>c.init?.method==='POST').length,1);
+  assert.ok(r.calls.every(c=>['POST','GET'].includes(c.init?.method)));
  }
 });
