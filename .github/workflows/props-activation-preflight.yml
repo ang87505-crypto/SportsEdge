@@ -6,11 +6,6 @@
 name: Props activation preflight (read-only)
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/beautiful-knuth-6qw5zi]
-    paths:
-      - scripts/props-activation-preflight*.mjs
-      - .github/workflows/props-activation-preflight.yml
 permissions:
   contents: read
 concurrency:

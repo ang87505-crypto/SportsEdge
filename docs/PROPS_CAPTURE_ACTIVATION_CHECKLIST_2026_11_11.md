@@ -1,12 +1,42 @@
 # Props capture ticks: migration and activation checklist (owner)
 
-This turns on event-aware line capture (props-capture-v1, PR #135). Every step is the owner's. Nothing here has
-been done. PAPER only: no real-money entry, no DFS account, no private PrizePicks/Pick6 endpoint.
+This turns on event-aware line capture (props-capture-v1, PR #135, merged released-off in #140). Every step is the
+owner's. As of 2026-11-12 none of steps 1–4 has been done (verified below). PAPER only: no real-money entry, no DFS account, no private PrizePicks/Pick6 endpoint.
 
 The steps are ordered so that each one can be verified, and stopped, before the next one.
 
 **Project.** Props use the Supabase project `vfyzbliksooljxrlfadp` (`scripts/paper-release.mjs` refuses any
 other). It was confirmed reachable on 2026-11-11. Run all SQL below in that project's SQL editor.
+
+## State verified 2026-11-12 (read-only, against the real props database)
+
+From the *Props activation preflight (read-only)* workflow,
+[run 43128347240](https://github.com/ang87505-crypto/SportsEdge/actions/runs/43128347240) (GET requests only):
+
+| Check | Result |
+|---|---|
+| Target | `vfyzbliksooljxrlfadp` (PASS) |
+| Active policy | `props-budget-v2`: 7/day, 200/30 days, floor 60 (PASS). `props-budget-v1` (12/day) applied until 2026-11-08 16:00 UTC |
+| Rolling cap | 0 windows over the policy in force (the 11-credit peak on 7 Nov was under v1). 7/7 used in the last 24 h; 29/200 in 30 days |
+| Provider | 476 credits remaining (floor 60) |
+| Provider-confirmed vs reserved, 30 days | `events` list: 5 reserved, **0 charged**; `event_odds`: 24 reserved, 24 charged. Under v3 the totals would be 6/24 h and 24/30 days |
+| Duplicates and caps | 0 duplicated run slots; 0 account-days over the entry cap; 15 entries in 30 days |
+| Settlement | Completed twice daily through 2026-11-11 16:29 UTC (PASS) |
+| Dashboard vs ledger | The live assistant's budget answer (7 of 7, 29 of 200) **matches** the ledger |
+| `props_capture_v1.sql` | **NOT APPLIED**: all three tables missing |
+| `props_budget_v3_actuals.sql` | **NOT APPLIED**: `count_provider_actuals` column missing |
+| Capture ticks | 0 tick runs in the ledger; the release switch is off |
+
+RLS and grants on the production tables cannot be read through PostgREST. Use the step-1 SQL below. The migration's
+own SQL tests (`database/props/tests/props_capture_v1_test.sql`) prove on PostgreSQL 16 that `anon` and
+`authenticated` are refused and that duplicate plans, claims and outcomes are rejected.
+
+**Run the preflight before and after every step:** GitHub → Actions → *Props activation preflight (read-only)* →
+*Run workflow*. After step 1 it must show `capture-schema: APPLIED`. After step 2 it must show
+`v3-accounting: APPLIED_AND_ACTIVE`, still with 7/200/60.
+
+**Order matters.** If the switch were merged before step 1, each tick now stops before any provider call with
+`CAPTURE_SCHEMA_MISSING`, but no lines would be collected (the legacy collects stand down). Apply step 1 first.
 
 ## 0. Before you start
 
