@@ -1,11 +1,11 @@
 {
  "version": "sportsedge-weekly-universe-v1",
  "source": "SportsEdge maintainer-curated list of large, liquid US-listed common stocks (no ETFs, ADRs, funds or preferreds)",
- "revision": "large-cap-v1-2026-10-30",
+ "revision": "large-cap-v1-2026-11-09",
  "classification": "GICS sector names, assigned by the maintainer from public company descriptions; not licensed GICS data",
  "first_traded_on_basis": "Declared lower bound: every listed company traded publicly before 2015-01-02. It only requires a complete 253-session window; it is not an IPO date.",
- "available_at": "2026-10-30T03:00:00Z",
- "note": "Paper experiment stock-v2-weekly only. Not the frozen research universe and not evidence for it. max_last_close skips stocks (other than current holdings) whose last close is above $95, so a $1,000 paper account can buy every selected target in whole shares.",
+ "available_at": "2026-11-09T22:00:00Z",
+ "note": "Paper experiment stock-v2-weekly only. Not the frozen research universe and not evidence for it. max_last_close skips stocks (other than current holdings) whose last close is above $95, so a $1,000 paper account can buy every selected target in whole shares. Revision 2026-11-09: MMC renamed MRSH (Marsh & McLennan symbol change effective 2026-01-14, per Alpaca corporate actions and the OCC memo); EA removed (cash merger at $210, delisted 2026-08-04).",
  "max_last_close": "95",
  "securities": [
   {
@@ -209,11 +209,6 @@
    "first_traded_on": "2015-01-02"
   },
   {
-   "symbol": "EA",
-   "sector": "Communication Services",
-   "first_traded_on": "2015-01-02"
-  },
-  {
    "symbol": "ECL",
    "sector": "Materials",
    "first_traded_on": "2015-01-02"
@@ -404,11 +399,6 @@
    "first_traded_on": "2015-01-02"
   },
   {
-   "symbol": "MMC",
-   "sector": "Financials",
-   "first_traded_on": "2015-01-02"
-  },
-  {
    "symbol": "MMM",
    "sector": "Industrials",
    "first_traded_on": "2015-01-02"
@@ -426,6 +416,11 @@
   {
    "symbol": "MRK",
    "sector": "Health Care",
+   "first_traded_on": "2015-01-02"
+  },
+  {
+   "symbol": "MRSH",
+   "sector": "Financials",
    "first_traded_on": "2015-01-02"
   },
   {

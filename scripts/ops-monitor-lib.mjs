@@ -189,9 +189,20 @@ export function propsReceiptBlockers(props, nowMs, {collectHours = 48, settleHou
   return out;
 }
 
+/**
+ * A job behind a release switch that is off: its runs succeed but exit before doing anything, so "OK" would be a
+ * misleading success. Report RELEASED_OFF instead. Failures and a disabled workflow keep their own status: a
+ * no-op job that cannot even start is still a problem.
+ */
+export function applyReleaseSwitch(evaluated, released) {
+  if (released !== false || ['FAILING', 'DISABLED', 'EXPIRED', 'RETIRED', 'UNKNOWN'].includes(evaluated.status)) return evaluated;
+  return {...evaluated, status: 'RELEASED_OFF',
+    detail: 'Released off by its owner switch: each run exits before any database or provider call, so this job collects nothing yet.'};
+}
+
 /** Overall roll-up: required jobs decide health; optional jobs only warn. */
 export function rollUp(jobs) {
-  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, MISSED_SLOT: 2, RAN_LATE: 1, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
+  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, MISSED_SLOT: 2, RAN_LATE: 1, RELEASED_OFF: 0, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
   const attention = jobs.filter(j => (j.required ? severity[j.status] >= 2 : severity[j.status] >= 3));
   return { state: attention.some(j => severity[j.status] >= 3) ? 'ATTENTION' : attention.length ? 'WARN' : 'OK',
     attention: attention.map(j => j.id) };

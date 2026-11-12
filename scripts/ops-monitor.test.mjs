@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers} from './ops-monitor-lib.mjs';
+import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 
 const T = s => Date.parse(s);
 const run = (startedAt, conclusion = 'success', event = 'schedule', status = 'completed') =>
@@ -157,4 +157,27 @@ test('a run GitHub queued hours ago and never started is reported as stuck, not 
   const fresh = evaluateJob(job, {workflowState: 'active', crons: daily, nowMs: now, runs: [run('2026-11-11T22:32Z'), run('2026-11-11T23:30Z', null, 'schedule', 'queued'), run('2026-11-10T22:20Z')]});
   assert.equal(fresh.stuckQueued, 0);
   assert.equal(fresh.running.status, 'queued');
+});
+
+test('a job behind an off release switch is RELEASED_OFF, never a green "Healthy"; failures still show', () => {
+  const now = T('2026-11-12T12:00Z');
+  const ticks = ['7,37 11-23 * * *', '7,37 0-4 * * *'];
+  const ok = evaluateJob(job, {workflowState: 'active', crons: ticks, nowMs: now, runs: [run('2026-11-12T11:40Z')], activeSinceMs: T('2026-11-12T09:00Z')});
+  assert.equal(ok.status, 'OK');
+  // While off, GitHub dropping half-hourly no-op ticks is not news either: missed slots read as released off too.
+  const dropped = evaluateJob(job, {workflowState: 'active', crons: ticks, nowMs: now, runs: [run('2026-11-12T11:40Z')]});
+  assert.equal(dropped.status, 'MISSED_SLOT');
+  assert.equal(applyReleaseSwitch(dropped, false).status, 'RELEASED_OFF');
+  assert.equal(applyReleaseSwitch(dropped, true).status, 'MISSED_SLOT');
+  const off = applyReleaseSwitch(ok, false);
+  assert.equal(off.status, 'RELEASED_OFF');
+  assert.match(off.detail, /collects nothing yet/);
+  assert.equal(off.lastSuccess.startedAt, ok.lastSuccess.startedAt, 'run history is kept, only the verdict changes');
+  assert.deepEqual(rollUp([{...off, required: false}]), {state: 'OK', attention: []});
+  assert.equal(applyReleaseSwitch(ok, true).status, 'OK');
+  const failing = evaluateJob(job, {workflowState: 'active', crons: ticks, nowMs: now, runs: [run('2026-11-12T11:40Z', 'failure')], activeSinceMs: T('2026-11-12T09:00Z')});
+  assert.equal(applyReleaseSwitch(failing, false).status, 'FAILING');
+  // The committed config ties the tick job to the switch.
+  const cfg = JSON.parse(readFileSync(new URL('../config/ops/jobs.json', import.meta.url), 'utf8'));
+  assert.equal(cfg.jobs.find(j => j.id === 'props-tick').releaseSwitch, 'props-capture');
 });
