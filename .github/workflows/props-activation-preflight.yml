@@ -6,6 +6,15 @@
 name: Props activation preflight (read-only)
 on:
   workflow_dispatch:
+    inputs:
+      ledger_from:
+        description: Ledger audit start (UTC date, YYYY-MM-DD); entries and runs from this date
+        required: false
+        type: string
+      ledger_to:
+        description: Ledger audit end (UTC date, exclusive); default tomorrow
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -22,8 +31,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Unit tests (GET-only guard, accounting, verdicts)
-        run: node --test scripts/props-activation-preflight.test.mjs
+      - name: Unit tests (GET-only guards, accounting, verdicts, re-grading)
+        run: |
+          node --test scripts/props-activation-preflight.test.mjs
+          node --experimental-strip-types --no-warnings --test scripts/props-ledger-verify.test.mjs
       - name: Read-only checks against the props database
         env:
           SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
@@ -38,3 +49,10 @@ jobs:
             "Recent runs: "+JSON.stringify(f.recentRuns)];
            require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n")+"\n");'
           cat preflight.json
+      - name: Ledger audit (read-only) - entries, legs, independent re-grades from box scores, settlements, bankrolls
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          FROM: ${{ inputs.ledger_from || '2026-11-09' }}
+          TO: ${{ inputs.ledger_to }}
+        run: node --experimental-strip-types --no-warnings scripts/props-ledger-verify.mjs
