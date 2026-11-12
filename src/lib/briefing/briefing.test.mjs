@@ -139,3 +139,15 @@ test('a run GitHub never started is a warning, not a failure', () => {
   assert.equal(b.health.tone, 'warning');
   assert.equal(b.health.headline, 'Running, with warnings');
 });
+
+test('money: yesterday\'s slate is reported on its own, from settled entries with a known payout',async()=>{
+ const {buildBriefing,propsInput}=await import('./briefing.ts');
+ const {briefingAnswer}=await import('../assistant/briefing-answer.ts');
+ const {makeRaw,NOW}=await import('../assistant/fixtures.mjs');
+ const b=buildBriefing({nowIso:NOW,props:propsInput(makeRaw()),ops:null,research:null});
+ assert.equal(b.money.prizepicks.yesterdaySettled,3);
+ assert.equal(b.money.prizepicks.yesterdayNetCents,1500);
+ assert.match(briefingAnswer('money',b,{range:'yesterday'}).text,/Yesterday's slate \(2026-11-08, Mountain time\): \+\$15\.00 on 3 settled/);
+ const empty=buildBriefing({nowIso:'2026-11-12T19:00:00.000Z',props:propsInput(makeRaw({nowIso:'2026-11-12T19:00:00.000Z'})),ops:null,research:null});
+ assert.match(briefingAnswer('money',empty,{range:'yesterday'}).text,/No PrizePicks virtual entry was made for yesterday's slate/);
+});

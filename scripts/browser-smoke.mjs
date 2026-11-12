@@ -11,7 +11,7 @@ const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const PRODUCTION=process.env.SMOKE_TARGET==='production';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/lab','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -178,11 +178,16 @@ try{
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:base+'/'});
-  await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.status-list li').length>=5`),'overview system status');
+  // Chat-first command center: the five-item summary strip, the conversation, and the "Right now" status rail.
+  await until(async()=>evaluate(send,`document.readyState==='complete' && document.querySelectorAll('.command-strip li .command-strip-item').length===5 && document.querySelectorAll('.briefing-now .status-list li').length>=2 && !!document.querySelector('.command-chat .chat-thread')`),'overview command center');
   await delay(320);
-  const honestStatus=await evaluate(send,`(()=>{const t=document.querySelector('.status-list').innerText;return t.includes('Real-money execution')&&t.includes('Not available')&&!t.includes('Running')})()`);
+  const honestStatus=await evaluate(send,`(()=>{const t=document.querySelector('.briefing-now .status-list').innerText;return t.includes('Real-money execution')&&t.includes('Not available')&&!t.includes('Running')})()`);
   if(!honestStatus)throw Error('Overview must state that real-money execution is not available and never claim automation is running');
   console.log('PASS overview: system status lists real-money execution as not available');
+  // A summary item asks the conversation; the reply must arrive from the server (records or an honest "unavailable").
+  await evaluate(send,`(()=>{document.querySelectorAll('.command-strip-item')[4].click();return true})()`);
+  await until(async()=>evaluate(send,`[...document.querySelectorAll('.command-chat .chat-msg.bot:not(.pending)')].length>=2`),'summary item answered in chat',15000);
+  console.log('PASS overview: a summary item is answered in the conversation');
   await evaluate(send,`(()=>{document.querySelector('nav[aria-label="Mobile navigation"] button').click();return true})()`);
   await until(async()=>evaluate(send,`document.querySelector('dialog.drawer')?.open===true && !!document.querySelector('nav[aria-label="All sections"] a[href="/testing"]')`),'mobile navigation drawer');
   await evaluate(send,`(()=>{document.querySelector('nav[aria-label="All sections"] a[href="/stocks/research"]').click();return true})()`);

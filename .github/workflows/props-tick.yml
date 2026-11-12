@@ -50,3 +50,17 @@ jobs:
           SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: node --experimental-strip-types scripts/props-worker.ts tick
+      # AI Learning Lab (RESEARCH ONLY): freeze every ablation variant and the pre-lock risk flags for lines this
+      # tick stored, using database rows only (zero provider requests). It never records a pick, entry or stake,
+      # exits 0 when the lab tables are not migrated, and cannot fail the paper tick (continue-on-error).
+      - name: Learning Lab freeze (research only)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          node --experimental-strip-types scripts/lab-sports.ts freeze
+          # Once a day, after the morning settle has graded last night's lines: the forward comparison report.
+          if [ "$(date -u +%H)" = "11" ]; then node --experimental-strip-types scripts/lab-sports.ts report; fi
