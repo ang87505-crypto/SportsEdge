@@ -27,6 +27,9 @@ export type AssistantData={nowIso:string;pp:PropsView;p6:PropsView;control:{stat
 export type Card={kind:'picks';items:{id:number;text:string;detail:string}[]}|{kind:'entries';items:{id:number;text:string;detail:string}[]}|
  {kind:'lineup';text:string}|{kind:'links';items:{label:string;href:string}[]}|
  {kind:'facts';items:{label:string;value:string;detail?:string}[]}|
+ /** A small table (model comparisons, pick/trade/stake breakdowns) and a horizontal bar chart; values are pre-formatted. */
+ {kind:'table';title:string;columns:string[];rows:string[][]}|
+ {kind:'bars';title:string;items:{label:string;value:number;display:string;marker?:number|null}[]}|
  /** An owner control PROPOSAL; only the chat UI's confirm button (owner session, fixed allowlisted request) can apply it. */
  {kind:'action';action:import('./actions.ts').ChatActionId;label:string;effect:string;from:string|null;to:string;experimentId?:string};
 export type Reply={text:string;cards:Card[];suggestions:string[];context:AssistantContext;private?:boolean};

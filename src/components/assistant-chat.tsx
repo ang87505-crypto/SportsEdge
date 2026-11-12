@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useRef,useState,type FormEvent} from 'react';
+import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import type {Card,Reply} from '@/lib/assistant/answer';
 import type {AssistantContext} from '@/lib/assistant/understand';
 import {currentOwnerAccess} from '@/lib/assistant/session';
@@ -11,9 +11,16 @@ const STARTERS=["Tonight's picks",'Stock results','Research results','Is everyth
 const OPENING:Msg={role:'bot',text:'Ask about sports picks, stock paper accounts, research results, or automation.',suggestions:STARTERS};
 const NO_ACCESS:Access={ownerAccess:false,ownerExpiresAt:null};
 
+/** Lets any button on the page ask the conversation a question (the homepage summary strip uses it). */
+export const ASK_EVENT='sportsedge:ask';
+export function AskButton({question,className,children}:{question:string;className?:string;children:ReactNode}){
+ return <button type="button" className={className} onClick={()=>window.dispatchEvent(new CustomEvent(ASK_EVENT,{detail:question}))}>{children}</button>;
+}
+
 /** One conversation. Private replies are ephemeral and hidden whenever owner access is uncertain. */
-export function AssistantChat(){
- const [msgs,setMsgs]=useState<Msg[]>([OPENING]);
+export function AssistantChat({starters,intro}:{starters?:string[];intro?:string}={}){
+ const opening:Msg=starters?{role:'bot',text:intro??OPENING.text,suggestions:starters}:OPENING;
+ const [msgs,setMsgs]=useState<Msg[]>([opening]);
  const [context,setContext]=useState<AssistantContext|null>(null);
  const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
@@ -48,7 +55,13 @@ export function AssistantChat(){
   const timer=setTimeout(()=>applyAccess(NO_ACCESS),Math.max(0,access.ownerExpiresAt-Date.now()));
   return()=>clearTimeout(timer);
  },[access.ownerAccess,access.ownerExpiresAt]);
- useEffect(()=>{if(follow.current)end.current?.scrollIntoView({block:'end'});},[msgs,busy]);
+ useEffect(()=>{if(follow.current)end.current?.scrollIntoView({block:'nearest'});},[msgs,busy]);
+ const sendRef=useRef<(q:string)=>void>(()=>{});
+ useEffect(()=>{sendRef.current=q=>void send(q);});
+ useEffect(()=>{
+  const on=(e:Event)=>{const q=(e as CustomEvent<string>).detail;if(typeof q==='string')sendRef.current(q);};
+  window.addEventListener(ASK_EVENT,on);return()=>window.removeEventListener(ASK_EVENT,on);
+ },[]);
  async function send(raw:string){
   const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
   if(!text||busy)return;
@@ -73,7 +86,7 @@ export function AssistantChat(){
   finally{if(id===requestId.current)setBusy(false);}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){requestId.current++;setBusy(false);setMsgs([OPENING]);setContext(null);}
+ function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);}
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">
@@ -146,6 +159,28 @@ function ChatCard({card,owner}:{card:Card;owner:boolean}){
  if(card.kind==='lineup'){
   async function copy(){try{await navigator.clipboard.writeText(card.kind==='lineup'?card.text:'');setCopied(true);}catch{setCopied(false);}}
   return <div className="chat-card"><code>{card.text}</code><button type="button" className="button button-secondary" onClick={()=>void copy()}>{copied?'Copied':'Copy lineup'}</button></div>;
+ }
+ if(card.kind==='table')return <div className="chat-card chat-table-wrap">
+  <p className="chat-card-title">{card.title}</p>
+  <div className="chat-table-scroll"><table className="chat-table">
+   <thead><tr>{card.columns.map(c=><th key={c} scope="col">{c}</th>)}</tr></thead>
+   <tbody>{card.rows.map((r,i)=><tr key={i}>{r.map((c,j)=>j===0?<th key={j} scope="row">{c}</th>:<td key={j}>{c}</td>)}</tr>)}</tbody>
+  </table></div>
+ </div>;
+ if(card.kind==='bars'){
+  const max=Math.max(1e-9,...card.items.map(i=>Math.max(i.value,i.marker??0)));
+  return <div className="chat-card">
+   <p className="chat-card-title">{card.title}</p>
+   <ul className="chat-bars">{card.items.map(it=><li key={it.label}>
+    <span className="chat-bar-label">{it.label}</span>
+    <span className="chat-bar-track" aria-hidden="true">
+     <span className="chat-bar-fill" style={{width:`${(it.value/max)*100}%`}}/>
+     {typeof it.marker==='number'&&<span className="chat-bar-marker" style={{left:`${(it.marker/max)*100}%`}} title="Stated confidence"/>}
+    </span>
+    <span className="chat-bar-value">{it.display}</span>
+   </li>)}</ul>
+   {card.items.some(i=>typeof i.marker==='number')&&<p className="quiet small-print">Bar: observed. Tick: stated confidence.</p>}
+  </div>;
  }
  return <ul className="chat-card chat-list">{card.items.map(it=><li key={it.id}><strong>{it.text}</strong><small>{it.detail}</small></li>)}</ul>;
 }

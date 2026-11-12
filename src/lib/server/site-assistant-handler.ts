@@ -19,6 +19,9 @@ import {mondayReadiness} from '../briefing/monday.ts';
 import {briefingAnswer,BRIEFING_TOPICS,type BriefingTopic} from '../assistant/briefing-answer.ts';
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {CHAT_ACTIONS,parseControlRequest,type ChatActionId} from '../assistant/actions.ts';
+import {labAnswer} from '../assistant/lab-answer.ts';
+import {loadLab} from './lab-load.ts';
+import type {LabView} from '../lab/view.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
 export function assistantAccess(cookie:string|undefined):AssistantAccess{
@@ -29,10 +32,12 @@ export type SiteRequest={url:string;contentType:string|null;origin:string|null;o
 export type SitePorts={access:AssistantAccess;sports:(nowIso:string)=>Promise<Raw>;
  accounts:()=>Promise<StockAccounts>;broker:()=>Promise<BrokerView>;research:(nowIso:string)=>Promise<ResearchView>;
  /** Public background-job status from the operations monitor. */
- ops?:(nowIso:string)=>Promise<OpsView>};
+ ops?:(nowIso:string)=>Promise<OpsView>;
+ /** AI Learning Lab view (public research evidence; no account data). */
+ lab?:(nowIso:string)=>Promise<LabView>};
 export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):SitePorts{
  const access=assistantAccess(req.ownerCookie);
- return {access,sports,research:loadStockResearch,ops:loadOpsStatus,
+ return {access,sports,research:loadStockResearch,ops:loadOpsStatus,lab:loadLab,
   async accounts(){
    if(!access.ownerAccess)return {state:'owner_required',ledgers:[],brokerWritesEnabled:null};
    const response=await handlePaperAutoGet({...req,ownerCookie:req.ownerCookie},env);
@@ -116,6 +121,14 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   if(!l)return {...simple('The stock autopilot record is unavailable right now, so I cannot propose a change. Use the Autopilot page; its Stop button always works. Nothing has changed.',ctx),
    cards:[{kind:'links',items:[{label:'Stock autopilot',href:'/stocks/paper-auto'}]}],private:true};
   return propose(c.verb==='pause'?'stock-pause':'stock-stop',l.status.gateMode==='ARMED'?'RUNNING':l.status.gateMode,l.experimentId);
+ }
+ // Learning Lab and staking questions: lab reports plus the saved props snapshot; each source fails on its own.
+ if(q.topic==='lab'){
+  if(!ports.lab)return respond(simple('The AI Learning Lab is not connected here.',{domain:'all',topic:'lab'}));
+  const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
+  const [lab,raw]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?ports.sports(nowIso):Promise.resolve(null)]);
+  if(lab.status!=='fulfilled')return respond(simple('Learning Lab records are unavailable right now; nothing is assumed.',{domain:'all',topic:'lab'}));
+  return respond(labAnswer(message,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso));
  }
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());

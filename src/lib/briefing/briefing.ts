@@ -67,7 +67,9 @@ export type Briefing={
  health:{tone:Tone;headline:string;detail:string;checkedAt:string|null;stale:boolean;problems:string[];siteOk:boolean|null;deployment:string|null};
  systems:SystemState[];
  today:TodayItem[];
- money:{prizepicks:{balanceCents:number;startCents:number;netCents:number;weekNetCents:number;weekSettled:number;won:number;lost:number;openEntries:number;openStakeCents:number}|null;
+ money:{prizepicks:{balanceCents:number;startCents:number;netCents:number;weekNetCents:number;weekSettled:number;
+  /** Entries whose games were on the previous Mountain-time date (the NBA slate), settled with a known payout. */
+  yesterdayNetCents:number;yesterdaySettled:number;yesterdayOpen:number;yesterdayDate:string;won:number;lost:number;openEntries:number;openStakeCents:number}|null;
   pick6:{settled:number;payoutUnknown:number;open:number}|null;preliminary:boolean;note:string};
  learning:{activeModel:string|null;lastTrainedAt:string|null;graded:number;hitRate:number|null;meanConfidence:number|null;brier:number|null;brierN:number;
   overconfident:boolean;challengers:{version:string;state:string;gradedLines:number}[];note:string}|null;
@@ -165,8 +167,12 @@ function moneyOf(x:BriefingInput):Briefing['money']{
  const weekAgo=Date.parse(x.nowIso)-7*86400_000;
  const v=p.pp,b=v.bankroll;
  const week=v.entries.filter(e=>e.settlement&&e.settlement.profitCents!==null&&Date.parse(e.settlement.settledAt)>=weekAgo);
+ const yesterdayDate=mtDay(new Date(Date.parse(x.nowIso)-86400_000).toISOString());
+ const slate=v.entries.filter(e=>mtDay(e.lockAt)===yesterdayDate);
+ const ySettled=slate.filter(e=>e.settlement&&e.settlement.profitCents!==null);
  const pp=b?{balanceCents:b.balanceCents,startCents:b.initialCents,netCents:b.realizedProfitCents,
   weekNetCents:week.reduce((a,e)=>a+e.settlement!.profitCents!,0),weekSettled:week.length,
+  yesterdayNetCents:ySettled.reduce((a,e)=>a+e.settlement!.profitCents!,0),yesterdaySettled:ySettled.length,yesterdayOpen:slate.length-ySettled.length,yesterdayDate,
   won:v.entryStats.won,lost:v.entryStats.lost,openEntries:v.entryStats.open,openStakeCents:b.openStakeCents}:null;
  const p6=p.p6.entries.length?{settled:p.p6.entryStats.settled,payoutUnknown:p.p6.entryStats.payoutUnknown,open:p.p6.entryStats.open}:null;
  const settledKnown=b?.settledKnown??0;

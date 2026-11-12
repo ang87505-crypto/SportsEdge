@@ -1,14 +1,17 @@
 /** Routes domains before any sports player matching or data access. */
 import {normalize,type AssistantContext} from './understand.ts';
 import type {ResearchId} from '../research/stock-summary.ts';
+import {labTopic} from './lab-answer.ts';
 export type AssistantDomain='sports'|'stocks'|'research'|'all';
 export type AssistantTopic='overview'|'performance'|'holdings'|'picks'|'automation'|'explain'|'controls'|'help'|'approvals'|'jobs'|
- 'today'|'money'|'health'|'improving'|'opportunity'|'ready';
+ 'today'|'money'|'health'|'improving'|'opportunity'|'ready'|'lab';
 export type QuestionRoute={domain:AssistantDomain|null;topic:AssistantTopic;symbol?:string;strategyId?:ResearchId};
 export function routeQuestion(message:string,previous:AssistantContext|null):QuestionRoute{
  const t=normalize(message);
+ // AI Learning Lab and staking questions are answered from the lab reports and saved records, before any other route.
+ if(labTopic(message))return {domain:'all',topic:'lab'};
  const sports=/\b(sports?|nba|soccer|prizepicks|prize picks|pick6|pick 6|bets?|betting|lineups?|props?|tonight|points?|rebounds?|assists?|jokic|jokc|booker|picks|entries|entry|odds api|credits?|qualif\w*|virtual entr\w*|line collection|next collection)\b/.test(t);
- const stocks=/\b(stocks?|portfolio|alpaca|shares?|equity|autopilot|oxy|altria|usb|bmy|csx|holdings|positions?|buying power|paper trading|orders?|fills?)\b/.test(t);
+ const stocks=/\b(stocks?|portfolio|alpaca|shares?|equity|autopilot|trades?|traded|oxy|altria|usb|bmy|csx|holdings|positions?|buying power|paper trading|orders?|fills?)\b/.test(t);
  const research=/\b(qmom|berkshire|buffett|momentum|research|backtest|strategies|strategy|benchmark|spy|challengers?|daily trading|day trading|trading every day|daily strateg\w*)\b/.test(t)||
   (stocks&&/\b(algorithm|model|learning|learn)\b/.test(t));
  const general=/\b(both|everything|all systems|whole site|site status|background jobs?|jobs?|workers?|monitor|github actions|cron|workflows?|approvals?|approve)\b/.test(t);

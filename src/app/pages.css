@@ -508,7 +508,21 @@
 .chat-list { list-style: none; padding: 0; }
 .chat-list li { display: grid; padding: 6px 0; border-top: 1px solid var(--line); }
 .chat-list small { color: var(--text-3); }
-@media (max-width: 640px) { .chat-msg { max-width: 100%; } }
+/* Chat cards: tables (model comparisons, stake breakdowns) and bar charts (calibration) inside a reply. */
+.chat-card-title { margin: 0; font-size: var(--fs-xs); color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+.chat-table-scroll { overflow-x: auto; max-width: 100%; }
+.chat-table { border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; min-width: 100%; }
+.chat-table th, .chat-table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.chat-table thead th { border-top: 0; color: var(--text-3); font-weight: 500; font-size: var(--fs-xs); white-space: nowrap; }
+.chat-table tbody th { font-weight: 500; }
+.chat-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.chat-bars li { display: grid; grid-template-columns: minmax(90px, 34%) minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.chat-bar-label { color: var(--text-2); }
+.chat-bar-track { position: relative; height: 10px; border-radius: 999px; background: var(--line); }
+.chat-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent); }
+.chat-bar-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); }
+.chat-bar-value { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .chat-msg { max-width: 100%; } .chat-bars li { grid-template-columns: minmax(0, 1fr) auto; } .chat-bar-track { grid-column: 1 / -1; grid-row: 2; } }
 
 /* Overview briefing: Right now / Today / Results / Next / learning. */
 .briefing-health { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 8px; margin: 0 -8px 6px; border-radius: var(--r-md); }
@@ -540,3 +554,27 @@
    (already in the bottom navigation) give way so "Right now" is visible without scrolling. */
 .briefing-now .status-copy small { white-space: normal; overflow: visible; text-overflow: clip; }
 @media (max-width: 720px) { .home-intro .home-sections { display: none; } }
+
+/* Chat-first command center (home): summary strip, conversation + status rail, then the briefing. */
+.command { display: grid; gap: 14px; }
+.command-head h1 { margin: 0 0 4px; }
+.command-head p { margin: 0; color: var(--text-2); max-width: 70ch; }
+.command-strip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.command-strip-item { all: unset; box-sizing: border-box; display: grid; gap: 3px; width: 100%; height: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; min-width: 0; }
+.command-strip-item:hover, .command-strip-item:focus-visible { border-color: var(--accent); outline: none; }
+.command-strip-label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+.command-strip-item strong { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.command-strip-item small { color: var(--text-2); font-size: var(--fs-xs); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.command-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 14px; align-items: start; }
+.command-chat .chat { max-width: none; }
+.command-chat .chat-thread { min-height: 360px; max-height: 70vh; overflow-y: auto; }
+.lab-page > * + * { margin-top: 12px; }
+@media (max-width: 1100px) { .command-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .command-main { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .command-chat .chat-thread { max-height: none; min-height: 240px; } }
+.lab-page .home-grid > *, .lab-page section, .lab-page .panel-body { min-width: 0; }
+.lab-page .chat-table-scroll { width: 100%; }
+.lab-page .evidence-list li { gap: 10px; }
+.lab-page .evidence-list li > span:first-child { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+.lab-page .evidence-list li > .badge { flex: 0 0 auto; }
+.lab-page { min-width: 0; } .lab-page > * { min-width: 0; max-width: 100%; }

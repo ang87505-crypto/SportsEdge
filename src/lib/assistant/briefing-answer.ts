@@ -38,6 +38,9 @@ export function briefingAnswer(topic:BriefingTopic,b:Briefing,extra:{readiness?:
   const m=b.money,pp=m.prizepicks,parts:string[]=[];
   if(!pp)parts.push(m.note);
   else{
+   if(extra.range==='yesterday')parts.push(pp.yesterdaySettled||pp.yesterdayOpen?
+    `Yesterday's slate (${pp.yesterdayDate}, Mountain time): ${money(pp.yesterdayNetCents,true)} on ${pp.yesterdaySettled} settled PrizePicks entr${pp.yesterdaySettled===1?'y':'ies'}${pp.yesterdayOpen?`; ${pp.yesterdayOpen} not settled yet`:''}.`:
+    `No PrizePicks virtual entry was made for yesterday's slate (${pp.yesterdayDate}, Mountain time), so nothing was won or lost.`);
    if(extra.range==='week')parts.push(`PrizePicks virtual entries, last 7 days: ${money(pp.weekNetCents,true)} on ${pp.weekSettled} settled entr${pp.weekSettled===1?'y':'ies'}.`);
    parts.push(`PrizePicks virtual balance ${money(pp.balanceCents)} (started at ${money(pp.startCents)}; net ${money(pp.netCents,true)}; ${pp.won} won, ${pp.lost} lost; ${pp.openEntries} open with ${money(pp.openStakeCents)} at stake).`);
    if(m.pick6)parts.push(`Pick6: ${m.pick6.settled} settled entr${m.pick6.settled===1?'y':'ies'} with unknown payouts (${m.pick6.payoutUnknown}) and ${m.pick6.open} open. They are not counted in any dollar figure.`);

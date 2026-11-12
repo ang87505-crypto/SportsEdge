@@ -34,6 +34,7 @@ export const SECTIONS:NavSection[]=[
 
 export const PLATFORM:(NavLeaf&{icon:NavIconName})[]=[
  {href:'/assistant',label:'Ask SportsEdge',description:'Sports, stocks, research and automation in one chat',icon:'pulse'},
+ {href:'/lab',label:'AI Learning Lab',description:'What the models have measurably learned and what is still being tested',icon:'pulse'},
  {href:'/automation',label:'Paper automation',description:'Sports and stocks: status, next steps and results',icon:'pulse'},
  {href:'/progress',label:'Research status',description:'Evidence gates and milestones',icon:'pulse'},
  {href:'/testing',label:'Test center',description:'Owner acceptance walkthrough',icon:'shield'},

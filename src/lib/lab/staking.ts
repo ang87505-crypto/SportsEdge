@@ -154,7 +154,7 @@ export function compareStaking(all:SettledEntry[],bins:CalibrationBin[],initialC
  const vsFlat=alts.map((m,i)=>({method:m,meanProfitDifferenceCents:round(-(diffs[i]?.mean??0),2)!,lower95:round(-(diffs[i]?.upper95??0),2)!,
   upper95:round(-(diffs[i]?.lower95??0),2)!,pAdjusted:round(adj[i],4)!}));
  // Are joint probabilities honest? Calibrated joint (mid) vs the realised all-legs-won rate.
- const jb=[0,0.3,0.4,0.5,0.6,1].slice(0,-1).map((from,i,a)=>({from,to:[0.3,0.4,0.5,0.6,1][i],n:0,p:0,w:0}));
+ const jb=[0,0.3,0.4,0.5,0.6,1].slice(0,-1).map((from,i)=>({from,to:[0.3,0.4,0.5,0.6,1][i],n:0,p:0,w:0}));
  let brier=0,nb=0;
  for(const e of entries){const a=assessEntry(e,bins);if(a.jointMid===null||e.legResults.includes('void'))continue;
   const won=e.legResults.every(l=>l==='win')?1:0,b=jb.find(x=>a.jointMid!>=x.from&&a.jointMid!<x.to)!;b.n++;b.p+=a.jointMid;b.w+=won;brier+=(a.jointMid-won)**2;nb++;}
