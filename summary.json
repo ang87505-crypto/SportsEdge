@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 1,
+    "sessions": 2,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": null
+    "totalReturn": 0.016866660366666286
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 1,
+    "sessions": 2,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": null
+    "totalReturn": 0.0035972816666667295
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-11T09:34:05Z",
+  "forwardAt": "2026-11-12T04:43:47Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "ACN": 0.2,
-      "COF": 0.2,
-      "GIS": 0.2,
-      "NVDA": 0.2,
-      "PM": 0.2
+      "FCX": 0.2,
+      "NEM": 0.2,
+      "NKE": 0.2,
+      "NOW": 0.2,
+      "NVDA": 0.2
      },
-     "sessions": 1,
+     "sessions": 2,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": null
+     "totalReturn": -0.006681269500000031
     },
     "historical": {
      "asLive": {
@@ -151,14 +151,14 @@
      "firstExecution": "2026-11-10",
      "lastTargets": {
       "AMZN": 0.2,
-      "CMG": 0.2,
+      "CHTR": 0.2,
       "LOW": 0.2,
-      "MSFT": 0.2,
-      "NEM": 0.2
+      "NEM": 0.2,
+      "TMUS": 0.2
      },
-     "sessions": 1,
+     "sessions": 2,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": null
+     "totalReturn": 0.001470176833333392
     },
     "historical": {
      "asLive": {
@@ -203,9 +203,9 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 1,
+     "sessions": 2,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": null
+     "totalReturn": 0.0
     },
     "historical": {
      "asLive": {
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-11T09:34:00Z",
- "generatedAt": "2026-11-11T09:34:07Z",
+ "forwardAt": "2026-11-12T04:43:39Z",
+ "generatedAt": "2026-11-12T04:43:52Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "limitations": [
   "Historical results use previously inspected data and a survivorship-biased stock universe.",
@@ -255,36 +255,69 @@
  "sources": [
   {
    "id": "openfigi-cusip",
+   "lastBatch": {
+    "failed": [],
+    "items": 6
+   },
    "lastSuccessAt": "2026-11-09T22:37:39Z",
    "retrievedAt": "2026-11-09T22:37:39Z",
    "status": "OK"
   },
   {
    "id": "qmom-holdings",
-   "lastSuccessAt": "2026-11-11T09:33:59Z",
-   "retrievedAt": "2026-11-11T09:33:59Z",
+   "lastBatch": {
+    "failed": [],
+    "items": 1
+   },
+   "lastSuccessAt": "2026-11-12T04:43:39Z",
+   "retrievedAt": "2026-11-12T04:43:39Z",
    "status": "OK"
   },
   {
    "id": "sec-company-tickers",
+   "lastBatch": {
+    "failed": [],
+    "items": 1
+   },
    "lastSuccessAt": "2026-11-10T17:34:55Z",
    "retrievedAt": "2026-11-10T17:34:55Z",
    "status": "OK"
   },
   {
    "id": "sec-edgar-13f",
-   "lastSuccessAt": "2026-11-11T09:33:59Z",
-   "retrievedAt": "2026-11-11T09:33:59Z",
+   "lastBatch": {
+    "failed": [],
+    "items": 3
+   },
+   "lastSuccessAt": "2026-11-12T04:43:39Z",
+   "retrievedAt": "2026-11-12T04:43:39Z",
    "status": "OK"
   },
   {
    "id": "sec-form345-dataset",
+   "lastBatch": {
+    "failed": [
+     {
+      "error": "HTTP_404 https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/2026q2_form345.zip",
+      "key": "2026q2"
+     },
+     {
+      "error": "HTTP_404 https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/2026q3_form345.zip",
+      "key": "2026q3"
+     }
+    ],
+    "items": 43
+   },
    "lastSuccessAt": "2026-11-10T17:34:55Z",
    "retrievedAt": "2026-11-10T17:34:55Z",
    "status": "FETCH_FAILED"
   },
   {
    "id": "sec-xbrl-companyfacts",
+   "lastBatch": {
+    "failed": [],
+    "items": 134
+   },
    "lastSuccessAt": "2026-11-10T17:34:55Z",
    "retrievedAt": "2026-11-10T17:34:55Z",
    "status": "OK"
