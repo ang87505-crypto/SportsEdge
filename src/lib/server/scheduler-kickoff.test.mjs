@@ -153,3 +153,16 @@ test('tick backup hours cover a window of every evening tip-off from 22:00 to 04
   assert.ok(covered,'no whole backup hour inside a window for tip '+tip);
  }
 });
+
+test('weekly learning backup: Sunday 16 UTC only, kind=weekly trigger=backup, skipped when today\'s run exists',async()=>{
+ const calls=[];
+ const r=await handleSchedulerKickoff(req(),'props-learn-weekly',env,{now:at('2026-11-15T16:20:00Z'),fetcher:fetcher(calls,{runs:[]})});
+ assert.equal(r.status,202);
+ const post=calls.find(c=>c.method==='POST');
+ assert.match(post.url,/props-learn\.yml\/dispatches$/);
+ assert.deepEqual(post.body,{ref:'main',inputs:{kind:'weekly',trigger:'backup'}});
+ assert.equal((await (await handleSchedulerKickoff(req(),'props-learn-weekly',env,{now:at('2026-11-16T16:20:00Z'),fetcher:fetcher([])})).json()).reason,'outside_slot_hour');
+ const done=await handleSchedulerKickoff(req(),'props-learn-weekly',env,{now:at('2026-11-15T16:20:00Z'),
+  fetcher:fetcher([],{runs:[{created_at:'2026-11-15T10:31:00Z',status:'completed',conclusion:'success'}]})});
+ assert.equal((await done.json()).reason,'already_succeeded_since_slot');
+});
