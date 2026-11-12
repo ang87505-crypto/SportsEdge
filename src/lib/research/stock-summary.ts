@@ -17,7 +17,14 @@ export type StockResearchSummary={
  limitations:string[];
  /** Daily strategies (docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md); null when absent or malformed. */
  daily?:DailySummary|null;
+ /** AI Learning Lab stock behaviour ablation (lab-stock-psychology-v1); null when absent or malformed. */
+ lab?:StockLabSummary|null;
 };
+export type StockLabSummary={experiment:string;historicalAt:string|null;layers:string[];unsupported:string[];verdicts:Record<string,string>;
+ holdout:Record<string,{cagr:number|null;sharpe:number|null;max_drawdown:number|null;total:number|null;exposure:number|null}>;
+ benchmarks?:Record<string,{cagr:number|null;sharpe:number|null;max_drawdown:number|null}>;
+ forward:{frozenRows:number;firstDecision:string;minWeeks:number;variants:Record<string,{weeks:number|null;pending:number|null;total_return:number|null;status:string|null;latest_session:string|null}>};
+ validated:{layer:string;historical:string}[];unvalidated:{layer:string;historical:string}[]};
 export const DAILY_IDS=['daily-reversal5-v1','daily-momentum5d-v1','daily-spy-trend50-v1'] as const;
 export type DailyId=typeof DAILY_IDS[number];
 export const DAILY_NAMES:Record<DailyId,string>={
@@ -62,7 +69,20 @@ export function parseStockResearch(v:unknown,nowIso:string):StockResearchSummary
  // The daily section is optional and validated on its own: a bad daily block never hides the main study.
  const out={...v} as unknown as StockResearchSummary;
  out.daily=v.daily===undefined?undefined:parseDaily(v.daily);
+ out.lab=v.lab===undefined?undefined:parseLab(v.lab);
  return out;
+}
+/** The lab section is optional and validated on its own; anything malformed is dropped, never guessed. */
+export function parseLab(v:unknown):StockLabSummary|null{
+ const strs=(x:unknown,max=12)=>Array.isArray(x)&&x.length<=max&&x.every(y=>text(y,60));
+ const rows=(x:unknown)=>Array.isArray(x)&&x.length<=12&&x.every(y=>obj(y)&&text(y.layer,60)&&text(y.historical,200));
+ if(!obj(v)||!text(v.experiment,60)||!nullableTime(v.historicalAt)||!strs(v.layers)||!strs(v.unsupported)||!obj(v.verdicts)||
+  !Object.values(v.verdicts).every(x=>text(x,200))||!obj(v.holdout)||Object.keys(v.holdout).length>24||!obj(v.forward)||
+  !Number.isSafeInteger(v.forward.frozenRows)||!text(v.forward.firstDecision,10)||!Number.isSafeInteger(v.forward.minWeeks)||
+  !obj(v.forward.variants)||!rows(v.validated)||!rows(v.unvalidated))return null;
+ for(const h of Object.values(v.holdout))if(!obj(h)||!['cagr','sharpe','max_drawdown','total','exposure'].every(k=>num(h[k]??null)))return null;
+ for(const f of Object.values(v.forward.variants as Record<string,unknown>))if(!obj(f)||!['weeks','pending','total_return'].every(k=>num(f[k]??null)))return null;
+ return v as unknown as StockLabSummary;
 }
 function parseDaily(v:unknown):DailySummary|null{
  if(!obj(v)||!text(v.prereg)||!text(v.overall)||!nullableTime(v.historicalAt)||!nullableTime(v.forwardAt)||

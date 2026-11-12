@@ -141,3 +141,34 @@ class Smoke(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class LabSmoke(unittest.TestCase):
+    """SYNTHETIC wiring test for the AI Learning Lab stock commands: the forward ledger freezes the next weekly decision
+    before it opens, appends once, and the report carries a lab section that validates nothing yet."""
+
+    def test_lab_forward_freezes_next_week_once_and_report_includes_lab(self):
+        members = [{'symbol': f'S{i:02d}', 'sector': f'Sec{i % 6}', 'first_traded_on': '2015-01-02'} for i in range(10)]
+        universe = {'version': 'x', 'max_last_close': '95', 'securities': members}
+        # Bars through Friday 2026-11-20; the calendar continues to Monday 2026-11-23 (the next decision).
+        src = FakeSource([m['symbol'] for m in members] + ['SPY'], end='2026-11-27')
+        src.bars = {s: [r for r in rows if r['t'][:10] <= '2026-11-20'] for s, rows in src.bars.items()}
+        with tempfile.TemporaryDirectory() as d:
+            data = Path(d)
+            ufile = data / 'universe.json'
+            ufile.write_text(json.dumps(universe))
+            now = datetime(2026, 11, 21, 2, 17, tzinfo=timezone.utc)
+            with mock.patch.object(cli, 'UNIVERSE', ufile), mock.patch.object(cli, 'alpaca', lambda: src):
+                out = cli.cmd_lab_forward(data, data / 'results', '2026-11-20', now)
+                self.assertEqual(out['last_bar'], '2026-11-20')
+                self.assertEqual(out['frozen_now'], 10)
+                rows = cli._lab_ledger(data)
+                self.assertTrue(all(r['decision_session'] == '2026-11-23' and r['data_through'] == '2026-11-20' for r in rows))
+                again = cli.cmd_lab_forward(data, data / 'results', '2026-11-20', now + timedelta(hours=1))
+                self.assertEqual(again['frozen_now'], 0)
+                self.assertEqual(len(cli._lab_ledger(data)), 10)
+                cli.cmd_report(data, now + timedelta(hours=2))
+                summary = json.loads((data / 'summary.json').read_text())
+                self.assertEqual(summary['lab']['experiment'], 'lab-stock-psychology-v1')
+                self.assertEqual(summary['lab']['validated'], [])
+                self.assertEqual(summary['lab']['forward']['frozenRows'], 10)

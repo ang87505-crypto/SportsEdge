@@ -1,9 +1,28 @@
 /**
- * Stock psychology research status for the Lab view (lab-stock-psychology-v1, analytics/stock_psychology_v1.py).
- * Registered and tested on fictional prices; no historical result exists until the owner dispatches the manual
- * "Stock psychology research (lab, manual)" workflow and its report is committed. Nothing here is a result.
+ * Stock behaviour research status for the Lab view and chat (lab-stock-psychology-v1, analytics/stock_psychology_v1.py).
+ * Read from the research pipeline's published summary (research-data branch). Validated and unvalidated findings are
+ * always separated; a historical "helps" is never called validated until the frozen forward ledger reaches its minimum.
  */
 import type {LabInput} from './view.ts';
-export const STOCK_PSYCHOLOGY_LAYERS=['attention_spike','volatility_shock','short_term_overreaction'] as const;
-export const STOCK_PSYCHOLOGY_UNSUPPORTED=['news_sentiment','earnings_surprise','search_attention','crowd_concentration'] as const;
-export function stockLabSummary():LabInput['stocks']{return {state:'not_run'};}
+import type {ResearchView,StockLabSummary} from '../research/stock-summary.ts';
+export const STOCK_LAB_LAYERS=['market_regime','attention_spike','volatility_shock','short_term_overreaction'] as const;
+export const STOCK_LAB_UNSUPPORTED=['news_sentiment','earnings_surprise','search_attention','crowd_concentration'] as const;
+const LABEL:Record<string,string>={market_regime:'Market regime (SPY vs 200-day)',attention_spike:'Attention spikes',volatility_shock:'Volatility shocks',
+ short_term_overreaction:'One-month overreaction',news_sentiment:'News sentiment',earnings_surprise:'Earnings surprises',search_attention:'Search attention',
+ crowd_concentration:'Crowd concentration'};
+const pct=(x:number|null|undefined)=>x===null||x===undefined?'—':(x*100).toFixed(1)+'%';
+
+export function stockLabSummary(view?:ResearchView|null):LabInput['stocks']{
+ const lab:StockLabSummary|null|undefined=view?.summary?.lab;
+ if(!lab)return {state:'not_run'};
+ const verdicts=[...STOCK_LAB_LAYERS,...STOCK_LAB_UNSUPPORTED].map(l=>({layer:LABEL[l]??l,
+  verdict:l in lab.verdicts?lab.verdicts[l].replace(/^not_tested: /,'not tested: '):'not run yet'}));
+ const fwd=Object.values(lab.forward.variants);
+ const weeks=fwd.length?Math.max(...fwd.map(f=>f.weeks??0)):0;
+ const base=lab.holdout.base,comb=lab.holdout.combined;
+ const summary=(lab.historicalAt?`Historical ablation (${lab.historicalAt.slice(0,10)}; 2023+ holdout, 10 bps): base momentum CAGR ${pct(base?.cagr)}, Sharpe ${base?.sharpe?.toFixed(2)??'—'}; `+
+  `all layers combined CAGR ${pct(comb?.cagr)}, Sharpe ${comb?.sharpe?.toFixed(2)??'—'}. `:'The historical ablation has not run yet. ')+
+  `Forward frozen picks: ${lab.forward.frozenRows} rows from ${lab.forward.firstDecision}, ${weeks} graded week(s) of ${lab.forward.minWeeks} needed. `+
+  `Validated findings: ${lab.validated.length?lab.validated.map(x=>LABEL[x.layer]??x.layer).join(', '):'none'}. Unvalidated: ${lab.unvalidated.map(x=>`${LABEL[x.layer]??x.layer} (${x.historical.replaceAll('_',' ')})`).join(', ')}.`;
+ return {state:'ready',summary,verdicts,lab};
+}
