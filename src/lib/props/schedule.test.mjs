@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {PROPS_SCHEDULE,PROPS_RELEASE,scheduledInstant,slotKey,nextPlannedRuns} from './schedule.ts';
+import {PROPS_SCHEDULE,PROPS_RELEASE,PROPS_COLLECTION_V2,scheduledInstant,slotKey,nextPlannedRuns} from './schedule.ts';
 
 test('workflow crons match the source schedule exactly (no duplicate or stray schedules)',()=>{
  const yml=readFileSync(new URL('../../../.github/workflows/props-daily.yml',import.meta.url),'utf8');
@@ -27,8 +27,20 @@ test('released schedule stays paper-only and fails closed without configuration'
  // A scheduled firing with no store configuration stops before any provider or ESPN call.
  const r=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',worker,'collect'],
   {env:{PATH:process.env.PATH,GITHUB_EVENT_NAME:'schedule',SCHEDULE_CRON:'10 22 * * *'},encoding:'utf8'});
- assert.equal(r.status,1);
- assert.equal(JSON.parse(r.stdout).status,'NOT_CONFIGURED');
+ if(PROPS_COLLECTION_V2.tickEnabled){
+  // Released ticks: the legacy scheduled collect stands down before reading any configuration.
+  assert.equal(r.status,0);
+  assert.deepEqual(JSON.parse(r.stdout),{status:'SUPERSEDED_BY_TICK',kind:'collect',providerCalls:0});
+ }else{
+  assert.equal(r.status,1);
+  assert.equal(JSON.parse(r.stdout).status,'NOT_CONFIGURED');
+ }
+ // A scheduled tick: inert while released off; when released, it fails closed without configuration.
+ const t=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',worker,'tick'],
+  {env:{PATH:process.env.PATH,GITHUB_EVENT_NAME:'schedule'},encoding:'utf8'});
+ const tick=JSON.parse(t.stdout);
+ if(PROPS_COLLECTION_V2.tickEnabled){assert.equal(t.status,1);assert.equal(tick.status,'NOT_CONFIGURED');}
+ else{assert.equal(t.status,0);assert.deepEqual(tick,{status:'TICK_RELEASED_OFF',kind:'tick',providerCalls:0});}
  // Owner control and backfill can never run from a schedule.
  for(const kind of ['resume','stop','backfill']){
   const o=spawnSync(process.execPath,['--experimental-strip-types','--no-warnings',worker,kind],
