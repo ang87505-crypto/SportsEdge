@@ -38,7 +38,7 @@ const acc=byId(accounts);
 const ids=entries.map(e=>e.id);
 const legs=ids.length?await get(`props_entry_legs?select=entry_id,pick_id&entry_id=${inList(ids)}`):[];
 const picks=legs.length?byId(await get(`props_picks?select=id,prediction_id,run_id,selection_version,status,side,reason,decided_at&id=${inList(legs.map(l=>l.pick_id))}`)):new Map();
-const preds=picks.size?byId(await get(`props_predictions?select=id,observation_id,model_version,p_more,p_less,mean,athlete_id&id=${inList([...picks.values()].map(p=>p.prediction_id))}`)):new Map();
+const preds=picks.size?byId(await get(`props_predictions?select=id,observation_id,model_version,p_more,p_less,mean,athlete_id,inputs&id=${inList([...picks.values()].map(p=>p.prediction_id))}`)):new Map();
 const obs=preds.size?byId(await get(`props_observations?select=id,platform,provider_event_id,home_team,away_team,commence_time,lock_at,player_name,stat,line,provider_last_update&id=${inList([...preds.values()].map(p=>p.observation_id))}`)):new Map();
 const results=obs.size?await get(`props_line_results?select=observation_id,revision,actual,outcome,player_game_id,graded_at&observation_id=${inList([...obs.keys()])}&order=revision.desc`):[];
 const latest=new Map();for(const r of results)if(!latest.has(Number(r.observation_id)))latest.set(Number(r.observation_id),r);
@@ -60,7 +60,7 @@ out.entries=entries.map(e=>{
   const game=(res?.player_game_id&&pgById.get(Number(res.player_game_id)))||allPg.find(g=>link&&g.espn_event_id===link.espn_event_id&&g.athlete_id===pr?.athlete_id)||null;
   const rg=o?regrade(o,game):{state:'MISSING_LINE'};
   return {pickId:Number(l.pick_id),side:p?.side??null,pickDecidedAt:p?.decided_at??null,selection:p?.selection_version??null,
-   model:pr?.model_version??null,pSide:pr?(p.side==='more'?Number(pr.p_more):Number(pr.p_less)):null,mean:pr?.mean===null||pr?.mean===undefined?null:Number(pr.mean),
+   model:pr?.model_version??null,games:pr?.inputs?.games??null,expMinutes:pr?.inputs?.expMinutes??null,pSide:pr?(p.side==='more'?Number(pr.p_more):Number(pr.p_less)):null,mean:pr?.mean===null||pr?.mean===undefined?null:Number(pr.mean),
    player:o?.player_name??null,stat:o?.stat??null,line:o?Number(o.line):null,game:o?`${o.away_team} @ ${o.home_team}`:null,lockAt:o?.lock_at??null,
    stored:res?{outcome:res.outcome,actual:res.actual===null?null:Number(res.actual),revision:res.revision,gradedAt:res.graded_at}:null,
    boxScore:game?{source:game.source,status:game.game_status,dnp:game.did_not_play,minutes:game.minutes===null?null:Number(game.minutes),
@@ -84,9 +84,11 @@ out.bankrolls=accounts.map(a=>{const mine=allEntries.filter(e=>Number(e.account_
  return {account:a.slug,selection:a.selection_version,entries:mine.length,settled:settled.length,open:mine.length-settled.length,record:rec,
   profitCents:profit,stakedCents:staked,roi:staked?profit/staked:null,bankrollCents:Number(a.initial_cents)+profit,initialCents:Number(a.initial_cents)};});
 const recPicks=await get('props_picks?select=id,prediction_id,side,selection_version,decided_at&status=eq.recorded&order=id.asc&limit=5000');
-const rp=recPicks.length?byId(await get(`props_predictions?select=id,observation_id,model_version,p_more,p_less&id=${inList(recPicks.map(p=>p.prediction_id))}`)):new Map();
+const rp=recPicks.length?byId(await get(`props_predictions?select=id,observation_id,model_version,p_more,p_less,mean,inputs&id=${inList(recPicks.map(p=>p.prediction_id))}`)):new Map();
 const rObs=rp.size?byId(await get(`props_observations?select=id,platform,stat,line,lock_at&id=${inList([...rp.values()].map(p=>p.observation_id))}`)):new Map();
-const rRes=rObs.size?await get(`props_line_results?select=observation_id,revision,outcome&observation_id=${inList([...rObs.keys()])}&order=revision.desc`):[];
+const rRes=rObs.size?await get(`props_line_results?select=observation_id,revision,outcome,actual,player_game_id&observation_id=${inList([...rObs.keys()])}&order=revision.desc`):[];
+const rPgIds=[...new Set(rRes.map(r=>r.player_game_id).filter(Boolean))];
+const rPg=rPgIds.length?byId(await get(`props_player_games?select=id,minutes&id=${inList(rPgIds)}`)):new Map();
 const rLatest=new Map();for(const r of rRes)if(!rLatest.has(Number(r.observation_id)))rLatest.set(Number(r.observation_id),r);
 const tally={};
 for(const p of recPicks){const pr=rp.get(Number(p.prediction_id)),o=pr&&rObs.get(Number(pr.observation_id)),r=o&&rLatest.get(Number(o.id));
@@ -98,6 +100,22 @@ for(const p of recPicks){const pr=rp.get(Number(p.prediction_id)),o=pr&&rObs.get
  const q=p.side==='more'?Number(pr.p_more):Number(pr.p_less);t.brierSum+=(q-(hit?1:0))**2;
  for(const [m,key] of [[t.byStat,o.stat],[t.bySide,p.side]]){const b=m[key]??={graded:0,hits:0,meanP:0};b.graded++;if(hit)b.hits++;b.meanP+=q;}
 }
+// Loss analysis on graded recorded picks: does the miss rate track model-vs-line gap, history depth or a minutes surprise?
+const rows=[];
+for(const p of recPicks){const pr=rp.get(Number(p.prediction_id)),o=pr&&rObs.get(Number(pr.observation_id)),r=o&&rLatest.get(Number(o.id));
+ if(!r||!pr)continue;const leg=legOf(p.side,r.outcome);if(leg==='void')continue;
+ const inp=pr.inputs??{},mean=Number(pr.mean),line=Number(o.line),pg=r.player_game_id?rPg.get(Number(r.player_game_id)):null;
+ rows.push({hit:leg==='win',side:p.side,stat:o.stat,games:Number(inp.games??NaN),gapPct:line?Math.abs(mean-line)/line:NaN,
+  minutesSurprise:pg&&Number.isFinite(Number(inp.expMinutes))?Number(pg.minutes)-Number(inp.expMinutes):NaN,
+  q:p.side==='more'?Number(pr.p_more):Number(pr.p_less)});}
+const bucket=(name,f,edges)=>{const out={};for(const r of rows){const v=f(r);if(!Number.isFinite(v))continue;
+ const k=edges.find(([,hi])=>v<hi)?.[0]??edges.at(-1)[0];const b=out[k]??={n:0,hits:0,meanP:0};b.n++;if(r.hit)b.hits++;b.meanP+=r.q;}
+ for(const b of Object.values(out)){b.hitRate=b.hits/b.n;b.meanP=b.meanP/b.n;}return [name,out];};
+out.lossAnalysis={graded:rows.length,note:'Small, correlated sample (legs share games and entries): descriptive only, not a basis for changing the model.',
+ ...Object.fromEntries([
+  bucket('modelVsLineGap',r=>r.gapPct,[['<15%',0.15],['15-25%',0.25],['>=25%',Infinity]]),
+  bucket('gamesOfHistory',r=>r.games,[['<=5',6],['6-10',11],['>10',Infinity]]),
+  bucket('minutesVsExpected',r=>r.minutesSurprise,[['<-5',-5],['-5..+5',5],['>+5',Infinity]])])};
 for(const t of Object.values(tally)){t.hitRate=t.graded?t.hits/t.graded:null;t.brier=t.graded?t.brierSum/t.graded:null;delete t.brierSum;
  for(const m of [t.byStat,t.bySide])for(const b of Object.values(m)){b.hitRate=b.hits/b.graded;b.meanP=b.meanP/b.graded;}}
 out.pickRecord=tally;
@@ -112,11 +130,12 @@ for(const e of out.entries){
  L.push(`ENTRY #${e.id} ${e.account} stake=${$(e.stake)} created=${e.created} lock=${e.lock} run=${e.run} AUDIT=${e.audit.state}`+
   ` stored=${e.settlement?`${e.settlement.outcome} w${e.settlement.wins}/l${e.settlement.losses}/v${e.settlement.voids} profit=${$(e.settlement.profit_cents===null?null:Number(e.settlement.profit_cents))}`:'unsettled'}`+
   ` recomputed=${e.audit.expected?`${e.audit.expected.outcome} profit=${$(e.audit.expected.profitCents)}`:'n/a'}`+(e.audit.problems.length?` PROBLEMS=${e.audit.problems.join(' | ')}`:''));
- for(const l of e.legs)L.push(`  LEG pick=${l.pickId} ${l.player} ${l.side} ${l.line} ${l.stat} (${l.game}) p=${l.pSide?.toFixed(3)} mean=${l.mean?.toFixed?.(2)} decided=${l.pickDecidedAt} lock=${l.lockAt}`+
+ for(const l of e.legs)L.push(`  LEG pick=${l.pickId} ${l.player} ${l.side} ${l.line} ${l.stat} (${l.game}) p=${l.pSide?.toFixed(3)} mean=${l.mean?.toFixed?.(2)} games=${l.games} expMin=${l.expMinutes===null?'n/a':Number(l.expMinutes).toFixed(1)} decided=${l.pickDecidedAt} lock=${l.lockAt}`+
   ` | stored=${l.stored?`${l.stored.outcome}(${l.stored.actual}) r${l.stored.revision}`:'none'}`+
   ` | box=${l.boxScore?`${l.boxScore.status}${l.boxScore.dnp?' DNP':''} min=${l.boxScore.minutes} pts=${l.boxScore.points} reb=${l.boxScore.rebounds} ast=${l.boxScore.assists} (${l.boxScore.source} r${l.boxScore.revision} ${l.boxScore.retrievedAt})`:'none'}`+
   ` | regrade=${l.regrade.state==='graded'?`${l.regrade.outcome}(${l.regrade.actual})`:l.regrade.state} leg=${l.leg??'n/a'}`);
 }
 for(const b of out.bankrolls)L.push(`BANKROLL ${b.account} (${b.selection}) entries=${b.entries} settled=${b.settled} open=${b.open} record=${JSON.stringify(b.record)} profit=${$(b.profitCents)} staked=${$(b.stakedCents)} roi=${b.roi===null?'n/a':(b.roi*100).toFixed(1)+'%'} bankroll=${$(b.bankrollCents)} of ${$(b.initialCents)}`);
 for(const [k,t] of Object.entries(out.pickRecord))L.push(`PICKS ${k} ${JSON.stringify(t)}`);
+L.push(`LOSS_ANALYSIS ${JSON.stringify(out.lossAnalysis)}`);
 console.log(L.join('\n'));
