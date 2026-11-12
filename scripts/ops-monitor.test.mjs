@@ -88,6 +88,9 @@ test('regression 2026-11-11: a slot GitHub started 7 h late is RAN_LATE, not a s
   const failed = evaluateJob(research, {workflowState: 'active', crons, nowMs: T('2026-11-11T23:25Z'),
     runs: [run('2026-11-11T09:33Z', 'cancelled'), run('2026-11-10T09:59Z')]});
   assert.equal(failed.status, 'MISSED_SLOT');
+  // A slot with no run at all, followed by the next slot's on-time run, is a miss, not "ran late".
+  const daily2 = evaluateJob(job, {workflowState: 'active', crons: daily, nowMs: T('2026-11-12T00:00Z'), runs: [run('2026-11-11T22:32Z'), run('2026-11-09T22:20Z')]});
+  assert.equal(daily2.status, 'MISSED_SLOT');
 });
 
 test('disabled workflows and expired temporary jobs', () => {
@@ -141,4 +144,17 @@ test('props receipts: green workflows that collect nothing for two days are surf
   // Paused by the owner, or receipts unreadable: no receipt-level claim either way.
   assert.deepEqual(propsReceiptBlockers({...base, controlState: 'PAUSED', lastCompletedCollectAt: null}, now), []);
   assert.deepEqual(propsReceiptBlockers({state: 'UNAVAILABLE'}, now), []);
+});
+
+test('a run GitHub queued hours ago and never started is reported as stuck, not as running', () => {
+  const now = T('2026-11-12T00:00Z');
+  const stuck = {...run('2026-11-11T20:44Z', null, 'schedule', 'queued'), run_started_at: '2026-11-11T20:44Z'};
+  const e = evaluateJob(job, {workflowState: 'active', crons: daily, nowMs: now, runs: [run('2026-11-11T22:32Z'), stuck, run('2026-11-10T22:20Z')]});
+  assert.equal(e.status, 'OK');
+  assert.equal(e.running, null);
+  assert.equal(e.stuckQueued, 1);
+  assert.match(e.detail, /1 run queued by GitHub for over 2 hours without starting \(oldest 2026-11-11 20:44 UTC\)/);
+  const fresh = evaluateJob(job, {workflowState: 'active', crons: daily, nowMs: now, runs: [run('2026-11-11T22:32Z'), run('2026-11-11T23:30Z', null, 'schedule', 'queued'), run('2026-11-10T22:20Z')]});
+  assert.equal(fresh.stuckQueued, 0);
+  assert.equal(fresh.running.status, 'queued');
 });
