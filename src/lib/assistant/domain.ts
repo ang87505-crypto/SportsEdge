@@ -2,7 +2,8 @@
 import {normalize,type AssistantContext} from './understand.ts';
 import type {ResearchId} from '../research/stock-summary.ts';
 export type AssistantDomain='sports'|'stocks'|'research'|'all';
-export type AssistantTopic='overview'|'performance'|'holdings'|'picks'|'automation'|'explain'|'controls'|'help'|'approvals'|'jobs';
+export type AssistantTopic='overview'|'performance'|'holdings'|'picks'|'automation'|'explain'|'controls'|'help'|'approvals'|'jobs'|
+ 'today'|'money'|'health'|'improving'|'opportunity'|'ready';
 export type QuestionRoute={domain:AssistantDomain|null;topic:AssistantTopic;symbol?:string;strategyId?:ResearchId};
 export function routeQuestion(message:string,previous:AssistantContext|null):QuestionRoute{
  const t=normalize(message);
@@ -26,6 +27,18 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  else if(/\b(running|status|schedule|scheduled|next|automation|workflow|collect|collection|enabled|paused|blocked|failed|working)\b/.test(t))topic='automation';
  else if(/\b(picks|picked|bought|targets)\b/.test(t))topic='picks';
  if(ops){domain='all';topic=ops;}
+ // Whole-site questions answered from the shared briefing (the same read model as the Overview page).
+ else if(topic!=='controls'){
+  const brief:AssistantTopic|null=
+   /\bready\b.*\b(monday|first (stock )?session|stock session)\b|\b(monday|first session)\b.*\bready\b/.test(t)?'ready':
+   /\bwhat happened\b|\bwhat (did|has) (we|you|it|sportsedge) (do|done)\b|\bcatch me up\b|\bbrief me\b|\b(daily|today is) (summary|briefing|brief)\b|\bso far today\b|^how did (we|it|things) (do|go)( today)?$/.test(t)?'today':
+   /\bbroken\b|\b(anything|something) (wrong|failing|failed|broken)\b|\bis (everything|anything|the site|automation|it all) (ok|okay|working|running|fine|healthy)\b|\bany (automation|jobs?) (broken|failing|failed|down)\b/.test(t)?'health':
+   /\bpromising\b|\bopportunit\w*|\bbest (current )?(bet|play|idea)\b/.test(t)&&domain!=='stocks'?'opportunity':
+   (!domain||domain==='all')&&(/\b(algorithm|model|models|system|ai)\b.*\b(improv\w*|learn\w*|better|progress\w*)\b/.test(t)||/\b(improving|getting better)\b/.test(t))?'improving':
+   !domain&&/\b(money|made|make|earn\w*|profit\w*|pnl|p l|up or down|losing|lost)\b/.test(t)?'money':null;
+  if(brief){domain='all';topic=brief;}
+  else if(!domain&&/\bmistakes?\b|\bwent wrong\b|\bwhy (are|do|did) we (keep )?los/.test(t))domain='sports';
+ }
  if(!t||/^(help|hi|hello|hey|what can you do)$/.test(t)){domain='all';topic='help';}
  if(topic==='overview'&&follow&&domain===previous?.domain&&previous?.topic)topic=previous.topic;
  let strategyId:ResearchId|undefined;

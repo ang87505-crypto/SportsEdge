@@ -16,8 +16,8 @@ const STALE_ODDS_HOURS=24;
 
 type StatusRow={label:string;value:ReactNode;tone:Tone;detail:string;href:string};
 
-/** Overview body. The PrizePicks figures arrive as server-rendered slots from the ledger. */
-export function HomeView({propsCard,propsStatus}:{propsCard:ReactNode;propsStatus:ReactNode}){
+/** Overview body. The briefing (Right now, Today, Results, Next, learning) arrives as server-rendered slots from the ledgers. */
+export function HomeView({rightNow,board,propsStatus}:{rightNow:ReactNode;board:ReactNode;propsStatus:ReactNode}){
  const [research,retryResearch]=useResearch();
  const [nba,retryNba]=useSportsFeed('nba');
  const now=useNow();
@@ -71,7 +71,7 @@ export function HomeView({propsCard,propsStatus}:{propsCard:ReactNode;propsStatu
   <section className="home-intro" aria-labelledby="home-title">
    <div className="home-intro-copy">
     <h1 id="home-title">Research desk</h1>
-    <p>SportsEdge makes daily virtual PrizePicks picks on NBA player props, keeps its sports model research, and runs a stock strategy on a paper account. Everything runs on its own schedule; nothing uses real money.</p>
+    <p>SportsEdge collects NBA player-prop lines, records virtual PrizePicks picks before tip-off, grades them on real box scores, learns from the results, and runs a weekly stock strategy on an Alpaca PAPER account. It all runs on its own schedule. Nothing uses real money.</p>
     <div className="button-row" style={{marginTop:14}}>
      <Link href="/paper-betting/props" className="button">Open PrizePicks</Link>
      <Link href="/automation" className="button button-secondary">Automation status</Link>
@@ -86,20 +86,12 @@ export function HomeView({propsCard,propsStatus}:{propsCard:ReactNode;propsStatu
       </Link>)}
     </div>
    </div>
-   <Panel title="System status" className="status-panel" actions={<span className="quiet" aria-live="polite">{research.status==='ready'?`Checked ${new Date(research.checkedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`:research.status==='loading'?'Checking…':'Check failed'}</span>}>
-    <ul className="status-list">
-     {propsStatus}
-     {status.map(s=><li key={s.label}><Link href={s.href}>
-      <StatusDot tone={s.tone}/>
-      <span className="status-copy"><span>{s.label}</span><small>{s.detail}</small></span>
-      <span className={`status-value tone-text-${s.tone==='neutral'?'neutral':s.tone}`}>{s.value}</span>
-     </Link></li>)}
-    </ul>
-   </Panel>
+   {rightNow}
   </section>
 
-  <div className="home-grid">
-   {propsCard}
+  {board}
+
+  <div className="home-grid" style={{marginTop:12}}>
    <Panel title="Sports AI" description="Retrospective NBA Elo study, 2024–26" actions={<Evidence kind="historical"/>}>
     <div className="home-metric-pair">
      <Metric label="Winner accuracy" value={pct(summary.accuracy)} detail={`Always picking home: ${pct(summary.baseline_accuracy)}`}/>
@@ -121,6 +113,16 @@ export function HomeView({propsCard,propsStatus}:{propsCard:ReactNode;propsStatu
     </ul>
     <p className="home-panel-note">Baseline <code>{protocol.baseline}</code> and one candidate are registered. Returns stay unreported until a verified point-in-time backtest exists.</p>
     <div className="home-panel-foot"><span>Alpaca PAPER is owner-only</span><Link href="/stocks" className="text-link">Open stocks</Link></div>
+   </Panel>
+   <Panel title="Data feeds" description="Where each figure on this site comes from" actions={<span className="quiet" aria-live="polite">{research.status==='ready'?`Checked ${new Date(research.checkedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`:research.status==='loading'?'Checking…':'Check failed'}</span>}>
+    <ul className="status-list">
+     {propsStatus}
+     {status.map(s=><li key={s.label}><Link href={s.href}>
+      <StatusDot tone={s.tone}/>
+      <span className="status-copy"><span>{s.label}</span><small>{s.detail}</small></span>
+      <span className={`status-value tone-text-${s.tone==='neutral'?'neutral':s.tone}`}>{s.value}</span>
+     </Link></li>)}
+    </ul>
    </Panel>
   </div>
 

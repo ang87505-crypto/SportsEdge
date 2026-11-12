@@ -42,7 +42,7 @@ test('domain routing precedes sports interpretation',()=>{
   ['Stock bot status','stocks','automation'],['What did the stock model learn?','research','explain'],
   ["Tonight's picks",'sports','picks'],['How did sports and stocks do yesterday?','all','performance'],
   ['Why did the Berkshire strategy fail?','research','explain'],['What stocks do I hold?','stocks','holdings'],
-  ['Are we copying QMOM yet?','research','overview'],['Is everything running?','all','automation'],
+  ['Are we copying QMOM yet?','research','overview'],['Is everything running?','all','health'],
   ['Which strategy beat SPY?','research','performance'],['Buy OXY','stocks','controls'],
  ]){
   const r=routeQuestion(text,null);assert.equal(r.domain,domain,text);assert.equal(r.topic,topic,text);
@@ -206,9 +206,14 @@ test('background jobs: combined status reports real runs and labels planned time
  assert.match(r.reply.text,/Background jobs\n/);
  assert.match(r.reply.text,/no successful run yet; next planned .*\(planned, not yet run\)/);
  s.ports.ops=async()=>{throw new Error('feed down');};
- const down=await ask('Is everything running?',s);
+ const down=await ask('How are sports and stocks doing?',s);
  for(const h of ['Sports','Stock account','Stock research','Background jobs'])assert.ok(down.reply.text.includes(h));
  assert.match(down.reply.text,/Planned schedules are not evidence of a run/);
+ // The health briefing with the monitor down says so instead of reporting green.
+ const health=await ask('Is everything running?',s);
+ assert.equal(health.reply.context.topic,'health');
+ assert.match(health.reply.text,/Status unknown.*Nothing is assumed to be running/s);
+ assert.doesNotMatch(health.reply.text,/Everything is running/);
 });
 
 test('daily strategies: optional summary section parses on its own and reaches research answers', async()=>{
@@ -225,4 +230,46 @@ test('daily strategies: optional summary section parses on its own and reaches r
  const r=await ask('How is daily trading doing?',s);
  assert.match(r.reply.text,/Daily strategies \(paper research, not active\)/);
  assert.match(r.reply.text,/forward trades start at the 2026-11-10 open/);
+});
+
+test('whole-site questions: each sprint question gets a specific answer from records, never the "which domain" prompt', async()=>{
+ const s=setup();
+ const opsView={mode:'live',checkedAt:NOW,monitorStale:false,status:{schemaVersion:'ops-status-v1',generatedAt:'2026-11-09T22:50:00Z',monitorRun:null,
+  overall:{state:'WARN',attention:[]},jobs:[],blockers:[{id:'stock-first-session',text:'PR #102 (stock PAPER orders) is not released.',action:'See the checklist.'}],
+  site:{url:'x',checkedAt:NOW,ok:true,checks:[{name:'Overview page',ok:true,ms:9,detail:null}]},evidence:{release:{pr:102,state:'open',merged:false}},credentials:[]}};
+ s.ports.ops=async()=>opsView;
+ const cases=[["What happened today?",'today',/Today so far|Nothing has been recorded yet today/],
+  ['How much virtual money did we make this week?','money',/last 7 days: \+\$15\.00 on 3 settled entries[\s\S]*Too early to judge profitability[\s\S]*owner-only/],
+  ["Why didn't we make any picks?",null,/./],
+  ['What is the most promising current paper opportunity?','opportunity',/not recommendations or predictions of profit/],
+  ['How is the algorithm improving?','improving',/Recorded picks hit[\s\S]*No research candidate is active/],
+  ['What mistakes are we making?',null,/./],
+  ["What's happening with our API credits?",null,/credit/i],
+  ['Is any automation broken?','health',/Stock PAPER autopilot: Needs you/],
+  ['Are we ready for Monday?','ready',/Sign in as the owner[\s\S]*Release-gate evidence/],
+  ['What needs my approval?','approvals',/PR #102/]];
+ for(const [q,topic,re] of cases){
+  const r=await ask(q,s);
+  assert.doesNotMatch(r.reply.text,/Do you mean sports picks/,q);
+  if(topic)assert.equal(r.reply.context.topic,topic,q);
+  assert.match(r.reply.text,re,q);
+ }
+ // Visitors never trigger the owner-only stock loader.
+ assert.equal(s.calls.accounts,0);
+ // A follow-up keeps the topic: "and all time?" after the weekly money question.
+ const first=await ask('How much virtual money did we make this week?',s);
+ const follow=await ask('what about all time?',s,first.reply.context);
+ assert.equal(follow.reply.context.topic,'money');
+ assert.doesNotMatch(follow.reply.text,/last 7 days/);
+});
+
+test('whole-site money and Monday answers read the stock ledger only with an owner session', async()=>{
+ const s=setup(true);s.ports.accounts=async()=>{s.calls.accounts++;return account();};
+ const r=await ask('How much virtual money did we make this week?',s);
+ assert.equal(s.calls.accounts,1);
+ assert.match(r.reply.text,/Stocks: /);
+ assert.equal(r.reply.private,true);
+ const m=await ask('Are we ready for Monday?',s);
+ assert.equal(m.reply.context.topic,'ready');
+ assert.doesNotMatch(m.reply.text,/Sign in as the owner to check this/);
 });
