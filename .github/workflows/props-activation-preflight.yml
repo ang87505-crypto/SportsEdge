@@ -1,0 +1,45 @@
+# Read-only preflight for the props capture activation (docs/PROPS_CAPTURE_ACTIVATION_CHECKLIST_2026_11_11.md).
+# Every database request is a PostgREST GET; no RPC, no write, no Odds API call, no secret printed. Run it before
+# and after each activation step: it reports whether props_capture_v1 and v3 accounting are applied, the active
+# budget policy, real rolling credit use, duplicate and entry-cap checks, settlement recency, and whether the live
+# site's budget answer matches the ledger.
+name: Props activation preflight (read-only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/beautiful-knuth-6qw5zi]
+    paths:
+      - scripts/props-activation-preflight*.mjs
+      - .github/workflows/props-activation-preflight.yml
+permissions:
+  contents: read
+concurrency:
+  group: props-activation-preflight
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Unit tests (GET-only guard, accounting, verdicts)
+        run: node --test scripts/props-activation-preflight.test.mjs
+      - name: Read-only checks against the props database
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/props-activation-preflight.mjs preflight.json > /dev/null
+          node -e '
+           const f=require("./preflight.json");
+           const lines=["## Props activation preflight ("+f.at+")","","| Check | State | Detail |","|---|---|---|",
+            ...f.verdict.map(v=>"| "+v.id+" | "+v.state+" | "+v.detail+" |"),"",
+            "Credits: "+JSON.stringify(f.credits),"","Site budget reply matches ledger: "+f.siteMatchesLedger,"",
+            "Recent runs: "+JSON.stringify(f.recentRuns)];
+           require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n")+"\n");'
+          cat preflight.json
