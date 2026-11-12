@@ -4,7 +4,7 @@
  * job, places an order or prints a secret. Usage: node scripts/ops-monitor.mjs <out-dir>
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers} from './ops-monitor-lib.mjs';
+import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
@@ -64,7 +64,9 @@ async function evaluate(job){
     return [1,2,3,4,5].includes(d0.getUTCDay())&&job.crons.some(c=>{const [m,h]=c.split(' ').map(Number);
      const fire=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),d0.getUTCDate(),h,m);return t>=fire+lo*60_000&&t<=fire+hi*60_000;});});
   }
-  return {...base,...evaluateJob(job,{workflowState:d.state,runs,crons:job.crons??d.crons,nowMs,activeSinceMs:d.createdAt})};
+  const e={...base,...evaluateJob(job,{workflowState:d.state,runs,crons:job.crons??d.crons,nowMs,activeSinceMs:d.createdAt})};
+  // Switch state is read from the reviewed source on main, never inferred from the runs.
+  return job.releaseSwitch==='props-capture'?applyReleaseSwitch(e,PROPS_COLLECTION_V2.tickEnabled===true):e;
  }catch(e){
   if(job.workflow==='ops-monitor.yml')return {...base,status:'RUNNING',detail:'This run is producing the status.',schedule:[],nextPlanned:[],
    lastRun:null,lastSuccess:null,lastFailure:null,running:null,lastScheduledSuccess:null,consecutiveFailures:0,slots7d:{due:0,missed:0,lastMissedAt:null},workflowState:null};
