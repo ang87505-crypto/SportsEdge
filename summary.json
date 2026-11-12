@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-12T09:56:12Z",
+  "forwardAt": "2026-11-12T18:12:55Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -242,9 +242,149 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-12T09:55:55Z",
- "generatedAt": "2026-11-12T09:56:17Z",
+ "forwardAt": "2026-11-12T18:12:18Z",
+ "generatedAt": "2026-11-12T18:20:59Z",
  "historicalAt": "2026-11-09T22:39:26Z",
+ "lab": {
+  "benchmarks": {
+   "spy": {
+    "cagr": 0.20067432563536447,
+    "max_drawdown": -0.18754263088722167,
+    "sharpe": 1.2934932839481565
+   },
+   "spy-50": {
+    "cagr": 0.09913925436666382,
+    "max_drawdown": -0.09656677472626685,
+    "sharpe": 1.2948347668180669
+   },
+   "spy-exposure-matched": {
+    "cagr": 0.10515825739855034,
+    "max_drawdown": -0.10216709617890207,
+    "sharpe": 1.2947833055284161
+   }
+  },
+  "experiment": "lab-stock-psychology-v1",
+  "forward": {
+   "firstDecision": "2026-11-16",
+   "frozenRows": 0,
+   "minWeeks": 26,
+   "variants": {}
+  },
+  "historicalAt": "2026-11-12T18:13:21Z",
+  "holdout": {
+   "base": {
+    "cagr": 0.06043611978386432,
+    "exposure": 0.5299212509742083,
+    "max_drawdown": -0.13326621274295147,
+    "sharpe": 0.5608293089908873,
+    "total": 0.2522488140363408
+   },
+   "base+attention_spike": {
+    "cagr": 0.10436550867640237,
+    "exposure": 0.5280207635339099,
+    "max_drawdown": -0.1102203895713495,
+    "sharpe": 0.961867336409194,
+    "total": 0.4630725598376195
+   },
+   "base+market_regime": {
+    "cagr": 0.011586717381415701,
+    "exposure": 0.430829934777645,
+    "max_drawdown": -0.10416478510374438,
+    "sharpe": 0.16703830418108015,
+    "total": 0.04514998779898005
+   },
+   "base+short_term_overreaction": {
+    "cagr": 0.05674937570572203,
+    "exposure": 0.49382562691196413,
+    "max_drawdown": -0.07763786228224545,
+    "sharpe": 0.6630511332121031,
+    "total": 0.23564201330612278
+   },
+   "base+volatility_shock": {
+    "cagr": 0.07668659550810641,
+    "exposure": 0.5158512853355981,
+    "max_drawdown": -0.10361848090511039,
+    "sharpe": 0.7506858715786353,
+    "total": 0.32742198794076827
+   },
+   "combined": {
+    "cagr": 0.05370349457604151,
+    "exposure": 0.4149726926394435,
+    "max_drawdown": -0.07764304585743997,
+    "sharpe": 0.6844838724389306,
+    "total": 0.22204522416012007
+   },
+   "combined-attention_spike": {
+    "cagr": 0.04634449239954175,
+    "exposure": 0.415061799234846,
+    "max_drawdown": -0.07764304585743997,
+    "sharpe": 0.5983219176597798,
+    "total": 0.1896512225796405
+   },
+   "combined-market_regime": {
+    "cagr": 0.06446779555632554,
+    "exposure": 0.48857987973435213,
+    "max_drawdown": -0.07763734764981389,
+    "sharpe": 0.7484913797007325,
+    "total": 0.27059756717396066
+   },
+   "combined-short_term_overreaction": {
+    "cagr": 0.05247489841925734,
+    "exposure": 0.4302066878438254,
+    "max_drawdown": -0.10359785956079537,
+    "sharpe": 0.594518159151034,
+    "total": 0.21659220347158215
+   },
+   "combined-volatility_shock": {
+    "cagr": 0.04517211907118801,
+    "exposure": 0.41511227712396137,
+    "max_drawdown": -0.07764378564645702,
+    "sharpe": 0.581781593595198,
+    "total": 0.18454972074311926
+   }
+  },
+  "layers": [
+   "market_regime",
+   "attention_spike",
+   "volatility_shock",
+   "short_term_overreaction"
+  ],
+  "unsupported": [
+   "news_sentiment",
+   "earnings_surprise",
+   "search_attention",
+   "crowd_concentration"
+  ],
+  "unvalidated": [
+   {
+    "historical": "no_clear_effect",
+    "layer": "market_regime"
+   },
+   {
+    "historical": "no_clear_effect",
+    "layer": "attention_spike"
+   },
+   {
+    "historical": "no_clear_effect",
+    "layer": "volatility_shock"
+   },
+   {
+    "historical": "no_clear_effect",
+    "layer": "short_term_overreaction"
+   }
+  ],
+  "validated": [],
+  "verdicts": {
+   "attention_spike": "no_clear_effect",
+   "crowd_concentration": "not_tested: No point-in-time retail-flow or holdings-concentration data is collected.",
+   "earnings_surprise": "not_tested: No point-in-time earnings estimates and announcement times are collected.",
+   "market_regime": "no_clear_effect",
+   "news_sentiment": "not_tested: No licensed, timestamped news-sentiment feed is collected.",
+   "search_attention": "not_tested: No timestamped search/attention data is collected.",
+   "short_term_overreaction": "no_clear_effect",
+   "volatility_shock": "no_clear_effect"
+  }
+ },
  "limitations": [
   "Historical results use previously inspected data and a survivorship-biased stock universe.",
   "Historical simulation and forward paper results are separate; no candidate is activated."
@@ -269,8 +409,8 @@
     "failed": [],
     "items": 1
    },
-   "lastSuccessAt": "2026-11-12T09:55:54Z",
-   "retrievedAt": "2026-11-12T09:55:54Z",
+   "lastSuccessAt": "2026-11-12T18:12:17Z",
+   "retrievedAt": "2026-11-12T18:12:17Z",
    "status": "OK"
   },
   {
@@ -289,8 +429,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-12T09:55:54Z",
-   "retrievedAt": "2026-11-12T09:55:54Z",
+   "lastSuccessAt": "2026-11-12T18:12:17Z",
+   "retrievedAt": "2026-11-12T18:12:17Z",
    "status": "OK"
   },
   {

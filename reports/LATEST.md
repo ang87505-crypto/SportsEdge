@@ -7,9 +7,9 @@ Research only. No candidate is active and broker writes stay off. Pre-registrati
 | Source | Attempts | Last status | Last success | Failures |
 |---|---|---|---|---|
 | openfigi-cusip | 6 | OK | 2026-11-09T22:37:39Z | 0 |
-| qmom-holdings | 14 | OK | 2026-11-12T09:55:54Z | 2 |
+| qmom-holdings | 15 | OK | 2026-11-12T18:12:17Z | 2 |
 | sec-company-tickers | 1 | OK | 2026-11-10T17:34:55Z | 0 |
-| sec-edgar-13f | 365 | OK | 2026-11-12T09:55:54Z | 156 |
+| sec-edgar-13f | 368 | OK | 2026-11-12T18:12:17Z | 156 |
 | sec-form345-dataset | 43 | FETCH_FAILED | 2026-11-10T17:34:55Z | 2 |
 | sec-xbrl-companyfacts | 134 | OK | 2026-11-10T17:34:55Z | 0 |
 

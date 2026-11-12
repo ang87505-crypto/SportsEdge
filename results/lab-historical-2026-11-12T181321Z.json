@@ -1,0 +1,1006 @@
+{
+ "at": "2026-11-12T18:13:21Z",
+ "base_spec": {
+  "buffer": 0,
+  "cadence": "weekly",
+  "lookback": 252,
+  "model": "momentum"
+ },
+ "benchmarks": {
+  "spy": {
+   "dev": {
+    "cagr": 0.10980329061214888,
+    "end_value": 1873.6836698001753,
+    "max_drawdown": -0.33793888166449937,
+    "sharpe": 0.6334557777233373,
+    "total": 0.8661107131893997,
+    "vol": 0.19454515857664026,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.1444221627786877,
+    "end_value": 3777.1099809934753,
+    "max_drawdown": -0.33793888166449937,
+    "sharpe": 0.8453248721701169,
+    "total": 2.76184385552031,
+    "vol": 0.17853743038645845,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.20067432563536447,
+    "end_value": 3777.1099809934753,
+    "max_drawdown": -0.18754263088722167,
+    "sharpe": 1.2934932839481565,
+    "total": 1.0158738862234395,
+    "vol": 0.15011391808882718,
+    "years": 3.8333333333333335
+   },
+   "weight": 1.0
+  },
+  "spy-50": {
+   "dev": {
+    "cagr": 0.05793101238129261,
+    "end_value": 1403.8905610826791,
+    "max_drawdown": -0.18276140880743363,
+    "sharpe": 0.628047494084178,
+    "total": 0.40104773037687513,
+    "vol": 0.09722208268343871,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.07382762311291957,
+    "end_value": 2016.9819329904599,
+    "max_drawdown": -0.18276140880743363,
+    "sharpe": 0.8426240851073679,
+    "total": 1.0128976130789882,
+    "vol": 0.08928103567747939,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.09913925436666382,
+    "end_value": 2016.9819329904599,
+    "max_drawdown": -0.09656677472626685,
+    "sharpe": 1.2948347668180669,
+    "total": 0.4367088068709324,
+    "vol": 0.0751956099963375,
+    "years": 3.8333333333333335
+   },
+   "weight": 0.5
+  },
+  "spy-exposure-matched": {
+   "dev": {
+    "cagr": 0.061218797402618375,
+    "end_value": 1430.3929142670863,
+    "max_drawdown": -0.1927892380439019,
+    "sharpe": 0.6283750965992362,
+    "total": 0.4273234555186214,
+    "vol": 0.10304184850324397,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.07815671835177063,
+    "end_value": 2098.53312914324,
+    "max_drawdown": -0.1927892380439019,
+    "sharpe": 0.8427979207695488,
+    "total": 1.094029918306592,
+    "vol": 0.09462175738217289,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.10515825739855034,
+    "end_value": 2098.53312914324,
+    "max_drawdown": -0.10216709617890207,
+    "sharpe": 1.2947833055284161,
+    "total": 0.4671025759509577,
+    "vol": 0.079685698423274,
+    "years": 3.8333333333333335
+   },
+   "weight": 0.5299212509742083
+  }
+ },
+ "caveats": [
+  "Universe is not survivorship-free (inherited from the weekly backtest).",
+  "Historical replay with fractional shares; not Alpaca fills and not a forward PAPER result.",
+  "Research only: no layer can change the live weekly strategy."
+ ],
+ "comparisons": [
+  {
+   "candidate": "base+market_regime",
+   "holdout": {
+    "lower95": -0.0021547408251837434,
+    "mean_weekly": -0.0009364777834454677,
+    "p_improve": 0.9555222388805598,
+    "upper95": 0.00014847314691227614,
+    "weeks": 201
+   },
+   "kind": "added",
+   "layer": "market_regime",
+   "p_adjusted": 1.0,
+   "reference": "base"
+  },
+  {
+   "candidate": "combined",
+   "holdout": {
+    "lower95": -0.0008649287101189598,
+    "mean_weekly": -0.000205976635639307,
+    "p_improve": 0.6976511744127936,
+    "upper95": 0.0004370380643151164,
+    "weeks": 201
+   },
+   "kind": "removed",
+   "layer": "market_regime",
+   "p_adjusted": 1.0,
+   "reference": "combined-market_regime"
+  },
+  {
+   "candidate": "base+attention_spike",
+   "holdout": {
+    "lower95": 0.00011068136507777921,
+    "mean_weekly": 0.0007649031601164746,
+    "p_improve": 0.0069965017491254375,
+    "upper95": 0.0015891181877301583,
+    "weeks": 201
+   },
+   "kind": "added",
+   "layer": "attention_spike",
+   "p_adjusted": 0.06296851574212894,
+   "reference": "base"
+  },
+  {
+   "candidate": "combined",
+   "holdout": {
+    "lower95": -2.5966523158997316e-05,
+    "mean_weekly": 0.00013407801895080074,
+    "p_improve": 0.0734632683658171,
+    "upper95": 0.000364536266301605,
+    "weeks": 201
+   },
+   "kind": "removed",
+   "layer": "attention_spike",
+   "p_adjusted": 0.5142428785607197,
+   "reference": "combined-attention_spike"
+  },
+  {
+   "candidate": "base+volatility_shock",
+   "holdout": {
+    "lower95": -0.0004382568980264087,
+    "mean_weekly": 0.0002729395586781286,
+    "p_improve": 0.2563718140929535,
+    "upper95": 0.001093973939381832,
+    "weeks": 201
+   },
+   "kind": "added",
+   "layer": "volatility_shock",
+   "p_adjusted": 1.0,
+   "reference": "base"
+  },
+  {
+   "candidate": "combined",
+   "holdout": {
+    "lower95": 4.089379494695581e-06,
+    "mean_weekly": 0.0001532237388592121,
+    "p_improve": 0.022988505747126436,
+    "upper95": 0.00035937098854597405,
+    "weeks": 201
+   },
+   "kind": "removed",
+   "layer": "volatility_shock",
+   "p_adjusted": 0.1839080459770115,
+   "reference": "combined-volatility_shock"
+  },
+  {
+   "candidate": "base+short_term_overreaction",
+   "holdout": {
+    "lower95": -0.0013882678281249914,
+    "mean_weekly": -0.00010819804183497405,
+    "p_improve": 0.5697151424287856,
+    "upper95": 0.0011902406846152603,
+    "weeks": 201
+   },
+   "kind": "added",
+   "layer": "short_term_overreaction",
+   "p_adjusted": 1.0,
+   "reference": "base"
+  },
+  {
+   "candidate": "combined",
+   "holdout": {
+    "lower95": -0.0010059231976347336,
+    "mean_weekly": 7.532804871959828e-06,
+    "p_improve": 0.48075962018990503,
+    "upper95": 0.0009013890758984901,
+    "weeks": 201
+   },
+   "kind": "removed",
+   "layer": "short_term_overreaction",
+   "p_adjusted": 1.0,
+   "reference": "combined-short_term_overreaction"
+  },
+  {
+   "candidate": "combined",
+   "holdout": {
+    "lower95": -0.0018295367146600116,
+    "mean_weekly": -0.00017590742304102153,
+    "p_improve": 0.5707146426786607,
+    "upper95": 0.0015087834492190624,
+    "weeks": 201
+   },
+   "kind": "vs_base",
+   "layer": null,
+   "p_adjusted": 1.0,
+   "reference": "base"
+  }
+ ],
+ "data": {
+  "fingerprint": "c1006953fa88431d7ba1dadbca4d2fdf5aa7cbf796ccb774a9db4eedfe1e7891",
+  "sessions": [
+   "2016-01-04",
+   "2026-11-06"
+  ],
+  "symbols_with_bars": 136
+ },
+ "experiment": "lab-stock-psychology-v1",
+ "fingerprints": {
+  "code_commit": "198b27f56465e48704f43ae6f7ff263ab93e78f6",
+  "universe_revision": "large-cap-v1-2026-11-09"
+ },
+ "kind": "lab-historical",
+ "periods": {
+  "dev": [
+   "2017-01-01",
+   "2022-12-31"
+  ],
+  "full": [
+   "2017-01-01",
+   "2026-11-06"
+  ],
+  "holdout": [
+   "2023-01-01",
+   "2026-11-06"
+  ]
+ },
+ "rules": {
+  "attention_ratio": 2.0,
+  "long_window": 252,
+  "overreaction_top_share": 0.1,
+  "reversal_window": 21,
+  "short_window": 20,
+  "volatility_ratio": 1.75
+ },
+ "unsupported": {
+  "crowd_concentration": "No point-in-time retail-flow or holdings-concentration data is collected.",
+  "earnings_surprise": "No point-in-time earnings estimates and announcement times are collected.",
+  "news_sentiment": "No licensed, timestamped news-sentiment feed is collected.",
+  "search_attention": "No timestamped search/attention data is collected."
+ },
+ "variants": {
+  "base": {
+   "avg_exposure": 0.5299212509742083,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.06413860977275498,
+    "end_value": 1451.001287682606,
+    "max_drawdown": -0.24779637967439083,
+    "sharpe": 0.5150518185908223,
+    "total": 0.45100128768260617,
+    "vol": 0.13976639056337262,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.06269198107750151,
+    "end_value": 1817.0146416657467,
+    "max_drawdown": -0.24779637967439083,
+    "sharpe": 0.5290747074738507,
+    "total": 0.8170146416657467,
+    "vol": 0.13128966543488313,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.06043611978386432,
+    "end_value": 1817.0146416657467,
+    "max_drawdown": -0.13326621274295147,
+    "sharpe": 0.5608293089908873,
+    "total": 0.2522488140363408,
+    "vol": 0.11682320488640638,
+    "years": 3.8333333333333335
+   },
+   "layers": [],
+   "turnover_per_year": 12.015129616962785
+  },
+  "base+attention_spike": {
+   "avg_exposure": 0.5280207635339099,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.07102289071665058,
+    "end_value": 1508.1264991432292,
+    "max_drawdown": -0.21558902281494086,
+    "sharpe": 0.5662139417515771,
+    "total": 0.5081264991432293,
+    "vol": 0.13812775249147768,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.08391513202803957,
+    "end_value": 2206.498497660432,
+    "max_drawdown": -0.21558902281494086,
+    "sharpe": 0.6951505994663336,
+    "total": 1.2064984976604318,
+    "vol": 0.1277081492093701,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.10436550867640237,
+    "end_value": 2206.498497660432,
+    "max_drawdown": -0.1102203895713495,
+    "sharpe": 0.961867336409194,
+    "total": 0.4630725598376195,
+    "vol": 0.1094563720710139,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "attention_spike"
+   ],
+   "turnover_per_year": 13.152188744652271
+  },
+  "base+attention_spike@25bps": {
+   "avg_exposure": 0.5336008946702748,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.054951042704639796,
+    "end_value": 1377.5813648784754,
+    "max_drawdown": -0.24477836517088425,
+    "sharpe": 0.4558020684579078,
+    "total": 0.3775813648784754,
+    "vol": 0.13853580195122792,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.06339284416357271,
+    "end_value": 1828.8184607211092,
+    "max_drawdown": -0.24477836517088425,
+    "sharpe": 0.536436312906449,
+    "total": 0.8288184607211091,
+    "vol": 0.13053980748453442,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.0767152661332573,
+    "end_value": 1828.8184607211092,
+    "max_drawdown": -0.13904444015657047,
+    "sharpe": 0.6906446021503883,
+    "total": 0.3275574912284329,
+    "vol": 0.1169571007387762,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "attention_spike"
+   ],
+   "turnover_per_year": 12.140675051378134
+  },
+  "base+market_regime": {
+   "avg_exposure": 0.430829934777645,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.04792910506332548,
+    "end_value": 1323.5774791213807,
+    "max_drawdown": -0.21919460048797357,
+    "sharpe": 0.4703250747907914,
+    "total": 0.3235774791213808,
+    "vol": 0.11320208989826694,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.03359174382375896,
+    "end_value": 1383.3369861547158,
+    "max_drawdown": -0.21919460048797357,
+    "sharpe": 0.3616684658273135,
+    "total": 0.3833369861547158,
+    "vol": 0.10730625520842965,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.011586717381415701,
+    "end_value": 1383.3369861547158,
+    "max_drawdown": -0.10416478510374438,
+    "sharpe": 0.16703830418108015,
+    "total": 0.04514998779898005,
+    "vol": 0.09736761637992124,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime"
+   ],
+   "turnover_per_year": 10.347066251776871
+  },
+  "base+market_regime@25bps": {
+   "avg_exposure": 0.4353431767183837,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.03380658840814177,
+    "end_value": 1220.2923174702557,
+    "max_drawdown": -0.2413293041364406,
+    "sharpe": 0.350207915493924,
+    "total": 0.2202923174702558,
+    "vol": 0.11331923268849584,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.014627692986608709,
+    "end_value": 1153.296351537055,
+    "max_drawdown": -0.2413293041364406,
+    "sharpe": 0.18641100829165422,
+    "total": 0.1532963515370549,
+    "vol": 0.11105575123864854,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": -0.014622352672807648,
+    "end_value": 1153.296351537055,
+    "max_drawdown": -0.15185896085832185,
+    "sharpe": -0.08335346915514177,
+    "total": -0.05490157151205188,
+    "vol": 0.10739790014180764,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime"
+   ],
+   "turnover_per_year": 9.639986828822188
+  },
+  "base+short_term_overreaction": {
+   "avg_exposure": 0.49382562691196413,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.06009076584885209,
+    "end_value": 1418.2624546481202,
+    "max_drawdown": -0.17238515736328042,
+    "sharpe": 0.5396019778966007,
+    "total": 0.4182624546481202,
+    "vol": 0.12201824824071429,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05878535589349165,
+    "end_value": 1752.4646748578868,
+    "max_drawdown": -0.17238515736328042,
+    "sharpe": 0.5728870545761839,
+    "total": 0.7524646748578869,
+    "vol": 0.11040054075382304,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.05674937570572203,
+    "end_value": 1752.4646748578868,
+    "max_drawdown": -0.07763786228224545,
+    "sharpe": 0.6630511332121031,
+    "total": 0.23564201330612278,
+    "vol": 0.08927597444059814,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 18.150954410683457
+  },
+  "base+short_term_overreaction@25bps": {
+   "avg_exposure": 0.4946116023465291,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.037048043481645365,
+    "end_value": 1243.3837208725636,
+    "max_drawdown": -0.20332184247419227,
+    "sharpe": 0.3587588391219814,
+    "total": 0.24338372087256355,
+    "vol": 0.12238800717087926,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.03745300481667946,
+    "end_value": 1434.9369635811408,
+    "max_drawdown": -0.20332184247419227,
+    "sharpe": 0.38779845486034753,
+    "total": 0.43493696358114087,
+    "vol": 0.11068002627473544,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.03808591617276802,
+    "end_value": 1434.9369635811408,
+    "max_drawdown": -0.08038240688849618,
+    "sharpe": 0.46301676483224746,
+    "total": 0.15405802689305914,
+    "vol": 0.08937242688943016,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 16.319148620260435
+  },
+  "base+volatility_shock": {
+   "avg_exposure": 0.5158512853355981,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.05912012442424941,
+    "end_value": 1410.504104171789,
+    "max_drawdown": -0.21717467322461625,
+    "sharpe": 0.49826954578155513,
+    "total": 0.4105041041717892,
+    "vol": 0.13312721049599038,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.06594201004916012,
+    "end_value": 1872.3341619583287,
+    "max_drawdown": -0.21717467322461625,
+    "sharpe": 0.5800494697120734,
+    "total": 0.8723341619583287,
+    "vol": 0.12322489523086304,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.07668659550810641,
+    "end_value": 1872.3341619583287,
+    "max_drawdown": -0.10361848090511039,
+    "sharpe": 0.7506858715786353,
+    "total": 0.32742198794076827,
+    "vol": 0.10591773262527852,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "volatility_shock"
+   ],
+   "turnover_per_year": 13.017036468374314
+  },
+  "base+volatility_shock@25bps": {
+   "avg_exposure": 0.5168144053785519,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.04224176272745628,
+    "end_value": 1281.1409646375992,
+    "max_drawdown": -0.24468730021244178,
+    "sharpe": 0.3772324670226972,
+    "total": 0.2811409646375991,
+    "vol": 0.13331988569441164,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05262430112103367,
+    "end_value": 1654.8419769533766,
+    "max_drawdown": -0.24468730021244178,
+    "sharpe": 0.476943859972847,
+    "total": 0.6548419769533766,
+    "vol": 0.12359340786068065,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.0690503482197129,
+    "end_value": 1654.8419769533766,
+    "max_drawdown": -0.10567240966071478,
+    "sharpe": 0.6795862352785162,
+    "total": 0.29169390615925517,
+    "vol": 0.10663320266538544,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "volatility_shock"
+   ],
+   "turnover_per_year": 12.028947807067388
+  },
+  "base@25bps": {
+   "avg_exposure": 0.5354407722806745,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.04774390426494968,
+    "end_value": 1322.1773838233294,
+    "max_drawdown": -0.2756544127369971,
+    "sharpe": 0.4034127062849926,
+    "total": 0.3221773838233293,
+    "vol": 0.1400537733993795,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05167061930855632,
+    "end_value": 1640.1754786206238,
+    "max_drawdown": -0.2756544127369971,
+    "sharpe": 0.44825813292673233,
+    "total": 0.6401754786206237,
+    "vol": 0.1318749657478213,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.05783405779022943,
+    "end_value": 1640.1754786206238,
+    "max_drawdown": -0.11596244307475323,
+    "sharpe": 0.5357192636248368,
+    "total": 0.240510916831554,
+    "vol": 0.11796897395022408,
+    "years": 3.8333333333333335
+   },
+   "layers": [],
+   "turnover_per_year": 11.1600077365915
+  },
+  "combined": {
+   "avg_exposure": 0.4149726926394435,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.052956046106518606,
+    "end_value": 1362.0550708053477,
+    "max_drawdown": -0.16121653750787102,
+    "sharpe": 0.5741173092321574,
+    "total": 0.3620550708053476,
+    "vol": 0.09832607711048101,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05324771440284737,
+    "end_value": 1664.4928943207494,
+    "max_drawdown": -0.16121653750787102,
+    "sharpe": 0.6097946194568503,
+    "total": 0.6644928943207495,
+    "vol": 0.09204264472480035,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.05370349457604151,
+    "end_value": 1664.4928943207494,
+    "max_drawdown": -0.07764304585743997,
+    "sharpe": 0.6844838724389306,
+    "total": 0.22204522416012007,
+    "vol": 0.0812606736754557,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 15.197605012561969
+  },
+  "combined-attention_spike": {
+   "avg_exposure": 0.415061799234846,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.04933578453663778,
+    "end_value": 1334.2521731370432,
+    "max_drawdown": -0.1614009555921323,
+    "sharpe": 0.5368822985048414,
+    "total": 0.33425217313704314,
+    "vol": 0.09882105946906641,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.048167258009601754,
+    "end_value": 1587.2947290020256,
+    "max_drawdown": -0.1614009555921323,
+    "sharpe": 0.5556573893067417,
+    "total": 0.5872947290020256,
+    "vol": 0.0923598680387481,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.04634449239954175,
+    "end_value": 1587.2947290020256,
+    "max_drawdown": -0.07764304585743997,
+    "sharpe": 0.5983219176597798,
+    "total": 0.1896512225796405,
+    "vol": 0.0812446217180498,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 15.079667772302283
+  },
+  "combined-attention_spike@25bps": {
+   "avg_exposure": 0.4156965528667876,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.03091845807997462,
+    "end_value": 1200.0199352385828,
+    "max_drawdown": -0.18811743898263988,
+    "sharpe": 0.35713472768881915,
+    "total": 0.20001993523858275,
+    "vol": 0.09902748011820091,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.02970165676394032,
+    "end_value": 1333.043188807418,
+    "max_drawdown": -0.18811743898263988,
+    "sharpe": 0.3626393377616349,
+    "total": 0.3330431888074179,
+    "vol": 0.09254751957049207,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.027803750488666346,
+    "end_value": 1333.043188807418,
+    "max_drawdown": -0.08038728373617765,
+    "sharpe": 0.37767198378088906,
+    "total": 0.11085086977524927,
+    "vol": 0.08139894651467149,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 13.757160006435516
+  },
+  "combined-market_regime": {
+   "avg_exposure": 0.48857987973435213,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.05348011418782139,
+    "end_value": 1366.1195036460483,
+    "max_drawdown": -0.1911965605046897,
+    "sharpe": 0.512919933281408,
+    "total": 0.3661195036460483,
+    "vol": 0.11436897983598836,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05775507979435224,
+    "end_value": 1735.7881178015678,
+    "max_drawdown": -0.1911965605046897,
+    "sharpe": 0.586907285261655,
+    "total": 0.7357881178015677,
+    "vol": 0.10511475469163041,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.06446779555632554,
+    "end_value": 1735.7881178015678,
+    "max_drawdown": -0.07763734764981389,
+    "sharpe": 0.7484913797007325,
+    "total": 0.27059756717396066,
+    "vol": 0.08874727854712108,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "attention_spike",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 17.604957824179866
+  },
+  "combined-market_regime@25bps": {
+   "avg_exposure": 0.4893340997894909,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.031301359293773645,
+    "end_value": 1202.6913535648487,
+    "max_drawdown": -0.20934301358770546,
+    "sharpe": 0.32637072541779133,
+    "total": 0.2026913535648487,
+    "vol": 0.11462914152473272,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.036583559268113186,
+    "end_value": 1423.169668570733,
+    "max_drawdown": -0.20934301358770546,
+    "sharpe": 0.3938567298040046,
+    "total": 0.4231696685707329,
+    "vol": 0.10535993098697147,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.044889138865543465,
+    "end_value": 1423.169668570733,
+    "max_drawdown": -0.08038200854299005,
+    "sharpe": 0.5381567360398697,
+    "total": 0.1833207783130506,
+    "vol": 0.08896689687942314,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "attention_spike",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 15.83572679504425
+  },
+  "combined-short_term_overreaction": {
+   "avg_exposure": 0.4302066878438254,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.060894157917071645,
+    "end_value": 1424.7108359907852,
+    "max_drawdown": -0.17948084138511888,
+    "sharpe": 0.5848475752774573,
+    "total": 0.4247108359907852,
+    "vol": 0.1117895549096842,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.05760011149314659,
+    "end_value": 1733.2920952678692,
+    "max_drawdown": -0.17948084138511888,
+    "sharpe": 0.5860567475843381,
+    "total": 0.7332920952678692,
+    "vol": 0.10498695211318768,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.05247489841925734,
+    "end_value": 1733.2920952678692,
+    "max_drawdown": -0.10359785956079537,
+    "sharpe": 0.594518159151034,
+    "total": 0.21659220347158215,
+    "vol": 0.09337272074188785,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "volatility_shock"
+   ],
+   "turnover_per_year": 12.186642916764217
+  },
+  "combined-short_term_overreaction@25bps": {
+   "avg_exposure": 0.4311145081136268,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.04649111505576564,
+    "end_value": 1312.7388119638256,
+    "max_drawdown": -0.2028930444882069,
+    "sharpe": 0.4617103642348901,
+    "total": 0.3127388119638257,
+    "vol": 0.11205781914447147,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.043325150037171634,
+    "end_value": 1516.72741473231,
+    "max_drawdown": -0.2028930444882069,
+    "sharpe": 0.45586249543673363,
+    "total": 0.51672741473231,
+    "vol": 0.10520646296009807,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.038398714971217496,
+    "end_value": 1516.72741473231,
+    "max_drawdown": -0.10564540197830319,
+    "sharpe": 0.4497924978773805,
+    "total": 0.15539161401293722,
+    "vol": 0.09350338915440062,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "volatility_shock"
+   ],
+   "turnover_per_year": 11.350259266656888
+  },
+  "combined-volatility_shock": {
+   "avg_exposure": 0.41511227712396137,
+   "cost_bps": 10.0,
+   "dev": {
+    "cagr": 0.05297842025589117,
+    "end_value": 1362.2283884077926,
+    "max_drawdown": -0.16247309963474643,
+    "sharpe": 0.5737294901980148,
+    "total": 0.3622283884077926,
+    "vol": 0.09845100594232516,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.04992468388124127,
+    "end_value": 1613.6272570768,
+    "max_drawdown": -0.16247309963474643,
+    "sharpe": 0.5742524746264026,
+    "total": 0.6136272570768002,
+    "vol": 0.0922726019019301,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.04517211907118801,
+    "end_value": 1613.6272570768,
+    "max_drawdown": -0.07764378564645702,
+    "sharpe": 0.581781593595198,
+    "total": 0.18454972074311926,
+    "vol": 0.08169025097534367,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 14.907785614476852
+  },
+  "combined-volatility_shock@25bps": {
+   "avg_exposure": 0.41574248296166477,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.034544947643772916,
+    "end_value": 1225.5205469221992,
+    "max_drawdown": -0.18282730169826467,
+    "sharpe": 0.39375184567445115,
+    "total": 0.22552054692219925,
+    "vol": 0.09863861945086128,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.0318799501025504,
+    "end_value": 1360.9994787992941,
+    "max_drawdown": -0.18282730169826467,
+    "sharpe": 0.3858305329366929,
+    "total": 0.36099947879929406,
+    "vol": 0.09243498317692676,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.027730657390194535,
+    "end_value": 1360.9994787992941,
+    "max_drawdown": -0.08038795637401586,
+    "sharpe": 0.37533001214021877,
+    "total": 0.11054807054629956,
+    "vol": 0.08180718202335185,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 13.623050510534746
+  },
+  "combined@25bps": {
+   "avg_exposure": 0.4156062270502377,
+   "cost_bps": 25.0,
+   "dev": {
+    "cagr": 0.03448002599954303,
+    "end_value": 1225.060097989381,
+    "max_drawdown": -0.1874219389697439,
+    "sharpe": 0.3934704912741339,
+    "total": 0.22506009798938087,
+    "vol": 0.09851988712918912,
+    "years": 5.988095238095238
+   },
+   "full": {
+    "cagr": 0.03485723019999565,
+    "end_value": 1400.0616563804724,
+    "max_drawdown": -0.1874219389697439,
+    "sharpe": 0.4177381270017853,
+    "total": 0.4000616563804724,
+    "vol": 0.09222608711378043,
+    "years": 9.821428571428571
+   },
+   "holdout": {
+    "cagr": 0.035446740591536186,
+    "end_value": 1400.0616563804724,
+    "max_drawdown": -0.08038728373617765,
+    "sharpe": 0.46856958030842366,
+    "total": 0.14285140678266428,
+    "vol": 0.08142670596675045,
+    "years": 3.8333333333333335
+   },
+   "layers": [
+    "market_regime",
+    "attention_spike",
+    "volatility_shock",
+    "short_term_overreaction"
+   ],
+   "turnover_per_year": 13.862417570302222
+  }
+ },
+ "verdicts": {
+  "attention_spike": "no_clear_effect",
+  "crowd_concentration": "not_tested: No point-in-time retail-flow or holdings-concentration data is collected.",
+  "earnings_surprise": "not_tested: No point-in-time earnings estimates and announcement times are collected.",
+  "market_regime": "no_clear_effect",
+  "news_sentiment": "not_tested: No licensed, timestamped news-sentiment feed is collected.",
+  "search_attention": "not_tested: No timestamped search/attention data is collected.",
+  "short_term_overreaction": "no_clear_effect",
+  "volatility_shock": "no_clear_effect"
+ }
+}

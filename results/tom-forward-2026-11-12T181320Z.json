@@ -1,0 +1,381 @@
+{
+ "at": "2026-11-12T18:13:20Z",
+ "data": {
+  "fingerprint": "017f550e4e9a39220c7ecbd4b0fa178b66aaf70f9eee27e85e2cf5f20616c93e",
+  "missing": [],
+  "requests": 4,
+  "symbols_rejected": []
+ },
+ "id": "spy-tom-v1",
+ "kind": "tom-forward",
+ "latest_session": "2026-11-11",
+ "ledger": {
+  "first_execution": "2026-11-11",
+  "last_target": {},
+  "result": {
+   "bps0": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps10": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps25": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps5": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-11",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 1,
+     "filled": 0,
+     "full": {},
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {},
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "decisions": 1
+  },
+  "sessions": 1,
+  "spy_hold": {
+   "early": {},
+   "full": {},
+   "late": {},
+   "years": {}
+  },
+  "status": "INSUFFICIENT FORWARD SAMPLE",
+  "windows_entered": 0
+ },
+ "prereg": "docs/STOCK_TOM_PREREG_2026_11_10.md"
+}
