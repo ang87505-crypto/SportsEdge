@@ -50,7 +50,7 @@ for(let i=0;i<res30.rows.length;i+=150){
  for(const u of (await get('props_provider_usage?select=reservation_id,http_status,requests_last&reservation_id='+inList(ids)+'&limit=1000')).rows)
   if(u.requests_last!==null)charged.set(Number(u.reservation_id),Number(u.requests_last));
 }
-facts.credits=res30.ok?creditUse(res30.rows,charged,facts.activePolicy?.count_provider_actuals===true,nowMs):null;
+facts.credits=res30.ok?creditUse(res30.rows,charged,facts.activePolicy?.count_provider_actuals===true,nowMs,pol.rows):null;
 if(facts.credits){
  const all=creditUse(res30.rows,charged,true,nowMs);
  facts.credits.ifProviderActualsCounted={used24h:all.used24h,used30d:all.used30d};

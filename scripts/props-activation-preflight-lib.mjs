@@ -17,7 +17,7 @@ export function activePolicy(rows,nowMs){
  * Rolling credit use. `charged` maps reservation id -> provider-reported x-requests-last; it is used only when the
  * policy counts provider actuals, and an unknown charge always counts in full (as the worker and database do).
  */
-export function creditUse(reservations,charged,countsActuals,nowMs){
+export function creditUse(reservations,charged,countsActuals,nowMs,policies=[]){
  const eff=r=>{const c=countsActuals?charged.get(Number(r.id)):undefined;return c===undefined?Number(r.credits):Math.min(Number(r.credits),Number(c));};
  const t=r=>Date.parse(r.reserved_at);
  const in24=reservations.filter(r=>nowMs-t(r)<86400_000),in30=reservations.filter(r=>nowMs-t(r)<30*86400_000);
@@ -27,7 +27,11 @@ export function creditUse(reservations,charged,countsActuals,nowMs){
  for(const end of sorted){const s=sorted.filter(r=>t(r)<=t(end)&&t(end)-t(r)<86400_000).reduce((a,r)=>a+eff(r),0);if(s>worst){worst=s;worstAt=end.reserved_at;}}
  const sum=xs=>xs.reduce((a,r)=>a+eff(r),0),raw=xs=>xs.reduce((a,r)=>a+Number(r.credits),0);
  return {used24h:sum(in24),used30d:sum(in30),reserved24h:raw(in24),reserved30d:raw(in30),worstRolling24h:worst,worstRolling24hAt:worstAt,
-  unknownCharges:in30.filter(r=>!charged.has(Number(r.id))).length};
+  unknownCharges:in30.filter(r=>!charged.has(Number(r.id))).length,
+  // Each rolling window judged by the policy in force when it ended (a later, stricter policy is not retroactive).
+  capBreaches:sorted.flatMap(end=>{const pol=activePolicy(policies,t(end));if(!pol)return [];
+   const s=sorted.filter(r=>t(r)<=t(end)&&t(end)-t(r)<86400_000).reduce((a,r)=>a+eff(r),0);
+   return s>Number(pol.daily_credits)?[{at:end.reserved_at,credits:s,policy:pol.version,cap:Number(pol.daily_credits)}]:[];})};
 }
 
 /** Entries per account per New York day (the database's own day boundary) above the account's cap. */
@@ -53,7 +57,7 @@ export function verdict(f){
  const p=f.activePolicy;
  ok('limits',p?Number(p.daily_credits)===APPROVED.daily&&Number(p.monthly_credits)===APPROVED.monthly&&Number(p.provider_floor)===APPROVED.floor:null,
   p?`Active policy ${p.version}: ${p.daily_credits}/day, ${p.monthly_credits}/30 days, floor ${p.provider_floor}.`:'No active policy row readable.');
- ok('cap-held',f.credits?f.credits.worstRolling24h<=APPROVED.daily:null,f.credits?`Worst rolling 24 h in 30 days: ${f.credits.worstRolling24h} credits (cap ${APPROVED.daily}).`:'Reservations not readable.');
+ ok('cap-held',f.credits?(f.credits.capBreaches??[]).length===0:null,f.credits?`Rolling 24 h windows over the policy in force: ${(f.credits.capBreaches??[]).length}. Peak ${f.credits.worstRolling24h} credits at ${f.credits.worstRolling24hAt??'n/a'}; now ${f.credits.used24h}/${APPROVED.daily}.`:'Reservations not readable.');
  ok('provider-floor',f.providerRemaining===null||f.providerRemaining===undefined?null:f.providerRemaining>=APPROVED.floor,`Provider last reported ${f.providerRemaining??'nothing'} remaining (floor ${APPROVED.floor}).`);
  ok('no-duplicate-runs',f.duplicateRuns?f.duplicateRuns.length===0:null,`${f.duplicateRuns?.length??'?'} duplicated run slots.`);
  ok('entry-caps-held',f.entryCapBreaches?f.entryCapBreaches.length===0:null,`${f.entryCapBreaches?.length??'?'} account-days over the entry cap.`);
