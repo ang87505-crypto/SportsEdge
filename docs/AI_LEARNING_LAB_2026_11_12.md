@@ -7,6 +7,34 @@ $5 flat virtual stake, the props pick rules, the production promotion gate (500 
 the weekly stock strategy and the supervised Alpaca PAPER release (PR #102) are unchanged.
 No AI service and no new paid service is used.
 
+## Three independent systems (update, end of 2026-11-12)
+
+| System | Runs without chat? | Where |
+|---|---|---|
+| **Chat command center** — explains, never predicts or promotes; proposals need owner confirmation | n/a (read-only over saved records) | `/`, `src/lib/assistant/*`, `src/lib/server/site-assistant-handler.ts` |
+| **Sports prediction AI** — stats model, learning loop, lab ablation, every saved prediction graded | Yes: GitHub Actions + database | `src/lib/props/*`, `src/lib/lab/sports/*`, `/paper-betting/predictions`, `/lab` |
+| **Stock research AI** — research registry, historical replays, frozen forward ledgers, behaviour ablation | Yes: nightly/monthly research workflows on the `research-data` branch | `analytics/research/*`, `analytics/stock_psychology_v1.py` |
+
+Sports and stocks share only the experiment concepts (frozen registry entries, chronological splits, with/without-layer
+comparisons, Holm-adjusted tests, append-only forward records); no domain prediction logic is shared.
+
+### Stocks: `lab-stock-psychology-v1` in the scheduled research pipeline
+- Layers on the live weekly momentum rules: **market regime** (no stock while SPY is below its 200-session mean),
+  attention spikes, volatility shocks, one-month overreaction. News sentiment, earnings surprises, search attention and
+  crowd concentration are registered **unsupported** (no lawful timestamped data collected). 10 variants.
+- `python -m analytics.research.cli lab-historical`: the 2017–2022 / 2023+ ablation with 10 and 25 bps costs,
+  exposure-matched and passive SPY. Runs once on the next nightly research run, then monthly.
+- `python -m analytics.research.cli lab-forward`: nightly, after each session. When the next session opens a new week it
+  **freezes every variant's picks before the open** from completed bars only, appends them to
+  `research-data/lab/stock-forward-ledger.jsonl` (never rewritten, never backfilled late) and grades past weeks
+  open-to-open. The first frozen decision is the week of 2026-11-16. Nothing is "validated" until 26 graded weeks.
+- Registered in `config/research/registry.json` as challenger `lab-stock-psychology-v1` (never active).
+
+### Sports: every saved prediction
+The pipeline already saved a forecast for every valid pregame line (all models) and graded every line, entered or not.
+`/paper-betting/predictions` and Ask SportsEdge now report accuracy, calibration, Brier and log loss over ALL saved
+predictions (unique lines across platforms), with decision categories kept separate from virtual entries.
+
 ## What was built
 
 | Piece | Where |
@@ -22,7 +50,7 @@ No AI service and no new paid service is used.
 | Database: frozen forecasts, flags, shadow stakes, reports, events — append-only, refused at/after lock and after a result, database-computed hash, tampering view | `database/props/props_lab_v1.sql` (+ tests) |
 | Forward worker (freeze before lock / daily report) — zero provider requests | `src/lib/server/lab-sports-worker.ts`, `scripts/lab-sports.ts`, step in `.github/workflows/props-tick.yml` (continue-on-error) |
 | Retrospective runs on the pinned box scores | `scripts/lab-sports-ablation.ts`, `scripts/lab-staking-backtest.ts`, `research/lab_*_20261112/` |
-| Stock psychology ablation (registered, tested on fictional prices; manual workflow) | `analytics/stock_psychology_v1.py`, `.github/workflows/stock-psychology-research.yml` |
+| Stock behaviour ablation and frozen forward ledger (nightly research pipeline; manual workflow also available) | `analytics/stock_psychology_v1.py`, `analytics/research/cli.py`, `.github/workflows/research-collect.yml` |
 | AI Learning Lab page | `/lab` |
 | Chat-first homepage, chat tables/charts, lab and staking answers | `/`, `src/components/command-strip.tsx`, `src/lib/assistant/lab-answer.ts` |
 
@@ -73,8 +101,8 @@ every research method sizes $0.
    step reports `NOT_MIGRATED` and does nothing; the paper tick is unaffected either way.
 2. Merge the pull requests (Vercel deploys `main`). The tick workflow then freezes every variant, flags and shadow
    stakes before each lock, and writes the forward report once a day after the morning settle.
-3. Optional: dispatch **Stock psychology research (lab, manual)** with an end date to produce the first stock
-   psychology result (read-only market data with the existing paper key).
+3. Nothing to do for stocks: the nightly research run produces the first stock ablation and freezes the first weekly
+   forward picks automatically (read-only market data with the existing paper key).
 4. Any layer that passes forward evidence becomes a *candidate* for the existing props-learn shadow path; promotion
    still needs that gate and, with auto-switch off, your approval.
 

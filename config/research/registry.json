@@ -1,6 +1,6 @@
 {
   "registry_version": "sportsedge-research-registry-v1",
-  "revision": "2026-11-09-r1+daily-2026-11-10",
+  "revision": "2026-11-09-r1+daily-2026-11-10+lab-2026-11-12",
   "note": "Research only. Listing a strategy here never activates it. Status values: active (the frozen live paper strategy), challenger (collecting evidence, activation off), rejected (failed its pre-registered test; kept as a permanent negative result), reference (a comparison only).",
   "strategies": [
     {
@@ -105,6 +105,17 @@
         "analytics/research/engine.py"
       ],
       "rules": "docs/STOCK_TOM_PREREG_2026_11_10.md"
+    },
+    {
+      "id": "lab-stock-psychology-v1",
+      "status": "challenger",
+      "kind": "behavioural-ablation",
+      "description": "Research-only ablation on the live weekly momentum rules: market regime (SPY vs 200-day mean), attention spikes, volatility shocks and one-month overreaction, each tested with and without; frozen weekly forward picks. Never activates.",
+      "code": [
+        "analytics/stock_psychology_v1.py",
+        "analytics/stock_weekly_backtest_v1.py"
+      ],
+      "rules": "docs/AI_LEARNING_LAB_2026_11_12.md"
     }
   ],
   "sources": [
@@ -201,6 +212,12 @@
       "strategy": "spy-tom-v1",
       "status": "registered",
       "prereg": "docs/STOCK_TOM_PREREG_2026_11_10.md"
+    },
+    {
+      "id": "lab-stock-psychology-2026-11-12",
+      "strategy": "lab-stock-psychology-v1",
+      "status": "registered",
+      "prereg": "docs/AI_LEARNING_LAB_2026_11_12.md"
     }
   ]
 }

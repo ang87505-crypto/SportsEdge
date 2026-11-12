@@ -75,8 +75,9 @@ export default async function LabPage(){
    <Panel title="Promotion status">
     <Callout tone={v.promotion.eligible?'positive':'neutral'} title={v.promotion.eligible?'A layer meets the requirements':'Nothing meets the promotion requirements'}>{v.promotion.why}</Callout>
    </Panel>
-   <Panel title="Stock psychology research">
-    <p className="home-panel-note">{v.stocks&&v.stocks.state==='ready'?v.stocks.summary:'Registered as research-only PAPER experiments; no result yet. The weekly stock strategy and the Monday supervised PAPER release are unchanged.'}</p>
+   <Panel title="Stock behaviour research" description="Separate stock AI: research only; never the live weekly strategy">
+    <p className="home-panel-note">{v.stocks&&v.stocks.state==='ready'?v.stocks.summary:'Registered (market regime, attention spikes, volatility shocks, one-month overreaction); the nightly research run freezes weekly picks before each open and the first historical ablation runs on its next scheduled pass. No result yet. The weekly stock strategy and the Monday supervised PAPER release are unchanged.'}</p>
+    {v.stocks?.verdicts?<ul className="evidence-list">{v.stocks.verdicts.map(x=><li key={x.layer}><span>{x.layer}</span><Badge tone={x.verdict==='helps'?'positive':x.verdict==='hurts'?'negative':'neutral'}>{x.verdict}</Badge></li>)}</ul>:null}
    </Panel>
    <Panel title="History, failed and rejected experiments">
     <ul className="evidence-list">{v.history.earlier.map(e=><li key={e.id}><span><strong>{e.id}</strong><br/><small className="quiet">{e.why}</small></span><Badge tone={e.outcome==='rejected'?'negative':e.outcome==='withdrawn'?'warning':'info'}>{e.outcome}</Badge></li>)}</ul>

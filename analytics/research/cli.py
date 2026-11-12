@@ -331,6 +331,55 @@ def cmd_tom_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dic
     return out
 
 
+# ---------------------------------------------------------------- AI Learning Lab: stock behaviour ablation (research only)
+
+LAB_LEDGER = Path('lab') / 'stock-forward-ledger.jsonl'
+
+
+def _lab_ledger(data: Path) -> list[dict]:
+    p = data / LAB_LEDGER
+    return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()] if p.exists() else []
+
+
+def cmd_lab_historical(data: Path, out_dir: Path, end: str, now: datetime) -> dict:
+    """lab-stock-psychology-v1 historical ablation on the research dataset (read-only bars; no orders)."""
+    from .. import stock_psychology_v1 as sp
+    universe, members = universe_members()
+    md, sessions, series = _daily_market(members, '2016-01-01', end)
+    out = sp.evaluate_series(sessions, series, universe, end) | {'kind': 'lab-historical', 'at': stamp(now),
+        'data': {'fingerprint': md['fingerprint'], 'sessions': [sessions[0], sessions[-1]], 'symbols_with_bars': len(md['bars'])},
+        'fingerprints': {'code_commit': os.getenv('GITHUB_SHA', 'local'), 'universe_revision': universe.get('revision')}}
+    path = write_new(out_dir / f"lab-historical-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'lab-historical', 'at': stamp(now), 'file': str(path), 'verdicts': out['verdicts'],
+                      'dataset_fingerprint': md['fingerprint']})
+    return out
+
+
+def cmd_lab_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dict:
+    """Freeze each variant's picks for the NEXT weekly decision before it opens (append-only), then grade past weeks."""
+    from .. import stock_psychology_v1 as sp
+    universe, members = universe_members()
+    start = (date.fromisoformat(today) - timedelta(days=420)).isoformat()
+    md, _, _ = _daily_market(members, start, today, end_time=forward_end_time(now))
+    # The exchange calendar is published ahead; the next session is known before it opens (not look-ahead).
+    future = rdata.fetch_calendar(alpaca(), start, (date.fromisoformat(today) + timedelta(days=10)).isoformat())
+    sessions, series = rdata.assemble(sorted(set(md['sessions']) | set(future)), md['bars'])
+    last_bar = max(d for d in md['sessions'] if any(series[s]['ac'][sessions.index(d)] is not None for s in ('SPY',) if s in series))
+    ledger = _lab_ledger(data)
+    rows = sp.freeze(sessions, series, universe, ledger, last_bar, stamp(now), md['fingerprint'])
+    if rows:
+        (data / LAB_LEDGER).parent.mkdir(parents=True, exist_ok=True)
+        with open(data / LAB_LEDGER, 'a', encoding='utf-8') as fh:
+            for r in rows:
+                fh.write(json.dumps(r, sort_keys=True) + '\n')
+    graded = sp.grade(ledger + rows, sessions, series)
+    out = {'kind': 'lab-forward', 'at': stamp(now), 'last_bar': last_bar, 'frozen_now': len(rows), 'ledger_rows': len(ledger) + len(rows),
+           'graded': graded, 'data': {'fingerprint': md['fingerprint'], 'missing': md.get('missing')}}
+    path = write_new(out_dir / f"lab-forward-{stamp(now).replace(':', '')}.json", out)
+    append_run(data, {'command': 'lab-forward', 'at': stamp(now), 'file': str(path), 'frozen_now': len(rows)})
+    return out
+
+
 # ---------------------------------------------------------------- forward ledgers
 
 def qmom_snapshots(store) -> list[dict]:
@@ -468,6 +517,9 @@ def cmd_report(data: Path, now: datetime) -> Path:
     summary = build_summary(hist, fwd, store.manifest(), runs, stamp(now))
     from .summary import build_daily
     summary['daily'] = build_daily(latest(data / 'results', 'daily-historical'), latest(data / 'results', 'daily-forward'))
+    from .. import stock_psychology_v1 as sp
+    lab_fwd = latest(data / 'results', 'lab-forward')
+    summary['lab'] = sp.lab_summary(latest(data / 'results', 'lab-historical'), _lab_ledger(data), lab_fwd['graded'] if lab_fwd else None)
     (data / 'summary.json').write_text(json.dumps(summary, indent=1, sort_keys=True), encoding='utf-8')
     path = data / 'reports' / f"{stamp(now)[:10]}-{stamp(now)[11:19].replace(':', '')}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -478,7 +530,7 @@ def cmd_report(data: Path, now: datetime) -> Path:
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command', choices=('collect', 'historical', 'forward', 'daily-historical', 'daily-forward', 'tom-historical', 'tom-forward', 'report'))
+    p.add_argument('command', choices=('collect', 'historical', 'forward', 'daily-historical', 'daily-forward', 'tom-historical', 'tom-forward', 'lab-historical', 'lab-forward', 'report'))
     p.add_argument('--data', type=Path, required=True)
     p.add_argument('--end', default=ev.END)
     a = p.parse_args()
@@ -511,6 +563,12 @@ def main():
     elif a.command == 'tom-forward':
         out = cmd_tom_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
         print(json.dumps({'latest_session': out['latest_session'], 'status': out['ledger']['status']}))
+    elif a.command == 'lab-historical':
+        out = cmd_lab_historical(a.data, a.data / 'results', a.end, now)
+        print(json.dumps({'verdicts': out['verdicts'], 'dataset_fingerprint': out['data']['fingerprint']}))
+    elif a.command == 'lab-forward':
+        out = cmd_lab_forward(a.data, a.data / 'results', (now - timedelta(days=1)).date().isoformat(), now)
+        print(json.dumps({'last_bar': out['last_bar'], 'frozen_now': out['frozen_now'], 'ledger_rows': out['ledger_rows']}))
     else:
         path = cmd_report(a.data, now)
         print(path.read_text())

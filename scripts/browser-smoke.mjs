@@ -157,6 +157,25 @@ try{
     return {text:p.innerText.slice(0,600),rows:p.querySelectorAll('tbody tr').length};})()`);
    console.log('PRODUCTION props breakdown: '+props.rows+' rows | '+props.text.replace(/\n+/g,' | ').slice(0,400));
    console.log('PASS production: overview briefing and props breakdown render real ledger data');
+   // Every saved prediction (not just entry legs), and the AI Learning Lab, rendered from real records.
+   await send('Page.navigate',{url:base+'/paper-betting/predictions'});
+   await until(async()=>evaluate(send,`[...document.querySelectorAll('h2')].some(h=>h.textContent.includes('Accuracy by model'))||document.body.innerText.includes('not connected')`),'all predictions',30000);
+   const preds=await evaluate(send,`(()=>{const m=[...document.querySelectorAll('main .metric-grid > *')].slice(0,4).map(e=>e.innerText.replace(/\\n+/g,' '));
+    const h=[...document.querySelectorAll('h2')].find(h=>h.textContent.includes('Accuracy by model'));const t=h?.closest('section')?.querySelectorAll('tbody tr')??[];
+    return {metrics:m,models:[...t].map(r=>r.innerText.replace(/\\s+/g,' ')).slice(0,6),rows:document.querySelectorAll('.predictions-table tbody tr').length};})()`);
+   console.log('PRODUCTION all predictions: '+JSON.stringify(preds));
+   if(!preds.models.length)throw Error('All-predictions page did not render a model table from the ledger');
+   await send('Page.navigate',{url:base+'/lab'});
+   await until(async()=>evaluate(send,`!!document.querySelector('main h1')&&document.body.innerText.includes('measured contribution')`),'learning lab',30000);
+   console.log('PRODUCTION lab: '+(await evaluate(send,`document.querySelector('main').innerText.slice(0,700).replace(/\\n+/g,' | ')`)));
+   // Read-only questions to the production assistant (no owner session, no control request): print the answers.
+   for(const q of ["How did all our predictions do yesterday, including ones we didn't bet?",'What was our accuracy by model?','Which predictions would our newest AI have chosen?',
+    'How much did we make yesterday?','What did our AI learn?','Which features actually improve our predictions?','Why was this entry $2 instead of $5?',
+    'Would flat staking have performed better?','How accurate are our 80% predictions actually?','Did psychology improve our stock predictions?','Is everything running?']){
+    const a=await evaluate(send,`fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:${JSON.stringify(q)},context:null})}).then(r=>r.json()).then(j=>j.reply.text)`);
+    console.log('PRODUCTION ask: '+q+'\n  => '+String(a).replace(/\n+/g,' ').slice(0,900));
+    if(/Do you mean sports picks/.test(a))throw Error('Assistant did not route: '+q);
+   }
   }catch(error){const message='Production data check: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  }
  checks:{
