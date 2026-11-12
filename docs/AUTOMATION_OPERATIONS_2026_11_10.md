@@ -122,6 +122,12 @@ merged before that day's 09:00 UTC decision, so it no longer applies and must no
 
 A shadow plan, a HOLD day, a green workflow or this document is not evidence for any step.
 
+**Live checklist (from 2026-11-12):** ask *"Are we ready for Monday?"* in Ask SportsEdge (signed in). It reads the owner
+ledger and the operations monitor and marks each item ready, not yet, blocked, verified on the day, or owner-only.
+Pre-session items are: correct PAPER account, ARM, a clean account check within 26 hours, protections, and #102
+unmerged. Chat can *propose* Stop for you to confirm, which calls the same owner endpoint as the Stop button. **Start**
+(the re-arm that runs a fresh reconcile) is only on the Autopilot page.
+
 ## Verification receipts (2026-11-10)
 
 | What | Evidence |
