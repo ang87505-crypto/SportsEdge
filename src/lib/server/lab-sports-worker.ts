@@ -11,7 +11,7 @@ import {PropsStoreError} from './props-store.ts';
 import {predictLine,type GameLog,type ModelParams} from '../props/model.ts';
 import {matchupFeatures,type TeamGameRow} from '../props/features.ts';
 import {teamAbbr} from '../props/identity.ts';
-import {decidePick} from '../props/rules.ts';
+import {decidePick,legResult} from '../props/rules.ts';
 import {MODEL_VERSION,type Stat} from '../props/contract.ts';
 import {SPORTS_ABLATION,SPORTS_ABLATION_SPEC} from '../lab/sports/spec.ts';
 import {predictVariant,labArtifactSha256,type SportsLabArtifact,type SportsLabInput} from '../lab/sports/variants.ts';
@@ -19,6 +19,8 @@ import {riskFlags,flagEffectiveness,RISK_RULES_V1,COVERAGE_GAPS,type Calibration
 import {compareVariants,type LabRow} from '../lab/compare.ts';
 import {diagnoseMistakes,type GradedPick} from '../lab/sports/attribution.ts';
 import {ROLE_CHANGE} from '../lab/sports/role.ts';
+import {assessEntry,recommend,calibrationBins,forwardStaking,METHODS,STAKING_POLICY_V1,STAKING_POLICY_SHA256,type Method,type ForwardStakeRow} from '../lab/staking.ts';
+import {round} from '../lab/stats.ts';
 
 const EXP=SPORTS_ABLATION_SPEC.id;
 const q=encodeURIComponent;
@@ -212,4 +214,116 @@ export async function runReport(d:LabDeps){
  await d.store.insert('props_lab_events',[{experiment_id:EXP,event:'report',actor:'system:lab',detail:{graded:rows.length,pending,picks:graded.length}}]);
  return {status:'OK',graded:rows.length,pending,voided,picks:graded.length,sampleMinimumsMet:comparison.sampleMinimumsMet,
   layers:Object.fromEntries(comparison.layers.map(l=>[l.layer,l.verdict]))};
+}
+
+// ================================================================ variable staking (SHADOW ONLY)
+type Entry={id:number;account_id:number;stake_cents:number;lock_at:string;created_at:string};
+type Account={id:number;platform:'prizepicks'|'pick6';initial_cents:number;selection_version:string};
+type Leg={entry_id:number;pick_id:number};
+type PickRow={id:number;prediction_id:number;side:'more'|'less'|null;status:string;selection_version:string;decided_at?:string};
+type PredRow={id:number;observation_id:number;p_more:number;p_less:number;p_tie:number};
+
+/** Graded REAL production picks (never proxy history) for calibration, graded before `nowIso`. */
+async function realCalibration(store:PropsStore,nowIso:string,selection:string){
+ const picks=await paged<PickRow>(store,'props_picks','select=id,prediction_id,side,status,selection_version,decided_at&status=eq.recorded&selection_version=eq.'+selection+
+  '&decided_at=gte.'+q(new Date(Date.parse(nowIso)-120*DAY).toISOString())+'&order=id.asc',20);
+ if(!picks.length)return calibrationBins([]);
+ const preds=await byIds<PredRow>(store,'props_predictions','id,observation_id,p_more,p_less,p_tie','id',picks.map(p=>p.prediction_id));
+ const results=await byIds<{observation_id:number;revision:number;outcome:string;graded_at:string}>(store,'props_line_results','observation_id,revision,outcome,graded_at',
+  'observation_id',preds.map(p=>p.observation_id));
+ const latestR=new Map<number,{revision:number;outcome:string;graded_at:string}>();
+ for(const r of results){if(Date.parse(r.graded_at)>=Date.parse(nowIso))continue;const p=latestR.get(Number(r.observation_id));if(!p||r.revision>p.revision)latestR.set(Number(r.observation_id),r);}
+ const predOf=new Map(preds.map(p=>[Number(p.id),p]));
+ return calibrationBins(picks.flatMap(k=>{const p=predOf.get(Number(k.prediction_id)),r=p?latestR.get(Number(p.observation_id)):undefined;
+  if(!p||!r||!k.side||(r.outcome!=='more'&&r.outcome!=='less'))return [];
+  return [{probability:k.side==='more'?Number(p.p_more):Number(p.p_less),correct:r.outcome===k.side}];}));
+}
+
+async function entryLegs(store:PropsStore,entryIds:number[]){
+ const legs=await byIds<Leg>(store,'props_entry_legs','entry_id,pick_id','entry_id',entryIds);
+ const picks=legs.length?await byIds<PickRow>(store,'props_picks','id,prediction_id,side,status,selection_version','id',legs.map(l=>l.pick_id)):[];
+ const preds=picks.length?await byIds<PredRow>(store,'props_predictions','id,observation_id,p_more,p_less,p_tie','id',picks.map(p=>p.prediction_id)):[];
+ const obs=preds.length?await byIds<Obs>(store,'props_observations','id,provider_event_id,home_team,away_team,lock_at,ingested_at,player_name,stat,line','id',preds.map(p=>p.observation_id)):[];
+ const pickOf=new Map(picks.map(p=>[Number(p.id),p])),predOf=new Map(preds.map(p=>[Number(p.id),p])),obsOf=new Map(obs.map(o=>[Number(o.id),o]));
+ const out=new Map<number,{side:'more'|'less';probability:number;observationId:number;eventId:string;player:string;stat:Stat;line:number}[]>();
+ for(const l of legs){const k=pickOf.get(Number(l.pick_id)),p=k?predOf.get(Number(k.prediction_id)):undefined,o=p?obsOf.get(Number(p.observation_id)):undefined;
+  if(!k?.side||!p||!o)continue;
+  out.set(Number(l.entry_id),[...(out.get(Number(l.entry_id))??[]),{side:k.side,probability:k.side==='more'?Number(p.p_more):Number(p.p_less),observationId:Number(o.id),
+   eventId:o.provider_event_id,player:o.player_name,stat:o.stat,line:Number(o.line)}]);}
+ return out;
+}
+
+export async function runFreezeStakes(d:Pick<LabDeps,'store'|'now'>){
+ const now=d.now(),nowMs=Date.parse(now);
+ let entries:Entry[];
+ try{entries=await d.store.select<Entry>('props_entries','select=id,account_id,stake_cents,lock_at,created_at&lock_at=gt.'+q(new Date(nowMs+60_000).toISOString())+
+  '&created_at=gte.'+q(new Date(nowMs-36*3600_000).toISOString())+'&order=id.asc&limit=200');}
+ catch{return {status:'UNAVAILABLE'};}
+ if(!entries.length)return {status:'OK',entries:0,stakes:0};
+ let existing:{entry_id:number;method:string;stake_cents:number}[];
+ try{existing=await byIds(d.store,'props_lab_stakes','entry_id,method,stake_cents','entry_id',entries.map(e=>e.id),'&policy_version=eq.'+STAKING_POLICY_V1.version);}
+ catch(e){if(e instanceof PropsStoreError&&/^(DB_42P01|STORE_HTTP_404|DB_PGRST)/.test(e.code))return {status:'NOT_MIGRATED'};throw e;}
+ const done=new Set(existing.map(x=>Number(x.entry_id)));
+ const todo=entries.filter(e=>!done.has(e.id));
+ if(!todo.length)return {status:'OK',entries:entries.length,stakes:0};
+ const accounts=await byIds<Account>(d.store,'props_accounts','id,platform,initial_cents,selection_version','id',[...new Set(todo.map(e=>e.account_id))]);
+ const legsOf=await entryLegs(d.store,todo.map(e=>e.id));
+ const rows:Record<string,unknown>[]=[];
+ for(const a of accounts){
+  const bins=await realCalibration(d.store,now,a.selection_version);
+  // Bankroll as the database computes it: initial + settled profit − open stakes; peak from settled history.
+  const all=await d.store.select<Entry>('props_entries','select=id,account_id,stake_cents,lock_at,created_at&account_id=eq.'+a.id+'&order=id.asc&limit=5000');
+  const sett=all.length?await byIds<{entry_id:number;profit_cents:number|null;settled_at:string}>(d.store,'props_entry_settlements','entry_id,profit_cents,settled_at','entry_id',all.map(e=>e.id)):[];
+  const settledIds=new Set(sett.map(s=>Number(s.entry_id)));
+  let run=Number(a.initial_cents),peak=run;
+  for(const s of [...sett].sort((x,y)=>x.settled_at.localeCompare(y.settled_at))){run+=Number(s.profit_cents??0);peak=Math.max(peak,run);}
+  const open=all.filter(e=>!settledIds.has(Number(e.id))).reduce((x,e)=>x+Number(e.stake_cents),0);
+  const today=etDate(now);
+  const todaysIds=all.filter(e=>etDate(e.created_at)===today).map(e=>Number(e.id));
+  const todays=existing.filter(x=>todaysIds.includes(Number(x.entry_id)));
+  const staked=Object.fromEntries(METHODS.map(m=>[m,todays.filter(x=>x.method===m).reduce((s,x)=>s+Number(x.stake_cents),0)])) as Record<Method,number>;
+  for(const e of todo.filter(x=>x.account_id===a.id)){
+   const legs=legsOf.get(e.id);if(!legs||legs.length<2)continue;
+   const input={id:String(e.id),date:etDate(e.lock_at),platform:a.platform,legs:legs.map(l=>({probability:l.probability,eventId:l.eventId,playerKey:l.player.toLowerCase()}))};
+   const assessment=assessEntry(input,bins);
+   for(const m of METHODS){
+    const r=recommend(m,assessment,{bankrollCents:run-open,peakCents:peak,stakedTodayCents:staked[m]});
+    staked[m]+=r.stakeCents;
+    rows.push({entry_id:e.id,policy_version:STAKING_POLICY_V1.version,policy_sha256:STAKING_POLICY_SHA256,method:m,stake_cents:r.stakeCents,reason:r.reason,
+     inputs:{liveStakeCents:Number(e.stake_cents),bankrollCents:run-open,peakCents:peak,jointMid:round(assessment.jointMid,4),jointLow:round(assessment.jointLow,4),
+      evLow:round(assessment.evLow,4),evMid:round(assessment.evMid,4),reasons:assessment.reasons,
+      legs:assessment.legs.map(l=>({stated:round(l.stated,4),observed:round(l.mid,4),lower:round(l.low,4),n:l.n}))}});
+   }
+  }
+ }
+ let written=0,refused=0;
+ for(const r of rows){try{await d.store.insert('props_lab_stakes',[r],{ignoreDuplicates:true});written++;}
+  catch(e){if(e instanceof PropsStoreError&&e.refused)refused++;else throw e;}}
+ return {status:'OK',entries:todo.length,stakes:written,refused};
+}
+
+export async function runStakingReport(d:Pick<LabDeps,'store'|'now'>){
+ let stakes:{entry_id:number;method:Method;stake_cents:number}[];
+ try{stakes=await paged(d.store,'props_lab_stakes','select=entry_id,method,stake_cents&policy_version=eq.'+STAKING_POLICY_V1.version+'&order=id.asc',20);}
+ catch(e){if(e instanceof PropsStoreError&&/^(DB_42P01|STORE_HTTP_404|DB_PGRST)/.test(e.code))return {status:'NOT_MIGRATED'};throw e;}
+ const ids=[...new Set(stakes.map(s=>Number(s.entry_id)))];
+ const entries=ids.length?await byIds<Entry>(d.store,'props_entries','id,account_id,stake_cents,lock_at,created_at','id',ids):[];
+ const accounts=entries.length?await byIds<Account>(d.store,'props_accounts','id,platform,initial_cents,selection_version','id',[...new Set(entries.map(e=>e.account_id))]):[];
+ const legsOf=await entryLegs(d.store,ids);
+ const obsIds=[...legsOf.values()].flat().map(l=>l.observationId);
+ const results=obsIds.length?await byIds<{observation_id:number;revision:number;outcome:string}>(d.store,'props_line_results','observation_id,revision,outcome','observation_id',obsIds):[];
+ const latestR=new Map<number,{revision:number;outcome:string}>();for(const r of results){const p=latestR.get(Number(r.observation_id));if(!p||r.revision>p.revision)latestR.set(Number(r.observation_id),r);}
+ const platformOf=new Map(accounts.map(a=>[Number(a.id),a.platform]));
+ const rows:ForwardStakeRow[]=entries.map(e=>{
+  const legs=legsOf.get(Number(e.id))??[];
+  const outs=legs.map(l=>latestR.get(l.observationId)?.outcome);
+  const legResults=legs.length&&outs.every(Boolean)?legs.map((l,i)=>legResult(l.side,outs[i]==='more'||outs[i]==='less'||outs[i]==='tie'?outs[i] as 'more'|'less'|'tie':'void_dnp')):null;
+  return {entryId:String(e.id),date:etDate(e.lock_at),platform:platformOf.get(Number(e.account_id))??'pick6',liveStakeCents:Number(e.stake_cents),legResults,
+   stakes:Object.fromEntries(stakes.filter(s=>Number(s.entry_id)===Number(e.id)).map(s=>[s.method,Number(s.stake_cents)]))};
+ });
+ const report={asOf:d.now(),policy:STAKING_POLICY_V1,policySha256:STAKING_POLICY_SHA256,...forwardStaking(rows),
+  note:'Shadow only: these are what each method WOULD have staked. Live virtual entries keep the flat $5 stake.'};
+ const reg=await d.store.select<{id:string}>('props_lab_experiments','select=id&id=eq.'+EXP);
+ if(reg.length)await d.store.insert('props_lab_reports',[{experiment_id:EXP,kind:'forward_staking',as_of:d.now(),report}]);
+ return {status:'OK',entries:report.entries,settled:report.settled,pending:report.pending,verdicts:report.verdicts.map(v=>v.method+':'+v.verdict)};
 }

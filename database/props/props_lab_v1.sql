@@ -1,6 +1,6 @@
 -- SportsEdge AI Learning Lab v1 (2026-11-12). Additive, append-only, RESEARCH ONLY.
 -- Frozen experiment registry, immutable forward predictions for every ablation variant, pre-lock risk flags and
--- comparison reports. Nothing here records a pick, an entry, a stake or a model switch, and nothing calls a provider:
+-- comparison reports, plus shadow-only variable-staking recommendations on real virtual entries. Nothing here records a pick, an entry, a stake or a model switch, and nothing calls a provider:
 -- the lab reuses lines and sportsbook quotes the collect run already stored (zero extra paid requests).
 -- Requires props_v1.sql (props_now, props_immutable, props_observations, props_line_results).
 BEGIN;
@@ -58,11 +58,38 @@ CREATE TABLE public.props_lab_flags(
 CREATE TABLE public.props_lab_reports(
  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
  experiment_id text NOT NULL REFERENCES public.props_lab_experiments(id),
- kind text NOT NULL CHECK(kind IN ('forward_comparison')),
+ kind text NOT NULL CHECK(kind IN ('forward_comparison','forward_staking')),
  as_of timestamptz NOT NULL,
  report jsonb NOT NULL CHECK(jsonb_typeof(report)='object' AND length(report::text)<=400000),
  at timestamptz NOT NULL DEFAULT public.props_now()
 );
+
+-- Variable-staking research (SHADOW ONLY): what each sizing method WOULD have staked on a real virtual entry,
+-- frozen before the entry's first lock and never after it settles. The live entry keeps its own stake untouched.
+CREATE TABLE public.props_lab_stakes(
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+ entry_id bigint NOT NULL REFERENCES public.props_entries(id),
+ policy_version text NOT NULL CHECK(policy_version ~ '^lab-staking-v[0-9]+$'),
+ policy_sha256 text NOT NULL CHECK(policy_sha256 ~ '^[a-f0-9]{64}$'),
+ method text NOT NULL CHECK(method IN ('flat','confidence','expected_value','kelly','edge_gate')),
+ stake_cents integer NOT NULL CHECK(stake_cents BETWEEN 0 AND 500 AND stake_cents%100=0),
+ reason text NOT NULL CHECK(reason ~ '^[a-z0-9_+]{2,80}$'),
+ inputs jsonb NOT NULL DEFAULT '{}' CHECK(jsonb_typeof(inputs)='object' AND length(inputs::text)<=4000),
+ recorded_at timestamptz NOT NULL DEFAULT public.props_now(),
+ UNIQUE(entry_id,policy_version,method)
+);
+CREATE FUNCTION public.props_lab_check_stake() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE lock timestamptz;
+BEGIN
+ NEW.recorded_at:=public.props_now();
+ SELECT lock_at INTO STRICT lock FROM public.props_entries WHERE id=NEW.entry_id;
+ IF NEW.recorded_at>=lock THEN RAISE EXCEPTION 'PROPS_LAB_AFTER_LOCK'; END IF;
+ IF EXISTS(SELECT 1 FROM public.props_entry_settlements WHERE entry_id=NEW.entry_id) THEN RAISE EXCEPTION 'PROPS_LAB_RESULT_KNOWN'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER props_lab_stake_chronology BEFORE INSERT ON public.props_lab_stakes
+ FOR EACH ROW EXECUTE FUNCTION public.props_lab_check_stake();
 
 -- Chronology: strictly before lock, data no later than the record time, never once any result exists,
 -- and only under the experiment's registered spec. The content hash is computed by the database.
@@ -100,7 +127,7 @@ CREATE VIEW public.props_lab_prediction_tampering WITH (security_invoker=true) A
    to_char(predicted_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US'),inputs::text),'UTF8')),'hex');
 
 DO $$ DECLARE t text; BEGIN
- FOREACH t IN ARRAY ARRAY['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports'] LOOP
+ FOREACH t IN ARRAY ARRAY['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes'] LOOP
   EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated',t);
   EXECUTE format('GRANT SELECT,INSERT ON public.%I TO service_role',t);
@@ -109,5 +136,6 @@ DO $$ DECLARE t text; BEGIN
  REVOKE ALL ON public.props_lab_prediction_tampering FROM PUBLIC,anon,authenticated;
  GRANT SELECT ON public.props_lab_prediction_tampering TO service_role;
  REVOKE ALL ON FUNCTION public.props_lab_check_frozen() FROM PUBLIC,anon,authenticated;
+ REVOKE ALL ON FUNCTION public.props_lab_check_stake() FROM PUBLIC,anon,authenticated;
 END $$;
 COMMIT;

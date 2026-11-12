@@ -1,0 +1,2356 @@
+{
+ "generatedBy": "scripts/lab-staking-backtest.ts",
+ "policy": {
+  "version": "lab-staking-v1",
+  "maxStakeCents": 500,
+  "stepCents": 100,
+  "dailyRiskCents": 1500,
+  "dependenceHaircut": 0.02,
+  "confidenceZ": 1.645,
+  "minBinPicks": 100,
+  "kelly": {
+   "fraction": 0.25,
+   "bankrollCap": 0.01,
+   "minBinPicks": 300,
+   "maxCalibrationGap": 0.05
+  },
+  "confidenceRamp": 0.1,
+  "evRamp": 0.25,
+  "drawdown": {
+   "halveAt": 0.1,
+   "stopAt": 0.2
+  }
+ },
+ "policySha256": "75a77719a2a56064820759b92a098c3f4eca86f11ac31637e4db3341bf13e2ee",
+ "evidence": "retrospective",
+ "caveats": [
+  "PROXY lines (floor of last-10 median + 0.5) and the recorded PrizePicks 2-pick Power table: simulated research outcomes, not real entries or returns.",
+  "No voids occur in this history (only played games with half-point proxy lines), so refunds and reverted payouts are absent.",
+  "Calibration bins come only from picks dated before the entries they size.",
+  "A method is never called better than flat from this run; forward settled entries are required (STAKING_GATE)."
+ ],
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+  },
+  {
+   "file": "player_box_2027.csv",
+   "sha256": "11486b54adec54235f3dc804500cdbcd4817d16a19661b94bfe81818c9e7bee2"
+  }
+ ],
+ "folds": [
+  {
+   "label": "fold1-2025-26-second-half",
+   "calibrationFrom": "2025-26 picks before 2026-01-01",
+   "calibration": [
+    {
+     "from": 0.6,
+     "to": 0.65,
+     "n": 5117,
+     "hits": 3100
+    },
+    {
+     "from": 0.65,
+     "to": 0.7,
+     "n": 3812,
+     "hits": 2466
+    },
+    {
+     "from": 0.7,
+     "to": 0.75,
+     "n": 2349,
+     "hits": 1657
+    },
+    {
+     "from": 0.75,
+     "to": 0.8,
+     "n": 1304,
+     "hits": 955
+    }
+   ],
+   "reliabilityOutOfSample": [
+    {
+     "band": "0.60-0.65",
+     "n": 8807,
+     "meanStated": 0.6243,
+     "hitRate": 0.5973
+    },
+    {
+     "band": "0.65-0.70",
+     "n": 6472,
+     "meanStated": 0.6735,
+     "hitRate": 0.6428
+    },
+    {
+     "band": "0.70-0.75",
+     "n": 4130,
+     "meanStated": 0.7234,
+     "hitRate": 0.6831
+    },
+    {
+     "band": "0.75-0.80",
+     "n": 2277,
+     "meanStated": 0.7723,
+     "hitRate": 0.6952
+    }
+   ],
+   "comparison": {
+    "policy": "lab-staking-v1",
+    "policySha256": "75a77719a2a56064820759b92a098c3f4eca86f11ac31637e4db3341bf13e2ee",
+    "initialCents": 50000,
+    "entries": 288,
+    "dates": 96,
+    "payoutUnknownExcluded": 0,
+    "methods": [
+     {
+      "method": "flat",
+      "label": "A. Flat $5 (the live policy)",
+      "entries": 288,
+      "staked": 288,
+      "skipped": 0,
+      "totalStakedCents": 144000,
+      "pnlCents": 57000,
+      "roi": 0.3958,
+      "growth": 1.14,
+      "maxDrawdown": 0.0674,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 1307.7,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "confidence",
+      "label": "B. Confidence-adjusted: scales with how far the calibrated joint hit-rate lower bound clears break-even",
+      "entries": 288,
+      "staked": 288,
+      "skipped": 0,
+      "totalStakedCents": 144000,
+      "pnlCents": 57000,
+      "roi": 0.3958,
+      "growth": 1.14,
+      "maxDrawdown": 0.0674,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 1307.7,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "expected_value",
+      "label": "C. Expected-value: scales with the lower-bound expected return under the recorded payout",
+      "entries": 288,
+      "staked": 288,
+      "skipped": 0,
+      "totalStakedCents": 144000,
+      "pnlCents": 57000,
+      "roi": 0.3958,
+      "growth": 1.14,
+      "maxDrawdown": 0.0674,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 1307.7,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "kelly",
+      "label": "D. Quarter-Kelly capped at 1% of bankroll and $5, only when calibration is reliable",
+      "entries": 288,
+      "staked": 32,
+      "skipped": 256,
+      "totalStakedCents": 15300,
+      "pnlCents": 9000,
+      "roi": 0.5882,
+      "growth": 0.18,
+      "maxDrawdown": 0.02,
+      "maxDailyExposureCents": 1000,
+      "dailyVolatilityCents": 394.2,
+      "avgStakeCents": 478.1
+     },
+     {
+      "method": "edge_gate",
+      "label": "E. $5 or no entry: enter only when the lower-bound expected return is positive",
+      "entries": 288,
+      "staked": 288,
+      "skipped": 0,
+      "totalStakedCents": 144000,
+      "pnlCents": 57000,
+      "roi": 0.3958,
+      "growth": 1.14,
+      "maxDrawdown": 0.0674,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 1307.7,
+      "avgStakeCents": 500
+     }
+    ],
+    "vsFlat": [
+     {
+      "method": "confidence",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     },
+     {
+      "method": "expected_value",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     },
+     {
+      "method": "kelly",
+      "meanProfitDifferenceCents": -166.67,
+      "lower95": -249.65,
+      "upper95": -83.33,
+      "pAdjusted": 1
+     },
+     {
+      "method": "edge_gate",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     }
+    ],
+    "jointCalibration": {
+     "bins": [
+      {
+       "from": 0.5,
+       "n": 288,
+       "predicted": 0.5255,
+       "observed": 0.4653
+      }
+     ],
+     "brier": 0.2523
+    },
+    "sensitivity": [
+     {
+      "shift": 0,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 88080,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0349
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 88067,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0349
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 88067,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0349
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 9540,
+        "probabilityOfLoss": 0.028,
+        "medianMaxDrawdown": 0.0288
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 88067,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0349
+       }
+      ]
+     },
+     {
+      "shift": 0.02,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 75426,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0423
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 75383,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0423
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 75383,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0423
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 8159,
+        "probabilityOfLoss": 0.03,
+        "medianMaxDrawdown": 0.0339
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 75383,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0423
+       }
+      ]
+     },
+     {
+      "shift": 0.04,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 62994,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0508
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 62848,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0508
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 62848,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0508
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 6806,
+        "probabilityOfLoss": 0.078,
+        "medianMaxDrawdown": 0.0364
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 62848,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0508
+       }
+      ]
+     },
+     {
+      "shift": 0.06,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 50946,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0594
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 50663,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0594
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 50663,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0594
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 5495,
+        "probabilityOfLoss": 0.112,
+        "medianMaxDrawdown": 0.0385
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 50663,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0594
+       }
+      ]
+     }
+    ],
+    "perEntry": [
+     {
+      "id": "2026-04-04:401810979|4432646|assists|7.5+401810986|6585|assists|2.5",
+      "date": "2026-04-04",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-04:401810985|6578|assists|2.5+401810980|4684806|assists|0.5",
+      "date": "2026-04-04",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-04:401810986|2596112|assists|1.5+401810985|5037871|assists|5.5",
+      "date": "2026-04-04",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-05:401810987|5106258|rebounds|0.5+401810990|4591725|assists|7.5",
+      "date": "2026-04-05",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-05:401810991|4592829|rebounds|3.5+401810987|4683689|assists|1.5",
+      "date": "2026-04-05",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-05:401810992|5279133|points|2.5+401810990|4684806|assists|0.5",
+      "date": "2026-04-05",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-06:401810996|3936099|points|5.5+401810998|4431823|assists|3.5",
+      "date": "2026-04-06",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 500,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "quarter_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 1000,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-06:401810996|4433174|rebounds|7.5+401810999|4066320|rebounds|6.5",
+      "date": "2026-04-06",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 500,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "quarter_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": -500,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-06:401810999|5239561|rebounds|0.5+401810997|4065663|rebounds|0.5",
+      "date": "2026-04-06",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-07:401811001|6585|assists|2.5+401811007|5279133|points|2.5",
+      "date": "2026-04-07",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-07:401811003|5107156|points|2.5+401811006|5106258|rebounds|0.5",
+      "date": "2026-04-07",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-07:401811005|5174655|assists|3.5+401811007|4065731|assists|2.5",
+      "date": "2026-04-07",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-08:401811011|4277848|assists|0.5+401811015|4397114|rebounds|1.5",
+      "date": "2026-04-08",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-08:401811014|5279133|points|2.5+401811015|2596112|assists|1.5",
+      "date": "2026-04-08",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-08:401811015|4432107|assists|3.5+401811010|4683778|rebounds|2.5",
+      "date": "2026-04-08",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-09:401811021|5044385|assists|0.5+401811020|5106258|rebounds|0.5",
+      "date": "2026-04-09",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-09:401811022|4278355|assists|3.5+401811018|4683778|rebounds|2.5",
+      "date": "2026-04-09",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-09:401811022|4432821|points|3.5+401811017|4279147|points|5.5",
+      "date": "2026-04-09",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-10:401811026|4683771|points|4.5+401811031|5106258|rebounds|0.5",
+      "date": "2026-04-10",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-10:401811027|4431772|points|2.5+401811025|5060631|points|2.5",
+      "date": "2026-04-10",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-10:401811030|4697268|assists|5.5+401811025|4897449|points|2.5",
+      "date": "2026-04-10",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-11:401811033|3202|assists|7.5+401811037|2528210|rebounds|3.5",
+      "date": "2026-04-11",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-11:401811037|4432181|assists|1.5+401811039|2528588|rebounds|2.5",
+      "date": "2026-04-11",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-11:401811040|4683774|rebounds|0.5+401811035|4701208|points|3.5",
+      "date": "2026-04-11",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-12:401811041|4683689|assists|1.5+401811043|4278355|assists|3.5",
+      "date": "2026-04-12",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-12:401811044|4431772|points|2.5+401811045|4602025|points|3.5",
+      "date": "2026-04-12",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-12:401811046|4432179|points|3.5+401811047|5106258|rebounds|0.5",
+      "date": "2026-04-12",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-13:401811048|5170947|points|2.5+401811049|4433192|points|13.5",
+      "date": "2026-04-13",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-04-13:401811048|6475|assists|2.5+401811053|4898237|points|6.5",
+      "date": "2026-04-13",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-04-13:401811054|4897449|assists|0.5+401811049|4700873|rebounds|2.5",
+      "date": "2026-04-13",
+      "jointMid": 0.5256,
+      "evLow": 0.4893,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 500,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "quarter_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 1000,
+       "edge_gate": 1000
+      }
+     }
+    ]
+   },
+   "verdicts": [
+    {
+     "method": "confidence",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "expected_value",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "kelly",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "edge_gate",
+     "verdict": "not_better_than_flat"
+    }
+   ]
+  },
+  {
+   "label": "fold2-2026-27-to-date",
+   "calibrationFrom": "all 2025-26 picks",
+   "calibration": [
+    {
+     "from": 0.6,
+     "to": 0.65,
+     "n": 13928,
+     "hits": 8375
+    },
+    {
+     "from": 0.65,
+     "to": 0.7,
+     "n": 10258,
+     "hits": 6625
+    },
+    {
+     "from": 0.7,
+     "to": 0.75,
+     "n": 6457,
+     "hits": 4460
+    },
+    {
+     "from": 0.75,
+     "to": 0.8,
+     "n": 3509,
+     "hits": 2490
+    }
+   ],
+   "reliabilityOutOfSample": [
+    {
+     "band": "0.60-0.65",
+     "n": 1327,
+     "meanStated": 0.6249,
+     "hitRate": 0.6315
+    },
+    {
+     "band": "0.65-0.70",
+     "n": 971,
+     "meanStated": 0.6738,
+     "hitRate": 0.6468
+    },
+    {
+     "band": "0.70-0.75",
+     "n": 664,
+     "meanStated": 0.7238,
+     "hitRate": 0.6672
+    },
+    {
+     "band": "0.75-0.80",
+     "n": 435,
+     "meanStated": 0.7729,
+     "hitRate": 0.7448
+    }
+   ],
+   "comparison": {
+    "policy": "lab-staking-v1",
+    "policySha256": "75a77719a2a56064820759b92a098c3f4eca86f11ac31637e4db3341bf13e2ee",
+    "initialCents": 50000,
+    "entries": 51,
+    "dates": 17,
+    "payoutUnknownExcluded": 0,
+    "methods": [
+     {
+      "method": "flat",
+      "label": "A. Flat $5 (the live policy)",
+      "entries": 51,
+      "staked": 51,
+      "skipped": 0,
+      "totalStakedCents": 25500,
+      "pnlCents": 15000,
+      "roi": 0.5882,
+      "growth": 0.3,
+      "maxDrawdown": 0,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 738.2,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "confidence",
+      "label": "B. Confidence-adjusted: scales with how far the calibrated joint hit-rate lower bound clears break-even",
+      "entries": 51,
+      "staked": 51,
+      "skipped": 0,
+      "totalStakedCents": 25500,
+      "pnlCents": 15000,
+      "roi": 0.5882,
+      "growth": 0.3,
+      "maxDrawdown": 0,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 738.2,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "expected_value",
+      "label": "C. Expected-value: scales with the lower-bound expected return under the recorded payout",
+      "entries": 51,
+      "staked": 51,
+      "skipped": 0,
+      "totalStakedCents": 25500,
+      "pnlCents": 15000,
+      "roi": 0.5882,
+      "growth": 0.3,
+      "maxDrawdown": 0,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 738.2,
+      "avgStakeCents": 500
+     },
+     {
+      "method": "kelly",
+      "label": "D. Quarter-Kelly capped at 1% of bankroll and $5, only when calibration is reliable",
+      "entries": 51,
+      "staked": 0,
+      "skipped": 51,
+      "totalStakedCents": 0,
+      "pnlCents": 0,
+      "roi": null,
+      "growth": 0,
+      "maxDrawdown": 0,
+      "maxDailyExposureCents": 0,
+      "dailyVolatilityCents": 0,
+      "avgStakeCents": null
+     },
+     {
+      "method": "edge_gate",
+      "label": "E. $5 or no entry: enter only when the lower-bound expected return is positive",
+      "entries": 51,
+      "staked": 51,
+      "skipped": 0,
+      "totalStakedCents": 25500,
+      "pnlCents": 15000,
+      "roi": 0.5882,
+      "growth": 0.3,
+      "maxDrawdown": 0,
+      "maxDailyExposureCents": 1500,
+      "dailyVolatilityCents": 738.2,
+      "avgStakeCents": 500
+     }
+    ],
+    "vsFlat": [
+     {
+      "method": "confidence",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     },
+     {
+      "method": "expected_value",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     },
+     {
+      "method": "kelly",
+      "meanProfitDifferenceCents": -294.12,
+      "lower95": -411.76,
+      "upper95": -176.47,
+      "pAdjusted": 1
+     },
+     {
+      "method": "edge_gate",
+      "meanProfitDifferenceCents": 0,
+      "lower95": 0,
+      "upper95": 0,
+      "pAdjusted": 1
+     }
+    ],
+    "jointCalibration": {
+     "bins": [
+      {
+       "from": 0.4,
+       "n": 51,
+       "predicted": 0.4935,
+       "observed": 0.5294
+      }
+     ],
+     "brier": 0.25043
+    },
+    "sensitivity": [
+     {
+      "shift": 0,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 12888,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0283
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 12883,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0283
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 12883,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0283
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 0,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 12883,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0.0283
+       }
+      ]
+     },
+     {
+      "shift": 0.02,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 11016,
+        "probabilityOfLoss": 0.014,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 10989,
+        "probabilityOfLoss": 0.02,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 10989,
+        "probabilityOfLoss": 0.02,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 0,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 10989,
+        "probabilityOfLoss": 0.02,
+        "medianMaxDrawdown": 0.03
+       }
+      ]
+     },
+     {
+      "shift": 0.04,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 8853,
+        "probabilityOfLoss": 0.04,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 8808,
+        "probabilityOfLoss": 0.048,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 8808,
+        "probabilityOfLoss": 0.048,
+        "medianMaxDrawdown": 0.03
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 0,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 8808,
+        "probabilityOfLoss": 0.048,
+        "medianMaxDrawdown": 0.03
+       }
+      ]
+     },
+     {
+      "shift": 0.06,
+      "methods": [
+       {
+        "method": "flat",
+        "expectedPnlCents": 6864,
+        "probabilityOfLoss": 0.084,
+        "medianMaxDrawdown": 0.0496
+       },
+       {
+        "method": "confidence",
+        "expectedPnlCents": 6799,
+        "probabilityOfLoss": 0.098,
+        "medianMaxDrawdown": 0.0496
+       },
+       {
+        "method": "expected_value",
+        "expectedPnlCents": 6799,
+        "probabilityOfLoss": 0.098,
+        "medianMaxDrawdown": 0.0496
+       },
+       {
+        "method": "kelly",
+        "expectedPnlCents": 0,
+        "probabilityOfLoss": 0,
+        "medianMaxDrawdown": 0
+       },
+       {
+        "method": "edge_gate",
+        "expectedPnlCents": 6799,
+        "probabilityOfLoss": 0.098,
+        "medianMaxDrawdown": 0.0496
+       }
+      ]
+     }
+    ],
+    "perEntry": [
+     {
+      "id": "2026-11-02:401909905|2991139|assists|6.5+401909906|4397014|points|6.5",
+      "date": "2026-11-02",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-02:401909906|4431684|rebounds|1.5+401909905|3213|assists|0.5",
+      "date": "2026-11-02",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-02:401909906|4433134|points|28.5+401909905|3936099|rebounds|5.5",
+      "date": "2026-11-02",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-03:401909908|3908845|rebounds|8.5+401909910|5174655|rebounds|2.5",
+      "date": "2026-11-03",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-03:401909914|4433083|rebounds|4.5+401909916|4351852|rebounds|4.5",
+      "date": "2026-11-03",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-03:401909917|4684793|points|1.5+401909919|4066436|rebounds|5.5",
+      "date": "2026-11-03",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-05:401909931|3134908|points|3.5+401909924|5214640|assists|5.5",
+      "date": "2026-11-05",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-05:401909932|4066211|points|3.5+401909933|4896372|points|3.5",
+      "date": "2026-11-05",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-05:401909935|5106258|rebounds|4.5+401909932|4888725|assists|1.5",
+      "date": "2026-11-05",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-06:401909937|3064482|rebounds|8.5+401909936|4066268|points|5.5",
+      "date": "2026-11-06",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-06:401909937|3213|points|3.5+401909936|4601023|assists|4.5",
+      "date": "2026-11-06",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-06:401909937|5107157|rebounds|0.5+401909936|4278585|assists|2.5",
+      "date": "2026-11-06",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-07:401909287|5149077|points|5.5+401909290|5211175|rebounds|6.5",
+      "date": "2026-11-07",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-07:401909290|4684793|points|1.5+401909293|5144091|assists|2.5",
+      "date": "2026-11-07",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-07:401909295|3155942|assists|7.5+401909290|4278049|assists|2.5",
+      "date": "2026-11-07",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-08:401909939|5149077|assists|5.5+401909946|4683771|points|3.5",
+      "date": "2026-11-08",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-08:401909942|6478|points|2.5+401909944|6578|points|3.5",
+      "date": "2026-11-08",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-08:401909943|4711272|assists|4.5+401909942|4712849|rebounds|6.5",
+      "date": "2026-11-08",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-09:401909949|4277922|points|0.5+401909950|4397136|assists|3.5",
+      "date": "2026-11-09",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-09:401909949|4397475|assists|2.5+401909951|5107897|assists|0.5",
+      "date": "2026-11-09",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-09:401909949|4432848|rebounds|7.5+401909951|3064440|rebounds|4.5",
+      "date": "2026-11-09",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-10:401909959|4066436|rebounds|5.5+401909952|4397020|assists|2.5",
+      "date": "2026-11-10",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-10:401909959|4277956|rebounds|2.5+401909958|6578|points|3.5",
+      "date": "2026-11-10",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-10:401909959|4397040|rebounds|3.5+401909954|3908845|points|6.5",
+      "date": "2026-11-10",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-11:401909960|4277869|points|1.5+401909965|4066211|points|9.5",
+      "date": "2026-11-11",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-11:401909960|6585|assists|1.5+401909964|3064440|rebounds|4.5",
+      "date": "2026-11-11",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-11:401909964|4277847|points|19.5+401909963|4397077|assists|2.5",
+      "date": "2026-11-11",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-12:401909969|4898010|points|3.5+401909973|5105839|rebounds|3.5",
+      "date": "2026-11-12",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": -500,
+       "confidence": -500,
+       "expected_value": -500,
+       "kelly": 0,
+       "edge_gate": -500
+      }
+     },
+     {
+      "id": "2026-11-12:401909971|5060631|assists|1.5+401909974|5175737|assists|5.5",
+      "date": "2026-11-12",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     },
+     {
+      "id": "2026-11-12:401909974|3213|rebounds|5.5+401909969|4395626|rebounds|3.5",
+      "date": "2026-11-12",
+      "jointMid": 0.4935,
+      "evLow": 0.4276,
+      "stakes": {
+       "flat": 500,
+       "confidence": 500,
+       "expected_value": 500,
+       "kelly": 0,
+       "edge_gate": 500
+      },
+      "reasons": {
+       "flat": "live_flat_policy",
+       "confidence": "confidence_scaled",
+       "expected_value": "ev_scaled",
+       "kelly": "calibration_not_reliable_for_kelly",
+       "edge_gate": "positive_lower_bound_edge"
+      },
+      "profit": {
+       "flat": 1000,
+       "confidence": 1000,
+       "expected_value": 1000,
+       "kelly": 0,
+       "edge_gate": 1000
+      }
+     }
+    ]
+   },
+   "verdicts": [
+    {
+     "method": "confidence",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "expected_value",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "kelly",
+     "verdict": "not_better_than_flat"
+    },
+    {
+     "method": "edge_gate",
+     "verdict": "not_better_than_flat"
+    }
+   ]
+  }
+ ]
+}

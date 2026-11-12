@@ -62,7 +62,30 @@ ALTER TABLE public.props_lab_predictions DISABLE TRIGGER props_append_only;
 UPDATE public.props_lab_predictions SET p_more=0.7,p_less=0.28 WHERE observation_id=:open;
 ALTER TABLE public.props_lab_predictions ENABLE TRIGGER props_append_only;
 SELECT props_test.eq((SELECT count(*)::text FROM public.props_lab_prediction_tampering),'1','tampering detected');
+-- 8. Shadow stakes: $0-$5 in whole dollars, frozen before the entry locks, never after it settles, never rewritten.
+INSERT INTO public.props_entries(account_id,run_id,entry_key,entry_type,pick_count,stake_cents,payout_terms_version,lock_at)
+ SELECT account_id,run_id,repeat('9',64),'power',2,500,payout_terms_version,'2026-11-20T00:00:00Z' FROM public.props_entries ORDER BY id LIMIT 1;
+SELECT id AS fresh FROM public.props_entries WHERE entry_key=repeat('9',64) \gset
+SELECT id AS settled FROM public.props_entries e WHERE EXISTS(SELECT 1 FROM public.props_entry_settlements s WHERE s.entry_id=e.id) ORDER BY id LIMIT 1 \gset
+SET ROLE service_role;
+SELECT props_test.at('2026-11-19T12:00:00Z');
+INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(:fresh,'lab-staking-v1',repeat('a',64),'expected_value',200,'ev_scaled');
+INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(:fresh,'lab-staking-v1',repeat('a',64),'kelly',0,'calibration_not_reliable_for_kelly');
+SELECT props_test.raises(format($$INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(%s,'lab-staking-v1',%L,'expected_value',500,'ev_scaled')$$,:fresh,repeat('a',64)),'duplicate key');
+SELECT props_test.raises(format($$INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(%s,'lab-staking-v1',%L,'confidence',600,'x_y')$$,:fresh,repeat('a',64)),'check constraint');
+SELECT props_test.raises(format($$INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(%s,'lab-staking-v1',%L,'confidence',250,'x_y')$$,:fresh,repeat('a',64)),'check constraint');
+SELECT props_test.at('2026-11-20T00:00:00Z');
+SELECT props_test.raises(format($$INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(%s,'lab-staking-v1',%L,'flat',500,'live_flat_policy')$$,:fresh,repeat('a',64)),'PROPS_LAB_AFTER_LOCK');
+SELECT props_test.at('2026-11-07T21:00:00Z');
+SELECT props_test.raises(format($$INSERT INTO public.props_lab_stakes(entry_id,policy_version,policy_sha256,method,stake_cents,reason) VALUES(%s,'lab-staking-v1',%L,'flat',500,'live_flat_policy')$$,:settled,repeat('a',64)),'PROPS_LAB_RESULT_KNOWN');
+SELECT props_test.raises($$UPDATE public.props_lab_stakes SET stake_cents=500$$,'permission denied');
+RESET ROLE;
+SELECT props_test.raises($$UPDATE public.props_lab_stakes SET stake_cents=500$$,'PROPS_IMMUTABLE');
+SELECT props_test.raises($$DELETE FROM public.props_lab_stakes$$,'PROPS_IMMUTABLE');
+-- The live entry's own stake is untouched by any shadow stake.
+SELECT props_test.eq((SELECT stake_cents::text FROM public.props_entries WHERE id=:fresh),'500','live stake unchanged');
 SET ROLE anon;
 SELECT props_test.raises($$SELECT count(*) FROM public.props_lab_predictions$$,'permission denied');
+SELECT props_test.raises($$SELECT count(*) FROM public.props_lab_stakes$$,'permission denied');
 RESET ROLE;
 SELECT 'PROPS_LAB_V1_SQL_TESTS_PASS' AS result;
