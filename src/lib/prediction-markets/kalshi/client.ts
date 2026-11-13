@@ -145,6 +145,6 @@ export async function getWeatherOfficialResult(
  const rulesPrimary=requiredString(m.rules_primary,'RULES');
  return {marketTicker:ticker,eventTicker:requiredString(m.event_ticker,'EVENT'),
   status:'settled',result:m.result,rulesPrimary,
-  settledAt,fetchedAt,sourceDigest:kalshiSha256(JSON.stringify(response)).digest('hex'),
+  settledAt,fetchedAt,sourceDigest:kalshiSha256('sha256').update(JSON.stringify(response)).digest('hex'),
   source:'kalshi-public-market-get'};
 }
