@@ -46,5 +46,7 @@ jobs:
         run: npm run build
       - name: Owner sign-in HTTP flow (isolated synthetic key, no broker or database)
         run: node scripts/owner-sign-in-smoke.mjs
+      - name: Command Center 2.0 (read-only tools, multi-turn sessions, LLM loop with a fake model, budgets)
+        run: node --experimental-strip-types --test src/lib/command/command.test.mjs
       - name: Shared assistant HTTP flow (isolated local server)
         run: node scripts/assistant-http-smoke.mjs

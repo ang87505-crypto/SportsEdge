@@ -4,8 +4,9 @@ import {Panel,Skeleton} from '@/components/ui';
 import {AssistantChat} from '@/components/assistant-chat';
 import {CommandStrip} from '@/components/command-strip';
 import {BriefingNow,BriefingBoard} from '@/components/briefing-home';
+import {CommandInsights} from '@/components/command-insights';
 
-const HOME_STARTERS=['How much did we make yesterday?',"How did all our predictions do yesterday, including ones we didn't bet?",'What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
+const HOME_STARTERS=['How did our picks do yesterday?','Compare this week with last week','Show active experiments','How much did we make yesterday?',"How did all our predictions do yesterday, including ones we didn't bet?",'What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
  'Which features actually improve our predictions?','How accurate are our 80% predictions actually?','Would flat staking have performed better?','Is everything running?'];
 
 function StripFallback(){
@@ -28,7 +29,7 @@ export default function Home(){
   <Suspense fallback={<StripFallback/>}><CommandStrip/></Suspense>
   <div className="command-main">
    <div className="command-chat">
-    <AssistantChat starters={HOME_STARTERS} intro="What would you like to know? Pick a question or type your own."/>
+    <AssistantChat endpoint="/api/command" starters={HOME_STARTERS} intro="What would you like to know? Pick a question or type your own."/>
     <p className="quiet small-print">Also: <Link href="/lab">AI Learning Lab</Link> · <Link href="/paper-betting/props">PrizePicks picks</Link> · <Link href="/stocks/paper-auto">Stock autopilot</Link> · <Link href="/automation">Automation</Link></p>
    </div>
    <div className="command-rail">
@@ -36,5 +37,6 @@ export default function Home(){
    </div>
   </div>
   <Suspense fallback={<BoardFallback/>}><BriefingBoard/></Suspense>
+  <Suspense fallback={null}><CommandInsights/></Suspense>
  </div>;
 }
