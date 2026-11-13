@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 2,
+    "sessions": 3,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.016866660366666286
+    "totalReturn": 0.008766660366666734
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 2,
+    "sessions": 3,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.0035972816666667295
+    "totalReturn": 0.002744281666666737
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-12T18:12:55Z",
+  "forwardAt": "2026-11-13T04:43:56Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "FCX": 0.2,
-      "NEM": 0.2,
-      "NKE": 0.2,
-      "NOW": 0.2,
-      "NVDA": 0.2
+      "ACN": 0.2,
+      "AMZN": 0.2,
+      "MCD": 0.2,
+      "META": 0.2,
+      "MSFT": 0.2
      },
-     "sessions": 2,
+     "sessions": 3,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.006681269500000031
+     "totalReturn": -0.053047747999999895
     },
     "historical": {
      "asLive": {
@@ -150,15 +150,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "AMZN": 0.2,
+      "AMD": 0.2,
       "CHTR": 0.2,
-      "LOW": 0.2,
-      "NEM": 0.2,
+      "CVS": 0.2,
+      "EOG": 0.2,
       "TMUS": 0.2
      },
-     "sessions": 2,
+     "sessions": 3,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": 0.001470176833333392
+     "totalReturn": -0.0036614688333331813
     },
     "historical": {
      "asLive": {
@@ -203,7 +203,7 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 2,
+     "sessions": 3,
      "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": 0.0
     },
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-12T18:12:18Z",
- "generatedAt": "2026-11-12T18:20:59Z",
+ "forwardAt": "2026-11-13T04:43:43Z",
+ "generatedAt": "2026-11-13T04:44:13Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -409,8 +409,8 @@
     "failed": [],
     "items": 1
    },
-   "lastSuccessAt": "2026-11-12T18:12:17Z",
-   "retrievedAt": "2026-11-12T18:12:17Z",
+   "lastSuccessAt": "2026-11-13T04:43:42Z",
+   "retrievedAt": "2026-11-13T04:43:42Z",
    "status": "OK"
   },
   {
@@ -429,8 +429,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-12T18:12:17Z",
-   "retrievedAt": "2026-11-12T18:12:17Z",
+   "lastSuccessAt": "2026-11-13T04:43:42Z",
+   "retrievedAt": "2026-11-13T04:43:42Z",
    "status": "OK"
   },
   {
