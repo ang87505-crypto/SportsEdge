@@ -1,7 +1,7 @@
 {
  "schema": "sportsedge-experiment-manifest-v1",
- "generatedAt": "2026-11-13T03:50:56.303Z",
- "gitCommit": "9c797e55d507a005359d9fcf036c51af111c26cb",
+ "generatedAt": "2026-11-13T13:31:12.941Z",
+ "gitCommit": "46e1a10c79547d9e575f4309746d0203a1c05d23",
  "experiments": [
   {
    "id": "props-paper-v1",
@@ -80,7 +80,13 @@
     "src/lib/props/normalize.ts": "b40d912df95eeea118eb0bd6b93cd64d60dc5905adbf455409295688df00c726",
     "src/lib/server/props-cycle.ts": "825f2c31adeb6f67739861d7e4a08f81812813970ad8bdebfbaf16ab54e17e2f",
     "src/lib/server/props-tick.ts": "5a0fa8adf584283a7d6de0874c119c1301a65c673d5619c966b6858c6b991391",
-    "src/lib/server/props-active-model.ts": "0ef7ee85403261eb9e879c5957ecc52a2fd9b1199194099d262cbf977b97b89e"
+    "src/lib/server/props-active-model.ts": "0ef7ee85403261eb9e879c5957ecc52a2fd9b1199194099d262cbf977b97b89e",
+    "database/props/props_v1.sql": "c5cedd46442bf80409c18ca21c9fbd57d6257a79a58ad7caf186955e1ca725ab",
+    "database/props/props_learning_v1.sql": "edc91e4812c8b854018a7bf4c2dca299b8e9689b83586c79003275eb5a6c805c",
+    "database/props/props_budget_v2.sql": "3cf1b3ccf49ea8722329ad315636fc5b6b4aae27fc3fcd0e39d8a6f99c4cf374",
+    "database/props/props_budget_v3_actuals.sql": "10f00e9ca9377ad6cece03870506e8c81047adc2e80fdcbdf99345eb6d8b232a",
+    "database/props/props_capture_v1.sql": "996419e00152aa9847adf72a24e92c6a5b1c95b34d76e19c29c0c5c64f9783df",
+    "database/props/props_market_v1.sql": "6152d8f48efb48f83b18cc03b5fd9b082bbd8e7e05620cd3b21eb6bd8a8f076c"
    }
   },
   {
@@ -125,12 +131,15 @@
     "src/lib/server/paper-auto-controller.ts": "c57537c9c03bf20f8dd894c1cd576c47a35569328175da40cfa1169c4f771868",
     "src/lib/server/paper-auto-risk.ts": "5eff3504a9e456eecf0092c48d5175adccdcd12c892d5c33736b5c350b0ce000",
     "src/lib/server/paper-auto-broker.ts": "012850ba866f91b019b34b679250293d08734ddd414e1b7c4335f196d905787f",
-    "src/lib/stocks/paper-auto-release.ts": "3eb386e5e783bd56e15a867376581dd627cbd48cdddf5846e733030e71ad6b64"
+    "src/lib/stocks/paper-auto-release.ts": "3eb386e5e783bd56e15a867376581dd627cbd48cdddf5846e733030e71ad6b64",
+    "database/staging/paper_auto_v1.sql": "5e1dc6cef05b4fd89062f1a17b1edf56ef290305e0180b57f1e8a0ac576fbf7a",
+    "database/staging/paper_auto_risk_v2.sql": "2432f3890e4e91be2b99fde698497ddca59ff7d7663c3ee981d6fdad6237bb1d"
    }
   }
  ],
  "recordedFiles": {
   "config/research/registry.json": "a91b8a9e9cb98bd1b966bd409e9bfba7fb6f08d93e6da1c9b533b43f116a31dd",
+  "database/props/props_lab_v1.sql": "5a71a1de6756c657a05944d25234e7e75019d07d68c63ea5f0dea401435f3b78",
   "src/data/lab/sports_ablation_v1.json": "a9d21fa123139f06c212cb828ddca0b453f73bf9d85edf0ad9ec10d77c50c686",
   "src/data/props/research_v2.json": "2b27910917de97b48fb3004417ae0b01fbe0643bde58cd421b1740525d169f34",
   "src/data/props/challenger_gap_shrink_v1.json": "c4f771c120920c6b1c449b7d6d60193c41da7ef21567f84a09572e2d29de1798",

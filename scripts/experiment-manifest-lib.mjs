@@ -7,16 +7,22 @@ export const FROZEN_FILES={
   'src/data/props/model_v1.json','src/lib/props/model.ts','src/lib/props/features.ts','src/lib/props/contract.ts',
   'src/lib/props/rules.ts','src/lib/props/budget.ts','src/lib/props/capture-plan.ts','src/lib/props/schedule.ts',
   'src/lib/props/brake.ts','src/lib/props/promotion.ts','src/lib/props/learn.ts','src/lib/props/normalize.ts',
-  'src/lib/server/props-cycle.ts','src/lib/server/props-tick.ts','src/lib/server/props-active-model.ts'],
+  'src/lib/server/props-cycle.ts','src/lib/server/props-tick.ts','src/lib/server/props-active-model.ts',
+  // The database defines the stakes, daily entry caps, bankroll, credit budget enforcement and pre-lock chronology
+  // (props_accounts rows and the RPCs), so the migrations that create them are frozen too.
+  'database/props/props_v1.sql','database/props/props_learning_v1.sql','database/props/props_budget_v2.sql',
+  'database/props/props_budget_v3_actuals.sql','database/props/props_capture_v1.sql','database/props/props_market_v1.sql'],
  'stock-v2-weekly-1':[
   'config/paper-auto/stock-v2-weekly-1.json','config/paper-auto/universe-large-cap-v1.json',
   'analytics/stock_weekly_bridge_v2.py','analytics/stock_weekly_scoring_v2.py',
   'src/lib/server/paper-auto-controller.ts','src/lib/server/paper-auto-risk.ts','src/lib/server/paper-auto-broker.ts',
-  'src/lib/stocks/paper-auto-release.ts'],
+  'src/lib/stocks/paper-auto-release.ts',
+  // Order, daily, open-order and drawdown limits are also enforced by the database.
+  'database/staging/paper_auto_v1.sql','database/staging/paper_auto_risk_v2.sql'],
 };
 
 /** Research registries are recorded (not frozen): challengers may be added; they never change an active experiment. */
-export const RECORDED_FILES=['config/research/registry.json','src/data/lab/sports_ablation_v1.json',
+export const RECORDED_FILES=['config/research/registry.json','database/props/props_lab_v1.sql','src/data/lab/sports_ablation_v1.json',
  'src/data/props/research_v2.json','src/data/props/challenger_gap_shrink_v1.json',
  // Scheduling assumptions: recorded so a schedule change is visible, but a backup-cadence change does not alter
  // what any prediction, pick or stake is, so it does not break the freeze.
