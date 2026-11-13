@@ -17,7 +17,11 @@ export const FROZEN_FILES={
 
 /** Research registries are recorded (not frozen): challengers may be added; they never change an active experiment. */
 export const RECORDED_FILES=['config/research/registry.json','src/data/lab/sports_ablation_v1.json',
- 'src/data/props/research_v2.json','src/data/props/challenger_gap_shrink_v1.json'];
+ 'src/data/props/research_v2.json','src/data/props/challenger_gap_shrink_v1.json',
+ // Scheduling assumptions: recorded so a schedule change is visible, but a backup-cadence change does not alter
+ // what any prediction, pick or stake is, so it does not break the freeze.
+ 'vercel.json','src/lib/server/scheduler-kickoff.ts','.github/workflows/props-tick.yml','.github/workflows/props-daily.yml',
+ '.github/workflows/paper-auto-worker.yml','.github/workflows/paper-auto-decision-weekly.yml'];
 
 export function buildManifest({sha,read,commit,now,constants:c}){
  const files=ids=>Object.fromEntries(ids.map(p=>[p,sha(p)]));

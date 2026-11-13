@@ -1,7 +1,7 @@
 {
  "schema": "sportsedge-experiment-manifest-v1",
- "generatedAt": "2026-11-13T03:18:08.906Z",
- "gitCommit": "4f486488f26771b55f38374c45c70b9a80e29774",
+ "generatedAt": "2026-11-13T03:50:56.303Z",
+ "gitCommit": "9c797e55d507a005359d9fcf036c51af111c26cb",
  "experiments": [
   {
    "id": "props-paper-v1",
@@ -133,6 +133,12 @@
   "config/research/registry.json": "a91b8a9e9cb98bd1b966bd409e9bfba7fb6f08d93e6da1c9b533b43f116a31dd",
   "src/data/lab/sports_ablation_v1.json": "a9d21fa123139f06c212cb828ddca0b453f73bf9d85edf0ad9ec10d77c50c686",
   "src/data/props/research_v2.json": "2b27910917de97b48fb3004417ae0b01fbe0643bde58cd421b1740525d169f34",
-  "src/data/props/challenger_gap_shrink_v1.json": "c4f771c120920c6b1c449b7d6d60193c41da7ef21567f84a09572e2d29de1798"
+  "src/data/props/challenger_gap_shrink_v1.json": "c4f771c120920c6b1c449b7d6d60193c41da7ef21567f84a09572e2d29de1798",
+  "vercel.json": "8c2993eb39294168704c6a37c9feb270a8039ece6e3322d40cd588b470896443",
+  "src/lib/server/scheduler-kickoff.ts": "ce2af2991512ee0eb7c594e19507dc59d029f5f5a1e12db7c5556c2537c47fe3",
+  ".github/workflows/props-tick.yml": "10952efec5aee3bdd71a7c2b867a3325640ca3f16a6be5778937dbb7584c53de",
+  ".github/workflows/props-daily.yml": "70c9d2595479ad97ca62838bb4ebd46b88833f93df1afb4dfd4b216447ffa2e8",
+  ".github/workflows/paper-auto-worker.yml": "aeec1a6a2910530645c9bd268d3b686b08a3bbd94c890b7c456f3993f6d68dad",
+  ".github/workflows/paper-auto-decision-weekly.yml": "5b24fbffe18bfa1cbb7ededd5acb5f8975065a454fd3007c0c65b13f81a11175"
  }
 }
