@@ -15,7 +15,7 @@ const fixture=(id='55',probabilityYesPpm=700000)=>{
   predictedAt:'2026-11-13T20:00:05Z',probabilityYesPpm,maxContracts:1,slippageMicrosPerContract:5000,
   minEdgeMicrosPerContract:10000});
  const result={marketTicker:f.marketTicker,eventTicker:f.eventTicker,status:'settled',
-  result:'yes',rulesPrimary:f.rulesPrimary,settledAt:'2026-11-14T02:00:00Z',
+  result:'yes',rulesPrimary:f.rulesPrimary,rulesSecondary:f.rulesSecondary,settledAt:'2026-11-14T02:00:00Z',
   fetchedAt:'2026-11-14T03:00:00Z',sourceDigest:hash,source:'kalshi-public-market-get'};
  return {f,result,g:gradePaperForecast(f,result)};
 };
