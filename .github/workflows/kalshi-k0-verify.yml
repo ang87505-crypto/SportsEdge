@@ -1,0 +1,17 @@
+name: Kalshi K0 read-only research verification
+on:
+  pull_request:
+    paths:
+      - 'src/lib/prediction-markets/kalshi/**'
+      - '.github/workflows/kalshi-k0-verify.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/client.test.mjs
