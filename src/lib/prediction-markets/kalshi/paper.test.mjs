@@ -41,7 +41,7 @@ test('no liquidity and no edge yield no simulated fill or invented profit',()=>{
 });
 test('verified official settlement creates separate immutable grade; never asserts a real fill',()=>{
  const p=freezePaperForecast(input());
- const o={marketTicker:p.marketTicker,eventTicker:p.eventTicker,status:'settled',result:'yes',rulesPrimary:p.rulesPrimary,
+ const o={marketTicker:p.marketTicker,eventTicker:p.eventTicker,status:'settled',result:'yes',rulesPrimary:p.rulesPrimary,rulesSecondary:p.rulesSecondary,
   settledAt:'2026-11-14T03:00:00Z',fetchedAt:'2026-11-14T04:00:00Z',sourceDigest:hash,source:'kalshi-public-market-get'};
  const a=gradePaperForecast(p,o);
  assert.equal(a.correct,true);assert.equal(a.virtualReturnMicros,2_000_000);
@@ -55,7 +55,7 @@ test('verified official settlement creates separate immutable grade; never asser
 test('failed and zero-trade markets are graded for accuracy, not falsified as P&L',()=>{
  const z=input();z.book=normalizeBook(z.market.ticker,{orderbook_fp:{yes_dollars:[],no_dollars:[]}},now);
  const p=freezePaperForecast(z);
- const o={marketTicker:p.marketTicker,eventTicker:p.eventTicker,status:'settled',result:'no',rulesPrimary:p.rulesPrimary,
+ const o={marketTicker:p.marketTicker,eventTicker:p.eventTicker,status:'settled',result:'no',rulesPrimary:p.rulesPrimary,rulesSecondary:p.rulesSecondary,
   settledAt:'2026-11-14T03:00:00Z',fetchedAt:'2026-11-14T04:00:00Z',sourceDigest:hash,source:'kalshi-public-market-get'};
  assert.equal(gradePaperForecast(p,o).virtualNetMicros,null);
  const a=gradePaperForecast(freezePaperForecast(input()),{...o,result:'no'});
