@@ -7,7 +7,7 @@
  * Usage: node scripts/props-activation-preflight.mjs [out.json]
  */
 import {writeFileSync} from 'node:fs';
-import {EXPECTED_PROJECT,CAPTURE_TABLES,missingRelation,missingColumn,activePolicy,creditUse,entryCapBreaches,duplicates,verdict} from './props-activation-preflight-lib.mjs';
+import {EXPECTED_PROJECT,CAPTURE_TABLES,LAB_TABLES,missingRelation,missingColumn,activePolicy,creditUse,entryCapBreaches,duplicates,verdict} from './props-activation-preflight-lib.mjs';
 
 const env=process.env,nowMs=Date.now(),SITE='https://sports-edge-eta.vercel.app';
 const url=env.SPORTSEDGE_PROPS_SUPABASE_URL??'',key=env.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY??'';
@@ -48,6 +48,17 @@ if(Object.values(facts.captureTables).every(v=>v==='PRESENT')){
  facts.duplicateClaims=duplicates(claims.rows,c=>c.plan_id+'|'+c.capture_key);
  facts.claimsWithoutOutcome=claims.rows.filter(c=>!outs.rows.some(o=>Number(o.capture_id)===Number(c.id))&&nowMs-Date.parse(c.claimed_at)>15*60_000).length;
  facts.duplicatePlans=duplicates(plans.rows,p=>p.plan_version+'|'+p.provider_event_id);
+}
+// 1c. Learning Lab (props_lab_v1.sql, research only): presence, row counts and the tampering view (expected empty).
+facts.labTables={};facts.labRows={};
+for(const t of LAB_TABLES){
+ const r=await get(`${t}?select=*&limit=0`,{count:true});
+ facts.labTables[t]=r.ok?'PRESENT':missingRelation(r.code)?'MISSING':`ERROR_${r.status}_${r.code??''}`;
+ if(r.ok)facts.labRows[t]=r.count;
+}
+if(Object.values(facts.labTables).every(v=>v==='PRESENT')){
+ const tv=await get('props_lab_prediction_tampering?select=id&limit=0',{count:true});
+ facts.labTampered=tv.ok?tv.count:undefined;
 }
 // 2. v3 accounting (props_budget_v3_actuals.sql): the count_provider_actuals column.
 const v3=await get('props_budget_policy?select=count_provider_actuals&limit=1');

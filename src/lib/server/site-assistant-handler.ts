@@ -1,5 +1,5 @@
 /** Whole-site read-only orchestration. Domain failures are isolated; private data is never cached. */
-import {handleAssistant,parseContext} from './assistant-handler.ts';
+import {handleAssistant,parseContext,cachedPropsRaw} from './assistant-handler.ts';
 import {routeQuestion} from '../assistant/domain.ts';
 import {stockAnswer,researchAnswer,type StockAccounts,type BrokerView} from '../assistant/stock-answer.ts';
 import type {Reply} from '../assistant/answer.ts';
@@ -111,7 +111,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   if(c.target==='props'){
    const verb=c.verb==='start'?'resume':c.verb;
    let from:string|null=null;
-   try{from=(await ports.sports(nowIso)).control?.state??null;}catch{from=null;}
+   try{from=(await cachedPropsRaw(ports.sports,nowIso)).control?.state??null;}catch{from=null;}
    return propose(`props-${verb}` as ChatActionId,from);
   }
   if(c.verb==='start'||c.verb==='resume')return {...simple('Starting the stock autopilot re-checks the Alpaca PAPER account and re-arms paper orders, so it is only done on the Autopilot page, never from chat. Nothing has changed.',ctx),
@@ -126,7 +126,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(q.topic==='lab'){
   if(!ports.lab)return respond(simple('The AI Learning Lab is not connected here.',{domain:'all',topic:'lab'}));
   const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
-  const [lab,raw]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?ports.sports(nowIso):Promise.resolve(null)]);
+  const [lab,raw]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null)]);
   if(lab.status!=='fulfilled')return respond(simple('Learning Lab records are unavailable right now; nothing is assumed.',{domain:'all',topic:'lab'}));
   return respond(labAnswer(message,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso));
  }
@@ -143,7 +143,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   const topic=q.topic as BriefingTopic;
   // Each source fails on its own; a missing one is reported as unavailable, never as zero.
   const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
-  const [raw,ops,research]=await Promise.allSettled([propsConfigured?ports.sports(nowIso):Promise.resolve(null),
+  const [raw,ops,research]=await Promise.allSettled([propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null),
    ports.ops?ports.ops(nowIso):Promise.resolve(null),ports.research(nowIso)]);
   const b=buildBriefing({nowIso,props:propsInput(raw.status==='fulfilled'?raw.value:null),ops:ops.status==='fulfilled'?ops.value:null,
    research:research.status==='fulfilled'?research.value:null});

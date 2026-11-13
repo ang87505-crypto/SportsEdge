@@ -95,6 +95,15 @@ confidence ran 5–8 points above observed accuracy. **No method beats flat.** P
 platform lines, so forward shadow stakes calibrate on real graded picks only — with today's small real sample
 every research method sizes $0.
 
+## Status (checked 2026-11-13 ~03:00 UTC)
+
+- PRs #153–#156 are merged and deployed (production serves `198b27f`), so step 2 below is done.
+- Step 1 is **not done yet**. The tick's lab step reported `{"forecasts":{"status":"NOT_MIGRATED"},"staking":{"status":"NOT_MIGRATED"}}`
+  on 2026-11-12 21:17 UTC (run [43308726133](https://github.com/ang87505-crypto/SportsEdge/actions/runs/43308726133)),
+  so no lab forward evidence has been recorded yet. The paper tick in the same run completed normally.
+- The migration and its tests pass on a local Postgres (`scripts/verify-props-sql.sh`: `PROPS_LAB_V1_SQL_TESTS_PASS`).
+- See `docs/SPORTSEDGE_NOV12_AI_READINESS.md` for the full audit.
+
 ## Owner steps (nothing below happens without you)
 
 1. **Apply `database/props/props_lab_v1.sql`** in the props Supabase project (SQL editor). Until then the freeze

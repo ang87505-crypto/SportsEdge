@@ -34,7 +34,7 @@ jobs:
       - name: Unit tests (GET-only guards, accounting, verdicts, re-grading)
         run: |
           node --test scripts/props-activation-preflight.test.mjs
-          node --experimental-strip-types --no-warnings --test scripts/props-ledger-verify.test.mjs
+          node --experimental-strip-types --no-warnings --test scripts/props-ledger-verify.test.mjs scripts/props-calibration-audit.test.mjs
       - name: Read-only checks against the props database
         env:
           SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
@@ -56,3 +56,9 @@ jobs:
           FROM: ${{ inputs.ledger_from || '2026-11-09' }}
           TO: ${{ inputs.ledger_to }}
         run: node --experimental-strip-types --no-warnings scripts/props-ledger-verify.mjs
+      - name: Calibration and accounting audit (read-only) - all recorded predictions, picks, buckets, groups, expected vs realised
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          FROM: '2026-11-01'
+        run: node --experimental-strip-types --no-warnings scripts/props-calibration-audit.mjs
