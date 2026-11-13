@@ -707,3 +707,57 @@ e2e('CLOCK_SKEW: quotes stamped in our future block planning; once clocks agree 
  assert.equal(again.reason,'PLAN_HOLD');
  assert.equal(w.broker.posts.length,3);
 });
+
+// Monday rehearsal (2026-11-16, New York EST: open 14:30Z, close 21:00Z, no execution in the last 20 min).
+// One continuous simulated session on the real schema and controller with a fake PAPER broker. It proves the
+// sequence, not a real fill: genuine PAPER fills exist only once the owner runs the supervised session.
+e2e('Monday rehearsal: refusals before Start and before the open, partial fill, duplicate dispatch, Stop, Start, no duplicate fills, close mark',async()=>{
+ const w=world({start:'2026-11-16T12:00:00.000Z'});
+ await register(w);
+ await decide(w,'2026-11-16');
+ // Owner has not pressed Start: the gate is STOPPED and nothing can be sent.
+ const before=await execute(w,'2026-11-16T14:38:00.000Z');
+ assert.equal(before.reason,'GATE_STOPPED',JSON.stringify(before));
+ assert.equal(w.broker.posts.length,0);
+ // Start (clean reconcile + owner resume) before the open, then a slot before the open sends nothing.
+ await arm(w,'2026-11-16T14:20:00.000Z');
+ const early=await execute(w,'2026-11-16T14:25:00.000Z');
+ assert.equal(early.reason,'OUTSIDE_EXECUTION_WINDOW',JSON.stringify(early));
+ assert.equal(w.broker.posts.length,0);
+ // First trading slot: AAA fills 1 of 3, BBB fills, CCC rests unfilled.
+ w.broker.behaviors.push('partial:1','fill','rest');
+ const first=await execute(w,'2026-11-16T14:45:00.000Z');
+ assert.equal(first.reason,'ORDERS_WORKING',JSON.stringify(first));
+ assert.deepEqual(w.broker.posts.map(p=>p.symbol+':'+p.shares),['AAA:3','BBB:2','CCC:5']);
+ // A duplicate delivery of the same slot sends nothing.
+ const dup=await execute(w,'2026-11-16T14:46:00.000Z');
+ assert.equal(dup.reason,'SLOT_ALREADY_FINISHED');
+ assert.equal(w.broker.posts.length,3);
+ // Owner Stop: the next slot cancels both working orders and sends nothing new.
+ await w.store.call('stop',{experiment_id:w.experimentId,reason:'OWNER_STOP',actor:OWNER});
+ const stopped=await execute(w,'2026-11-16T15:00:00.000Z');
+ assert.equal(stopped.reason,'GATE_STOPPED',JSON.stringify(stopped));
+ assert.equal(stopped.cancels,2);
+ assert.equal(w.broker.posts.length,3);
+ assert.deepEqual(positions(w),{AAA:1,BBB:2});
+ // Start again only after a clean reconcile; the next slot re-plans the residual from broker state.
+ await arm(w,'2026-11-16T15:20:00.000Z');
+ const resumed=await execute(w,'2026-11-16T15:30:00.000Z');
+ assert.equal(resumed.reason,'ORDERS_COMPLETE',JSON.stringify(resumed));
+ assert.deepEqual(w.broker.posts.slice(3).map(p=>p.symbol+':'+p.shares),['AAA:2','CCC:5']);
+ assert.deepEqual(positions(w),{AAA:3,BBB:2,CCC:5},'exactly the targets: no duplicate fills after restart');
+ // Later slots hold; a slot after the cutoff (20:40Z) sends nothing.
+ assert.equal((await execute(w,'2026-11-16T16:00:00.000Z')).reason,'PLAN_HOLD');
+ assert.equal((await execute(w,'2026-11-16T20:45:00.000Z')).reason,'OUTSIDE_EXECUTION_WINDOW');
+ assert.equal(w.broker.posts.length,5);
+ // After-close mark, then the dashboard's read model agrees with the broker.
+ assert.equal((await monitor(w,'2026-11-16T20:30:00.000Z','2026-11-16')).reason,'BEFORE_CLOSE');
+ const mark=await monitor(w,'2026-11-16T21:30:00.000Z','2026-11-16');
+ assert.equal(mark.reason,'DAILY_RECORDED',JSON.stringify(mark));
+ const l=parseLedger(await w.store.call('ledger',{experiment_id:w.experimentId}));
+ assert.deepEqual(l.daily.map(d=>d.session+':'+d.cashReconciled+':'+d.contaminated),['2026-11-16:true:false']);
+ assert.deepEqual(l.intents.map(i=>i.status).sort(),['canceled','canceled','filled','filled','filled']);
+ assert.equal(l.status.state,'READY','still armed after the close, no critical alert');
+ const p=forwardPerformance(l.experiment.startingEquityCents,l.experiment.registeredAt,l.daily);
+ assert.equal(p.verified.throughSession,'2026-11-16');
+});
