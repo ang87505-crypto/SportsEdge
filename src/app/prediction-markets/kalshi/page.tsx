@@ -30,7 +30,7 @@ export default function PredictionMarketsKalshiPage(){
    ]}/>
   </Panel>
   <Panel title="What must happen before activation" className="mt-12">
-   <p>Kalshi's Data Terms restrict software/AI use of its data without prior written permission.
+   <p>Kalshi&apos;s Data Terms restrict software/AI use of its data without prior written permission.
     A public API endpoint is not proof that those uses are licensed. Written permission or a
     separate applicable authorized API-data license must be verified before collection,
     modeling, storage, or public display is enabled.</p>
@@ -38,7 +38,7 @@ export default function PredictionMarketsKalshiPage(){
     independently timed forecasts, paper-grade settlements, and evaluate costs, calibration
     and distinct events. Paper results must not be mistaken for real fills.</p>
    <p><a href="https://kalshi-public-docs.s3.amazonaws.com/kalshi-data-terms-of-service.pdf"
-    target="_blank" rel="noreferrer">Read Kalshi's published data terms</a></p>
+    target="_blank" rel="noreferrer">Read Kalshi&apos;s published data terms</a></p>
   </Panel>
  </>;
 }
