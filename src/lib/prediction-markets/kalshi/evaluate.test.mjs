@@ -28,7 +28,7 @@ test('paired Brier vs market quote, provisional hypothetical ROI, independent ev
  const {f,g}=fixture();
  const b=evaluateKalshiPaper([f],[g]);
  assert.equal(b.graded,1);assert.equal(b.independentEvents,1);
- assert.equal(b.modelBrier,0.09);assert.equal(b.marketMidpointBrier,0.3249); // midpoint .425 => (.425 - 1)^2
+ assert.equal(b.modelBrier,0.09);assert.equal(b.marketMidpointBrier,0.330625); // midpoint .425 => (.425 - 1)^2
  assert.equal(b.marketBenchmarkN,1);assert.equal(b.pairedModelBrier,0.09);
  assert.equal(b.hypotheticalNetMicros,g.virtualNetMicros);
  assert.equal(b.hypotheticalTrades,1);
