@@ -10,6 +10,11 @@ on:
         description: Last session to include (YYYY-MM-DD)
         required: true
         type: string
+      experiment:
+        description: Which pre-registered research to replay
+        type: choice
+        options: [psychology, v3]
+        default: psychology
 permissions:
   contents: read
 concurrency:
@@ -37,13 +42,20 @@ jobs:
           ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
         run: python -m analytics.stock_weekly_backtest_v1 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/bars.json.gz"
       - name: Replay the base strategy and every psychology variant (no network)
+        if: inputs.experiment != 'v3'
         run: |
           python -m analytics.stock_psychology_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/psychology.json" --markdown "$RUNNER_TEMP/psychology.md"
           cat "$RUNNER_TEMP/psychology.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: AI 2.0 stock research v3 (lab-stock-v3-2026-11-13; no network)
+        if: inputs.experiment == 'v3'
+        run: |
+          python -m analytics.stock_research_v3 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --end "$END" --output "$RUNNER_TEMP/psychology.json" --markdown "$RUNNER_TEMP/psychology.md" > /dev/null
+          cat "$RUNNER_TEMP/psychology.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "RESULTS_JSON_BEGIN"; python -c "import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:d[k] for k in ('failure_audit','dispositions','comparisons','variants','benchmarks','yearly')},default=str))" "$RUNNER_TEMP/psychology.json"; echo "RESULTS_JSON_END"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stock-psychology-${{ inputs.end }}
+          name: stock-${{ inputs.experiment }}-${{ inputs.end }}
           path: ${{ runner.temp }}/psychology.*
           if-no-files-found: ignore
           retention-days: 30
