@@ -43,3 +43,5 @@ jobs:
         run: |
           sudo systemctl start postgresql.service
           sudo -E env "PATH=$PATH" bash scripts/verify-props-sql.sh
+      - name: Provider client and paid-call failure tests (no network)
+        run: node --experimental-strip-types --test src/lib/server/props-odds-client.test.mjs
