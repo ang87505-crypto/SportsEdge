@@ -34,3 +34,26 @@ export function auditEntry(entry,legs,settle){
  const state=!allGraded?(s?'SETTLED_BUT_UNGRADED':'PENDING_RESULTS'):!s?'GRADED_NOT_SETTLED':problems.length?'MISMATCH':'VERIFIED';
  return {state:problems.length&&state!=='MISMATCH'?'MISMATCH':state,expected,problems};
 }
+
+/**
+ * Accounting identity for one account: realized profit must equal the sum of each settled entry's own profit, and it
+ * is broken down by outcome so a record like 3 won / 6 lost at $5 Power Play (3x) visibly nets $0.00
+ * (3 x +$10.00 + 6 x -$5.00). Entries with an unknown payout (Pick6) are counted and their stake reported separately;
+ * they never enter profit, staked-with-known-payout or ROI. Pure.
+ */
+export function accountingIdentity(rows){
+ const by={};let profit=0,stakedKnown=0,stakedUnknown=0,unknown=0;const problems=[];
+ for(const r of rows){
+  const stake=Number(r.stake_cents),p=r.profit_cents===null||r.profit_cents===undefined?null:Number(r.profit_cents);
+  if(!Number.isSafeInteger(stake)||stake<=0){problems.push(`entry ${r.entry_id}: invalid stake ${r.stake_cents}`);continue;}
+  if(p===null){unknown++;stakedUnknown+=stake;if(r.outcome!=='payout_unknown')problems.push(`entry ${r.entry_id}: ${r.outcome} without a profit`);continue;}
+  if(!Number.isSafeInteger(p))problems.push(`entry ${r.entry_id}: non-integer profit ${r.profit_cents}`);
+  if(r.outcome==='lost'&&p!==-stake)problems.push(`entry ${r.entry_id}: lost but profit ${p} != -${stake}`);
+  if(r.outcome==='refund'&&p!==0)problems.push(`entry ${r.entry_id}: refund but profit ${p}`);
+  if(r.outcome==='won'&&p<=0)problems.push(`entry ${r.entry_id}: won but profit ${p}`);
+  const k=`${r.outcome}:${p}`;by[k]=(by[k]??0)+1;profit+=p;stakedKnown+=stake;
+ }
+ const terms=Object.entries(by).sort().map(([k,n])=>{const [o,p]=k.split(':');return {outcome:o,count:n,profitCents:Number(p)};});
+ return {profitCents:profit,stakedKnownCents:stakedKnown,stakedUnknownCents:stakedUnknown,unknownPayout:unknown,terms,
+  identityHolds:terms.reduce((s,t)=>s+t.count*t.profitCents,0)===profit,problems};
+}
