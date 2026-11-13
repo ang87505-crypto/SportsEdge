@@ -1,0 +1,19 @@
+name: Kalshi paper-only research verification
+on:
+  pull_request:
+    paths:
+      - 'src/lib/prediction-markets/kalshi/**'
+      - '.github/workflows/kalshi-paper-verify.yml'
+permissions:
+  contents: read
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Kalshi market, fees, paper forecasts and grading (no network)
+        run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs
