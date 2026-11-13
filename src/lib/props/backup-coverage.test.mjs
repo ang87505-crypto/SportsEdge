@@ -3,14 +3,26 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {coverageGaps,guaranteed} from './backup-coverage.ts';
 
-// The Vercel tick backups actually configured (vercel.json), read so the analysis tracks the real schedule.
+// The Vercel tick backups configured on 2026-11-12 (the schedule the observed delays were measured against). Pinned as
+// a historical constant so the analysis stays true when the schedule changes (e.g. hourly backups); the live
+// schedule is checked separately below.
+const HOURS=[1, 13, 15, 17, 19, 21, 23];
 const crons=JSON.parse(readFileSync(new URL('../../../vercel.json',import.meta.url),'utf8')).crons;
-const HOURS=crons.filter(c=>c.path.includes('props-tick-')).map(c=>Number(c.schedule.split(' ')[1])).sort((a,b)=>a-b);
+const CONFIGURED=crons.filter(c=>c.path.includes('props-tick-')).map(c=>Number(c.schedule.split(' ')[1])).sort((a,b)=>a-b);
 // NBA anchor tips this season: 12:00 PM ET (17:00 UTC) through 11:00 PM ET (04:00 UTC next day).
 const TIPS={tipFromMin:17*60,tipToMin:28*60};
 
-test('the configured backups are the seven odd UTC hours 13..23 and 01', () => {
-  assert.deepEqual(HOURS, [1, 13, 15, 17, 19, 21, 23]);
+test('every Nov 12 backup hour is still configured (a schedule change may add backups, never silently drop one)', () => {
+  for (const h of HOURS) assert.ok(CONFIGURED.includes(h), `props-tick backup at ${h}:00 UTC is missing from vercel.json`);
+  for (const c of crons.filter(c => c.path.includes('props-tick-'))) assert.match(c.schedule, /^0 \d{1,2} \* \* \*$/);
+});
+
+test('the configured backups are at least as good as the Nov 12 set under every delay model', () => {
+  for (const d of [{min: 0, max: 0}, {min: 10, max: 38}, {min: 0, max: 60}, {min: 0, max: 75}]) {
+    const now = coverageGaps({backupHoursUtc: CONFIGURED, delayMin: d, ...TIPS, stepMin: 1}).uncovered;
+    const then = coverageGaps({backupHoursUtc: HOURS, delayMin: d, ...TIPS, stepMin: 1}).uncovered;
+    assert.ok(now <= then, `${JSON.stringify(d)}: ${now} > ${then}`);
+  }
 });
 
 test('with a steady start delay, two-hourly backups cover every late window (145 min > 120 min spacing)', () => {
