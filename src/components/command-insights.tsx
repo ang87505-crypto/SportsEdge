@@ -17,8 +17,8 @@ export async function CommandInsights(){
  const alerts=(o?.status?.jobs??[]).filter(j=>!['positive','neutral','info'].includes(opsLabel(j.status).tone));
  return <div className="home-grid briefing-grid">
   <Panel title="Active experiments" description="Challengers are tested on frozen forward predictions; nothing is promoted automatically">
-   {!l?<p className="quiet">Learning Lab records are unavailable right now.</p>:<>
-    <p><strong>{l.active?.version??'Unknown model'}</strong> is live. Testing: {l.testing.productionShadows.length?l.testing.productionShadows.join(', '):'no production shadows'} plus {l.testing.labVariants} lab variants.</p>
+   {!l||!l.active?<p className="quiet">Learning Lab records are not connected here, so no experiment status is shown{l?` (${String(l.forwardStatus).replaceAll('_',' ')})`:''}.</p>:<>
+    <p><strong>{l.active.version}</strong> is live. Testing: {l.testing.productionShadows.length?l.testing.productionShadows.join(', '):'no production shadows'} plus {l.testing.labVariants} lab variants.</p>
     {f&&min?<ul className="chat-bars" aria-label="Forward sample progress">
      {[['Graded lines',f.graded,min.lines],['Dates',f.dates,min.dates],['Games',f.games,min.games]].map(([k,v,m])=><li key={k as string}>
       <span className="chat-bar-label">{k}</span>
