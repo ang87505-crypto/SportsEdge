@@ -118,3 +118,27 @@ export async function getWeatherOrderbook(ticker:string,fetcher:typeof fetch=fet
  const raw=await getJson('/markets/'+ticker+'/orderbook?depth=20',fetcher);
  return normalizeBook(ticker,raw,now());
 }
+
+/**
+ * GET the official market result for offline paper grading. Never query an order endpoint.
+ * Incomplete, undecided, disputed or void outcomes are deliberately NOT gradeable.
+ */
+import {createHash as kalshiSha256} from 'node:crypto';
+import type {OfficialResult} from './paper.ts';
+export async function getWeatherOfficialResult(
+ ticker:string,fetcher:typeof fetch=fetch,now:()=>string=()=>new Date().toISOString()
+):Promise<OfficialResult>{
+ if(!TICKER.test(ticker)||!ticker.startsWith('KXHIGHNY-'))throw Error('KALSHI_TICKER_NOT_ALLOWED');
+ const response=record(await getJson('/markets/'+ticker,fetcher));
+ const m=record(response.market);
+ if(m.ticker!==ticker||m.market_type!=='binary'||m.status!=='settled'||
+  (m.result!=='yes'&&m.result!=='no'))throw Error('KALSHI_RESULT_NOT_FINAL');
+ const fetchedAt=timeString(now(),'FETCHED');
+ const settledAt=timeString(m.settlement_ts,'SETTLED');
+ if(Date.parse(fetchedAt)<Date.parse(settledAt))throw Error('KALSHI_SETTLEMENT_FUTURE');
+ const rulesPrimary=requiredString(m.rules_primary,'RULES');
+ return {marketTicker:ticker,eventTicker:requiredString(m.event_ticker,'EVENT'),
+  status:'settled',result:m.result,rulesPrimary,
+  settledAt,fetchedAt,sourceDigest:kalshiSha256(JSON.stringify(response)).digest('hex'),
+  source:'kalshi-public-market-get'};
+}
