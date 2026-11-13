@@ -50,7 +50,7 @@ test('GET requires the owner session and returns strictly re-read ledgers',async
  assert.equal(r.status,200);
  assert.equal(r.headers.get('cache-control'),'private, no-store, max-age=0');
  const body=await r.json();
- assert.equal(body.release.brokerWritesEnabled,false);assert.equal(body.release.realMoneyEnabled,false);
+ assert.equal(body.release.brokerWritesEnabled,true);assert.equal(body.release.realMoneyEnabled,false);
  assert.deepEqual(body.experiments.map(e=>[e.experimentId,e.registered]),
   [['fwd-2026-baseline',true],['fwd-2026-holdrank',false]]);
  assert.ok(!JSON.stringify(body).includes(SECRET));
