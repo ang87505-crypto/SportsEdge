@@ -35,22 +35,22 @@ export const SOURCE_REGISTER:SourceEntry[]=[
  {id:'sec-edgar-13f',domain:'stocks',status:'connected',reliability:'regulatory',access:'data.sec.gov with a declared User-Agent (repository secret), <= 10 requests/s',
   rights:'US government public data',availabilityTime:'filing acceptance date (filed); holdings are as of the report period, available only from filing',
   usedFor:['delayed-holdings follower research'],cost:'free',blocker:null,whereInCode:'analytics/research/sec13f.py'},
- {id:'sec-edgar-companyfacts',domain:'stocks',status:'implemented',reliability:'regulatory',access:'data.sec.gov/api/xbrl/companyfacts/CIK##########.json with a declared User-Agent',
+ {id:'sec-edgar-companyfacts',domain:'stocks',status:'connected',reliability:'regulatory',access:'data.sec.gov/api/xbrl/companyfacts/CIK##########.json with a declared User-Agent',
   rights:'US government public data',availabilityTime:"each fact's 'filed' date: a fundamental is usable only on or after the day its filing was accepted",
   usedFor:['point-in-time fundamentals (quality, value) for stock research'],cost:'free',
-  blocker:'Parser implemented and tested (src/lib/research/sec-companyfacts.ts); a collection job needs owner approval after Monday.',whereInCode:'src/lib/research/sec-companyfacts.ts'},
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 10/10 companies, 0 point-in-time leaks; manual/push only, no schedule)'},
  {id:'qmom-holdings',domain:'stocks',status:'connected',reliability:'official',access:'Public fund holdings page; robots.txt crawl-delay 10',
   rights:'Public disclosure',availabilityTime:'retrieval time (no historical archive): forward-only',usedFor:['disclosed-holdings follower (forward)'],cost:'free',blocker:null,whereInCode:'analytics/research/qmom.py'},
  {id:'survivorship-free-constituents',domain:'stocks',status:'proposed',reliability:'licensed-provider',access:'Historical index membership with add/remove dates',
   rights:'Typically a paid licence',availabilityTime:'membership effective dates',usedFor:['removing survivorship bias from every stock backtest'],cost:'paid: needs explicit owner approval',
   blocker:'No free source with verified point-in-time membership identified; purchasing data needs owner approval.',whereInCode:null},
  // ------------------------------------------------------------ literature (both)
- {id:'openalex',domain:'both',status:'implemented',reliability:'peer-reviewed',access:'api.openalex.org, no key, <= 10 requests/s',rights:'CC0 metadata',
+ {id:'openalex',domain:'both',status:'connected',reliability:'peer-reviewed',access:'api.openalex.org, no key, <= 10 requests/s',rights:'CC0 metadata',
   availabilityTime:'publication date; literature never enters point-in-time features',usedFor:['hypothesis discovery'],cost:'free',
-  blocker:'Request plans and parsers exist (src/lib/research/discovery.ts); no job runs them yet.',whereInCode:'src/lib/research/discovery.ts'},
- {id:'arxiv',domain:'both',status:'implemented',reliability:'secondary',access:'export.arxiv.org, 1 request per 3 s',rights:'Metadata CC0; e-prints not re-served',
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 5/5 queries; hypothesis-only)'},
+ {id:'arxiv',domain:'both',status:'connected',reliability:'secondary',access:'export.arxiv.org, 1 request per 3 s',rights:'Metadata CC0; e-prints not re-served',
   availabilityTime:'submission date; literature never enters point-in-time features',usedFor:['hypothesis discovery'],cost:'free',
-  blocker:'Request plans and parsers exist; no job runs them yet.',whereInCode:'src/lib/research/discovery.ts'},
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 3/3 queries; hypothesis-only)'},
 ];
 
 /** Consistency rules the register must satisfy (tested): nothing paid is connected without saying so, and every

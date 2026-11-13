@@ -14,4 +14,16 @@ test('the /lab engine view reflects the recorded registry exactly: no invented r
   assert.ok(v.rejected.some(x => x.id === 'daily-reversal5-v1'));
   assert.ok(v.collecting.every(x => x.status !== 'REJECTED' && x.status !== 'READY_FOR_REVIEW'));
   assert.ok(v.sources.blocked.includes('nba-official-injury-report'));
+  assert.ok(v.whyNoCandidate);
+});
+
+test('forward progress and job history come from the recorded files only', () => {
+  const jobs = JSON.parse(readFileSync(new URL('../../../../research/engine/jobs.json', import.meta.url), 'utf8'));
+  const v = engineView(reg, jobs);
+  const f = v.forward.find(x => x.id === 'props-learn-v1-shadow');
+  assert.equal(f.status, 'INSUFFICIENT_DATA');
+  assert.deepEqual(f.progress.map(p => [p.label, p.have, p.need]), [['paired lines', 144, 500], ['dates', 3, 14], ['games', 5, 50], ['pick decisions', 27, 100]]);
+  assert.equal(v.jobs.length, jobs.length);
+  assert.ok(v.jobs.every(j => j.status && j.run));
+  assert.ok(v.sources.connected.includes('sec-edgar-companyfacts'), 'connected only after the verified collection run');
 });

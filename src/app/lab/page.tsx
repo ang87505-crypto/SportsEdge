@@ -6,6 +6,7 @@ import {VERDICT_TEXT,type LabView} from '@/lib/lab/view';
 import {METHOD_TEXT,type Method} from '@/lib/lab/staking';
 import {engineView} from '@/lib/lab/engine/view';
 import engineRegistry from '../../../research/engine/registry.json';
+import engineJobs from '../../../research/engine/jobs.json';
 import type {Registry} from '@/lib/lab/engine/experiments';
 
 export const metadata={title:'AI Learning Lab | SportsEdge',description:'What the SportsEdge models have measurably learned, what is still a hypothesis, and what is being tested.'};
@@ -99,7 +100,7 @@ export default async function LabPage(){
 
 const ENGINE_TONE:Record<string,Tone>={RUNNING:'info',PROPOSED:'neutral',INSUFFICIENT_DATA:'warning',PROMISING:'positive',FAILED:'negative',READY_FOR_REVIEW:'positive',REJECTED:'negative'};
 function EnginePanel(){
- const e=engineView(engineRegistry as Registry);
+ const e=engineView(engineRegistry as Registry,engineJobs);
  const line=(d:'sports'|'stocks')=>Object.entries(e.counts[d]).filter(([,n])=>n).map(([s,n])=>`${s.replaceAll('_',' ').toLowerCase()} ${n}`).join(' · ');
  return <Panel title="Learning engine (research only)" description="Every registered experiment, from the recorded registry. Nothing here changes a model, pick, stake or order; a ready experiment waits for the owner." actions={<Evidence kind="recorded"/>}>
   <MetricGrid columns={3}>
@@ -107,6 +108,11 @@ function EnginePanel(){
    <Metric label="Ready for owner review" value={String(e.readyForReview.length)} detail="Needs forward evidence meeting the registered minimums"/>
    <Metric label="Rejected and remembered" value={String(e.rejected.length)} detail={`Stocks: ${line('stocks')}`}/>
   </MetricGrid>
+  {e.whyNoCandidate?<p className="home-panel-note"><strong>Why nothing qualifies yet:</strong> {e.whyNoCandidate}</p>:null}
+  {e.forward.map(f=><div key={f.id}>
+   <p className="small-print"><strong>Forward test: {f.candidate}</strong> vs {f.baseline} (frozen predictions before lock, production review gate) <Badge tone={ENGINE_TONE[f.status]}>{f.status.replaceAll('_',' ').toLowerCase()}</Badge></p>
+   <ul className="evidence-list">{f.progress.map(p=><li key={p.label}><span>{p.label}</span><span><strong>{p.have}</strong> / {p.need}</span></li>)}</ul>
+  </div>)}
   {e.readyForReview.length?<ul className="evidence-list">{e.readyForReview.map(x=><li key={x.id}><span><strong>{x.id}</strong><br/><small className="quiet">{x.why}</small></span><Badge tone="positive">ready for review</Badge></li>)}</ul>:null}
   <Details title={`Still collecting evidence (${e.collecting.length})`}>
    <ul className="evidence-list">{e.collecting.map(x=><li key={x.id}><span><strong>{x.id}</strong> <small className="quiet">({x.domain})</small><br/><small className="quiet">{x.why}</small></span><Badge tone={ENGINE_TONE[x.status]}>{x.status.replaceAll('_',' ').toLowerCase()}</Badge></li>)}</ul>
@@ -114,6 +120,9 @@ function EnginePanel(){
   <Details title={`Rejected ideas (${e.rejected.length}); never retested automatically`}>
    <ul className="evidence-list">{e.rejected.map(x=><li key={x.id}><span><strong>{x.id}</strong> <small className="quiet">({x.domain})</small><br/><small className="quiet">{x.why}</small></span><Badge tone="negative">rejected</Badge></li>)}</ul>
   </Details>
-  <p className="home-panel-note">Research sources: connected {e.sources.connected.length} ({e.sources.connected.join(', ')}); built but not running {e.sources.implemented.join(', ')}; blocked {e.sources.blocked.join(', ')}; proposed {e.sources.proposed.join(', ')}.</p>
+  <Details title={`Job history (${e.jobs.length})`}>
+   <ul className="evidence-list">{e.jobs.map(j=><li key={j.run}><span><strong>{j.job}</strong> <small className="quiet">({j.at}, run {j.run})</small><br/><small className="quiet">{j.summary}</small></span><Badge tone={j.status==='OK'?'positive':'negative'}>{j.status}</Badge></li>)}</ul>
+  </Details>
+  <p className="home-panel-note">Research sources: connected {e.sources.connected.length} ({e.sources.connected.join(', ')}); built but not running {e.sources.implemented.join(', ')||'none'}; blocked {e.sources.blocked.join(', ')}; proposed {e.sources.proposed.join(', ')}. No collection job is scheduled.</p>
  </Panel>;
 }
