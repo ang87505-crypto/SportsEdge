@@ -53,3 +53,26 @@ test('fewer than 5 opponent games gives a neutral ratio',()=>{
  const few=rows.filter(r=>!(r.opponentAbbr==='DEF'||r.teamAbbr==='DEF')||Date.parse(r.gameStart)>=Date.parse(day(12)));
  assert.equal(matchupFeatures({...base,rows:few}).oppAllowedRatio,1);
 });
+
+// Calendar-day rest (prepared for an owner-approved release after 2026-11-16; props-learn-v1 stays on elapsed-v1).
+import {restDaysBetween} from './features.ts';
+const at = s => Date.parse(s);
+test('rest regression: one full day off with an earlier tip is NOT back-to-back under calendar-v2 (it is under the frozen elapsed-v1)', () => {
+ const prev = at('2026-11-10T00:30:00Z'), lock = at('2026-11-12T00:00:00Z');   // Mon 7:30pm ET → Wed 7:00pm ET: Tue off
+ assert.equal(restDaysBetween(prev, lock, 'elapsed-v1'), 0, 'documents the defect in the frozen definition');
+ assert.equal(restDaysBetween(prev, lock, 'calendar-v2'), 1);
+});
+test('rest regression: calendar-v2 on consecutive ET dates, across midnight UTC, DST and the cap', () => {
+ assert.equal(restDaysBetween(at('2026-11-11T00:00:00Z'), at('2026-11-12T00:30:00Z'), 'calendar-v2'), 0, 'Tue 7pm ET → Wed 7:30pm ET is a back-to-back');
+ assert.equal(restDaysBetween(at('2026-11-11T03:30:00Z'), at('2026-11-11T23:00:00Z'), 'calendar-v2'), 0, 'late tip 10:30pm ET then 6pm ET next day');
+ assert.equal(restDaysBetween(at('2026-10-31T23:00:00Z'), at('2026-11-02T00:00:00Z'), 'calendar-v2'), 0, 'Sat 7pm EDT → Sun 7pm EST across the DST change');
+ assert.equal(restDaysBetween(at('2026-11-01T00:00:00Z'), at('2026-11-12T00:00:00Z'), 'calendar-v2'), 3, 'capped');
+ assert.equal(restDaysBetween(-Infinity, at('2026-11-12T00:00:00Z'), 'calendar-v2'), 3, 'no previous game');
+});
+test('the frozen default is unchanged: matchupFeatures without a definition equals elapsed-v1 exactly', () => {
+ const mine = n => game(n, 'TEAM', 'ZZZ');
+ for (const n of [5, 17, 18, 19]) {
+  const input = {...base, rows: [...rows, ...mine(n)]};
+  assert.deepEqual(matchupFeatures(input), matchupFeatures(input, 'elapsed-v1'));
+ }
+});
