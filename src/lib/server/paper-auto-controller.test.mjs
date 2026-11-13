@@ -665,3 +665,45 @@ test('registration files are reviewed configs with exact keys and the database r
  assert.equal(parseRegistrationConfig(missing,'fwd-2026-baseline'),null);
  assert.equal(parseRegistrationConfig([good],'fwd-2026-baseline'),null);
 });
+
+// CLOCK_SKEW (weekend 2026-11-14 review): the controller refuses to plan or submit when the broker clock disagrees
+// with ours by more than 60 s, or when quotes are timestamped more than 2 s in our future. This file's controller is
+// byte-identical to the pinned #102 release head, so these tests exercise the released code.
+function skewBroker(w,offsetMs){
+ const real=w.broker.clock.bind(w.broker);
+ w.broker.clock=async()=>{const c=await real();return {...c,timestamp:new Date(Date.parse(c.timestamp)+offsetMs).toISOString()};};
+}
+
+e2e('CLOCK_SKEW: a broker clock more than 60 s ahead or behind blocks the run before any order; 59 s does not',async()=>{
+ for(const offset of [61_000,-61_000]){
+  const w=await armedWithDecision();
+  skewBroker(w,offset);
+  const r=await execute(w,'2026-10-19T13:45:00.000Z');
+  assert.equal(r.outcome,'BLOCKED',JSON.stringify(r));
+  assert.equal(r.reason,'CLOCK_SKEW');
+  assert.equal(w.broker.posts.length,0,'no order is sent');
+  assert.deepEqual(intents(w),[],'no intent is reserved');
+  const alerts=sqlValue(DB,`SELECT count(*) FROM sportsedge_paper_auto.alerts WHERE experiment_id='${w.experimentId}' AND code='CLOCK_SKEW'`);
+  assert.equal(Number(alerts),1,'the block is raised as an alert, not hidden');
+ }
+ const ok=await armedWithDecision();
+ skewBroker(ok,59_000);
+ const r=await execute(ok,'2026-10-19T13:45:00.000Z');
+ assert.equal(r.reason,'ORDERS_COMPLETE',JSON.stringify(r));
+});
+
+e2e('CLOCK_SKEW: quotes stamped in our future block planning; once clocks agree the next slot trades exactly once',async()=>{
+ const w=await armedWithDecision();
+ w.broker.quoteAgeMs=-3_000;
+ const r=await execute(w,'2026-10-19T13:45:00.000Z');
+ assert.equal(r.outcome,'BLOCKED',JSON.stringify(r));
+ assert.equal(r.reason,'CLOCK_SKEW');
+ assert.equal(w.broker.posts.length,0);
+ w.broker.quoteAgeMs=1000;
+ const next=await execute(w,'2026-10-19T14:00:00.000Z');
+ assert.equal(next.reason,'ORDERS_COMPLETE',JSON.stringify(next));
+ assert.equal(w.broker.posts.length,3,'one order per target, no duplicates from the blocked slot');
+ const again=await execute(w,'2026-10-19T14:15:00.000Z');
+ assert.equal(again.reason,'PLAN_HOLD');
+ assert.equal(w.broker.posts.length,3);
+});
