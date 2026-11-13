@@ -112,7 +112,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
+  <p className="quiet small-print">Answers use recorded evidence: SportsEdge matches your question to built-in topics and reads its own records; no external AI model is called. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
  </div>;
 }
 /**
