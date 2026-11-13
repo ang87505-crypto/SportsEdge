@@ -101,6 +101,8 @@ try{
       appError:document.body.innerText.includes('Application error:'),
       mobileScrollbar:innerWidth<=760?getComputedStyle(nav).scrollbarWidth:null,
       placeholders:[...main.querySelectorAll('a[href="#"]')].length,
+      smallTargets:innerWidth<=390?[...document.querySelectorAll('.app-footer a,.home-panel-foot .text-link,.progress-record-foot .text-link,.button-row .text-link,.section-header-actions .text-link,.page-heading-actions .text-link,.panel-head-actions .text-link,.check-label')]
+       .filter(el=>{const b=el.getBoundingClientRect();return b.width>0&&b.height<24;}).map(el=>el.textContent.trim().slice(0,30)+':'+Math.round(el.getBoundingClientRect().height)):[],
       links:[...document.querySelectorAll('a[href^="/"]')].map(a=>a.getAttribute('href'))};
     })()`);
     const issues=[];
@@ -111,6 +113,7 @@ try{
     if(data.scrollWidth>width+3)issues.push(`Page overflows viewport by ${data.scrollWidth-width}px`);
     if(width<=760&&data.mobileScrollbar!=='none')issues.push('Mobile tab scrollbar is visible');
     if(data.appError)issues.push('Next.js application error');
+    if(data.smallTargets.length)issues.push('Standalone link or control under 24 px tall: '+data.smallTargets.join(', '));
     for(const href of data.links)internalLinks.add(href.split('#')[0]||'/');
     if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
