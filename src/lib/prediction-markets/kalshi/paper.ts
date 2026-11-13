@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import type {MarketSnapshot,BookSnapshot} from './client.ts';
 
 const U=1_000_000;
-const UB=1_000_000n;
+const UB=BigInt(1_000_000);
 const SHA=/^[a-f0-9]{64}$/;
 export type Side='yes'|'no';
 export type PaperDecision='PAPER_CANDIDATE'|'NO_LIQUIDITY'|'NO_POSITIVE_EDGE'|'INVALID_SPREAD';
@@ -23,9 +23,9 @@ export function provisionalTakerFeeMicros(priceMicros:number,contracts:number):n
  if(!Number.isSafeInteger(priceMicros)||priceMicros<=0||priceMicros>=U||
   !Number.isSafeInteger(contracts)||contracts<1||contracts>1000)throw Error('KALSHI_INVALID_FEE_INPUT');
  const p=BigInt(priceMicros),c=BigInt(contracts);
- const numerator=7n*c*p*(UB-p);
- const divisor=100n*UB*100n;
- return Number(((numerator+divisor-1n)/divisor)*100n);
+ const numerator=BigInt(7)*c*p*(UB-p);
+ const divisor=BigInt(100)*UB*BigInt(100);
+ return Number(((numerator+divisor-BigInt(1))/divisor)*BigInt(100));
 }
 const ms=(s:string)=>{const t=Date.parse(s);if(!Number.isFinite(t))throw Error('KALSHI_INVALID_TIME');return t;};
 const validateDigest=(digest:string)=>{if(!SHA.test(digest))throw Error('KALSHI_INVALID_DIGEST');};
