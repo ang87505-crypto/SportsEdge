@@ -85,6 +85,12 @@ export function normalizeBook(ticker:string,input:unknown,fetchedAt:string):Book
   buyYesAvailableSizeMicros:n?.sizeMicros??null,buyNoAvailableSizeMicros:y?.sizeMicros??null};
 }
 async function getJson(path:string,fetcher:typeof fetch):Promise<unknown>{
+ // The published Kalshi Data Terms restrict AI/software use without prior written consent.
+ // All normal production calls use global fetch; injected test fakes are only for synthetic fixtures.
+ // This is NOT proof of a license: a reviewer must validate its reference before setting either variable.
+ if(fetcher===fetch && (process.env.KALSHI_DATA_PERMISSION_APPROVED!=='1' ||
+  !/^[A-Z0-9][A-Z0-9_.-]{5,100}$/.test(process.env.KALSHI_DATA_PERMISSION_REFERENCE??'')))
+  throw Error('KALSHI_DATA_RIGHTS_NOT_APPROVED');
  // Path is constructed below solely from a hardcoded route and validated identifiers.
  const url=KALSHI_API+path;
  const res=await fetcher(url,{method:'GET',redirect:'error',credentials:'omit',cache:'no-store',
