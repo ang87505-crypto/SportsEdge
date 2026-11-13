@@ -35,7 +35,7 @@ test('determined, disputed, amended, provisional and inconsistent payouts must n
  assert.equal(v.result,'no');
 });
 test('secondary settlement rules and provisional contract state cannot silently change',async()=>{
- const raw={...src,status:'active',result:'',
+ const raw={...src,title:'NYC temperature',status:'active',result:'',
   close_time:'2026-11-14T01:00:00Z',updated_time:start};
  const market=normalizeMarket(raw,'KXHIGHNY',start);
  const book=normalizeBook(ticker,{orderbook_fp:{yes_dollars:[['0.4100','10.00']],no_dollars:[['0.5600','10.00']]}},start);
