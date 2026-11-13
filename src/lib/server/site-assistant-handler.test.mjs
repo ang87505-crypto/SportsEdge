@@ -296,3 +296,13 @@ test('controls: chat only proposes allowlisted owner actions; visitors, stock St
  const vague=await ask('pause everything',s);
  assert.match(vague.reply.text,/Which one/);assert.ok(!vague.reply.cards.some(c=>c.kind==='action'));
 });
+
+test('security: public whole-site questions share one cached ledger read (no read amplification)', async()=>{
+ resetAssistantCache();
+ const s=setup();
+ for(const q of ['What happened today?','Is any automation broken?','How is the algorithm improving?','What happened today?',"Tonight's picks"])await ask(q,s);
+ assert.equal(s.calls.sports,1);
+ resetAssistantCache();
+ await ask('What happened today?',s);
+ assert.equal(s.calls.sports,2);
+});

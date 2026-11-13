@@ -31,3 +31,12 @@ test('a historical "helps" stays unvalidated until the forward ledger reaches it
  assert.match(r.text,/Validated findings: none/);assert.match(r.text,/Monday supervised PAPER release are unchanged/);
  assert.ok(r.cards.some(c=>c.kind==='table'));
 });
+test('verdict badges stay short; the reason a layer is not tested is separate text (it wraps on phones)',()=>{
+ const s=stockLabSummary({summary:{lab:{...LAB,verdicts:{...LAB.verdicts,earnings_surprise:'not_tested: No point-in-time earnings estimates and announcement times are collected.'}}},mode:'live',checkedAt:'2026-11-14T03:00:00Z'});
+ const by=Object.fromEntries(s.verdicts.map(v=>[v.layer,v]));
+ assert.deepEqual([by['Earnings surprises'].verdict,by['Earnings surprises'].label],['not_tested','Not tested']);
+ assert.match(by['Earnings surprises'].detail,/point-in-time earnings/);
+ assert.deepEqual([by['Market regime (SPY vs 200-day)'].label,by['Market regime (SPY vs 200-day)'].detail],['No clear effect',null]);
+ assert.equal(by['Search attention'].label,'Not run yet');
+ for(const v of s.verdicts)assert.ok(v.label.length<=16,v.label);
+});

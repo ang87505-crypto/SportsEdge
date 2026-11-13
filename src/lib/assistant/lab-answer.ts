@@ -178,7 +178,7 @@ export function labAnswer(message:string,v:LabView,raw:Raw|null,nowIso:string):R
  case 'psychology':{
   const s=v.stocks;
   if(!s||s.state==='not_run')return reply('Not yet, and there is no evidence either way. Four stock behaviour layers built from price and volume (market regime: SPY below its 200-day mean; attention spikes; volatility shocks; one-month overreaction) are registered as a research-only ablation on the live weekly strategy, with exposure-matched SPY benchmarks, 10 and 25 bps costs and Holm-adjusted tests. The nightly research run produces the first historical result and freezes each variant\'s weekly picks before every open, starting with the week of November 16; nothing is called validated before 26 graded weeks. News sentiment, earnings surprises, search attention and crowd concentration are not tested because no lawful timestamped data is collected. The weekly stock strategy and the Monday supervised PAPER release are unchanged.');
-  return reply(`${s.summary} The weekly stock strategy and the Monday supervised PAPER release are unchanged.`,s.verdicts?[{kind:'table',title:'Stock psychology layers (research only)',columns:['Layer','Verdict'],rows:s.verdicts.map(x=>[x.layer,x.verdict])}]:[]);
+  return reply(`${s.summary} The weekly stock strategy and the Monday supervised PAPER release are unchanged.`,s.verdicts?[{kind:'table',title:'Stock psychology layers (research only)',columns:['Layer','Verdict'],rows:s.verdicts.map(x=>[x.layer,x.detail?`${x.label}: ${x.detail}`:x.label])}]:[]);
  }
  case 'money_vs_accuracy':{
   if(!raw)return reply('Sports records are unavailable here.');

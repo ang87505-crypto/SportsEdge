@@ -2,6 +2,8 @@
 export const EXPECTED_PROJECT='vfyzbliksooljxrlfadp';
 export const APPROVED={daily:7,monthly:200,floor:60};
 export const CAPTURE_TABLES=['props_capture_plans','props_captures','props_capture_outcomes'];
+/** AI Learning Lab (props_lab_v1.sql, research only). Presence is reported; it never gates the paper tick. */
+export const LAB_TABLES=['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes'];
 
 /** PostgREST "relation does not exist" codes (PGRST205 schema cache, 42P01 Postgres). */
 export const missingRelation=(code)=>code==='PGRST205'||code==='42P01';
@@ -70,5 +72,11 @@ export function verdict(f){
   `${f.duplicateClaims.length} duplicate claims, ${(f.duplicatePlans??[]).length} duplicate plans, ${f.claimsWithoutOutcome??0} claims without an outcome after 15 min.`);
  out.push({id:'v3-accounting',state:f.v3Column==='PRESENT'?(p?.count_provider_actuals===true?'APPLIED_AND_ACTIVE':'APPLIED_NOT_ACTIVE'):f.v3Column==='MISSING'?'NOT_APPLIED':'UNKNOWN',
   detail:`count_provider_actuals column: ${f.v3Column??'UNKNOWN'}.`});
+ // Learning Lab: APPLIED / NOT_APPLIED / UNKNOWN, row counts, and the tampering view (expected empty). Research only.
+ const lab=f.labTables??{};const labPresent=LAB_TABLES.filter(t=>lab[t]==='PRESENT').length;
+ const labState=labPresent===LAB_TABLES.length?'APPLIED':labPresent===0&&LAB_TABLES.every(t=>lab[t]==='MISSING')?'NOT_APPLIED':'UNKNOWN';
+ out.push({id:'lab-schema',state:labState==='APPLIED'&&f.labTampered!==undefined&&f.labTampered!==0?'FAIL':labState,
+  detail:LAB_TABLES.map(t=>`${t}: ${lab[t]??'UNKNOWN'}${f.labRows?.[t]!==undefined?` (${f.labRows[t]} rows)`:''}`).join(', ')+
+   (labState==='APPLIED'?`; tampered forecasts: ${f.labTampered??'unknown'}`:'')});
  return out;
 }
