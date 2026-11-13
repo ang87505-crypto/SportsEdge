@@ -43,7 +43,7 @@ export type PaperForecast={
  id:string;marketTicker:string;eventTicker:string;series:string;
  modelId:string;modelDataAsOf:string;modelDataDigest:string;
  predictedAt:string;marketFetchedAt:string;bookFetchedAt:string;closeTime:string;
- rulesPrimary:string;rulesDigest:string;bookDigest:string;
+ rulesPrimary:string;rulesSecondary:string|null;rulesDigest:string;bookDigest:string;
  probabilityYesPpm:number;marketMidpointYesPpm:number|null;
  feePolicy:typeof FEE_POLICY;feeVerifiedForSeries:false;
  side:Side|null;decision:PaperDecision;contracts:number;priceMicros:number|null;
@@ -72,7 +72,7 @@ function score(i:ForecastInput,side:Side):{
 }
 export function freezePaperForecast(i:ForecastInput):PaperForecast{
  const t=ms(i.predictedAt),b=ms(i.book.fetchedAt),m=ms(i.market.fetchedAt),data=ms(i.modelDataAsOf),close=ms(i.market.closeTime);
- if(i.market.series!=='KXHIGHNY'||!i.market.ticker.startsWith('KXHIGHNY-')||
+ if(i.market.series!=='KXHIGHNY'||i.market.isProvisional||!i.market.ticker.startsWith('KXHIGHNY-')||
   i.book.ticker!==i.market.ticker||!['active','open'].includes(i.market.status.toLowerCase()))
   throw Error('KALSHI_NOT_ELIGIBLE_FOR_RESEARCH');
  if(!i.market.rulesPrimary?.trim())throw Error('KALSHI_RULES_REQUIRED');
@@ -98,7 +98,8 @@ export function freezePaperForecast(i:ForecastInput):PaperForecast{
   marketTicker:i.market.ticker,eventTicker:i.market.eventTicker,series:i.market.series,
   modelId:i.modelId,modelDataAsOf:i.modelDataAsOf,modelDataDigest:i.modelDataDigest,
   predictedAt:i.predictedAt,marketFetchedAt:i.market.fetchedAt,bookFetchedAt:i.book.fetchedAt,
-  closeTime:i.market.closeTime,rulesPrimary:i.market.rulesPrimary,rulesDigest:hash(i.market.rulesPrimary),
+  closeTime:i.market.closeTime,rulesPrimary:i.market.rulesPrimary,
+  rulesSecondary:i.market.rulesSecondary,rulesDigest:hash({primary:i.market.rulesPrimary,secondary:i.market.rulesSecondary}),
   bookDigest:hash(i.book),probabilityYesPpm:i.probabilityYesPpm,marketMidpointYesPpm:mid,
   feePolicy:FEE_POLICY,feeVerifiedForSeries:false,
   side:chosen?.side??null,decision,contracts:chosen?.contracts??0,priceMicros:chosen?.ask??null,
@@ -109,7 +110,7 @@ export function freezePaperForecast(i:ForecastInput):PaperForecast{
 }
 export type OfficialResult={
  marketTicker:string;eventTicker:string;status:string;result:'yes'|'no';
- rulesPrimary:string;settledAt:string;fetchedAt:string;sourceDigest:string;
+ rulesPrimary:string;rulesSecondary:string|null;settledAt:string;fetchedAt:string;sourceDigest:string;
  /** From GET /markets/{ticker}, independently authenticated as official response. */
  source:'kalshi-public-market-get';
 };
@@ -122,7 +123,8 @@ export type PaperGrade={
 };
 export function gradePaperForecast(f:PaperForecast,o:OfficialResult):PaperGrade{
  if(o.source!=='kalshi-public-market-get'||o.marketTicker!==f.marketTicker||o.eventTicker!==f.eventTicker||
-  o.status!=='settled'||!['yes','no'].includes(o.result)||o.rulesPrimary!==f.rulesPrimary)
+  o.status!=='settled'||!['yes','no'].includes(o.result)||o.rulesPrimary!==f.rulesPrimary||
+  o.rulesSecondary!==f.rulesSecondary)
   throw Error('KALSHI_SETTLEMENT_NOT_VERIFIED');
  validateDigest(o.sourceDigest);
  if(ms(o.settledAt)<ms(f.predictedAt)||ms(o.fetchedAt)<ms(o.settledAt))throw Error('KALSHI_RESULT_TIME_VIOLATION');
