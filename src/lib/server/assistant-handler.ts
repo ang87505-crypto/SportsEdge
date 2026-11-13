@@ -21,6 +21,15 @@ type Env=Readonly<Record<string,string|undefined>>;
 
 let cache:{at:number;raw:Raw}|null=null;
 export function resetAssistantCache(){cache=null;}
+/** The props ledger read shared by every chat path: at most one load per CACHE_MS, so public questions cannot
+ * multiply database reads. A failed load clears the cache and is reported to the caller. */
+export async function cachedPropsRaw(load:(nowIso:string)=>Promise<Raw>,nowIso:string):Promise<Raw>{
+ const now=Date.parse(nowIso);
+ if(!cache||now-cache.at>=CACHE_MS||now<cache.at){
+  try{cache={at:now,raw:await load(nowIso)};}catch(e){cache=null;throw e;}
+ }
+ return cache.raw;
+}
 
 const json=(body:Record<string,unknown>,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
 const bad=()=>json({status:'invalid_request'},400);
@@ -66,9 +75,7 @@ export async function handleAssistant(req:{contentType:string|null;text:()=>Prom
  let raw:Raw;
  try{
   if(!configured(env))return json({status:'ok',reply:unavailable});
-  const now=Date.parse(nowIso);
-  if(!cache||now-cache.at>=CACHE_MS||now<cache.at)cache={at:now,raw:await load(nowIso)};
-  raw=cache.raw;
+  raw=await cachedPropsRaw(load,nowIso);
  }catch{cache=null;return json({status:'ok',reply:unavailable});}
 
  const pp=buildView(raw,'prizepicks'),p6=buildView(raw,'pick6');
