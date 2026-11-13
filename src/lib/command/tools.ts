@@ -18,17 +18,22 @@ import type {LabView} from '../lab/view.ts';
 import type {StockAccounts} from '../assistant/stock-answer.ts';
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {buildBriefing,propsInput} from '../briefing/briefing.ts';
+import {untrustedText,looksLikeInstruction} from '../research/discovery.ts';
 
 export const MAX_RESULT_BYTES=8_000;
 export type Access='public'|'owner';
 type Schema={type:'object';properties:Record<string,{type:'string'|'integer';enum?:string[];minimum?:number;maximum?:number;description:string}>;
  required:string[];additionalProperties:false};
 export type Source={label:string;href:string};
-export type ToolResult={tool:string;input?:Record<string,unknown>;ok:boolean;data:unknown;cards:Card[];sources:Source[];asOf:string;truncated:boolean;error?:string};
+export type ToolResult={tool:string;input?:Record<string,unknown>;ok:boolean;
+ /** Strings withheld because they read like instructions (prompt injection through recorded data). */
+ withheld?:number;data:unknown;cards:Card[];sources:Source[];asOf:string;truncated:boolean;error?:string};
 export type CommandPorts={nowIso:string;ownerAccess:boolean;
  sports:()=>Promise<Raw|null>;ops:()=>Promise<OpsView|null>;research:()=>Promise<ResearchView|null>;lab:()=>Promise<LabView|null>;
  /** Owner-only; never invoked unless the request carries a validated owner session. */
- accounts:()=>Promise<StockAccounts>};
+ accounts:()=>Promise<StockAccounts>;
+ /** AI 2.0 learning engine registry and job history (research/engine/*.json); null until that work is deployed. */
+ engine?:()=>Promise<{registry:unknown;jobs:unknown}|null>};
 export type ToolDef={name:string;description:string;access:Access;input_schema:Schema;
  run:(input:Record<string,unknown>,p:CommandPorts)=>Promise<Omit<ToolResult,'tool'|'truncated'|'asOf'>>};
 
@@ -176,6 +181,49 @@ export const TOOLS:ToolDef[]=[
   }},
 ];
 
+export type EngineExperiment={id:string;domain:'sports'|'stocks';status:string;hypothesis:string;disposition:string|null;lastReason:string;
+ forward:{candidate:string;baseline:string}|null;result:{observations:number;dates:number|null;clusters:number|null;decisions:number|null}|null;
+ minimums:{observations:number;dates:number|null;clusters:number|null;decisions:number|null}};
+const ENGINE_STATUSES=['PROPOSED','RUNNING','INSUFFICIENT_DATA','FAILED','PROMISING','READY_FOR_REVIEW','REJECTED'];
+/** Strict reader for the learning-engine registry (schema sportsedge-learning-registry-v1). Malformed → null, never guessed. */
+export function parseEngineRegistry(v:unknown):EngineExperiment[]|null{
+ const r=v as {schema?:unknown;experiments?:unknown};
+ if(!r||r.schema!=='sportsedge-learning-registry-v1'||!Array.isArray(r.experiments)||r.experiments.length>500)return null;
+ const num=(x:unknown)=>typeof x==='number'&&Number.isFinite(x)?x:null;
+ const out:EngineExperiment[]=[];
+ for(const e of r.experiments as Record<string,unknown>[]){
+  if(!e||typeof e.id!=='string'||(e.domain!=='sports'&&e.domain!=='stocks')||typeof e.status!=='string'||!ENGINE_STATUSES.includes(e.status))return null;
+  const hist=Array.isArray(e.history)?e.history as {reason?:unknown}[]:[];
+  const res=e.result as Record<string,unknown>|null,sr=(e.sampleRequirements??{}) as Record<string,unknown>,f=e.forward as Record<string,unknown>|undefined;
+  out.push({id:e.id,domain:e.domain,status:e.status,hypothesis:String(e.hypothesis??''),disposition:typeof e.disposition==='string'?e.disposition:null,
+   lastReason:String(hist.at(-1)?.reason??''),forward:f&&typeof f.candidate==='string'&&typeof f.baseline==='string'?{candidate:f.candidate,baseline:f.baseline}:null,
+   result:res&&num(res.observations)!==null?{observations:num(res.observations)!,dates:num(res.dates),clusters:num(res.clusters),decisions:num(res.decisions)}:null,
+   minimums:{observations:num(sr.minObservations)??0,dates:num(sr.minDates),clusters:num(sr.minClusters),decisions:num(sr.minDecisions)}});
+ }
+ return out;
+}
+TOOLS.push({name:'research_experiments',access:'public',input_schema:obj({status:str('Optional filter.',['active','rejected','ready_for_review','all'])}),
+ description:'AI 2.0 learning engine: every registered research experiment (sports and stocks) with its lifecycle status, forward-test progress against its registered minimums, and why ideas were rejected. Nothing here is promoted automatically.',
+ async run(i,p){
+  const e=p.engine?await p.engine().catch(()=>null):null;
+  const list=e?parseEngineRegistry(e.registry):null;
+  if(!list)return {ok:false,data:null,cards:[],sources:[{label:'AI Learning Lab',href:'/lab'}],error:'The learning-engine registry is not connected here (it ships with the AI 2.0 research work, not yet deployed).'};
+  const f=String(i.status??'all');
+  const sel=list.filter(x=>f==='all'?true:f==='active'?!['REJECTED','READY_FOR_REVIEW'].includes(x.status):f==='rejected'?x.status==='REJECTED':x.status==='READY_FOR_REVIEW');
+  const counts=Object.fromEntries(ENGINE_STATUSES.map(s=>[s,list.filter(x=>x.status===s).length]));
+  const fwd=list.filter(x=>x.forward);
+  const jobs=Array.isArray(e!.jobs)?(e!.jobs as {at?:unknown;job?:unknown;status?:unknown;summary?:unknown}[]).slice(-5).map(j=>({at:String(j.at),job:String(j.job),status:String(j.status),summary:String(j.summary)})):[];
+  return {ok:true,data:{counts,readyForReview:list.filter(x=>x.status==='READY_FOR_REVIEW').map(x=>x.id),
+    forwardTests:fwd.map(x=>({id:x.id,candidate:x.forward!.candidate,baseline:x.forward!.baseline,status:x.status,progress:x.result,minimums:x.minimums})),
+    experiments:sel.slice(0,25).map(x=>({id:x.id,domain:x.domain,status:x.status,why:(x.disposition??x.lastReason).slice(0,200)})),recentJobs:jobs},
+   cards:[{kind:'table',title:'Research experiments',columns:['Experiment','Domain','Status'],rows:sel.slice(0,15).map(x=>[x.id,x.domain,x.status.replaceAll('_',' ').toLowerCase()])},
+    ...fwd.filter(x=>x.result).map(x=>({kind:'bars' as const,title:`Forward test: ${x.forward!.candidate} vs ${x.forward!.baseline}`,items:[
+     {label:'Paired lines',value:Math.min(1,x.result!.observations/Math.max(1,x.minimums.observations)),display:`${x.result!.observations}/${x.minimums.observations}`},
+     ...(x.minimums.dates?[{label:'Dates',value:Math.min(1,(x.result!.dates??0)/x.minimums.dates),display:`${x.result!.dates??0}/${x.minimums.dates}`}]:[]),
+     ...(x.minimums.clusters?[{label:'Games',value:Math.min(1,(x.result!.clusters??0)/x.minimums.clusters),display:`${x.result!.clusters??0}/${x.minimums.clusters}`}]:[])]}))],
+   sources:[{label:'AI Learning Lab',href:'/lab'}]};
+ }});
+
 export const toolByName=(n:unknown)=>typeof n==='string'?TOOLS.find(t=>t.name===n)??null:null;
 export const toolsFor=(owner:boolean)=>TOOLS.filter(t=>t.access==='public'||owner);
 
@@ -203,7 +251,28 @@ export async function callTool(name:unknown,input:unknown,p:CommandPorts):Promis
  const v=validateInput(t,input);if(!v.ok)return fail('INVALID_INPUT_'+v.error);
  let r;
  try{r=await t.run(v.input,p);}catch{return fail(`${t.name} failed to read its records; nothing is assumed.`);}
- const out:ToolResult={tool:t.name,input:v.input,asOf:p.nowIso,truncated:false,...r};
+ const s=sanitize(r.data);
+ const out:ToolResult={tool:t.name,input:v.input,asOf:p.nowIso,truncated:false,...r,data:s.value,withheld:s.withheld,
+  cards:r.cards.map(c=>sanitize(c).value as Card)};
  if(JSON.stringify(out.data).length>MAX_RESULT_BYTES)return {...out,data:{summary:'Result too large; showing tables only.'},truncated:true};
  return out;
+}
+
+export const WITHHELD='[withheld: text in the records reads like an instruction]';
+/**
+ * Every string that comes out of a record (player names, job details, research text, model notes) is treated as
+ * untrusted: control and direction-override characters removed, length capped, and text that reads like an instruction
+ * to an AI or operator replaced by a marker. Structure is bounded (depth 6, 60 items per array, 60 keys per object).
+ */
+export function sanitize(x:unknown,depth=0):{value:unknown;withheld:number}{
+ let withheld=0;
+ const walk=(v:unknown,d:number):unknown=>{
+  if(typeof v==='string'){const t=untrustedText(v,500);if(looksLikeInstruction(t)){withheld++;return WITHHELD;}return t;}
+  if(v===null||typeof v!=='object')return typeof v==='number'&&!Number.isFinite(v)?null:v;
+  if(d>=6)return '[truncated]';
+  if(Array.isArray(v))return v.slice(0,60).map(e=>walk(e,d+1));
+  return Object.fromEntries(Object.entries(v).slice(0,60).map(([k,e])=>[untrustedText(k,60),walk(e,d+1)]));
+ };
+ const value=walk(x,depth);
+ return {value,withheld};
 }

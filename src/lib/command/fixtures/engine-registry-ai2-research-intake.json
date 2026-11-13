@@ -1,0 +1,1228 @@
+{
+ "schema": "sportsedge-learning-registry-v1",
+ "experiments": [
+  {
+   "id": "lab-sports-ablation-v1-recalibration",
+   "domain": "sports",
+   "hypothesisKey": "sports:overall-recalibration",
+   "hypothesis": "Per-stat bias+slope recalibration of the layer-1 log-odds improves probability quality.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-04-30T00:00:00Z",
+   "codeFingerprint": "552023777e55b436ed180965e8391c05bf39f9b5595ad2eb372b72cf26c77c58",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "Retrospective: helps in 2025-26 (Holm-significant), no clear effect on 2026-27 to date; forward lab tables not applied, so no forward evidence.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: Retrospective: helps in 2025-26 (Holm-significant), no clear effect on 2026-27 to date; forward lab tables not applied, so no forward evidence.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-ablation-v1-role-minutes",
+   "domain": "sports",
+   "hypothesisKey": "sports:role-minutes-adjustment",
+   "hypothesis": "Role/minutes-shift adjusted projections improve probability quality.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-04-30T00:00:00Z",
+   "codeFingerprint": "552023777e55b436ed180965e8391c05bf39f9b5595ad2eb372b72cf26c77c58",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "Retrospective small gain in 2025-26, none visible in 2026-27; forward lab not applied.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: Retrospective small gain in 2025-26, none visible in 2026-27; forward lab not applied.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-ablation-v1-matchup-rest",
+   "domain": "sports",
+   "hypothesisKey": "sports:matchup-rest-adjustment",
+   "hypothesis": "Opponent, home and rest terms improve probability quality.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-04-30T00:00:00Z",
+   "codeFingerprint": "552023777e55b436ed180965e8391c05bf39f9b5595ad2eb372b72cf26c77c58",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "Retrospective small gain in 2025-26, none in 2026-27; rest feature is mislabelled for ~22.5% of lines (calendar-rest fix pending owner review).",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: Retrospective small gain in 2025-26, none in 2026-27; rest feature is mislabelled for ~22.5% of lines (calendar-rest fix pending owner review).",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-ablation-v1-market",
+   "domain": "sports",
+   "hypothesisKey": "sports:market-anchor",
+   "hypothesis": "Blending sportsbook no-vig probabilities at the same line improves probability quality.",
+   "alsoCovers": [
+    "sports:market-anchor-when-books-missing"
+   ],
+   "dataDependencies": [
+    "props_market_views (forward)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "552023777e55b436ed180965e8391c05bf39f9b5595ad2eb372b72cf26c77c58",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "No sportsbook history exists; testable forward only once the lab tables are applied.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: No sportsbook history exists; testable forward only once the lab tables are applied.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "props-learn-v1-shadow",
+   "domain": "sports",
+   "hypothesisKey": "sports:learned-layer-shadow",
+   "hypothesis": "The weekly ridge-logistic learning layer (props-learn-v1) beats the stats model on the same real lines.",
+   "dataDependencies": [
+    "props ledger"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "src/lib/props/learn.ts (frozen)",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "REVIEW_GATE in src/lib/props/promotion.ts",
+   "status": "INSUFFICIENT_DATA",
+   "result": {
+    "evidence": "forward",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 144,
+    "dates": 3,
+    "clusters": 5,
+    "decisions": 27,
+    "reason": "Collecting: 144 paired lines, 3 dates, 5 games; gate needs 500/14/50. Brier difference 95% CI -0.0062 to 0.0051 (5 games). 0 predictions refused after lock; 139 lines unpaired; latest candidate prediction 2026-11-12T21:17Z.",
+    "details": {
+     "pairs": 144,
+     "dates": 3,
+     "games": 5,
+     "decisions": 27,
+     "interval": {
+      "lower95": -0.006170351377496853,
+      "upper95": 0.005053921221475394
+     },
+     "refusedAfterLock": 0,
+     "unpaired": 139,
+     "ungraded": 0,
+     "latestCandidateAt": "2026-11-12T21:17:28.513064+00:00",
+     "gate": "src/lib/props/promotion.ts REVIEW_GATE (unchanged)"
+    }
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: Production shadow: scores real lines before lock, never picks; 141 graded vs 271 for the active model (not paired). Review gate not met.",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T20:06:09Z",
+     "from": "RUNNING",
+     "to": "INSUFFICIENT_DATA",
+     "reason": "Forward sample below the registered minimums: observations 144/500, dates 3/14, clusters 5/50, decisions 27/100",
+     "inputFingerprint": "f22ae6649e31a071934cf48b5a97f09c29114fef58901a380c19998ec55ef425"
+    }
+   ],
+   "forward": {
+    "kind": "ledger-models",
+    "candidate": "props-learn-v1",
+    "baseline": "props-nb-minutes-rate-v1",
+    "maxStaleDays": 7
+   }
+  },
+  {
+   "id": "props-gap-shrink-v1",
+   "domain": "sports",
+   "hypothesisKey": "sports:line-gap-shrinkage",
+   "hypothesis": "Shrinking toward 50% as the model departs from the line improves calibration (prospective only).",
+   "dataDependencies": [
+    "props ledger"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-12T00:00:00Z",
+   "codeFingerprint": "src/data/props/challenger_gap_shrink_v1.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "Prospective challenger in props research receipts; sample far below the gate.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: Prospective challenger in props research receipts; sample far below the gate.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-challengers-v2-side-asym",
+   "domain": "sports",
+   "hypothesisKey": "sports:side-asymmetric-calibration",
+   "hypothesis": "Separate More/Less calibration slopes beat single-slope recalibration.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-14T00:00:00Z",
+   "codeFingerprint": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "recal",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00043 (Holm p 0.003), fold 2 +0.00007 (CI -0.00042..+0.00056). Prospective scoring from 2026-11-14.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: NO_CLEAR_EFFECT: fold 1 -0.00043 (Holm p 0.003), fold 2 +0.00007 (CI -0.00042..+0.00056). Prospective scoring from 2026-11-14.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-challengers-v2-uncertainty",
+   "domain": "sports",
+   "hypothesisKey": "sports:minutes-uncertainty-shrinkage",
+   "hypothesis": "Shrinking log-odds for volatile minutes and short history beats recalibration.",
+   "alsoCovers": [
+    "sports:short-history-shrinkage"
+   ],
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-14T00:00:00Z",
+   "codeFingerprint": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "recal",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00027 (p 0.002), fold 2 +0.00015. Prospective scoring from 2026-11-14.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: NO_CLEAR_EFFECT: fold 1 -0.00027 (p 0.002), fold 2 +0.00015. Prospective scoring from 2026-11-14.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-challengers-v2-line-gap",
+   "domain": "sports",
+   "hypothesisKey": "sports:line-gap-shrinkage-learned",
+   "hypothesis": "A learned shrink by model-vs-line gap beats recalibration.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-14T00:00:00Z",
+   "codeFingerprint": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "recal",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00044 (p 0.003), fold 2 -0.00027 (CI -0.00075..+0.00021, p 0.52). Prospective scoring from 2026-11-14.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: NO_CLEAR_EFFECT: fold 1 -0.00044 (p 0.003), fold 2 -0.00027 (CI -0.00075..+0.00021, p 0.52). Prospective scoring from 2026-11-14.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-challengers-v2-all-new",
+   "domain": "sports",
+   "hypothesisKey": "sports:combined-new-adjustments",
+   "hypothesis": "All three v2 adjustments together beat recalibration.",
+   "dataDependencies": [
+    "pinned ESPN box scores",
+    "props ledger (pre-lock predictions, graded results)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-14T00:00:00Z",
+   "codeFingerprint": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+   "datasetFingerprints": [
+    {
+     "name": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+    },
+    {
+     "name": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+    }
+   ],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "recal",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00051 (p 0.003), fold 2 -0.00009. Prospective scoring from 2026-11-14.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: NO_CLEAR_EFFECT: fold 1 -0.00051 (p 0.003), fold 2 -0.00009. Prospective scoring from 2026-11-14.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-sports-injury-rotation",
+   "domain": "sports",
+   "hypothesisKey": "sports:injury-rotation-availability",
+   "hypothesis": "Official pre-lock availability/rotation information improves minutes projections.",
+   "dataDependencies": [
+    "official injury report (not connected)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "none",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "brier",
+    "secondary": [
+     "logLoss",
+     "ece",
+     "decision hit rate"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "Holm across the family; forward frozen predictions must meet 500 lines / 14 dates / 50 games; never automatic promotion.",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "Blocked: no licensed, timestamped pre-lock injury/rotation feed is collected (see research intake source register).",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: Blocked: no licensed, timestamped pre-lock injury/rotation feed is collected (see research intake source register).",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "daily-oc-losers5-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:daily-open-close-losers",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "Rejected 2026-11-09: none qualifies after costs.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: Rejected 2026-11-09: none qualifies after costs.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "momentum-quality-paper-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:momentum-quality-public-method",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS gate: drawdown > 35%, Sharpe below SPY.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS gate: drawdown > 35%, Sharpe below SPY.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "berkshire-13f-top5-paper-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:delayed-13f-follower",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS gate with the 45-day filing lag modelled.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS gate with the 45-day filing lag modelled.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "daily-reversal5-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:daily-short-term-reversal",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS 8 of 9 gates after costs (turnover ~224x/yr).",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS 8 of 9 gates after costs (turnover ~224x/yr).",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "daily-momentum5d-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:daily-short-term-momentum",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS 8 of 9 gates after costs.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS 8 of 9 gates after costs.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "daily-spy-trend50-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:daily-spy-trend-filter",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS: below exposure-matched SPY.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS: below exposure-matched SPY.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "spy-tom-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:turn-of-month",
+   "hypothesis": "See config/research/registry.json and its results document.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY / exposure-matched SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Pre-registered gate in its plan document",
+   "status": "REJECTED",
+   "result": null,
+   "disposition": "FAILS: below exposure-matched SPY.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "REJECTED",
+     "reason": "seeded from the recorded result: FAILS: below exposure-matched SPY.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "qmom-disclosure-follower-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:disclosed-holdings-follower",
+   "hypothesis": "Following QMOM published holdings beats SPY after the disclosure delay.",
+   "dataDependencies": [
+    "qmom-holdings"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-10T00:00:00Z",
+   "codeFingerprint": "config/research/registry.json",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "SPY",
+   "costAssumptions": "10 bps per side",
+   "decisionRule": "Registered forward gate",
+   "status": "INSUFFICIENT_DATA",
+   "result": null,
+   "disposition": "Forward only (no reliable historical holdings); 2 sessions recorded.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "INSUFFICIENT_DATA",
+     "reason": "seeded from the recorded result: Forward only (no reliable historical holdings); 2 sessions recorded.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-stock-psychology-v1",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:behavioural-overlays",
+   "hypothesis": "Attention, volatility-shock, overreaction and regime overlays improve the weekly strategy.",
+   "dataDependencies": [
+    "Alpaca daily bars"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-12T00:00:00Z",
+   "codeFingerprint": "53dbe9a0937a41336e0faad34541f1898a99602e",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "Holm across 9; layer helps only if addition and removal both favour it",
+   "status": "RUNNING",
+   "result": null,
+   "disposition": "No clear effect after Holm (2023+ holdout); frozen forward picks from 2026-11-16.",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T21:00:00Z",
+     "from": null,
+     "to": "RUNNING",
+     "reason": "seeded from the recorded result: No clear effect after Holm (2023+ holdout); frozen forward picks from 2026-11-16.",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-stock-v3-riskadj",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:risk-adjusted-momentum",
+   "hypothesis": "Ranking by momentum divided by volatility beats the live weekly rules and passive SPY at the same exposure.",
+   "dataDependencies": [
+    "Alpaca daily bars (read-only)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "c92909e90474da972d57023276b7c96836a55ed7",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "See analytics/stock_research_v3.py decision rule",
+   "status": "REJECTED",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "REJECTED",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "riskadj-mom and core-satellite-riskadj below exposure-matched SPY in dev and holdout (run 43488863136)."
+   },
+   "disposition": "REJECTED",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T18:55:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "REJECTED",
+     "reason": "riskadj-mom and core-satellite-riskadj below exposure-matched SPY in dev and holdout (run 43488863136).",
+     "inputFingerprint": "0bd5470503d5a7fc61659d9b9e7e09a5da080c6320a61266b583317f4def8253"
+    }
+   ],
+   "alsoCovers": [
+    "stocks:selection-signal-replacement"
+   ]
+  },
+  {
+   "id": "lab-stock-v3-mom-lowvol",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:momentum-lowvol-quality-proxy",
+   "hypothesis": "Ranking by momentum and low-volatility ranks (quality proxy) beats the live weekly rules.",
+   "dataDependencies": [
+    "Alpaca daily bars (read-only)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "c92909e90474da972d57023276b7c96836a55ed7",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "See analytics/stock_research_v3.py decision rule",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "Holm p 0.61 vs live rules; holdout 5.6% vs exposure-matched SPY 10.7%; true quality needs point-in-time fundamentals (run 43488863136)."
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T18:55:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Holm p 0.61 vs live rules; holdout 5.6% vs exposure-matched SPY 10.7%; true quality needs point-in-time fundamentals (run 43488863136).",
+     "inputFingerprint": "55c6d01c54fd852362e7cedc65cc02c78f9e9a822a833d48480f111c2b5ae7ac"
+    }
+   ]
+  },
+  {
+   "id": "lab-stock-v3-core-satellite",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:exposure-core-satellite",
+   "hypothesis": "50% SPY + 50% fully invested momentum sleeve beats the live rules and passive SPY.",
+   "dataDependencies": [
+    "Alpaca daily bars (read-only)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "c92909e90474da972d57023276b7c96836a55ed7",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "See analytics/stock_research_v3.py decision rule",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "Beats live rules (Holm p 0.0075) only by adding SPY exposure; below SPY and exposure-matched SPY (run 43488863136). Portfolio-policy question for the owner."
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T18:55:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Beats live rules (Holm p 0.0075) only by adding SPY exposure; below SPY and exposure-matched SPY (run 43488863136). Portfolio-policy question for the owner.",
+     "inputFingerprint": "b158efbda5c33efde8eff082b8c5523bf32244e711ac07a50d718a696e7eab4c"
+    }
+   ]
+  }
+ ]
+}

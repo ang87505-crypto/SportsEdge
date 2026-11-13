@@ -43,7 +43,10 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  }
  if(/\b(bankroll|balance|virtual money|how much (virtual )?money)\b/.test(t))return {calls:[{tool:'virtual_bankroll',input:{}}]};
  if(/\b(upcoming|next picks|picks coming up|not locked)\b/.test(t))return {calls:[{tool:'upcoming_picks',input:{}}]};
- if(/\b(experiments?|challengers?|forward (test|sample)|sample progress|which layers)\b/.test(t))return {calls:[{tool:'learning_lab',input:{}}]};
+ if(/\b(rejected ideas?|hypothes\w*|research engine|learning engine|ready for review)\b|\bideas?\b.*\brejected\b|\brejected\b.*\b(ideas?|experiments?)\b/.test(t))
+  return {calls:[{tool:'research_experiments',input:{status:/\brejected\b/.test(t)?'rejected':/\bready\b/.test(t)?'ready_for_review':'all'}}]};
+ if(/\b(experiments?|challengers?|forward (test|sample)|sample progress|which layers)\b/.test(t))
+  return {calls:[{tool:'learning_lab',input:{}},{tool:'research_experiments',input:{status:'active'}}]};
  if(/\b(job health|jobs? (failing|failed|status)|alerts?|monitor)\b/.test(t))return {calls:[{tool:'automation_health',input:{}}]};
  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
  if(/\b(strategy|strategies|stock research)\b/.test(t)&&!/\bdaily\b/.test(t))return {calls:[{tool:'research_strategies',input:{}}]};
@@ -98,6 +101,12 @@ export function compose(results:ToolResult[],filter?:Plan['filter']):string{
    const a=d.active as {version:string}|null;
    out.push(`Active sports model: ${a?.version??'unknown'}. Forward test status: ${String(d.forwardStatus).replaceAll('_',' ')}`+
     (f?` (${f.graded}/${m.lines} graded lines, ${f.dates}/${m.dates} dates, ${f.games}/${m.games} games).`:'.')+' Nothing is promoted automatically; a challenger needs the forward minimums and the owner\'s review.');
+  }else if(r.tool==='research_experiments'){
+   const c=d.counts as Record<string,number>,ready=d.readyForReview as string[];
+   const fw=d.forwardTests as {candidate:string;baseline:string;status:string;progress:{observations:number;dates:number|null;clusters:number|null}|null;minimums:{observations:number;dates:number|null;clusters:number|null}}[];
+   out.push(`Learning engine: ${Object.entries(c).filter(([,n])=>n).map(([k,n])=>`${n} ${k.replaceAll('_',' ').toLowerCase()}`).join(', ')}. `+
+    (ready.length?`Ready for your review: ${ready.join(', ')}.`:'Nothing is ready for review.')+
+    fw.map(f=>` Forward test ${f.candidate} vs ${f.baseline}: ${f.status.replaceAll('_',' ').toLowerCase()}`+(f.progress?` (${f.progress.observations}/${f.minimums.observations} paired lines, ${f.progress.dates??0}/${f.minimums.dates??0} dates, ${f.progress.clusters??0}/${f.minimums.clusters??0} games).`:'.')).join(''));
   }else if(r.tool==='automation_health'){
    const jobs=d.jobs as {label:string;status:string;required:boolean}[];
    const bad=jobs.filter(j=>!/^(OK|SUCCESS|PASSING|HEALTHY|IDLE|SCHEDULED|NOT_DUE)$/i.test(j.status));

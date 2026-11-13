@@ -1,11 +1,14 @@
 import type {NextRequest} from 'next/server';
-import {createHash} from 'node:crypto';
+import {createHash,createHmac} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
 import {handleSiteAssistant,sitePorts} from '@/lib/server/site-assistant-handler';
 import {handleCommand} from '@/lib/server/command-handler';
 import {cachedPropsRaw} from '@/lib/server/assistant-handler';
 import {loadPropsDashboardFrom} from '@/lib/server/props-dashboard-load';
 import {propsStore,propsStoreConfig} from '@/lib/server/props-store';
-import {OWNER_COOKIE} from '@/lib/server/alpaca-owner-session';
+import {OWNER_COOKIE,ownerSecret} from '@/lib/server/alpaca-owner-session';
+import {supabaseLedger} from '@/lib/server/command-ledger';
 import {anthropicModel} from '@/lib/command/llm';
 import {llmConfig} from '@/lib/command/budget';
 import type {Reply} from '@/lib/assistant/answer';
@@ -26,11 +29,15 @@ export async function POST(req:NextRequest){
   ports:{nowIso,ownerAccess:site.access.ownerAccess,
    sports:()=>propsConfigured?cachedPropsRaw(sports,nowIso):Promise.resolve(null),
    ops:()=>site.ops?site.ops(nowIso):Promise.resolve(null),research:()=>site.research(nowIso),lab:()=>site.lab?site.lab(nowIso):Promise.resolve(null),
-   accounts:()=>site.accounts()},
+   accounts:()=>site.accounts(),
+   // Learning-engine records ship with the AI 2.0 research work; until deployed, the files are absent and the tool says so.
+   engine:async()=>{try{const [registry,jobs]=await Promise.all(['registry','jobs'].map(async f=>JSON.parse(await readFile(join(process.cwd(),'research/engine',f+'.json'),'utf8'))));return {registry,jobs};}catch{return null;}}},
   async legacy(message,context){
    const r=await handleSiteAssistant({contentType:'application/json',text:async()=>JSON.stringify({message:message.slice(0,300),context})},env,nowIso,site);
    const b=await r.json().catch(()=>null) as {reply?:Reply}|null;
    return b?.reply??null;
   },
-  model:cfg?()=>anthropicModel(cfg.model,env.ANTHROPIC_API_KEY!):undefined});
+  model:cfg?()=>anthropicModel(cfg.model,env.ANTHROPIC_API_KEY!):undefined,
+  ledger:c=>supabaseLedger(env,c.dailyCapUsd,c.perMinute),
+  historyKey:(()=>{const s=ownerSecret();return s?createHmac('sha256',s).update('command-history-key-v1').digest('hex'):null;})()});
 }

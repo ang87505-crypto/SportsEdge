@@ -6,9 +6,12 @@
 import {parseContext} from '../server/assistant-handler.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
 import {toolByName,validateInput} from './tools.ts';
+import {createHmac,timingSafeEqual} from 'node:crypto';
 
 export const LIMITS={maxBodyBytes:16_000,maxMessage:500,maxTurns:10,maxTurnText:1500,maxLastCalls:4};
-export type Turn={role:'user'|'assistant';text:string};
+export type Turn={role:'user'|'assistant';text:string;
+ /** Server HMAC over an assistant turn's text, issued with each reply. Forged or edited assistant turns fail it. */
+ sig?:string};
 export type ToolCall={tool:string;input:Record<string,unknown>};
 export type Session={context:AssistantContext|null;last:ToolCall[]};
 export type CommandRequest={message:string;history:Turn[];session:Session};
@@ -25,9 +28,10 @@ export function parseCommandRequest(raw:string):CommandRequest|null{
   if(!Array.isArray(x.history)||x.history.length>LIMITS.maxTurns*2)return null;
   for(const t of x.history){
    if(!t||typeof t!=='object'||Array.isArray(t))return null;
-   const {role,text,...rest}=t as Record<string,unknown>;
+   const {role,text,sig,...rest}=t as Record<string,unknown>;
    if(Object.keys(rest).length||(role!=='user'&&role!=='assistant')||typeof text!=='string')return null;
-   history.push({role,text:text.slice(0,LIMITS.maxTurnText)});
+   if(sig!==undefined&&(typeof sig!=='string'||!/^[0-9a-f]{64}$/.test(sig)))return null;
+   history.push({role,text:text.slice(0,LIMITS.maxTurnText),...(typeof sig==='string'?{sig}:{})});
   }
  }
  let session:Session={context:null,last:[]};
@@ -49,4 +53,22 @@ export function parseCommandRequest(raw:string):CommandRequest|null{
   session={context,last};
  }
  return {message:x.message.trim(),history:history.slice(-LIMITS.maxTurns*2),session};
+}
+
+/**
+ * The browser keeps the conversation, so it could forge "assistant" turns (e.g. a fake earlier answer saying the owner
+ * approved something). Each assistant reply is signed with a server key; only verified assistant turns reach a language
+ * model. User turns are the user's own words and need no signature. Without a key, no assistant turn is trusted.
+ */
+export function signTurn(key:string,text:string):string{return createHmac('sha256',key).update('command-turn-v1\n'+text).digest('hex');}
+export function verifiedHistory(history:Turn[],key:string|null):{history:Turn[];dropped:number}{
+ let dropped=0;
+ const ok=(t:Turn)=>{
+  if(t.role==='user')return true;
+  if(!key||!t.sig)return false;
+  const a=Buffer.from(signTurn(key,t.text),'hex'),b=Buffer.from(t.sig,'hex');
+  return a.length===b.length&&timingSafeEqual(a,b);
+ };
+ const out=history.filter(t=>{const v=ok(t);if(!v)dropped++;return v;}).map(({role,text})=>({role,text}));
+ return {history:out,dropped};
 }

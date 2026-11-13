@@ -7,11 +7,11 @@
  *  4 the existing SportsEdge assistant (fallback for everything else).
  * Messages are not stored. Rate-limited per client; private (owner) replies are marked so the UI hides them on logout.
  */
-import {parseCommandRequest,type ToolCall} from '../command/session.ts';
+import {parseCommandRequest,signTurn,verifiedHistory,type ToolCall} from '../command/session.ts';
 import {plan,compose,suggestionsFor} from '../command/planner.ts';
 import {callTool,type CommandPorts,type ToolResult} from '../command/tools.ts';
 import {runConversation,type LanguageModel} from '../command/llm.ts';
-import {RateLimiter,DailyBudget,llmConfig} from '../command/budget.ts';
+import {RateLimiter,llmConfig,type SpendLedger,type LlmConfig} from '../command/budget.ts';
 import {parseControlRequest} from '../assistant/actions.ts';
 import type {Card,Reply} from '../assistant/answer.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
@@ -21,12 +21,14 @@ export type CommandDeps={ports:CommandPorts;
  /** The existing assistant (handleSiteAssistant), called with its own validated request shape. */
  legacy:(message:string,context:AssistantContext|null)=>Promise<Reply|null>;
  /** Builds the language model; only called when llmConfig(env) enabled it and the session is the owner's. */
- model?:()=>Promise<LanguageModel>};
+ model?:()=>Promise<LanguageModel>;
+ /** The SHARED spend ledger (Postgres in production). Without one, no model call is ever made. */
+ ledger?:(cfg:LlmConfig)=>SpendLedger;
+ /** Key that signs assistant replies so forged history is detected; null → assistant history is never trusted. */
+ historyKey?:string|null};
 export type Mode='language-model'|'tools'|'assistant';
 
-const limiter=new RateLimiter(20),llmLimiter=new RateLimiter(6);
-let budget:DailyBudget|null=null;
-export function resetCommandState(){budget=null;}
+const limiter=new RateLimiter(20);
 
 const HEADERS={'Cache-Control':'private, no-store','Pragma':'no-cache','X-Content-Type-Options':'nosniff'};
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:HEADERS});
@@ -44,8 +46,9 @@ export async function handleCommand(req:{contentType:string|null;text:()=>Promis
  const r=parseCommandRequest(raw);
  if(!r)return json({status:'invalid_request'},400);
  const owner=deps.ports.ownerAccess;
+ const key=deps.historyKey??null;
  const respond=(reply:Reply,mode:Mode,last:ToolCall[],extra:Record<string,unknown>={})=>
-  json({status:'ok',mode,reply,session:{context:reply.context??null,last},ownerAccess:owner,...extra});
+  json({status:'ok',mode,reply,session:{context:reply.context??null,last},ownerAccess:owner,...(key?{sig:signTurn(key,reply.text.slice(0,1500))}:{}),...extra});
  const legacy=async(note?:string)=>{
   const out=await deps.legacy(r.message,r.session.context).catch(()=>null);
   if(!out)return respond({text:'The records are unavailable right now.',cards:[],suggestions:['Is everything running?'],context:{}},'assistant',[]);
@@ -58,22 +61,25 @@ export async function handleCommand(req:{contentType:string|null;text:()=>Promis
  // 2. Optional language model.
  const cfg=llmConfig(env);
  let fallbackNote:string|undefined;
- if(cfg&&owner&&deps.model){
-  if(!llmLimiter.allow(req.clientKey,nowMs))fallbackNote='(The AI model is rate-limited for a minute; this answer uses the built-in planner.)';
+ if(cfg&&owner&&deps.model&&deps.ledger){
+  let model:LanguageModel|null=null,ledger:SpendLedger|null=null;
+  try{ledger=deps.ledger(cfg);model=await deps.model();}catch{model=null;}
+  if(!ledger||!model)fallbackNote='(The AI model is not available; this answer uses the built-in planner.)';
   else{
-   budget??=new DailyBudget(cfg.dailyCapUsd);
-   let model:LanguageModel|null=null;try{model=await deps.model();}catch{model=null;}
-   if(model){
-    const o=await runConversation(model,{history:r.history,message:r.message,ports:deps.ports,budget,
-     maxOutputTokens:cfg.maxOutputTokens,maxToolRounds:cfg.maxToolRounds,maxInputTokensEstimate:cfg.maxInputTokensEstimate});
-    if(o.ok){
-     const cards=withSources(o.results.flatMap(x=>x.cards).slice(0,6),o.results);
-     const calls=o.results.filter(x=>x.ok&&x.input).slice(0,4).map(x=>({tool:x.tool,input:x.input!}));
-     return respond({text:o.text,cards,suggestions:suggestionsFor(calls),context:r.session.context??{},
-      private:o.results.some(x=>x.tool==='stock_status'&&x.ok)},'language-model',calls,{usage:{usd:Number(o.usd.toFixed(4)),model:o.model}});
-    }
-    fallbackNote=o.reason==='BUDGET_EXHAUSTED'?'(Today\'s AI budget is used up; this answer uses the built-in planner.)':'(The AI model could not answer; this answer uses the built-in planner.)';
+   const h=verifiedHistory(r.history,key);
+   const o=await runConversation(model,{history:h.history,message:r.message,ports:deps.ports,ledger,clientKey:req.clientKey,
+    maxOutputTokens:cfg.maxOutputTokens,maxToolRounds:cfg.maxToolRounds});
+   if(o.ok){
+    const cards=withSources(o.results.flatMap(x=>x.cards).slice(0,6),o.results);
+    const calls=o.results.filter(x=>x.ok&&x.input).slice(0,4).map(x=>({tool:x.tool,input:x.input!}));
+    return respond({text:o.text,cards,suggestions:suggestionsFor(calls),context:r.session.context??{},
+     private:o.results.some(x=>x.tool==='stock_status'&&x.ok)},'language-model',calls,
+     {usage:{usd:Number((o.microUsd/1e6).toFixed(4)),model:o.model,forgedTurnsDropped:h.dropped}});
    }
+   fallbackNote={BUDGET_EXHAUSTED:'(Today\'s AI budget is used up; this answer uses the built-in planner.)',
+    RATE_LIMITED:'(The AI model is rate-limited for a minute; this answer uses the built-in planner.)',
+    LEDGER_UNAVAILABLE:'(The AI budget ledger could not be checked, so no AI model was called; this answer uses the built-in planner.)'}[o.reason as string]??
+    '(The AI model could not answer; this answer uses the built-in planner.)';
   }
  }
 

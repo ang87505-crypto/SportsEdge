@@ -6,7 +6,7 @@ import {currentOwnerAccess} from '@/lib/assistant/session';
 import {chatActionRequest} from '@/lib/assistant/actions';
 
 type Mode='language-model'|'tools'|'assistant';
-type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[];mode?:Mode};
+type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[];mode?:Mode;sig?:string};
 type ToolCall={tool:string;input:Record<string,unknown>};
 const MODE_LABEL:Record<Mode,string>={'language-model':'AI model over SportsEdge records','tools':'SportsEdge records (built-in planner)','assistant':'SportsEdge records (built-in answers)'};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
@@ -76,11 +76,11 @@ export function AssistantChat({starters,intro,endpoint='/api/assistant'}:{starte
   try{
    const command=endpoint==='/api/command';
    // Bounded history so follow-ups can refer back; private replies are only sent while owner access is valid.
-   const history=msgs.filter(m=>m!==opening&&(!m.private||owner.current)).slice(-10).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text.slice(0,1500)}));
+   const history=msgs.filter(m=>m!==opening&&(!m.private||owner.current)).slice(-10).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text.slice(0,1500),...(m.role==='bot'&&m.sig?{sig:m.sig}:{})}));
    const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(command?{message:text,history,session:{context,last:lastCalls}}:{message:text,context})});
    if(res.status===429){if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'Too many questions in a minute. Wait a moment and try again.',suggestions:['Try again']}]);return;}
-   const data=await res.json().catch(()=>null) as {reply?:Reply;mode?:Mode;session?:{last?:ToolCall[]};ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
+   const data=await res.json().catch(()=>null) as {reply?:Reply;mode?:Mode;sig?:string;session?:{last?:ToolCall[]};ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
    if(id!==requestId.current)return;
    if(res.ok&&data?.reply){
     const valid=currentOwnerAccess(data).ownerAccess;
@@ -88,7 +88,7 @@ export function AssistantChat({starters,intro,endpoint='/api/assistant'}:{starte
     const r=data.reply;
     if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);}
     else {
-     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private,mode:data.mode}].slice(-40));
+     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private,mode:data.mode,sig:typeof data.sig==='string'&&/^[0-9a-f]{64}$/.test(data.sig)?data.sig:undefined}].slice(-40));
      setContext(r.context);setLastCalls(Array.isArray(data.session?.last)?data.session!.last!.slice(0,4):[]);
     }
    }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
