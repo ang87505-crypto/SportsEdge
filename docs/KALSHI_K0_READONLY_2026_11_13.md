@@ -59,3 +59,14 @@ Mock-injected requests are for locally created synthetic fixtures only; these va
 
 ### Suggested permission request
 Ask Kalshi Developer Support whether the exchange permits the proposed private research use under an API/data agreement: collecting and retaining bounded quotes, calculating fair probabilities using independently developed models, comparing market-implied prices to those models, maintaining an internal paper-trading ledger, and optionally displaying derived statistics in a personal/private app; ask separately about AI-assisted research, raw data retention duration, redistribution, and real-money order API eligibility in New Mexico at age 19. Do not assume approval from registration or public market accessibility.
+
+## Further progress: chronological weather replay, CPI data, final-settlement checks
+- **Weather replay:** weather-replay.ts only trains on NWS/verified-station observations known before the forecast as-of, requires 30 known observations, evaluates fixed independent forecast-anchored 5 F bands, and compares against an unconditional climatology baseline. It uses no Kalshi data. Synthetic tests are not evidence of forecast skill.
+- **Kalshi settlement lifecycle:** client.ts accepts terminal finalized/settled market statuses only alongside a valid settlement timestamp, binary yes/no result and no provisional flag. If provided, settlement value must match the outcome. paper.ts freezes both primary and secondary settlement rules and refuses later rule mismatches.
+- **BLS CPI independent source:** bls-cpi.ts uses public GET on the BLS unregistered API v1 for CPI-U All Items, series CUUR0000SA0. Its current revised history is explicitly NOT original release-time vintages and cannot support point-in-time CPI release backtests. See https://www.bls.gov/developers/api_signature.htm
+- **Permissions request ready but not sent:** docs/KALSHI_API_PERMISSION_REQUEST_2026_11_13.md. No written Kalshi authorization has been obtained. Kalshi support: https://help.kalshi.com/en/articles/13823855-contact-kalshi-support
+
+### Further limitations
+The public Kalshi Get Market endpoint is cached. The published market-list filter vocabulary and market record lifecycle statuses differ. The present normalizer is a conservative interpretation tested on synthetic fixtures, not verified live responses. Weather research bands are NOT Kalshi contract bins. Exact contract rules, fees, special settlements, original BLS release vintages, historical NWS archives, and licensed data rights remain external prerequisites.
+
+All exchange connections remain disabled: no Kalshi API account, no live Kalshi collection, no quote storage, no orders or real money, and no production schedules. Nothing in this PR demonstrates a profitable strategy.
