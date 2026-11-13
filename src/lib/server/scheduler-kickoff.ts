@@ -35,7 +35,7 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
  // Props capture ticks (props-capture-v1). Two hours apart so each NBA capture window (EARLY 8-4 h, LATE 3 h-35 min
  // before tip-off) contains at least one backup hour for 22:00-04:00 UTC tip-offs, even if GitHub drops every tick.
- ...Object.fromEntries([13,15,17,19,21,23,1].map(h=>['props-tick-'+String(h).padStart(2,'0'),
+ ...Object.fromEntries([13,14,15,16,17,18,19,20,21,22,23,0,1,2].map(h=>['props-tick-'+String(h).padStart(2,'0'),
   {hourUtc:h,workflow:'props-tick.yml',inputs:{trigger:'backup'},tick:true} satisfies Slot])),
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},

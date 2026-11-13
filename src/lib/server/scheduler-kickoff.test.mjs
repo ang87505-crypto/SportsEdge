@@ -142,16 +142,29 @@ test('props capture ticks: inert while released off; when released they dispatch
  assert.equal((await (await handleSchedulerKickoff(req(),'props-tick-17',env,{now:at('2026-11-10T18:01:00Z'),fetcher:fetcher(calls)})).json()).reason,'outside_slot_hour');
 });
 
-test('tick backup hours cover a window of every evening tip-off from 22:00 to 04:30 UTC',async()=>{
+test('tick backups alone guarantee a LATE-window capture for every anchor tip 17:00-04:00 UTC under Vercel Hobby timing',async()=>{
  const {captureWindows}=await import('../props/capture-plan.ts');
  const hours=Object.values(SCHEDULER_SLOTS).filter(s=>s.tick).map(s=>s.hourUtc);
- for(let m=22*60;m<=28*60+30;m+=30){
+ // Vercel Hobby runs a daily cron anywhere inside its hour (documented +-59 min); the GitHub dispatch queue then adds
+ // delay (observed up to ~38 min after the hour on 2026-11-12). Budget 0-75 min after the hour. Late-arm slates are
+ // only captured in the LATE window, so the early window never counts here, and GitHub's own schedule is assumed dropped.
+ const MAX_DELAY=75*60_000;
+ for(let m=17*60;m<=28*60;m+=1){
   const tip=new Date(Date.UTC(2026,10,10,0,m)).toISOString();const w=captureWindows(tip);
-  // A Vercel cron fires somewhere inside its hour: require a whole backup hour inside the LATE window or the EARLY one.
-  const covered=[w.lateFrom,w.earlyFrom].some((from,i)=>{const to=Date.parse(i?w.earlyTo:w.lateTo);
-   return hours.some(h=>{for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s>=Date.parse(from)&&s+3600_000<=to)return true;}return false;});});
-  assert.ok(covered,'no whole backup hour inside a window for tip '+tip);
+  const from=Date.parse(w.lateFrom),to=Date.parse(w.lateTo);
+  const covered=hours.some(h=>{for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s>=from&&s+MAX_DELAY<=to)return true;}return false;});
+  assert.ok(covered,'no backup is guaranteed inside the LATE window for anchor tip '+tip);
  }
+});
+
+test('the odd-hour-only backup set (before 2026-11-13) leaves late-window gaps under the same timing, so this change is needed',async()=>{
+ const {captureWindows}=await import('../props/capture-plan.ts');
+ const odd=[13,15,17,19,21,23,1];let uncovered=0;
+ for(let m=17*60;m<=28*60;m+=1){
+  const w=captureWindows(new Date(Date.UTC(2026,10,10,0,m)).toISOString());const from=Date.parse(w.lateFrom),to=Date.parse(w.lateTo);
+  if(!odd.some(h=>{for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s>=from&&s+75*60_000<=to)return true;}return false;}))uncovered++;
+ }
+ assert.ok(uncovered>200,String(uncovered));
 });
 
 test('weekly learning backup: Sunday 16 UTC only, kind=weekly trigger=backup, skipped when today\'s run exists',async()=>{
