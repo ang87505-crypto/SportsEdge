@@ -267,7 +267,13 @@
      "reason": "seeded from the recorded result: Production shadow: scores real lines before lock, never picks; 141 graded vs 271 for the active model (not paired). Review gate not met.",
      "inputFingerprint": null
     }
-   ]
+   ],
+   "forward": {
+    "kind": "ledger-models",
+    "candidate": "props-learn-v1",
+    "baseline": "props-nb-minutes-rate-v1",
+    "maxStaleDays": 7
+   }
   },
   {
    "id": "props-gap-shrink-v1",

@@ -1,5 +1,11 @@
 # AI 2.0 learning engine (research only). MANUAL DISPATCH ONLY until the owner approves a schedule after the Monday
-# 2026-11-16 release. Proposed schedule once approved (not active): '23 12 * * 2' (Tuesdays, after the weekly settle).
+# 2026-11-16 release. To activate after approval, add under `on:` (Tuesdays 12:23 UTC, after the weekly settle):
+#     schedule:
+#       - cron: '23 12 * * 2'
+# State between runs: the run restores the previous registry/runs.jsonl from the newest research-engine artifact if one
+# is given (input `state_run_id`); otherwise it starts from the committed seed registry. Persisting state on the
+# append-only research-data branch (.github/scripts/research-data-branch.sh) needs `contents: write` and is a separate
+# owner decision; until then the committed registry stays the source of truth and each artifact is the run's record.
 # Reads graded props outcomes with GET requests only, checks data quality, measures patterns with clustered intervals,
 # proposes at most 2 new hypotheses per domain, and uploads a report and an updated registry COPY as an artifact.
 # It never writes to a database, never calls a provider, broker or AI service, and cannot change a model, pick, entry,
@@ -7,8 +13,14 @@
 name: Research engine (AI 2.0, manual)
 on:
   workflow_dispatch:
+    inputs:
+      state_run_id:
+        description: 'Optional: run id of an earlier research-engine run whose registry/runs.jsonl to continue from'
+        required: false
+        default: ''
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: research-engine
   cancel-in-progress: false
@@ -25,15 +37,23 @@ jobs:
           node-version: '24'
       - name: Engine tests before any credential is provided
         run: node --experimental-strip-types --test src/lib/lab/engine/*.test.mjs
-      - name: Diagnose graded outcomes and propose hypotheses (read-only)
+      - name: Restore engine state from an earlier run (optional)
+        if: inputs.state_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: research-engine-${{ inputs.state_run_id }}
+          path: ${{ runner.temp }}/engine
+          run-id: ${{ inputs.state_run_id }}
+          github-token: ${{ github.token }}
+      - name: Diagnose, evaluate forward experiments and propose hypotheses (read-only)
         env:
           SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
           SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
         run: |
           set -o pipefail
           node --experimental-strip-types --no-warnings scripts/research-engine.ts --registry research/engine/registry.json \
-            --out "$RUNNER_TEMP/engine" --sports-ledger | tee -a "$GITHUB_STEP_SUMMARY"
-          node -e "const r=require(process.argv[1]);const s=r.domains.sports;console.log(JSON.stringify({picks:s?.picks,quality:s?.qualityIssues,patterns:(s?.patterns??[]).map(p=>[p.id,p.n,p.effect,p.lower95,p.upper95,p.significant]),proposed:(s?.proposed??[]).map(h=>h.key),skipped:s?.skipped},null,1))" "$RUNNER_TEMP/engine/report.json" | tee -a "$GITHUB_STEP_SUMMARY"
+            --out "$RUNNER_TEMP/engine" --state "$RUNNER_TEMP/engine" --sports-ledger --evaluate-forward | tee -a "$GITHUB_STEP_SUMMARY"
+          node -e "const r=require(process.argv[1]);const s=r.domains.sports;console.log(JSON.stringify({picks:s?.picks,quality:s?.qualityIssues,patterns:(s?.patterns??[]).map(p=>[p.id,p.n,p.effect,p.lower95,p.upper95,p.significant]),proposed:(s?.proposed??[]).map(h=>h.key),skipped:s?.skipped,forward:r.forward.map(f=>({id:f.id,to:f.to,changed:f.changed,reason:f.reason}))},null,1))" "$RUNNER_TEMP/engine/report.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

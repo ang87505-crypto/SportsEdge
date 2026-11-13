@@ -12,11 +12,12 @@ export type Domain='sports'|'stocks';
 export const STATUSES=['PROPOSED','RUNNING','INSUFFICIENT_DATA','FAILED','PROMISING','READY_FOR_REVIEW','REJECTED'] as const;
 export type Status=typeof STATUSES[number];
 
-/** Allowed transitions. REJECTED is terminal (the idea is remembered, never silently retested). */
+/** Allowed transitions. REJECTED is terminal (the idea is remembered, never silently retested). READY_FOR_REVIEW is reachable
+ * only through nextStatus with FORWARD evidence meeting the registered minimums; it is a request for owner review, not promotion. */
 export const TRANSITIONS:Record<Status,Status[]>={
  PROPOSED:['RUNNING','REJECTED','FAILED'],
- RUNNING:['INSUFFICIENT_DATA','PROMISING','REJECTED','FAILED','RUNNING'],
- INSUFFICIENT_DATA:['RUNNING','INSUFFICIENT_DATA','PROMISING','REJECTED','FAILED'],
+ RUNNING:['INSUFFICIENT_DATA','PROMISING','READY_FOR_REVIEW','REJECTED','FAILED','RUNNING'],
+ INSUFFICIENT_DATA:['RUNNING','INSUFFICIENT_DATA','PROMISING','READY_FOR_REVIEW','REJECTED','FAILED'],
  FAILED:['RUNNING','REJECTED'],
  PROMISING:['RUNNING','PROMISING','READY_FOR_REVIEW','REJECTED','INSUFFICIENT_DATA'],
  READY_FOR_REVIEW:['READY_FOR_REVIEW','REJECTED'],
@@ -34,6 +35,8 @@ export type Experiment={
  dataCutoff:string;codeFingerprint:string;datasetFingerprints:{name:string;sha256:string}[];
  metrics:{primary:string;secondary:string[]};sampleRequirements:SampleRequirements;baseline:string;
  costAssumptions:string|null;decisionRule:string;
+ /** How the engine evaluates it forward, when it can do so on its own (e.g. two models' frozen ledger predictions). */
+ forward?:{kind:'ledger-models';candidate:string;baseline:string;maxStaleDays:number};
  status:Status;result:Record<string,unknown>|null;disposition:string|null;
  source:'existing'|'engine';registeredAt:string;
  history:{at:string;from:Status|null;to:Status;reason:string;inputFingerprint:string|null}[];
