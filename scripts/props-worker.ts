@@ -16,6 +16,7 @@ import {theOddsApiClient} from '../src/lib/server/props-odds-client.ts';
 import {espnClient} from '../src/lib/server/props-espn-client.ts';
 import {runCollect,runSettle,type ModelArtifact,type CycleDeps} from '../src/lib/server/props-cycle.ts';
 import {runTick} from '../src/lib/server/props-tick.ts';
+import {tickAttention} from '../src/lib/props/tick-attention.ts';
 import {PROPS_RELEASE,PROPS_COLLECTION_V2,scheduledInstant,slotKey,slotCronMatches,tickSlotKey,ticksReleased} from '../src/lib/props/schedule.ts';
 import {MODEL_VERSION,PROPS_SEASON_START} from '../src/lib/props/contract.ts';
 
@@ -79,9 +80,10 @@ try{
   const sched=tickBackup&&/^\d{4}-\d\d-\d\dT\d\d:00:00Z$/.test(hour)&&Date.parse(hour)<=Date.now()?new Date(hour).toISOString():null;
   const tickSlot=tickScheduled?tickSlotKey(now()):`collect-tick-manual-${process.env.GITHUB_RUN_ID??Date.now()}`;
   result=await runTick(deps,tickSlot.slice(0,80),sched);
-  const attention=result.outcome.startsWith('FAILED')||['ODDS_NOT_CONFIGURED','EVENTS_LIST_CHARGED','PROVIDER_EVENTS_FAILED'].includes(result.outcome);
-  if(attention)process.stdout.write(`::warning::props tick ${result.outcome}\n`);
-  emit({status:result.outcome,kind,runId:result.runId,slot:tickSlot,summary:result.summary},attention?1:0);
+  const t=tickAttention(result.outcome,result.summary);
+  if(t.attention)process.stdout.write(`::warning::props tick ${t.reason}${t.notice?': '+t.notice:''}\n`);
+  else if(t.notice)process.stdout.write(`::notice::props tick ${t.reason}: ${t.notice}\n`);
+  emit({status:result.outcome,attention:t.reason,kind,runId:result.runId,slot:tickSlot,summary:result.summary},t.attention?1:0);
  }
  if(kind==='collect')result=await runCollect(deps,slot,scheduledFor);
  else if(kind==='settle')result=await runSettle(deps,slot,scheduledFor);
