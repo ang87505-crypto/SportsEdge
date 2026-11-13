@@ -28,7 +28,7 @@ export type ProductionModel={active:string;learningEnabled:boolean;autoSwitchEna
  events:{version:string;event:string;reason:string;at:string;detail?:Record<string,unknown>}[]}|null;
 export type LabInput={nowIso:string;retro:RetroReport;retroStaking:RetroStaking|null;
  forward:{state:'ready'|'not_migrated'|'not_configured'|'unavailable';report:ForwardReport|null;staking:ForwardStaking|null;events:LabEvent[];frozenToday?:number};
- production:ProductionModel;stocks:{state:'not_run'|'ready';summary?:string;verdicts?:{layer:string;verdict:string}[];lab?:import('../research/stock-summary.ts').StockLabSummary}|null};
+ production:ProductionModel;stocks:{state:'not_run'|'ready';summary?:string;verdicts?:{layer:string;verdict:string;label:string;detail:string|null}[];lab?:import('../research/stock-summary.ts').StockLabSummary}|null};
 
 const LAYER_LABEL=Object.fromEntries(SPORTS_LAYERS.map(l=>[l.id,l.label]));
 export const VERDICT_TEXT:Record<LayerVerdict,string>={helps:'Helps',hurts:'Hurts',no_clear_effect:'No clear effect',collecting:'Collecting forward data',not_tested:'Not tested'};

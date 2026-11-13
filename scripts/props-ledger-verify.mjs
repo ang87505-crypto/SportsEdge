@@ -7,7 +7,7 @@
  * Usage: FROM=2026-11-10 TO=2026-11-13 node --experimental-strip-types scripts/props-ledger-verify.mjs [out.json]
  */
 import {writeFileSync} from 'node:fs';
-import {regrade,legOf,auditEntry} from './props-ledger-verify-lib.mjs';
+import {regrade,legOf,auditEntry,accountingIdentity} from './props-ledger-verify-lib.mjs';
 import {settleEntry} from '../src/lib/props/rules.ts';
 
 const env=process.env,url=env.SPORTSEDGE_PROPS_SUPABASE_URL??'',key=env.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY??'';
@@ -76,11 +76,13 @@ out.entries=entries.map(e=>{
 // Bankrolls and graded record, from all settlements and all recorded picks (latest result revision).
 const allEntries=await get('props_entries?select=id,account_id,stake_cents,created_at&order=id.asc&limit=5000');
 const allSet=byId(await get('props_entry_settlements?select=entry_id,outcome,profit_cents&limit=5000'),'entry_id');
+const identities={};
 out.bankrolls=accounts.map(a=>{const mine=allEntries.filter(e=>Number(e.account_id)===Number(a.id));
  const settled=mine.filter(e=>allSet.has(Number(e.id)));const known=settled.filter(e=>allSet.get(Number(e.id)).profit_cents!==null);
  const profit=known.reduce((s,e)=>s+Number(allSet.get(Number(e.id)).profit_cents),0);
  const rec={won:0,lost:0,refund:0,payout_unknown:0};for(const e of settled)rec[allSet.get(Number(e.id)).outcome]=(rec[allSet.get(Number(e.id)).outcome]??0)+1;
  const staked=known.reduce((s,e)=>s+Number(e.stake_cents),0);
+ identities[a.slug]=accountingIdentity(settled.map(e=>({entry_id:e.id,stake_cents:e.stake_cents,...allSet.get(Number(e.id))})));
  return {account:a.slug,selection:a.selection_version,entries:mine.length,settled:settled.length,open:mine.length-settled.length,record:rec,
   profitCents:profit,stakedCents:staked,roi:staked?profit/staked:null,bankrollCents:Number(a.initial_cents)+profit,initialCents:Number(a.initial_cents)};});
 const recPicks=await get('props_picks?select=id,prediction_id,side,selection_version,decided_at&status=eq.recorded&order=id.asc&limit=5000');
@@ -135,7 +137,10 @@ for(const e of out.entries){
   ` | box=${l.boxScore?`${l.boxScore.status}${l.boxScore.dnp?' DNP':''} min=${l.boxScore.minutes} pts=${l.boxScore.points} reb=${l.boxScore.rebounds} ast=${l.boxScore.assists} (${l.boxScore.source} r${l.boxScore.revision} ${l.boxScore.retrievedAt})`:'none'}`+
   ` | regrade=${l.regrade.state==='graded'?`${l.regrade.outcome}(${l.regrade.actual})`:l.regrade.state} leg=${l.leg??'n/a'}`);
 }
-for(const b of out.bankrolls)L.push(`BANKROLL ${b.account} (${b.selection}) entries=${b.entries} settled=${b.settled} open=${b.open} record=${JSON.stringify(b.record)} profit=${$(b.profitCents)} staked=${$(b.stakedCents)} roi=${b.roi===null?'n/a':(b.roi*100).toFixed(1)+'%'} bankroll=${$(b.bankrollCents)} of ${$(b.initialCents)}`);
+for(const b of out.bankrolls)L.push(`BANKROLL ${b.account} (${b.selection}) entries=${b.entries} settled=${b.settled} open=${b.open} record=${JSON.stringify(b.record)} profit=${$(b.profitCents)} staked_known_payout=${$(b.stakedCents)} roi=${b.roi===null?'n/a':(b.roi*100).toFixed(1)+'%'} bankroll=${$(b.bankrollCents)} of ${$(b.initialCents)}`);
+for(const [slug,x] of Object.entries(identities))L.push(`ACCOUNTING ${slug} ${x.terms.map(t=>`${t.outcome} ${t.count} x ${$(t.profitCents)}`).join(' + ')||'no known payouts'} = ${$(x.profitCents)}`+
+ ` on ${$(x.stakedKnownCents)} staked with known payouts; ${x.unknownPayout} unknown-payout entr${x.unknownPayout===1?'y':'ies'} (${$(x.stakedUnknownCents)} staked, excluded from profit and ROI)`+
+ ` ${x.identityHolds&&!x.problems.length?'IDENTITY_OK':'IDENTITY_FAIL '+x.problems.join('; ')}`);
 for(const [k,t] of Object.entries(out.pickRecord))L.push(`PICKS ${k} ${JSON.stringify(t)}`);
 L.push(`LOSS_ANALYSIS ${JSON.stringify(out.lossAnalysis)}`);
 console.log(L.join('\n'));
