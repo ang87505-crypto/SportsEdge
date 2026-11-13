@@ -15,6 +15,7 @@ import {seeded} from '../stats.ts';
 const ROOT = new URL('../../../../', import.meta.url);
 const SEED = 'research/engine/registry.json';
 const ID = 'props-learn-v1-shadow';
+const SEED_STATUS = JSON.parse(readFileSync(new URL(SEED, ROOT), 'utf8')).experiments.find(e => e.id === ID).status;
 const SPEC = {kind: 'ledger-models', candidate: 'props-learn-v1', baseline: 'props-nb-minutes-rate-v1', maxStaleDays: 7};
 
 /** SYNTHETIC: n lines over 20 dates / 60 games; `better` decides which model knows the true probability. */
@@ -110,12 +111,12 @@ test('no data → no change; failed collection → FAILED run, registry untouche
   const none = run(dir);
   assert.equal(none.code, 0);
   assert.equal(none.summary.registryChanged, false);
-  assert.equal(none.exp.status, 'RUNNING');
+  assert.equal(none.exp.status, SEED_STATUS);
   const bad = run(tmp(), {fwd: '{not json'});
   assert.equal(bad.code, 1);
   assert.equal(bad.summary.status, 'FAILED');
   assert.equal(bad.summary.registryChanged, false);
-  assert.equal(bad.exp.status, 'RUNNING');
+  assert.equal(bad.exp.status, SEED_STATUS);
 });
 
 test('budget exhaustion stops the run before any request and changes nothing', () => {
