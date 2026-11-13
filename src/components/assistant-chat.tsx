@@ -5,7 +5,10 @@ import type {AssistantContext} from '@/lib/assistant/understand';
 import {currentOwnerAccess} from '@/lib/assistant/session';
 import {chatActionRequest} from '@/lib/assistant/actions';
 
-type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
+type Mode='language-model'|'tools'|'assistant';
+type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[];mode?:Mode};
+type ToolCall={tool:string;input:Record<string,unknown>};
+const MODE_LABEL:Record<Mode,string>={'language-model':'AI model over SportsEdge records','tools':'SportsEdge records (built-in planner)','assistant':'SportsEdge records (built-in answers)'};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
 const STARTERS=["Tonight's picks",'Stock results','Research results','Is everything running?'];
 const OPENING:Msg={role:'bot',text:'Ask about sports picks, stock paper accounts, research results, or automation.',suggestions:STARTERS};
@@ -18,10 +21,12 @@ export function AskButton({question,className,children}:{question:string;classNa
 }
 
 /** One conversation. Private replies are ephemeral and hidden whenever owner access is uncertain. */
-export function AssistantChat({starters,intro}:{starters?:string[];intro?:string}={}){
+/** `endpoint='/api/command'` adds multi-turn history, references to earlier answers and (if the owner enabled it) an AI model. */
+export function AssistantChat({starters,intro,endpoint='/api/assistant'}:{starters?:string[];intro?:string;endpoint?:'/api/assistant'|'/api/command'}={}){
  const opening:Msg=starters?{role:'bot',text:intro??OPENING.text,suggestions:starters}:OPENING;
  const [msgs,setMsgs]=useState<Msg[]>([opening]);
  const [context,setContext]=useState<AssistantContext|null>(null);
+ const [lastCalls,setLastCalls]=useState<ToolCall[]>([]);
  const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
  const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
@@ -30,7 +35,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
   const valid=currentOwnerAccess(a).ownerAccess;
   if(!valid&&owner.current){
    // A reply authorized before logout must not resurrect private content afterward.
-   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
+   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);setLastCalls([]);
   }
   owner.current=valid;setAccess(valid?a:NO_ACCESS);
  }
@@ -69,8 +74,13 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
   lastAsked.current=text;follow.current=true;
   setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
   try{
-   const res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context})});
-   const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
+   const command=endpoint==='/api/command';
+   // Bounded history so follow-ups can refer back; private replies are only sent while owner access is valid.
+   const history=msgs.filter(m=>m!==opening&&(!m.private||owner.current)).slice(-10).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text.slice(0,1500)}));
+   const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(command?{message:text,history,session:{context,last:lastCalls}}:{message:text,context})});
+   if(res.status===429){if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'Too many questions in a minute. Wait a moment and try again.',suggestions:['Try again']}]);return;}
+   const data=await res.json().catch(()=>null) as {reply?:Reply;mode?:Mode;session?:{last?:ToolCall[]};ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
    if(id!==requestId.current)return;
    if(res.ok&&data?.reply){
     const valid=currentOwnerAccess(data).ownerAccess;
@@ -78,15 +88,15 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
     const r=data.reply;
     if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);}
     else {
-     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private}].slice(-40));
-     setContext(r.context);
+     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private,mode:data.mode}].slice(-40));
+     setContext(r.context);setLastCalls(Array.isArray(data.session?.last)?data.session!.last!.slice(0,4):[]);
     }
    }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
   }catch{if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
   finally{if(id===requestId.current)setBusy(false);}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);}
+ function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);setLastCalls([]);}
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">
@@ -97,6 +107,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
     {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
      <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
+     {m.mode&&<p className="chat-source quiet small-print">Answered from: {MODE_LABEL[m.mode]}</p>}
      {m.cards?.map((c,j)=><ChatCard key={j} card={c} owner={access.ownerAccess&&!checking}/>)}
     </>}
    </div>)}
@@ -112,7 +123,9 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence: SportsEdge matches your question to built-in topics and reads its own records; no external AI model is called. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
+  <p className="quiet small-print">{msgs.some(m=>m.mode==='language-model')
+   ?'Answers use recorded evidence. Some answers in this chat were written by an AI model from read-only SportsEdge records (owner-enabled, budget-capped); tables and links come from the records themselves.'
+   :'Answers use recorded evidence: SportsEdge reads its own records with built-in read-only tools; no external AI model is called.'} Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
  </div>;
 }
 /**

@@ -1,0 +1,40 @@
+# Command Center 2.0 QA (research branch only; not scheduled). Runs a real multi-turn conversation against SportsEdge's
+# own records with the built-in planner: no AI model, no key, no spend. The props store is wrapped GET-only in the
+# script; ops and research status are public reads. Output goes to the job log and summary only.
+name: Command center QA (manual)
+on:
+  workflow_dispatch:
+  push:
+    branches: [command-center-2]
+    paths:
+      - src/lib/command/**
+      - src/lib/server/command-handler.ts
+      - scripts/command-real-conversation.ts
+      - .github/workflows/command-center-qa.yml
+permissions:
+  contents: read
+concurrency:
+  group: command-center-qa
+  cancel-in-progress: true
+jobs:
+  conversation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Command center tests (no credentials)
+        run: node --experimental-strip-types --test src/lib/command/command.test.mjs
+      - name: Real multi-turn conversation (read-only records)
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/command-real-conversation.ts | tee -a "$GITHUB_STEP_SUMMARY"
