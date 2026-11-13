@@ -62,3 +62,11 @@ jobs:
           SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
           FROM: '2026-11-01'
         run: node --experimental-strip-types --no-warnings scripts/props-calibration-audit.mjs
+      - name: AI 2.0 research engine (read-only; diagnostics and hypotheses; never gates the preflight)
+        continue-on-error: true
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          node --experimental-strip-types --no-warnings scripts/research-engine.ts --registry research/engine/registry.json --out "$RUNNER_TEMP/engine" --sports-ledger
+          node -e "const r=require(process.argv[1]);const s=r.domains.sports;console.log('ENGINE_REPORT',JSON.stringify({rows:s.rows,clean:s.clean,quality:s.qualityIssues,picks:s.picks,patterns:s.patterns.map(p=>[p.id,p.n,p.clusters,p.effect,p.lower95,p.upper95,p.significant]),proposed:s.proposed.map(h=>h.key),skipped:s.skipped}))" "$RUNNER_TEMP/engine/report.json"

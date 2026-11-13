@@ -1009,13 +1009,10 @@
    ]
   },
   {
-   "id": "lab-stock-v3-2026-11-13",
+   "id": "lab-stock-v3-riskadj",
    "domain": "stocks",
-   "hypothesisKey": "stocks:selection-signal-replacement",
-   "hypothesis": "Risk-adjusted momentum, momentum+low-vol, and a core-satellite SPY+sleeve beat the live weekly rules (lab-stock-v3).",
-   "alsoCovers": [
-    "stocks:exposure-core-satellite"
-   ],
+   "hypothesisKey": "stocks:risk-adjusted-momentum",
+   "hypothesis": "Ranking by momentum divided by volatility beats the live weekly rules and passive SPY at the same exposure.",
    "dataDependencies": [
     "Alpaca daily bars (read-only)"
    ],
@@ -1042,18 +1039,152 @@
    "baseline": "stock-v2-weekly-1",
    "costAssumptions": "10 and 25 bps per side",
    "decisionRule": "See analytics/stock_research_v3.py decision rule",
-   "status": "PROPOSED",
-   "result": null,
-   "disposition": "Pre-registered in analytics/stock_research_v3.py (ai2/stocks-research); run pending.",
+   "status": "REJECTED",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "REJECTED",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "riskadj-mom and core-satellite-riskadj below exposure-matched SPY in dev and holdout (run 43488863136)."
+   },
+   "disposition": "REJECTED",
    "source": "existing",
    "registeredAt": "2026-11-13T21:00:00Z",
    "history": [
     {
-     "at": "2026-11-13T21:00:00Z",
+     "at": "2026-11-13T18:55:00Z",
      "from": null,
      "to": "PROPOSED",
-     "reason": "seeded from the recorded result: Pre-registered in analytics/stock_research_v3.py (ai2/stocks-research); run pending.",
+     "reason": "pre-registered before the run",
      "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "REJECTED",
+     "reason": "riskadj-mom and core-satellite-riskadj below exposure-matched SPY in dev and holdout (run 43488863136).",
+     "inputFingerprint": "0bd5470503d5a7fc61659d9b9e7e09a5da080c6320a61266b583317f4def8253"
+    }
+   ],
+   "alsoCovers": [
+    "stocks:selection-signal-replacement"
+   ]
+  },
+  {
+   "id": "lab-stock-v3-mom-lowvol",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:momentum-lowvol-quality-proxy",
+   "hypothesis": "Ranking by momentum and low-volatility ranks (quality proxy) beats the live weekly rules.",
+   "dataDependencies": [
+    "Alpaca daily bars (read-only)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "c92909e90474da972d57023276b7c96836a55ed7",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "See analytics/stock_research_v3.py decision rule",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "Holm p 0.61 vs live rules; holdout 5.6% vs exposure-matched SPY 10.7%; true quality needs point-in-time fundamentals (run 43488863136)."
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T18:55:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Holm p 0.61 vs live rules; holdout 5.6% vs exposure-matched SPY 10.7%; true quality needs point-in-time fundamentals (run 43488863136).",
+     "inputFingerprint": "55c6d01c54fd852362e7cedc65cc02c78f9e9a822a833d48480f111c2b5ae7ac"
+    }
+   ]
+  },
+  {
+   "id": "lab-stock-v3-core-satellite",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:exposure-core-satellite",
+   "hypothesis": "50% SPY + 50% fully invested momentum sleeve beats the live rules and passive SPY.",
+   "dataDependencies": [
+    "Alpaca daily bars (read-only)"
+   ],
+   "frozen": {
+    "features": [],
+    "parameters": {}
+   },
+   "dataCutoff": "2026-11-13T00:00:00Z",
+   "codeFingerprint": "c92909e90474da972d57023276b7c96836a55ed7",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "weekly excess return vs base",
+    "secondary": [
+     "holdout CAGR",
+     "Sharpe",
+     "max drawdown",
+     "exposure-matched SPY"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 and 25 bps per side",
+   "decisionRule": "See analytics/stock_research_v3.py decision rule",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 202,
+    "weeks": 202,
+    "reason": "Beats live rules (Holm p 0.0075) only by adding SPY exposure; below SPY and exposure-matched SPY (run 43488863136). Portfolio-policy question for the owner."
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "source": "existing",
+   "registeredAt": "2026-11-13T21:00:00Z",
+   "history": [
+    {
+     "at": "2026-11-13T18:55:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-13T21:30:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Beats live rules (Holm p 0.0075) only by adding SPY exposure; below SPY and exposure-matched SPY (run 43488863136). Portfolio-policy question for the owner.",
+     "inputFingerprint": "b158efbda5c33efde8eff082b8c5523bf32244e711ac07a50d718a696e7eab4c"
     }
    ]
   }
