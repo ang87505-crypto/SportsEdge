@@ -44,7 +44,13 @@ test('verdict: schema states and limit checks; a different limit is a FAIL, not 
   captureTables:{props_capture_plans:'MISSING',props_captures:'MISSING',props_capture_outcomes:'MISSING'},v3Column:'MISSING'};
  const v=Object.fromEntries(verdict(base).map(x=>[x.id,x.state]));
  assert.deepEqual(v,{target:'PASS',limits:'PASS','cap-held':'PASS','provider-floor':'PASS','no-duplicate-runs':'PASS','entry-caps-held':'PASS',
-  'settlement-running':'PASS','capture-schema':'NOT_APPLIED','v3-accounting':'NOT_APPLIED'});
+  'settlement-running':'PASS','capture-schema':'NOT_APPLIED','v3-accounting':'NOT_APPLIED','lab-schema':'UNKNOWN'});
+ const L=['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes'];
+ const lab=(state,extra={})=>Object.fromEntries(verdict({...base,labTables:Object.fromEntries(L.map(t=>[t,state])),...extra}).map(x=>[x.id,x.state]))['lab-schema'];
+ assert.equal(lab('MISSING'),'NOT_APPLIED');
+ assert.equal(lab('PRESENT',{labTampered:0}),'APPLIED');
+ assert.equal(lab('PRESENT',{labTampered:2}),'FAIL');
+ assert.equal(Object.fromEntries(verdict({...base,labTables:{props_lab_experiments:'PRESENT'}}).map(x=>[x.id,x.state]))['lab-schema'],'UNKNOWN');
  const raised=Object.fromEntries(verdict({...base,activePolicy:{...base.activePolicy,daily_credits:13},credits:{worstRolling24h:8,capBreaches:[{at:'x',credits:8,policy:'v2',cap:7}]}}).map(x=>[x.id,x.state]));
  assert.equal(raised.limits,'FAIL');assert.equal(raised['cap-held'],'FAIL');
  const partial=Object.fromEntries(verdict({...base,captureTables:{props_capture_plans:'PRESENT',props_captures:'MISSING',props_capture_outcomes:'MISSING'}}).map(x=>[x.id,x.state]));
