@@ -277,8 +277,17 @@ a finding; the fix is `REVOKE ALL ON public.<table> FROM anon, authenticated, PU
 | Experiment manifest verify + drift drill | PASS | — | — |
 | Scheduler coverage simulations | PASS (#157), 12 of 12 (#158) | — | — |
 
-CI on the newest commits of each PR is listed on the PRs. At writing, #157 was green on `3b99aa3` and later runs were
-in progress.
+**CI (GitHub):**
+
+| PR | Result |
+|---|---|
+| #157 | **All 6 workflows green** on `3b99aa3`, `9c797e5`, `189c2d1` and `f3509df` (the report commit), browser smoke included |
+| #158, #159 | Every check passes except **browser smoke**: `lab-390: Page overflows viewport by 138px` |
+
+That smoke failure is the `/lab` defect already on `main`, which #157 fixes. Browser QA runs only on pull requests,
+so `main` never reported it. The assertion was not changed.
+
+**Merge order:** #157 first; then update #158 and #159 from `main` and re-run CI.
 
 ## 12. Code changes (Friday)
 
@@ -313,7 +322,7 @@ deployed, and no production SQL was run.
 
 ## 15. Owner approvals required
 
-1. Merge #157 (and #159).
+1. Merge #157 first. Then update #159 (and #158 if approved) from `main`, re-run CI, and merge #159.
 2. Decide on #158: before Sunday's freeze, or after Monday.
 3. Optional: apply `props_lab_v1.sql`.
 4. Run the RLS SQL in §8.
