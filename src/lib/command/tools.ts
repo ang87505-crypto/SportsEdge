@@ -34,7 +34,7 @@ export type ToolDef={name:string;description:string;access:Access;input_schema:S
 
 const PERIODS=['today','yesterday','last_7_days','prior_7_days','all'] as const;
 export type Period=typeof PERIODS[number];
-const PERIOD_LABEL:Record<Period,string>={today:'Today',yesterday:'Yesterday',last_7_days:'Last 7 days',prior_7_days:'The 7 days before',all:'All time'};
+const PERIOD_LABEL:Record<Period,string>={today:'Today',yesterday:'Yesterday',last_7_days:'Last 7 days',prior_7_days:'The 7 days before',all:'Last 14 days (the loaded window)'};
 const pct=(x:number|null)=>x===null?'—':(x*100).toFixed(1)+'%';
 const usd=(c:number|null)=>c===null?'—':(c<0?'−':'')+'$'+(Math.abs(c)/100).toFixed(2);
 const PICKS_SRC={label:'PrizePicks paper picks',href:'/paper-betting/props'};
@@ -42,6 +42,8 @@ const PICKS_SRC={label:'PrizePicks paper picks',href:'/paper-betting/props'};
 export function periodBounds(p:Period,nowIso:string):{from:number;to:number;label:string}{
  if(p==='prior_7_days'){const w=rangeBounds('week',nowIso);const span=Date.parse(w.to)-Date.parse(w.from);
   return {from:Date.parse(w.from)-span+86400_000,to:Date.parse(w.from),label:PERIOD_LABEL[p]};}
+ // The dashboard loader reads the last 14 days only, so 'all' is that window and is labelled as such.
+ if(p==='all')return {from:Date.parse(nowIso)-14*86400_000,to:Date.parse(nowIso)+86400_000,label:PERIOD_LABEL[p]};
  const r=rangeBounds(p==='last_7_days'?'week':p,nowIso);
  return {from:Date.parse(r.from),to:Date.parse(r.to),label:PERIOD_LABEL[p]};
 }

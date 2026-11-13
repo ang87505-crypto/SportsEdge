@@ -82,7 +82,8 @@ export function compose(results:ToolResult[],filter?:Plan['filter']):string{
   }else if(r.tool==='compare_periods'){
    const a=d.a as PR,b=d.b as PR;
    const diff=a.hitRate!==null&&b.hitRate!==null?((a.hitRate-b.hitRate)*100):null;
-   out.push(`${a.label}: ${pct(a.hitRate)} on ${a.graded} graded picks, net ${usd(a.netCents)}. ${b.label}: ${pct(b.hitRate)} on ${b.graded}, net ${usd(b.netCents)}.`+
+   const side=(x:PR)=>x.graded?`${x.label}: ${pct(x.hitRate)} on ${x.graded} graded picks, net ${usd(x.netCents)}.`:`${x.label}: no graded picks.`;
+   out.push(`${side(a)} ${side(b)}`+
     (diff===null?' One of the periods has no graded picks, so there is nothing to compare yet.':` Difference: ${diff>=0?'+':''}${diff.toFixed(1)} points.`+
      (Math.min(a.graded,b.graded)<100?' With fewer than 100 graded picks in a period, a gap this size can be chance.':'')));
   }else if(r.tool==='virtual_bankroll'){

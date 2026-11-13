@@ -168,3 +168,10 @@ test('rate limits and request validation', async () => {
     {ports: ports(), legacy: async () => ({text: 'x', cards: [], suggestions: [], context: {}})});
   assert.equal(last.status, 429);
 });
+
+test('honest labels: "all" is the loaded 14-day window, and an empty period says so', async () => {
+  const all = await callTool('sports_results', {period: 'all'}, ports());
+  assert.equal(all.data.label, 'Last 14 days (the loaded window)');
+  const c = await ask('compare this week with last week');
+  assert.match(c.body.reply.text, /The 7 days before: no graded picks\./);
+});
