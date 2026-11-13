@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildManifest,diffManifest,FROZEN_FILES,RECORDED_FILES} from './experiment-manifest-lib.mjs';
+import {buildManifest,diffManifest,recordedChanges,FROZEN_FILES,RECORDED_FILES} from './experiment-manifest-lib.mjs';
 
 const root=new URL('../',import.meta.url);
 const C={MODEL_VERSION:'m1',SELECTION_VERSION:'s1',ACTIVE_BUDGET_POLICY:{version:'b2',dailyCredits:7,monthlyCredits:200,providerFloor:60},
@@ -27,6 +27,14 @@ test('recorded research files may change without breaking the freeze', () => {
   const frozen = make();
   const research = make({}, p => (p === 'config/research/registry.json' ? 'c' : 'a').repeat(64));
   assert.deepEqual(diffManifest(frozen, research), []);
+});
+
+test('a recorded schedule or research change is reported (never silent) but is not drift', () => {
+  const frozen = make();
+  const sched = make({}, p => (p === 'vercel.json' ? 'd' : 'a').repeat(64));
+  assert.deepEqual(diffManifest(frozen, sched), []);
+  assert.deepEqual(recordedChanges(frozen, sched), [{path: 'vercel.json', frozen: 'a'.repeat(12), current: 'd'.repeat(12)}]);
+  assert.deepEqual(recordedChanges(frozen, make()), []);
 });
 
 test('the stock registration in the manifest never carries a credential or account identifier', () => {

@@ -68,3 +68,11 @@ export function diffManifest(frozen,current){
  }
  return out;
 }
+
+/** Recorded (not frozen) files that changed: never drift, but always reported so a schedule or research change made
+ * during the experiment is documented as a change in data collection. */
+export function recordedChanges(frozen,current){
+ const a=frozen.recordedFiles??{},b=current.recordedFiles??{};
+ return [...new Set([...Object.keys(a),...Object.keys(b)])].sort().filter(p=>a[p]!==b[p])
+  .map(p=>({path:p,frozen:(a[p]??'missing').slice(0,12),current:(b[p]??'missing').slice(0,12)}));
+}

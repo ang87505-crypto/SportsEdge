@@ -3,11 +3,11 @@
 // settlement, and records the reviewed constants. It never writes to a database, a provider or a broker, and it
 // changes no setting. Usage:
 //   node --experimental-strip-types scripts/experiment-manifest.mjs snapshot [out.json]
-//   node --experimental-strip-types scripts/experiment-manifest.mjs verify <manifest.json>   (exit 1 on any drift)
+//   node --experimental-strip-types scripts/experiment-manifest.mjs verify <manifest.json>   (exit 1 on any drift; recorded changes are listed)
 import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {buildManifest,diffManifest} from './experiment-manifest-lib.mjs';
+import {buildManifest,diffManifest,recordedChanges} from './experiment-manifest-lib.mjs';
 
 const root=new URL('../',import.meta.url);
 const read=p=>readFileSync(new URL(p,root));
@@ -28,7 +28,9 @@ if(mode==='snapshot'){
  if(file)writeFileSync(file,text);else process.stdout.write(text);
 }else if(mode==='verify'&&file){
  const frozen=JSON.parse(readFileSync(file,'utf8'));
- const d=diffManifest(frozen,manifest);
- console.log(JSON.stringify({status:d.length?'DRIFT':'FROZEN_MATCH',frozenAt:frozen.generatedAt,frozenCommit:frozen.gitCommit,currentCommit:manifest.gitCommit,drift:d}));
+ const d=diffManifest(frozen,manifest),r=recordedChanges(frozen,manifest);
+ // Recorded changes (schedules, research registries) never fail the freeze but are always reported.
+ const status=d.length?'DRIFT':r.length?'FROZEN_MATCH_WITH_RECORDED_CHANGES':'FROZEN_MATCH';
+ console.log(JSON.stringify({status,frozenAt:frozen.generatedAt,frozenCommit:frozen.gitCommit,currentCommit:manifest.gitCommit,drift:d,recordedChanges:r}));
  if(d.length)process.exitCode=1;
 }else{console.error('usage: snapshot [out.json] | verify <manifest.json>');process.exitCode=2;}
