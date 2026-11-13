@@ -44,6 +44,7 @@ const countMicros=(v:unknown):number=>{
 export type MarketSnapshot={
  ticker:string;eventTicker:string;series:K0Series;title:string;status:string;
  closeTime:string;updatedTime:string|null;fetchedAt:string;rulesPrimary:string|null;
+ rulesSecondary:string|null;isProvisional:boolean;
  /** Listing prices deliberately excluded: they do not prove executable liquidity. */
 };
 export function normalizeMarket(input:unknown,series:K0Series,fetchedAt:string):MarketSnapshot{
@@ -52,7 +53,9 @@ export function normalizeMarket(input:unknown,series:K0Series,fetchedAt:string):
  return {ticker,eventTicker:requiredString(m.event_ticker,'EVENT'),series,
   title:requiredString(m.title,'TITLE'),status:requiredString(m.status,'STATUS'),
   closeTime:timeString(m.close_time,'CLOSE'),updatedTime:m.updated_time?timeString(m.updated_time,'UPDATED'):null,
-  fetchedAt:timeString(fetchedAt,'FETCHED'),rulesPrimary:typeof m.rules_primary==='string'&&m.rules_primary.trim()?m.rules_primary:null};
+  fetchedAt:timeString(fetchedAt,'FETCHED'),rulesPrimary:typeof m.rules_primary==='string'&&m.rules_primary.trim()?m.rules_primary:null,
+  rulesSecondary:typeof m.rules_secondary==='string'&&m.rules_secondary.trim()?m.rules_secondary:null,
+  isProvisional:m.is_provisional===true};
 }
 type Level={priceMicros:number;sizeMicros:number};
 const levels=(v:unknown):Level[]=>{
@@ -137,14 +140,24 @@ export async function getWeatherOfficialResult(
  if(!TICKER.test(ticker)||!ticker.startsWith('KXHIGHNY-'))throw Error('KALSHI_TICKER_NOT_ALLOWED');
  const response=record(await getJson('/markets/'+ticker,fetcher));
  const m=record(response.market);
- if(m.ticker!==ticker||m.market_type!=='binary'||m.status!=='settled'||
+ // The public list's status=settled FILTER and each market record's lifecycle status
+ // are not necessarily the same vocabulary. Require a terminal status, a real
+ // settlement timestamp, a binary result and no provisional flag.
+ if(m.ticker!==ticker||m.market_type!=='binary'||
+  !['settled','finalized'].includes(String(m.status))||m.is_provisional===true||
   (m.result!=='yes'&&m.result!=='no'))throw Error('KALSHI_RESULT_NOT_FINAL');
+ if(m.settlement_value_dollars!==undefined&&m.settlement_value_dollars!==null){
+  const value=moneyMicros(m.settlement_value_dollars);
+  const expected=m.result==='yes'?ONE_DOLLAR_MICROS:0;
+  if(value!==expected)throw Error('KALSHI_SETTLEMENT_PAYOUT_CONFLICT');
+ }
  const fetchedAt=timeString(now(),'FETCHED');
  const settledAt=timeString(m.settlement_ts,'SETTLED');
  if(Date.parse(fetchedAt)<Date.parse(settledAt))throw Error('KALSHI_SETTLEMENT_FUTURE');
  const rulesPrimary=requiredString(m.rules_primary,'RULES');
+ const rulesSecondary=typeof m.rules_secondary==='string'&&m.rules_secondary.trim()?m.rules_secondary:null;
  return {marketTicker:ticker,eventTicker:requiredString(m.event_ticker,'EVENT'),
-  status:'settled',result:m.result,rulesPrimary,
+  status:'settled',result:m.result,rulesPrimary,rulesSecondary,
   settledAt,fetchedAt,sourceDigest:kalshiSha256('sha256').update(JSON.stringify(response)).digest('hex'),
   source:'kalshi-public-market-get'};
 }
