@@ -21,7 +21,9 @@ export default function PredictionMarketsKalshiPage(){
     and no Kalshi data is being collected by this page.</p>
    <KeyValues items={[
     ['Market data','Code-only; live access disabled pending rights review'],
-    ['Candidate first category','NYC weather, research only'],
+    ['First research categories','NYC weather and US CPI, offline research only'],
+    ['Independent weather replay','Chronological NWS forecasts vs verified station highs; no market input'],
+    ['Independent CPI source','BLS CPI-U current published series; release vintages not reconstructed'],
     ['Independent forecast source','NWS hourly grid API; not the official station result'],
     ['Trading','Disabled — no credentials or trade endpoint'],
     ['Production schedule','None'],
@@ -34,7 +36,7 @@ export default function PredictionMarketsKalshiPage(){
     A public API endpoint is not proof that those uses are licensed. Written permission or a
     separate applicable authorized API-data license must be verified before collection,
     modeling, storage, or public display is enabled.</p>
-   <p>Only after that review can we verify a sample of live prices, pair those quotes with
+   <p>Independent NOAA/NWS weather forecasts and BLS CPI observations can be studied without Kalshi data. Real historical as-of forecasts and original release vintages remain prerequisites for meaningful backtests. Only after permission review can we verify a sample of live prices, pair those quotes with
     independently timed forecasts, paper-grade settlements, and evaluate costs, calibration
     and distinct events. Paper results must not be mistaken for real fills.</p>
    <p><a href="https://kalshi-public-docs.s3.amazonaws.com/kalshi-data-terms-of-service.pdf"
