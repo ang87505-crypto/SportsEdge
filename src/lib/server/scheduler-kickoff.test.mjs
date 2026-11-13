@@ -167,6 +167,45 @@ test('the odd-hour-only backup set (before 2026-11-13) leaves late-window gaps u
  assert.ok(uncovered>200,String(uncovered));
 });
 
+// Delay matrix (pure timing model, no network). Sources: Vercel Hobby "anywhere inside the hour" is DOCUMENTED (0-59 min);
+// GitHub dispatch queue 10-38 min after the hour is OBSERVED (2026-11-12); 0-75 min is the documented+observed budget;
+// 0-90 min is HYPOTHETICAL. Fixed delays model a scheduler that is late by the same amount every hour.
+function lateCoverage(hours,minDelay,maxDelay,need=1){
+ return import('../props/capture-plan.ts').then(({captureWindows})=>{
+  const holes=[];
+  for(let m=17*60;m<=28*60;m+=1){
+   const w=captureWindows(new Date(Date.UTC(2026,10,10,0,m)).toISOString());const from=Date.parse(w.lateFrom),to=Date.parse(w.lateTo);
+   let n=0;for(const h of hours)for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s+minDelay*60_000>=from&&s+maxDelay*60_000<=to)n++;}
+   if(n<need)holes.push(m);
+  }
+  return holes;
+ });
+}
+const TICK_HOURS=()=>Object.values(SCHEDULER_SLOTS).filter(s=>s.tick).map(s=>s.hourUtc);
+
+test('delay matrix: hourly backups guarantee a LATE capture for fixed 0/30/60/75/90 min delays and 0-30/0-60/0-75 min spreads',async()=>{
+ for(const [a,b] of [[0,0],[30,30],[60,60],[75,75],[90,90],[10,38],[0,30],[0,60],[0,75]])
+  assert.deepEqual(await lateCoverage(TICK_HOURS(),a,b),[],`delay ${a}-${b} min`);
+});
+
+test('delay matrix residual: a 0-90 min spread (hypothetical) leaves 4-minute holes just after each hour; not hidden',async()=>{
+ const holes=await lateCoverage(TICK_HOURS(),0,90);
+ assert.equal(holes.length,44);
+ assert.ok(holes.every(m=>m%60>=1&&m%60<=4),'holes are tips at :01-:04 past the hour');
+});
+
+test('residual risk, not hidden: with GitHub dropped, many tips depend on a single Vercel backup firing',async()=>{
+ // Two backups are guaranteed only where the window fits two delay ranges; a missed Vercel run there is survivable.
+ assert.equal((await lateCoverage(TICK_HOURS(),10,38,2)).length,22);   // observed delays: only tips at :11-:12
+ assert.equal((await lateCoverage(TICK_HOURS(),0,60,2)).length,374);   // documented Vercel timing: 374 of 661 tip minutes
+ // The odd-hour set never has two guaranteed backups at documented timing.
+ assert.equal((await lateCoverage([13,15,17,19,21,23,1],0,60,2)).length,661);
+});
+
+test('both schedulers down is not survivable by timing alone: with no backup at all, every tip is uncovered',async()=>{
+ assert.equal((await lateCoverage([],0,0)).length,661);
+});
+
 test('weekly learning backup: Sunday 16 UTC only, kind=weekly trigger=backup, skipped when today\'s run exists',async()=>{
  const calls=[];
  const r=await handleSchedulerKickoff(req(),'props-learn-weekly',env,{now:at('2026-11-15T16:20:00Z'),fetcher:fetcher(calls,{runs:[]})});
