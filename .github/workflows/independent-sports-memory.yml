@@ -35,12 +35,19 @@ jobs:
       - name: Offline fail-closed collector contract tests
         run: node --test scripts/independent-sports-collect.test.mjs
       - name: Checkout append-only research-data branch
+        id: research_checkout
         run: bash .github/scripts/research-data-branch.sh checkout
       - name: Freeze NFL data, one provider GET at most on the first run per date
+        id: nfl
         if: env.LEAGUE == 'nfl' || env.LEAGUE == 'both'
         run: node scripts/independent-sports-collect.mjs nfl research-data
-      - name: Freeze NHL data, one provider GET at most on the first run per date
-        if: env.LEAGUE == 'nhl' || env.LEAGUE == 'both'
+      - name: Persist successful NFL snapshot without waiting for NHL
+        if: always() && steps.nfl.outcome == 'success'
+        run: bash .github/scripts/research-data-branch.sh commit "independent NFL research ${{ github.run_id }}"
+      - name: Freeze NHL data even if an independent NFL download failed
+        id: nhl
+        if: always() && steps.research_checkout.outcome == 'success' && (env.LEAGUE == 'nhl' || env.LEAGUE == 'both')
         run: node scripts/independent-sports-collect.mjs nhl research-data
-      - name: Commit independent-source results only
-        run: bash .github/scripts/research-data-branch.sh commit "independent NFL NHL research ${{ github.run_id }}"
+      - name: Persist successful NHL snapshot even if NFL failed
+        if: always() && steps.nhl.outcome == 'success'
+        run: bash .github/scripts/research-data-branch.sh commit "independent NHL research ${{ github.run_id }}"
