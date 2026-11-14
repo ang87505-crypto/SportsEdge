@@ -129,18 +129,51 @@ export function isManualOperationQuestion(message:string):boolean{
 }
 export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
  const s=conversationalText(message);
- const kalshi=q.domain==='kalshi'||/\b(kalshi|noaa|bls|cpi|weather)\b/.test(s);
- const stocks=q.domain==='stocks'||/\b(stocks?|alpaca|autopilot|broker|fills?|portfolio)\b/.test(s);
- const sports=q.domain==='sports'||/\b(nba|props?|prizepicks|pick6|picks?|box scores?)\b/.test(s);
- const source=kalshi?'Independent Kalshi research':stocks?'Stock PAPER autopilot':sports?'Sports picks and graded results':'Automation monitor';
- const links=DESTINATIONS.filter(d=>d.label===source||d.label==='Automation monitor'||d.label==='GitHub Actions workflows');
+ const publicEvent=q.domain==='kalshi'||/\b(kalshi|noaa|nws|bls|cpi|weather|inflation)\b/.test(s);
+ const stocks=q.domain==='stocks'||/\b(stocks?|alpaca|autopilot|broker|fills?|portfolio|shares?)\b/.test(s);
+ const sports=q.domain==='sports'||/\b(nba|props?|prizepicks|pick6|picks?|box scores?|nfl|nhl|mlb|wnba)\b/.test(s);
+ const stockResearch=q.domain==='research'||stocks&&/\b(backtests?|research|retrain|models?|strateg(?:y|ies)|calibrat\w*)\b/.test(s);
+ const sportsResearch=sports&&/\b(backtests?|research|retrain|models?|algorithm|calibrat\w*|learning)\b/.test(s);
+ const newLeague=/\b(nfl|nhl|mlb|wnba|college football|college basketball)\b/.test(s);
+ const deploy=/\b(deploy|merge|pull request|release|production)\b/.test(s);
+ const release=/\b(activate|enable|disable|turn on|turn off)\b/.test(s);
+ let labels:string[];
+ let note:string;
+ if(deploy){
+  labels=['GitHub Actions workflows','Automation monitor'];
+  note='Deployment and merging require a separate code review and release decision. These links do not deploy anything.';
+ }else if(publicEvent){
+  labels=['Independent Kalshi research','Automation monitor','GitHub Actions workflows'];
+  note='NOAA/BLS archive research is separate from Kalshi exchange access; an archive is not a verified tradable opportunity.';
+ }else if(newLeague){
+  labels=['Sports games','GitHub Actions workflows','Automation monitor'];
+  note='Experimental free results archives are not evidence that new-league forecasting or betting is active.';
+ }else if(stockResearch){
+  labels=['Stock strategy research','Stock PAPER autopilot','Automation monitor'];
+  note='Historical research and shadow learning do not enable broker orders or promote a stock strategy.';
+ }else if(stocks){
+  labels=['Stock PAPER autopilot','Alpaca PAPER account','Automation monitor'];
+  note='Stock PAPER account controls require owner sign-in and a separate account preflight. Chat cannot start or submit orders.';
+ }else if(sportsResearch){
+  labels=['AI Learning Lab','All recorded sports predictions','Sports picks and graded results'];
+  note='Learning Lab comparisons are research only; the active NBA props model and virtual stake are unchanged.';
+ }else if(sports){
+  labels=['Sports picks and graded results','All recorded sports predictions','Automation monitor'];
+  note='Collector receipts and virtual entries must be verified; schedules do not imply any picks were placed.';
+ }else{
+  labels=['Automation monitor','GitHub Actions workflows','Ask SportsEdge'];
+  note='Check existing run receipts before concluding a scheduled task succeeded.';
+ }
+ if(release&&!deploy)note+=' Activation is not performed from this chat.';
+ const matches=labels.map(label=>DESTINATIONS.find(d=>d.label===label)).filter((d):d is Destination=>!!d);
  const action=/\b(retrain|train|model|algorithm|learning)\b/.test(s)?'Model training and promotion':
   /\b(deploy|merge|release|activate|enable|disable)\b/.test(s)?'Release or activation':
   /\b(collect|settle|backfill|sync|refresh)\b/.test(s)?'Collection or settlement':
   /\b(reconcile|execute|run|trigger|dispatch|restart)\b/.test(s)?'Workflow or execution':'Operation';
  return {
-  text:action+' cannot be performed automatically by asking this chat. Nothing was changed. Open the linked owner page to inspect the current state, then use its authorized controls or the documented GitHub workflow. The assistant cannot guarantee a job is running just because it is scheduled, and it will not bypass release approvals.',
-  cards:[{kind:'links',items:links.map(x=>({label:x.label,href:x.href}))}],
+  text:action+' cannot be performed automatically by asking this chat. Nothing was changed. '+note+
+   ' Open a linked page to inspect recorded evidence and any available authorized control; GitHub Actions lists actual workflow runs.',
+  cards:[{kind:'links',items:matches.map(x=>({label:x.label,href:x.href}))}],
   suggestions:['Is everything running?','What needs my approval?'],
   context:{domain:q.domain??'all',topic:'automation'}
  };
