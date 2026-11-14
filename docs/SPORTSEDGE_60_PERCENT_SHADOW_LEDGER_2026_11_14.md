@@ -30,6 +30,10 @@ These benchmark prices are **never claimed to be executable**. They do **not** r
 
 If a future authorized sportsbook-price study is approved, only exact same-line PRE-DECISION quotes from the existing `props_book_quotes` table may be matched; never reconstruct market odds from the outcome or post-lock prices. A hypothetical positive model edge at imaginary 2.00 odds is not a profitable executable opportunity.
 
+## How a slate changes win percentage
+
+The read-only `/paper-betting/shadow` page shows a selected NBA **Eastern-time game-date slate**, not the local calendar date when a forecast was captured or graded. For each slate it computes directional wins and losses before the slate and through that slate; ties, voids and pending events do not count toward the denominator. The difference is expressed in **percentage points**, never confused with percentage growth. If the prior denominator is empty, the impact is *not measurable yet*, not 0%. It is recalculated from the latest verified result revisions whenever the page loads; no new API bill or database insert is needed. This research win rate is distinct from actual multi-pick entry profit, and a stored pick decision is not automatically an entered bet.
+
 ## Coverage and limits
 
 The goal of **15–20 unique games/day** is a study target, not a forced number of bets. SportsEdge cannot manufacture 15–20 priced NBA games/day under its current credit policy. The present props collector budgets roughly 7 worst-case credits/day and 200/30 days; an event-odds request typically reserves 3 credits for three markets. Free NFL/NHL results archives are in draft PR #172 but are **not player-prop forecasts**. Expansion needs separately licensed sources, game/event ID reconciliation, sport-specific models, and forward quality checks before paper picks are recorded.
