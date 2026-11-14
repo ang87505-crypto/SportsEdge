@@ -44,7 +44,7 @@ test('validated fill linked to frozen decision plus close mark is forward observ
   decisions:[decision()],intents:[intent()],daily:[mark('2026-11-16',101000)]}));
  assert.equal(a.status,'OBSERVING_FORWARD_PAPER');
  assert.equal(a.filledIntents,1);assert.equal(a.intentsLinkedToVisibleDecision,1);
- assert.equal(a.verifiedCloses,1);assert.equal(a.portfolioReturn,0.01);
+ assert.equal(a.verifiedCloses,1);assert.ok(Math.abs(a.portfolioReturn-0.01)<1e-12);
  assert.equal(a.completedRoundTrips,null);assert.equal(a.tradeWinRate,null);
  assert.equal(a.benchmarkExcessReturn,null,'SPY needs two verified closes');
 });
