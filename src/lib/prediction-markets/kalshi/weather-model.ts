@@ -1,12 +1,13 @@
 /**
- * Independent weather research model. Requires real historical forecasts AND observed Central
- * Park station highs with documented availability timestamps. Uses ZERO Kalshi input.
+ * Independent weather research model. Requires independently archived historical grid forecasts and independently
+ * sourced Central Park station highs (including explicitly preliminary daily NWS CLI)
+ * with documented original availability timestamps. Uses ZERO Kalshi input.
  * Does not parse market wording, set stakes, or place orders.
  */
 export type WeatherTrainingDay={
  localDate:string;forecastHighF:number;observedHighF:number;
  forecastAvailableAt:string;observedAvailableAt:string;
- forecastSource:'NWS';observationSource:'OFFICIAL_CENTRAL_PARK';
+ forecastSource:'NWS';observationSource:'OFFICIAL_CENTRAL_PARK'|'NWS_CLI_PRELIMINARY_CENTRAL_PARK';
 };
 export type WeatherRangeStudy={
  modelId:'nws-empirical-error-v0-research';trainingDays:number;probabilityPpm:number;
@@ -28,7 +29,7 @@ export function estimateStationTemperatureRange(x:{
  if(x.targetLocalDate<=x.asOf.slice(0,10))throw Error('WEATHER_TARGET_NOT_FUTURE');
  const seen=new Set<string>();const residuals:number[]=[];
  for(const r of x.training){
-  if(r.forecastSource!=='NWS'||r.observationSource!=='OFFICIAL_CENTRAL_PARK'||
+  if(r.forecastSource!=='NWS'||!['OFFICIAL_CENTRAL_PARK','NWS_CLI_PRELIMINARY_CENTRAL_PARK'].includes(r.observationSource)||
    !date(r.localDate)||!time(r.forecastAvailableAt)||!time(r.observedAvailableAt)||
    !finite(r.forecastHighF)||!finite(r.observedHighF)||
    r.localDate>=x.targetLocalDate||Date.parse(r.observedAvailableAt)>=Date.parse(x.asOf)||
@@ -45,5 +46,5 @@ export function estimateStationTemperatureRange(x:{
  return {modelId:'nws-empirical-error-v0-research',trainingDays:residuals.length,
   probabilityPpm,asOf:x.asOf,targetLocalDate:x.targetLocalDate,
   referenceForecastHighF:x.forecastHighF,rangeMinF:x.rangeMinF,rangeMaxF:x.rangeMaxF,
-  caveat:'Exploratory independently sourced climatology. Different forecast grid and station, small samples, seasonality, contract rounding/rules, calibration and actual as-of training must be verified. Not proven against market prices.'};
+  caveat:'Exploratory independent model, station highs may be preliminary NWS CLI not certified. Different forecast grid and station, small samples, seasonality, contract rounding/rules, calibration and actual as-of training must be verified. Not proven against market prices.'};
 }
