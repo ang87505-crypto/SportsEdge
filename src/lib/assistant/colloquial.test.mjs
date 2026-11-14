@@ -31,3 +31,20 @@ test('normalizes natural performance and improvement phrasings',()=>{
  assert.equal(conversationalText('what do we do from here'),'how can we improve from here');
  assert.equal(conversationalText('how can we get better from here'),'how can we improve from here');
 });
+
+test('short chat slang and misspelled operational vocabulary stay bounded',()=>{
+ for(const [text,want] of [
+  ['r u checking stocks rn','are you checking stocks right now'],
+  ['pls show kalish wheatherz','please show kalshi weather'],
+  ['whr is the dashbord','where is the dashboard'],
+  ['ystrdy botz failed','yesterday bots failed'],
+  ['wat commnads can you do','what commands can you do'],
+  ['can you retarin the algorythm','can you retrain the algorithm'],
+  ['show oppertunities for kalhsi','show opportunities for kalshi']
+ ])assert.equal(conversationalText(text),want,text);
+});
+test('mis-spelled commands cannot alter ticker, quantity, player or odds values',()=>{
+ assert.equal(conversationalText('pause OXY buy AAPL 125 @ 11.5'), 'pause oxy buy aapl 125 11.5');
+ assert.equal(conversationalText('Why 12.5 rebounds for Sengun?'),'why 12.5 rebounds for sengun');
+ assert.equal(conversationalText('XYZ 9000 moneymade'),'xyz 9000 moneymade');
+});
