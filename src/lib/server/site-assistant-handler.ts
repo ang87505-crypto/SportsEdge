@@ -78,11 +78,12 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  const message=b.message,understood=conversationalText(message),q=routeQuestion(message,context);
  const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
  if(isAssistantAvailabilityQuestion(message))return respond(assistantAvailabilityAnswer());
- if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
- // Explicit run/retrain/deploy requests are answered with safe destination
- // links, not silently treated as owner POSTs or as already-completed work.
+ // A procedural request like "where can I go to stop the bot?" needs
+ // safety/approval guidance, not a bare page link or an immediate command.
+ // Explicit signed-in owner actions still reach the separate confirm path.
  if(isManualOperationQuestion(message)&&!parseControlRequest(message))
   return respond(manualOperationAnswer(message,q));
+ if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
  const unsupportedLeague=unsupportedLeagueAnswer(message);
  if(unsupportedLeague)return respond(unsupportedLeague);
  if(q.topic==='help')return respond(supportedCommandsAnswer());
