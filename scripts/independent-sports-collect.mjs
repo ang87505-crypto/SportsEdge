@@ -19,9 +19,9 @@ const MAX_CSV_BYTES=6_000_000;
 const MAX_GAMES={nfl:300,nhl:1600};
 export const SPORTS_SOURCES=Object.freeze({
  nfl:Object.freeze({
-  league:'nfl',license:'NFLVERSE_PUBLIC_DATA_ATTRIBUTION_REVIEW',
-  attribution:'nflverse, Lee Sharpe/nfldata; see https://github.com/nflverse and https://github.com/nflverse/nfldata',
-  url:'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv',
+  league:'nfl',license:'NFLVERSE_CC_BY_4_0',
+  attribution:'nflverse + Lee Sharpe/nfldata; CC BY 4.0. https://github.com/nflverse/nflverse-data/releases/tag/schedules',
+  url:'https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv',
   description:'NFL game schedule/scores only; excludes source betting lines, player data and any model prediction',
  }),
  nhl:Object.freeze({
@@ -117,7 +117,7 @@ function normalizedNHL(row,at,season){
   !/^(PR|R|P|A)$/.test(row.game_type))throw Error('SPORTS_NHL_BAD_GAME');
  const date=gameDay(row.game_date),home=score(row.home_score),away=score(row.away_score);
  if((home===null)!==(away===null))throw Error('SPORTS_NHL_PARTIAL_SCORE');
- const gameTime=row.game_time||null;
+ const gameTime=row.game_time&&row.game_time!=='NA'?row.game_time:null;
  if(gameTime&&!(Number.isFinite(Date.parse(gameTime))))throw Error('SPORTS_NHL_BAD_START');
  const finished=date<at.slice(0,10)&&home!==null&&
   /^(OFF|FINAL|F|7)$/i.test(row.game_state??'');
