@@ -106,3 +106,30 @@ test('wrong model versions, malformed data and too many rows fail safely',()=>{
  assert.throws(()=>shadowLedger(raw(), 'not-a-time'),/SHADOW_INVALID_TIME/);
  assert.throws(()=>shadowLedger(raw(Array(20001).fill(obs(1))),baseTime),/SHADOW_TOO_MANY_ROWS/);
 });
+
+test('slate changes cumulative win percentage only after valid grades',()=>{
+ const old=obs(1);
+ const next=obs(2,'nba-200','prizepicks',{
+  player_name:'Next Day Athlete',lock_at:'2026-11-13T23:00:00.000Z',
+  provider_last_update:'2026-11-13T18:58:00.000Z',
+  ingested_at:'2026-11-13T19:00:00.000Z',recorded_at:'2026-11-13T19:00:10.000Z'
+ });
+ const p2=pred(2,2,0.65,0.35,0,{
+  athlete_id:'9988',predicted_at:'2026-11-13T19:00:20.000Z',
+  data_cutoff:'2026-11-13T18:55:00.000Z'
+ });
+ const grades=[grade(1,'more',13),grade(2,'less',9,1,'2026-11-14T03:00:00Z')];
+ const ended=shadowLedger(raw([old,next],[pred(1),p2],grades));
+ const impact=ended.impact('2026-11-13');
+ assert.equal(impact.prior.winRate,1);
+ assert.equal(impact.daily.winRate,0);
+ assert.equal(impact.through.winRate,0.5);
+ assert.equal(impact.deltaPoints,-50);
+ assert.equal(impact.daily.hypotheticalNetCents,-500);
+ const pending=shadowLedger(raw([old,next],[pred(1),p2],[grade(1,'more',13)])).impact('2026-11-13');
+ assert.equal(pending.daily.winRate,null);
+ assert.equal(pending.through.winRate,1);
+ assert.equal(pending.deltaPoints,0);
+ assert.equal(pending.daily.pending,1);
+ assert.throws(()=>ended.impact('not-a-date'),/SHADOW_INVALID_DATE/);
+});
