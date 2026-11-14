@@ -16,6 +16,7 @@ on:
       - Recurring PAPER worker (manual)
       - Research collect (nightly)
       - Research evaluate (monthly)
+      - Independent NYC weather memory (NOAA only)
       - Independent PAPER release checks
     types: [completed]
     branches: [main]
