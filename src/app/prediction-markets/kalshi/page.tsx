@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {Suspense} from 'react';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
 
@@ -9,15 +10,10 @@ import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/pre
 export const metadata={title:'Prediction markets research · SportsEdge',
  description:'Kalshi integration research status; no live collection or real-money trading.'};
 
-export default async function PredictionMarketsKalshiPage(){
+async function IndependentWeatherPanels(){
  const asOf=new Date().toISOString();
  const [archive,scorecard]=await Promise.all([loadLatestIndependentWeather(asOf),loadLatestWeatherScorecard(asOf)]);
  return <>
-  <PageHeading title="Prediction markets research"
-   description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
-   action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
-  <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
-   No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
   <Panel title="Independent NYC weather forecast memory" actions={<Evidence kind={archive.state==='RECORDED'?'recorded':'unavailable'}/>}>
    {archive.state==='RECORDED'?<>
     <p>Archived from the public NWS hourly grid forecast, before the target weather day. The comparison uses
@@ -68,6 +64,20 @@ export default async function PredictionMarketsKalshiPage(){
     'The archived independent scorecard could not be verified. No accuracy or trading results are inferred.':
     'There are not yet completed archived government forecast/outcome pairs to summarize.'}</p>}
   </Panel>
+ </>;
+}
+export default function PredictionMarketsKalshiPage(){
+ return <>
+  <PageHeading title="Prediction markets research"
+   description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
+   action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
+  <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
+   No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
+  <Suspense fallback={<Panel title="Independent NOAA weather memory">
+    <p>Checking stored public weather research; no Kalshi API request is made.</p>
+   </Panel>}>
+    <IndependentWeatherPanels/>
+  </Suspense>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
    <p>Offline market data normalization, tentative fee-aware paper forecasts, strict settlement grading and
     research evaluation have been implemented on a draft branch. No forward evidence is available yet,
