@@ -138,9 +138,16 @@ export function compose(results:ToolResult[],filter?:Plan['filter']):string{
      (Math.min(a.graded,b.graded)<100?' With fewer than 100 graded picks in a period, a gap this size can be chance.':'')));
   }else if(r.tool==='watch_only'){
    const x=d as {label:string;threshold:string;uniqueLines:number;sourceRows:number;distinctGames:number;
+    latestSavedLineAt:string|null;latestVerifiedGradeAt:string|null;
     wins:number;losses:number;pushes:number;pending:number;unscored:number;hitRate:number|null;
     hasFurtherRows:boolean;rows:{player:string;side:'more'|'less'|null;line:number;stat:string;outcome:string}[]};
    const band=x.threshold==='all'?'all captured':x.threshold+'%+ model confidence';
+   if(x.uniqueLines===0){
+    out.push(x.label+' Watch Only ('+band+'): no qualifying saved lines in the requested window.'+
+     (x.latestSavedLineAt?' Last captured provider line: '+x.latestSavedLineAt+'.':' No recorded provider source history was available in the retained window.')+
+     ' This does not mean no market lines existed. No bets were made by this tool.');
+    continue;
+   }
    if(filter){
     const wanted=filter==='hits'?'win':'loss';
     const matched=x.rows.filter(row=>row.outcome===wanted);
