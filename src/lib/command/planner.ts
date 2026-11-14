@@ -56,6 +56,26 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
    return {calls:[stockDecision.call]};
   return null;
  }
+ // Watch Only is a distinct research ledger. Don't turn it into the capped
+ // virtual-entry stats or the speculative $5 shadow benchmark.
+ const watchPhrase=/\b(watch ?only|watchlist|tracked lines?|captured lines?|all lines|every line|saved lines?|no bets?|without betting|not paper|not entered|all predictions|every prediction|unbet|not wagered|unentered)\b/.test(t)||
+  (/\b(60|70|80)\s*(percent|%)\b/.test(t)&&/\b(lines?|picks?|predictions?|hit rate|accuracy)\b/.test(t));
+ const watchPrev=prev?.tool==='watch_only';
+ const watchFollow=watchPrev&&(/^(and|what about|how about|same for|now|ok|okay|which ones)\b/.test(t)||t.split(' ').length<=4);
+ if(watchPhrase||watchFollow){
+  // Distinct platforms are optional filters; these do not authenticate to
+  // PrizePicks or call The Odds API.
+  const match=t.match(/\b(60|70|80)\s*(%|percent)\b/);
+  const threshold=match?.[1]??(watchPrev?String(prev.input.threshold??'all'):'all');
+  const prevPeriod=watchPrev?prev.input.period as Period|undefined:undefined;
+  const period=periods[0]??prevPeriod??'today';
+  const platform=/\bpick6\b|\bpick 6\b/.test(t)&&!/\bprizepicks\b/.test(t)?'pick6':
+   /\bprizepicks\b/.test(t)&&!/\bpick6\b|\bpick 6\b/.test(t)?'prizepicks':
+   watchPrev?String(prev.input.platform??'all'):'all';
+  const filter=watchFollow&&/\b(miss|missed|wrong|lost)\b/.test(t)?'misses':
+   watchFollow&&/\b(hits?|correct|won)\b/.test(t)?'hits':undefined;
+  return {calls:[{tool:'watch_only',input:{period,threshold,platform}}],...(filter?{filter}:{})};
+ }
  // Comparison, including "how does that compare with last week?"
  if(/\b(compare|compared|comparison|versus|vs|better than|worse than|than the)\b/.test(t)&&(sportsy||prev||periods.length)){
   // "compare THAT with yesterday": the previous answer's period is the first side.
@@ -115,6 +135,27 @@ export function compose(results:ToolResult[],filter?:Plan['filter']):string{
    out.push(`${side(a)} ${side(b)}`+
     (diff===null?' One of the periods has no graded picks, so there is nothing to compare yet.':` Difference: ${diff>=0?'+':''}${diff.toFixed(1)} points.`+
      (Math.min(a.graded,b.graded)<100?' With fewer than 100 graded picks in a period, a gap this size can be chance.':'')));
+  }else if(r.tool==='watch_only'){
+   const x=d as {label:string;threshold:string;uniqueLines:number;sourceRows:number;distinctGames:number;
+    wins:number;losses:number;pushes:number;pending:number;unscored:number;hitRate:number|null;
+    hasFurtherRows:boolean;rows:{player:string;side:'more'|'less'|null;line:number;stat:string;outcome:string}[]};
+   const band=x.threshold==='all'?'all captured':x.threshold+'%+ model confidence';
+   if(filter){
+    const wanted=filter==='hits'?'win':'loss';
+    const matched=x.rows.filter(row=>row.outcome===wanted);
+    out.push(x.label+' Watch Only ('+band+'): '+(filter==='hits'?'correct':'incorrect')+
+     ' among the first '+x.rows.length+' displayed lines: '+(matched.length?
+     matched.map(v=>v.player+' '+(v.side??'unscored')+' '+v.line+' '+v.stat).join('; '):
+     'none in the displayed sample')+'. Full, verified counts are '+x.wins+' correct and '+x.losses+
+     ' incorrect. Open the Watch Only ledger to see all recorded lines.');
+    continue;
+   }
+   out.push(x.label+' Watch Only ('+band+'): '+x.uniqueLines+' distinct saved lines from '+
+    x.distinctGames+' games ('+x.sourceRows+' provider rows). '+x.wins+' correct, '+x.losses+
+    ' incorrect, '+x.pending+' pending, '+x.unscored+' unscored, '+x.pushes+
+    ' ties/voids; directional hit rate '+pct(x.hitRate)+
+    '. These are model observations, NOT actual or virtual bets. No profit or executable price is inferred.'+
+    (x.hasFurtherRows?' Showing only a sample of the lines; counts include all verified matches.':''));
   }else if(r.tool==='virtual_bankroll'){
    const p=d.prizepicks as {balanceCents:number|null;netCents:number|null;roi:number|null;record:{won:number;lost:number;refund:number};openEntries:number};
    out.push(`Virtual PrizePicks balance ${usd(p.balanceCents)} (net ${usd(p.netCents)}, ROI ${pct(p.roi)}), record ${p.record.won}–${p.record.lost} with ${p.openEntries} open. Paper money only.`);
@@ -154,6 +195,7 @@ export function compose(results:ToolResult[],filter?:Plan['filter']):string{
 
 export function suggestionsFor(calls:ToolCall[]):string[]{
  const t=calls[0]?.tool;
+ if(t==='watch_only')return ['And yesterday?','What about 70%+?','Which ones missed?'];
  if(t==='sports_results')return ['Which ones missed?','Compare with the week before','Virtual bankroll'];
  if(t==='compare_periods')return ['Which ones missed?','Show active experiments','Is everything running?'];
  if(t==='learning_lab')return ['How did we do this week?','Show job health','Upcoming picks'];
