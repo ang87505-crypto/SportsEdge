@@ -5,7 +5,7 @@
 ## Scope and providers
 - NFL: `nflverse/nflverse-data` **schedules** release `games.csv` from `https://github.com/nflverse/nflverse-data/releases/tag/schedules`. See its CC BY 4.0 license and documentation; credit nflverse and Lee Sharpe (nfldata). This is the licensed release rather than scraping third-party bookmaker lines.
 - NHL: SportsDataverse `nhl_schedule_{endSeason}.csv` release from `https://github.com/sportsdataverse/sportsdataverse-data/releases/tag/nhl_schedules`, CC BY 4.0; credit SportsDataverse / fastRhockey.
-- Both: one **GET per league and UTC date**, at most two free public-dataset requests per day. Repeated completed dates verify immutable files and consume **zero** further source requests.
+- Daily archive workflow: one **GET per league and UTC date**, at most two free public-dataset requests per scheduled collection day. Repeated completed dates verify immutable files and consume **zero** further source requests. A separately requested read-only preflight performs one additional public GET per selected league; it is never part of scheduled collection.
 - The files do not contain bookmaker spreads, odds, market identifiers, Kalshi prices, user accounts, personal records, stakes or orders. Existing Odds API costs stay exactly as before.
 
 ## Data lineage and no-lookahead
@@ -20,8 +20,19 @@ A frozen event snapshot is not a prediction or paper bet. Before enabling foreca
 - Workflow schedule is inert unless the repository **Actions variable** `SPORTSEDGE_INDEPENDENT_SPORTS_COLLECT_ENABLED` is exactly `true`. Even manual dispatch is gated. First confirm live provider schema and credits/permissions on an isolated research run.
 - Set the Actions variable only after tests pass, the source schemas are checked against real files, and you consciously approve the public data branch archive. If the first run fails schema checks, it does not write a misleading record.
 - The existing `.github/scripts/research-data-branch.sh` branch helper enforces append-only changes and disables Vercel deployments on research-data commits.
+- NFL and NHL captures are **persisted separately**. If the NHL source fails after NFL succeeds, the NFL snapshot is already committed, and the workflow still reports the NHL failure. Conversely, NHL can still be attempted after a failed NFL download. Neither failure is silently treated as successful.
 - Use `Actions → Independent NFL NHL daily research memory (no paid odds) → Run workflow` for a first supervised capture after merging and enabling; check the **research-data** branch for immutable files. GitHub schedules can be late/missed. Never rewrite a past prediction.
 - To pause collection, remove or set the variable to false. It does not affect existing sports or stock workflows.
+
+## Optional source compatibility preflight — no writes
+Run these on an isolated trusted environment with internet access, **before** merging/enabling the scheduled workflow:
+
+```sh
+node scripts/independent-sports-preflight.mjs nfl
+node scripts/independent-sports-preflight.mjs nhl
+```
+
+Each command makes **one bounded public release download**, parses the real CSV, checks required columns, current season, duplicates, timing and scores, and prints a compact source SHA, row count and timestamp. It **never writes a snapshot, database row, Git commit, bet or order**. No paid odds API or account token is used. It exits nonzero if the release file is missing, oversized, corrupt or incompatible. Verify the actual GitHub release asset, licence/attribution and both successful outputs before owner approval; a green mocked test suite is not live verification. Run the commands explicitly rather than as an automatic step in every PR, to avoid unplanned source requests.
 
 ## What to expand later
 1. **MLB:** SportsDataverse MLB schedule archive has a `.csv.gz` release. Add bounded decompression and schema tests rather than assuming it matches NHL.
@@ -36,4 +47,4 @@ Unit tests:
 node --test scripts/independent-sports-collect.test.mjs
 ```
 
-No live provider call is made in this test. A green synthetic CI suite does not certify first-source live compatibility. 
+No live provider call is made in this test. A green synthetic CI suite does not certify first-source live compatibility. Live source preflight has not yet been completed or verified from this PR. 
