@@ -8,13 +8,16 @@
  * node --experimental-strip-types scripts/kalshi-independent-weather-collect.ts outcome research-data
  */
 import {existsSync,mkdirSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {readCentralParkHourlyNws} from '../src/lib/prediction-markets/kalshi/nws.ts';
 import {nextNewYorkDate,buildIndependentWeatherMemory,verifyIndependentWeatherMemory} from '../src/lib/prediction-markets/kalshi/weather-memory.ts';
 import {readCentralParkCli,verifyCentralParkCli,independentTrainingDay,
  gradeIndependentWeather} from '../src/lib/prediction-markets/kalshi/nws-cli.ts';
 import type {WeatherTrainingDay} from '../src/lib/prediction-markets/kalshi/weather-model.ts';
+import {scoreIndependentWeatherForward} from '../src/lib/prediction-markets/kalshi/weather-scorecard.ts';
+import type {IndependentWeatherMemory} from '../src/lib/prediction-markets/kalshi/weather-memory.ts';
+import type {IndependentWeatherGrade,CentralParkCliDaily} from '../src/lib/prediction-markets/kalshi/nws-cli.ts';
 const DATE=/^\d{4}-\d{2}-\d{2}$/;
 export type Phase='forecast'|'outcome';
 export type CollectResult={status:'CREATED'|'ALREADY_ARCHIVED';phase:Phase;date:string;
@@ -23,6 +26,7 @@ const archive=(root:string)=>join(root,'kalshi-independent','nyc-weather');
 const forecastFile=(root:string,date:string)=>join(archive(root),'forecasts',date+'.json');
 const cliFile=(root:string,date:string)=>join(archive(root),'cli-daily-preliminary',date+'.json');
 const gradeFile=(root:string,date:string)=>join(archive(root),'independent-grades',date+'.json');
+const scoreFile=(root:string,date:string)=>join(archive(root),'scorecards',date+'.json');
 function stationYesterday(now:string){
  const tomorrow=nextNewYorkDate(now);
  return new Date(Date.parse(tomorrow+'T00:00:00Z')-2*86_400_000).toISOString().slice(0,10);
@@ -33,7 +37,7 @@ function readArchive<T>(path:string,verify:(v:unknown)=>T):T{
  return verify(JSON.parse(bytes));
 }
 function appendArchive(path:string,value:unknown){
- mkdirSync(join(path,'..'),{recursive:true});
+ mkdirSync(dirname(path),{recursive:true});
  // Any re-run must keep the original frozen file. The research-data commit
  // guard additionally rejects updates or deletes on the data branch.
  writeFileSync(path,JSON.stringify(value,null,2)+'\n',{flag:'wx',encoding:'utf8'});
@@ -53,6 +57,39 @@ function knownHistory(root:string):WeatherTrainingDay[]{
   out.push(independentTrainingDay(forecast,cli));
  }
  return out.sort((a,b)=>a.localDate.localeCompare(b.localDate));
+}
+/** Repair missing derived files from *already stored* government evidence, without another API call. */
+function updateDerivedWeather(root:string,date:string,cli:CentralParkCliDaily):boolean{
+ let graded=false;
+ const forecastPath=forecastFile(root,date);
+ if(existsSync(forecastPath)){
+  const frozen=readArchive(forecastPath,verifyIndependentWeatherMemory);
+  const expected=gradeIndependentWeather(frozen,cli),dest=gradeFile(root,date);
+  if(existsSync(dest)){
+   const stored=readArchive(dest,(v):IndependentWeatherGrade=>v as IndependentWeatherGrade);
+   if(JSON.stringify(stored)!==JSON.stringify(expected))throw Error('WEATHER_GRADE_ARCHIVE_CONFLICT');
+  }else{appendArchive(dest,expected);graded=true;}
+ }
+ const scoreDest=scoreFile(root,date);
+ if(!existsSync(scoreDest)){
+  const dir=join(archive(root),'independent-grades');
+  const rows:{forecast:IndependentWeatherMemory;cli:CentralParkCliDaily;grade:IndependentWeatherGrade}[]=[];
+  if(existsSync(dir)){
+   const files=readdirSync(dir).filter(x=>/^\d{4}-\d{2}-\d{2}\.json$/.test(x)&&x.slice(0,10)<=date);
+   if(files.length>1000)throw Error('WEATHER_HISTORY_EXCEEDS_LIMIT');
+   for(const file of files){
+    const id=file.slice(0,10),fc=forecastFile(root,id),obs=cliFile(root,id);
+    if(!existsSync(fc)||!existsSync(obs))throw Error('WEATHER_ARCHIVE_MISSING_GRADE_SOURCE');
+    rows.push({
+     forecast:readArchive(fc,verifyIndependentWeatherMemory),
+     cli:readArchive(obs,verifyCentralParkCli),
+     grade:readArchive(join(dir,file),(v):IndependentWeatherGrade=>v as IndependentWeatherGrade)
+    });
+   }
+  }
+  appendArchive(scoreDest,scoreIndependentWeatherForward(rows));
+ }
+ return graded;
 }
 export async function collectIndependentWeather(opts:{
  phase:Phase;root:string;userAgent:string;fetcher?:typeof fetch;now?:()=>string
@@ -86,21 +123,14 @@ export async function collectIndependentWeather(opts:{
  if(existsSync(file)){
   const old=readArchive(file,verifyCentralParkCli);
   if(old.reportDate!==date)throw Error('WEATHER_ARCHIVE_DATE_INTEGRITY');
+  updateDerivedWeather(root,date,old);
   return {status:'ALREADY_ARCHIVED',phase:'outcome',date,file,
    independentGraded:existsSync(gradeFile(root,date)),historicalTrainingDays:0};
  }
  const cli=await readCentralParkCli({userAgent:opts.userAgent,now:()=>capturedAt,fetcher:opts.fetcher});
  if(cli.reportDate!==date)throw Error('WEATHER_CLI_NOT_EXPECTED_DATE');
  appendArchive(file,cli);
- let graded=false;
- const forecastPath=forecastFile(root,date);
- if(existsSync(forecastPath)){
-  const frozen=readArchive(forecastPath,verifyIndependentWeatherMemory);
-  const grade=gradeIndependentWeather(frozen,cli);
-  const target=gradeFile(root,date);
-  if(!existsSync(target)){appendArchive(target,grade);graded=true;}
-  else throw Error('WEATHER_GRADE_ALREADY_EXISTS_WITH_MISSING_CLI');
- }
+ const graded=updateDerivedWeather(root,date,cli);
  return {status:'CREATED',phase:'outcome',date,file,independentGraded:graded,historicalTrainingDays:0};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
