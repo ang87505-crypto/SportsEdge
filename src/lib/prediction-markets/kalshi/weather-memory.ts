@@ -6,19 +6,18 @@
 import {createHash} from 'node:crypto';
 import {estimateStationTemperatureRange,type WeatherTrainingDay} from './weather-model.ts';
 import type {NWSHourlyResearch} from './nws.ts';
-const TIME_ZONE='America/New_York';
+// NYC's Central Park daily climate report uses local STANDARD time year round:
+ // midnight EST = 05:00 UTC, even when NYC civil clocks show 01:00 EDT.
+ // This is an independent NOAA climate-day convention, not a claim about Kalshi contract rules.
 const DATE=/^\d{4}-\d{2}-\d{2}$/;
-const DAY_MS=86_400_000;
-const hourParts=new Intl.DateTimeFormat('en-US',{timeZone:TIME_ZONE,year:'numeric',
- month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'});
+const DAY_MS=86_400_000,EST_OFFSET_MS=5*3600_000;
 const sha=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const ms=(s:string)=>{const t=Date.parse(s);if(!Number.isFinite(t))throw Error('WEATHER_MEMORY_INVALID_TIME');return t;};
 function nyParts(s:string){
- const parts=hourParts.formatToParts(new Date(ms(s)));
- const get=(p:string)=>parts.find(x=>x.type===p)?.value??'';
- const date=get('year')+'-'+get('month')+'-'+get('day');
+ const time=new Date(ms(s)-EST_OFFSET_MS);
+ const date=time.toISOString().slice(0,10),hour=time.getUTCHours();
  if(!DATE.test(date))throw Error('WEATHER_MEMORY_INVALID_LOCAL_DATE');
- return {date,hour:Number(get('hour'))};
+ return {date,hour};
 }
 export function nextNewYorkDate(asOf:string){
  const d=nyParts(asOf).date;
@@ -29,14 +28,14 @@ export type IndependentWeatherMemory={
  id:string;
  status:'AWAITING_VERIFIED_HISTORY'|'UNCALIBRATED_EXPERIMENTAL_MODEL';
  source:'NWS_GRID_FORECAST_NOT_STATION_OBSERVATION';
- locale:'America/New_York';targetLocalDate:string;capturedAt:string;forecastIssuedAt:string;
+ locale:'America/New_York';dayDefinition:'CENTRAL_PARK_LOCAL_STANDARD_TIME_UTC_MINUS_5';targetLocalDate:string;capturedAt:string;forecastIssuedAt:string;
  forecastHighF:number;bandLowF:number;bandHighF:number;
  historicalTrainingDays:number;historicalTrainingDigest:string|null;
  estimatedBandProbabilityPpm:number|null;modelId:string|null;
  sourceDigest:string;sourceSnapshot:NWSHourlyResearch;
  warning:string;
 };
-/** A single full NYC civil day, with 23/24/25 hourly intervals across DST. */
+/** Exactly 24 continuous hours of the NYC Central Park climate-report day (EST year round). */
 export function buildIndependentWeatherMemory(s:NWSHourlyResearch,
  training:readonly WeatherTrainingDay[]=[]):IndependentWeatherMemory{
  if(s.source!=='NWS_GRID_FORECAST_NOT_STATION_OBSERVATION'||!Array.isArray(s.hourly)||
@@ -47,7 +46,7 @@ export function buildIndependentWeatherMemory(s:NWSHourlyResearch,
  const target=nextNewYorkDate(s.fetchedAt);
  const hours=s.hourly.filter(h=>nyParts(h.startTime).date===target)
   .sort((a,b)=>ms(a.startTime)-ms(b.startTime));
- if(hours.length<23||hours.length>25||nyParts(hours[0].startTime).hour!==0||
+ if(hours.length!==24||nyParts(hours[0]?.startTime??s.fetchedAt).hour!==0||
   nyParts(hours[hours.length-1].startTime).hour!==23)
   throw Error('WEATHER_MEMORY_DAY_NOT_FULLY_COVERED');
  for(let i=0;i<hours.length;i++){
@@ -72,11 +71,11 @@ export function buildIndependentWeatherMemory(s:NWSHourlyResearch,
   schemaVersion:'independent-nyc-weather-memory-v1',
   status:estimatedBandProbabilityPpm===null?'AWAITING_VERIFIED_HISTORY':'UNCALIBRATED_EXPERIMENTAL_MODEL',
   source:'NWS_GRID_FORECAST_NOT_STATION_OBSERVATION',locale:'America/New_York',
-  targetLocalDate:target,capturedAt:s.fetchedAt,forecastIssuedAt:s.forecastIssuedAt,
+  dayDefinition:'CENTRAL_PARK_LOCAL_STANDARD_TIME_UTC_MINUS_5',targetLocalDate:target,capturedAt:s.fetchedAt,forecastIssuedAt:s.forecastIssuedAt,
   forecastHighF:high,bandLowF:low,bandHighF:upper,
   historicalTrainingDays:known.length,historicalTrainingDigest:trainingDigest,
   estimatedBandProbabilityPpm,modelId,sourceDigest:s.sourceDigest,sourceSnapshot:s,
-  warning:'Pre-event independent grid-point forecast for a NYC civil day, NOT an official Central Park station high, Kalshi market bin, market settlement, executable price or profitable opportunity. Model probabilities require >=30 independently verified pre-as-of station observations and forward validation.'
+  warning:'Pre-event independent grid-point forecast for the Central Park standard-time climate day, NOT an official Central Park station high, Kalshi market bin, market settlement, executable price or profitable opportunity. Model probabilities require >=30 independently verified pre-as-of station observations and forward validation.'
  };
  return {id:sha(base),...base};
 }
@@ -86,6 +85,7 @@ export function verifyIndependentWeatherMemory(raw:unknown):IndependentWeatherMe
  const r=raw as Record<string,unknown>,{id,...base}=r;
  if(typeof id!=='string'||!/^([a-f0-9]{64})$/.test(id)||sha(base)!==id||
   r.schemaVersion!=='independent-nyc-weather-memory-v1'||r.locale!=='America/New_York'||
+  r.dayDefinition!=='CENTRAL_PARK_LOCAL_STANDARD_TIME_UTC_MINUS_5'||
   typeof r.targetLocalDate!=='string'||!DATE.test(r.targetLocalDate)||
   typeof r.capturedAt!=='string'||nextNewYorkDate(r.capturedAt)!==r.targetLocalDate||
   r.source!=='NWS_GRID_FORECAST_NOT_STATION_OBSERVATION'||r.sourceSnapshot===null||
