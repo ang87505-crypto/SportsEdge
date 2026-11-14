@@ -9,6 +9,7 @@ import type {ToolCall} from './session.ts';
 import type {Period} from './tools.ts';
 import type {ToolResult} from './tools.ts';
 import {conversationalText} from '../assistant/colloquial.ts';
+import {parseControlRequest} from '../assistant/actions.ts';
 import {nativeIntent} from './native-intent.ts';
 
 const norm=(s:string)=>conversationalText(s);
@@ -30,6 +31,10 @@ const COUNTERPART:Record<Period,Period>={today:'yesterday',yesterday:'today',las
 export type Plan={calls:ToolCall[];filter?:'misses'|'hits'};
 
 export function plan(message:string,last:ToolCall[]):Plan|null{
+ // Preserve the exact same control boundary as the command endpoint.
+ // A request to start, stop, bet, or trade must never be interpreted by the
+ // native analytics planner as an account-status read or inferred permission.
+ if(parseControlRequest(message))return null;
  const t=norm(message);
  // Preserve original percentage punctuation; colloquial normalization strips %.
  const numericThreshold=message.toLowerCase().match(/\b(60|70|80)\s*(?:%|percent)(?![a-z0-9])/);
@@ -50,7 +55,12 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  if(stock){
   // Owner-only stock status remains available; general comparisons fall
   // back to the existing stock/research assistant instead of mixing domains.
-  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
+  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t)||
+   // Owner account status is NOT the public stock-research report. Treat
+   // "What's my stock paper account status?" as an owner-gated read.
+   /\b(?:stock|alpaca)\b.*\b(?:paper|autopilot|broker|account)\b.*\b(?:status|readiness|ready)\b/.test(t)||
+   /\b(?:stock|alpaca)\b.*\b(?:account)\b.*\b(?:status|ready)\b/.test(t))
+   return {calls:[{tool:'stock_status',input:{}}]};
   // A precise stock-only research question may use the read-only research
   // view. Owner account information still passes callTool's owner guard.
   const stockDecision=nativeIntent(message);
