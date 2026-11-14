@@ -7,6 +7,8 @@ import type {Raw} from '../props/dashboard-view.ts';
 import type {ResearchView} from '../research/stock-summary.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
 import {understand} from '../assistant/understand.ts';
+import {conversationalText} from '../assistant/colloquial.ts';
+import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion} from '../assistant/knowledge-guide.ts';
 import {propsStoreConfig} from './props-store.ts';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {handlePaperAutoGet} from './paper-auto-owner.ts';
@@ -73,18 +75,20 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(Object.keys(b).some(k=>k!=='message'&&k!=='context')||typeof b.message!=='string'||b.message.length>300)return json({status:'invalid_request'},400);
  const context=parseContext(b.context);
  if(context===undefined)return json({status:'invalid_request'},400);
- const message=b.message,q=routeQuestion(message,context);
+ const message=b.message,understood=conversationalText(message),q=routeQuestion(message,context);
  const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
- if(!q.domain)return respond(simple('Do you mean sports picks, your stock PAPER account, Kalshi weather research, or stock strategy research? Choose a topic below.'));
+ if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
+ if(!q.domain)return respond(unsupportedQuestion(q));
+ if(q.topic==='improving'&&q.domain!=='all')return respond(improvementAnswer(q));
  if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, the signed-in stock PAPER account, strategy research, independent Kalshi weather research, and the last recorded automation status. No real bets or orders can be placed by asking.',{domain:'all',topic:'help'}),
   cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'},{label:'Independent Kalshi research',href:'/prediction-markets/kalshi'}]}]});
  async function sports():Promise<Reply>{
   try{
    const safeContext=context?.domain&&context.domain!=='sports'?null:context;
-   const r=await handleAssistant({contentType:'application/json',text:async()=>JSON.stringify({message,context:safeContext})},env,ports.sports,nowIso);
+   const r=await handleAssistant({contentType:'application/json',text:async()=>JSON.stringify({message:understood,context:safeContext})},env,ports.sports,nowIso);
    const out=await r.json() as {reply:Reply};
    return {...out.reply,context:{...out.reply.context,domain:'sports'}};
-  }catch{return simple('Sports records are unavailable right now.',{domain:'sports'});}
+  }catch{return {...simple('Sports records are unavailable right now; I cannot infer whether any picks won or lost.',{domain:'sports'}),cards:[{kind:'links',items:[{label:'Sports picks and results',href:'/paper-betting/props'}]}]};}
  }
  async function stocks():Promise<Reply>{
   const ownerRequired:StockAccounts={state:'owner_required',ledgers:[],brokerWritesEnabled:null};
@@ -93,17 +97,17 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   const [a,p]=await Promise.allSettled([ports.accounts(),q.topic==='holdings'?ports.broker():Promise.resolve(null)]);
   const accounts=a.status==='fulfilled'?a.value:{state:'unavailable' as const,ledgers:[],brokerWritesEnabled:null};
   const broker=p.status==='fulfilled'?p.value:{state:'unavailable' as const};
-  const range=understand(message,null,[],nowIso).range??(q.domain===context?.domain?context?.range:undefined);
+  const range=understand(understood,null,[],nowIso).range??(q.domain===context?.domain?context?.range:undefined);
   return stockAnswer({...q,domain:'stocks'},accounts,broker,nowIso,range??undefined);
  }
  async function research():Promise<Reply>{
   try{return researchAnswer({...q,domain:'research'},await ports.research(nowIso));}
-  catch{return simple('Research records are unavailable right now. Your stock account and sports records are separate.',{domain:'research'});}
+  catch{return {...simple('Research records are unavailable; I cannot infer a model win or a stock return. Stock account and sports records remain separate.',{domain:'research'}),cards:[{kind:'links',items:[{label:'Stock strategy research',href:'/stocks/research'}]}]};}
  }
  async function kalshi():Promise<Reply>{
   if(!ports.kalshi)return simple('Independent Kalshi weather research is unavailable here. No exchange data is connected.',{domain:'kalshi'});
   try{return kalshiPublicAnswer({...q,domain:'kalshi'},await ports.kalshi(nowIso));}
-  catch{return simple('Independent NOAA research could not be checked. That does not prove zero forecasts or bets. Kalshi market access remains unverified.',{domain:'kalshi'});}
+  catch{return {...simple('Independent NOAA research could not be checked. That does not prove zero forecasts or any Kalshi bets. Exchange market access remains unverified.',{domain:'kalshi'}),cards:[{kind:'links',items:[{label:'Kalshi research',href:'/prediction-markets/kalshi'},{label:'NOAA collector receipts',href:'https://github.com/ang87505-crypto/SportsEdge/actions/workflows/kalshi-independent-weather-memory.yml'}]}]};}
  }
  // A Kalshi request can NEVER be translated into a props or stock owner action.
  if(q.domain==='kalshi'&&q.topic==='controls')return respond({
@@ -146,7 +150,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
   const [lab,raw]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null)]);
   if(lab.status!=='fulfilled')return respond(simple('Learning Lab records are unavailable right now; nothing is assumed.',{domain:'all',topic:'lab'}));
-  return respond(labAnswer(message,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso));
+  return respond(labAnswer(understood,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso));
  }
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());
@@ -155,7 +159,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  async function jobs():Promise<Reply>{
   if(!ports.ops)return simple('Background job status is not connected here.',{domain:'all'});
   try{return simple(opsSummaryText(await ports.ops(nowIso)),{domain:'all'});}
-  catch{return simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'});}
+  catch{return {...simple('Background job status is unavailable right now. Planned schedules are not evidence of a run.',{domain:'all'}),cards:[{kind:'links',items:[{label:'Automation monitoring',href:'/automation'}]}]};}
  }
  if(q.topic==='jobs')return respond(await jobs());
  if((BRIEFING_TOPICS as string[]).includes(q.topic)){
