@@ -12,7 +12,8 @@ const TOPICS=[
   {label:'Stocks',question:'Stock PAPER results'},
   {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
   {label:'Research',question:'Stock strategy research results'},
-  {label:'Systems',question:'Is everything running?'}
+  {label:'Systems',question:'Is everything running?'},
+  {label:'Help',question:'What commands can you follow?'}
 ] as const;
 const STARTERS=TOPICS.map(t=>t.question);
 const OPENING:Msg={role:'bot',text:'Ask about sports, stocks, independent Kalshi research, or automation. Answers use saved records, not invented trades.',suggestions:STARTERS};
