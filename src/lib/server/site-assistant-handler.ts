@@ -80,7 +80,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
  if(!q.domain)return respond(unsupportedQuestion(q));
  if(q.topic==='improving'&&q.domain!=='all')return respond(improvementAnswer(q));
- if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, the signed-in stock PAPER account, strategy research, independent Kalshi weather research, and the last recorded automation status. No real bets or orders can be placed by asking.',{domain:'all',topic:'help'}),
+ if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, the signed-in stock paper-account, strategy research, independent Kalshi weather research, and the last recorded automation status. No real bets or orders can be placed by asking.',{domain:'all',topic:'help'}),
   cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'},{label:'Independent Kalshi research',href:'/prediction-markets/kalshi'}]}]});
  async function sports():Promise<Reply>{
   try{
