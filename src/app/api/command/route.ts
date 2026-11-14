@@ -6,6 +6,7 @@ import {handleSiteAssistant,sitePorts} from '@/lib/server/site-assistant-handler
 import {handleCommand} from '@/lib/server/command-handler';
 import {cachedPropsRaw} from '@/lib/server/assistant-handler';
 import {loadPropsDashboardFrom} from '@/lib/server/props-dashboard-load';
+import {loadPropsResearch} from '@/lib/server/props-research-data';
 import {propsStore,propsStoreConfig} from '@/lib/server/props-store';
 import {OWNER_COOKIE,ownerSecret} from '@/lib/server/alpaca-owner-session';
 import {supabaseLedger} from '@/lib/server/command-ledger';
@@ -30,6 +31,7 @@ export async function POST(req:NextRequest){
    sports:()=>propsConfigured?cachedPropsRaw(sports,nowIso):Promise.resolve(null),
    ops:()=>site.ops?site.ops(nowIso):Promise.resolve(null),research:()=>site.research(nowIso),lab:()=>site.lab?site.lab(nowIso):Promise.resolve(null),
    accounts:()=>site.accounts(),
+   watch:()=>propsConfigured?loadPropsResearch(propsStore(),nowIso):Promise.resolve(null),
    // Learning-engine records ship with the AI 2.0 research work; until deployed, the files are absent and the tool says so.
    engine:async()=>{try{const [registry,jobs]=await Promise.all(['registry','jobs'].map(async f=>JSON.parse(await readFile(join(process.cwd(),'research/engine',f+'.json'),'utf8'))));return {registry,jobs};}catch{return null;}}},
   async legacy(message,context){
