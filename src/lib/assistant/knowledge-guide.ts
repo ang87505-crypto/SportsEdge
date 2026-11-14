@@ -89,7 +89,7 @@ export function improvementAnswer(q:QuestionRoute):Reply{
 }
 export function unsupportedQuestion(q:QuestionRoute):Reply{
  return {
-  text:'I cannot reliably identify which stored evidence answers that question yet. I can check recorded sports predictions, signed-in stock PAPER results, research reports, independent Kalshi weather observations or automation receipts. Choose a topic or open the relevant page. I will not invent a trade, metric or explanation.',
+  text:'Do you mean sports picks, stock PAPER results, stock research, Kalshi weather research, or automation? I cannot reliably identify which stored evidence answers that question yet. I can check recorded sports predictions, signed-in stock PAPER results, research reports, independent Kalshi weather observations or automation receipts. Choose a topic or open the relevant page. I will not invent a trade, metric or explanation.',
   cards:[{kind:'links',items:DESTINATIONS.filter(d=>d.domain!=='all').map(d=>({label:d.label,href:d.href})).slice(0,7)}],
   suggestions:['Were today’s stock PAPER trades good?','How did sports picks do yesterday?','Are there Kalshi opportunities?','Is everything running?'],
   context:{domain:q.domain??'all',topic:'help'}
