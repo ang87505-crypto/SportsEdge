@@ -12,6 +12,7 @@ on:
       - 'src/app/paper-betting/predictions/page.tsx'
       - 'src/lib/navigation.ts'
       - 'docs/SPORTSEDGE_60_PERCENT_SHADOW_LEDGER_2026_11_14.md'
+      - 'docs/SPORTSEDGE_WATCH_ONLY_NBA_LINES_2026_11_14.md'
       - '.github/workflows/shadow-forecast-research-verify.yml'
 permissions:
   contents: read
@@ -27,10 +28,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate 60 percent shadow decisions and hypothetical-only P/L
+      - name: Validate Watch Only no-bet lines and 60 percent shadow study
         run: node --experimental-strip-types --test src/lib/props/shadow-ledger.test.mjs src/lib/props/watch-only.test.mjs
       - name: Prevent mutation of collector budgets, stock broker or research-data workflows
         if: github.event.pull_request.head.ref == 'research/all-qualified-shadow-ledger-20261114'
         run: |
           git fetch --no-tags origin main
-          ! git diff --name-only origin/main...HEAD | grep -Ev '^(src/lib/props/shadow-ledger(\.test)?\.mjs|src/lib/props/shadow-ledger\.ts|src/lib/props/watch-only(\.test)?\.mjs|src/lib/props/watch-only\.ts|src/app/paper-betting/watch/page\.tsx|src/app/paper-betting/shadow/page\.tsx|src/app/paper-betting/predictions/page\.tsx|src/lib/navigation\.ts|docs/SPORTSEDGE_60_PERCENT_SHADOW_LEDGER_2026_11_14\.md|\.github/workflows/shadow-forecast-research-verify\.yml)$'
+          ! git diff --name-only origin/main...HEAD | grep -Ev '^(src/lib/props/shadow-ledger(\.test)?\.mjs|src/lib/props/shadow-ledger\.ts|src/lib/props/watch-only(\.test)?\.mjs|src/lib/props/watch-only\.ts|src/app/paper-betting/watch/page\.tsx|src/app/paper-betting/shadow/page\.tsx|src/app/paper-betting/predictions/page\.tsx|src/lib/navigation\.ts|docs/SPORTSEDGE_60_PERCENT_SHADOW_LEDGER_2026_11_14\.md|docs/SPORTSEDGE_WATCH_ONLY_NBA_LINES_2026_11_14\.md|\.github/workflows/shadow-forecast-research-verify\.yml)$'
