@@ -26,14 +26,16 @@ export function isNavigationQuestion(message:string):boolean{
  const s=conversationalText(message);
  // Explicit navigation only: "show me today's trades" requests data,
  // while "show me the trade dashboard" requests a link.
- return /\b(where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s);
+ return /\b(where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s)||
+  /^(?:open|go to|navigate to|visit|take me to) (?:the |my |our )?(?:sports|nba|stock|stocks|alpaca|kalshi|noaa|prediction|predictions|research|backtests?|paper picks|picks|props|automation|workflows?|jobs|dashboard|learning lab|system status)\b/.test(s);
 }
 function relevant(q:QuestionRoute,s:string):Destination[]{
  const matches=(label:string)=>DESTINATIONS.filter(d=>d.label===label);
  if(/\b(all|every|everything|whole site)\b/.test(s)&&/\b(page|pages|dashboards?|tabs?|screens?)\b/.test(s))
   return ['Sports picks and graded results','All recorded sports predictions','Stock PAPER autopilot',
    'Stock strategy research','Independent Kalshi research','Automation monitor'].flatMap(matches);
- if(/\b(candidate|all predictions?|every predictions?|full prediction|prediction list|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
+ if(/^(?:open|go to|navigate to|visit|take me to) (?:the |my |our )?predictions?\b/.test(s)||
+  /\b(candidate|all predictions?|every predictions?|full prediction|prediction list|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
   return matches('All recorded sports predictions');
  if(/\b(nba model|elo|basketball model|nba research)\b/.test(s))return matches('NBA model research');
  if(/\b(stock|stocks|strategy|strategies)\b/.test(s)&&/\b(research|backtests?|models?|performance vs spy|lab)\b/.test(s))
@@ -54,6 +56,7 @@ function relevant(q:QuestionRoute,s:string):Destination[]{
   if(q.domain==='kalshi')return matches('Independent Kalshi research');
   return matches('AI Learning Lab');
  }
+ if(/\b(props?|picks?|prizepicks|pick6|virtual entries)\b/.test(s))return matches('Sports picks and graded results');
  if(/\b(sports|nba|soccer|odds)\b/.test(s))return matches('Sports games');
  if(/\b(picks|props|prizepicks|results|bets|entries)\b/.test(s))return matches('Sports picks and graded results');
  if(q.domain==='stocks')return [matches('Stock PAPER autopilot')[0],matches('Alpaca PAPER account')[0]];
