@@ -4,6 +4,9 @@ on:
     paths:
       - 'src/lib/prediction-markets/kalshi/**'
       - '.github/workflows/kalshi-paper-verify.yml'
+      - '.github/workflows/kalshi-independent-weather-memory.yml'
+      - 'scripts/kalshi-independent-weather-collect.ts'
+      - 'scripts/kalshi-independent-weather-collect.test.mjs'
 permissions:
   contents: read
 jobs:
@@ -16,4 +19,6 @@ jobs:
         with:
           node-version: '24'
       - name: Kalshi market, fees, paper forecasts and grading (no network)
-        run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs
+        run: |
+          node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs
+          node --experimental-strip-types --test scripts/kalshi-independent-weather-collect.test.mjs
