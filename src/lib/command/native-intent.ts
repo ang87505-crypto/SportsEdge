@@ -10,6 +10,7 @@
  * existing domain-aware SportsEdge assistant rather than inventing an answer.
  */
 import type {ToolCall} from './session.ts';
+import {conversationalText} from '../assistant/colloquial.ts';
 export type NativeDecision={call:ToolCall;filter?:'hits'|'misses';example:string;confidence:number};
 type Example={q:string;tool:string;input:Record<string,unknown>;filter?:'hits'|'misses';topic:'sports'|'stocks'|'research'|'ops'|'briefing'};
 const e=(topic:Example['topic'],tool:string,input:Record<string,unknown>,qs:string,filter?:Example['filter']):Example[]=>
@@ -72,7 +73,7 @@ const sports=/\b(nba|basketball|prizepicks|pick6|sports?|dfs|player props?)\b/;
  */
 export function nativeIntent(message:string):NativeDecision|null{
  if(typeof message!=='string'||message.length>500)return null;
- const text=message.toLowerCase().replace(/[’']/g,'');
+ const text=(conversationalText(message)||message).toLowerCase().replace(/[’']/g,'');
  if(forbidden.test(text)||unsupported.test(text)||(stock.test(text)&&sports.test(text)))return null;
  const query=tokens(text);
  if(query.size<2)return null;
