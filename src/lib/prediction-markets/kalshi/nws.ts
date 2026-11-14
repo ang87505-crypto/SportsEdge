@@ -2,7 +2,8 @@
  * Independent, public-domain NWS forecast input for NYC weather research.
  * NOT a Kalshi price feed, NOT an official final Central Park station observation,
  * NOT a probability model, and NOT a source of automatic trading decisions.
- * No scheduled use; must be called explicitly with a meaningful NWS User-Agent.
+ * Currently used by offline tests; an optional NOAA-only daily archive schedule
+ * is proposed on this unmerged branch and requires owner-approved release.
  */
 import {createHash} from 'node:crypto';
 export const NWS_CENTRAL_PARK_POINT='https://api.weather.gov/points/40.7829,-73.9654';
