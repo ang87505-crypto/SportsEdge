@@ -15,7 +15,7 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  // Kalshi forecasting/calibration questions must not accidentally invoke the sports props lab.
  const kalshi=/\b(kalshi|prediction markets?|event contracts?|noaa|nws|central park|weather (?:research|forecasts?|model|accuracy|predictions?)|inflation|cpi|bls)\b/.test(t);
  if(!kalshi&&labTopic(message))return {domain:'all',topic:'lab'};
- const sports=/\b(sports?|nba|wnba|nfl|nhl|mlb|college basketball|college football|soccer|football|baseball|basketball|prizepicks|prize picks|pick6|pick 6|bets?|betting|lineups?|props?|tonight|points?|rebounds?|assists?|jokic|jokc|booker|picks|predictions?|entries|entry|odds api|credits?|qualif\w*|virtual entr\w*|line collection|next collection)\b/.test(t);
+ const sports=/\b(sports?|nba|wnba|nfl|nhl|mlb|college basketball|college football|soccer|football|baseball|basketball|prizepicks|prize picks|pick6|pick 6|bets?|betting|lineups?|props?|tonight|points?|rebounds?|assists?|jokic|jokc|booker|picks|entries|entry|odds api|credits?|qualif\w*|virtual entr\w*|line collection|next collection)\b/.test(t);
  const stocks=/\b(stocks?|portfolio|alpaca|shares?|equity|equities|autopilot|trades?|traded|trading|oxy|altria|usb|bmy|csx|holdings|positions?|buying power|paper trading|orders?|fills?|broker|reconcil\w*)\b/.test(t);
  const research=/\b(qmom|berkshire|buffett|momentum|research|backtest|strategies|strategy|benchmark|spy|challengers?|daily trading|day trading|trading every day|daily strateg\w*)\b/.test(t)||
   (stocks&&/\b(algorithm|model|learning|learn)\b/.test(t));
@@ -29,7 +29,7 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  const explicitSports=/\b(nba|wnba|nfl|nhl|mlb|soccer|football|baseball|basketball|prizepicks|prize picks|pick6|pick 6|sports|player props|jokic|booker)\b/.test(t);
  const explicitWholeSite=/\b(all systems|whole site|everything|across all)\b/.test(t);
  let domain:QuestionRoute['domain']=kalshi?(explicitSports||stocks||explicitWholeSite?'all':'kalshi'):
-  sports&&(stocks||research)||general?'all':research?'research':stocks?'stocks':sports?'sports':null;
+  sports&&(stocks||research)||general&&!(sports||stocks||research)?'all':research?'research':stocks?'stocks':sports?'sports':null;
  const follow=/^(why|and|also|same (for|with)|what about|how about|what if|what does that mean|explain|is it|did it|does it|does that|is that|are they|when|how much|how accurate|how good|how are|how can|how do|what should|what can|what changed|what is next|what happened|how did|show me|tell me more)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);
  if(!domain&&follow)domain=previous?.domain??null;
