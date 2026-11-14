@@ -131,10 +131,11 @@ export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
  const s=conversationalText(message);
  const publicEvent=q.domain==='kalshi'||/\b(kalshi|noaa|nws|bls|cpi|weather|inflation)\b/.test(s);
  const stocks=q.domain==='stocks'||/\b(stocks?|alpaca|autopilot|broker|fills?|portfolio|shares?)\b/.test(s);
- const sports=q.domain==='sports'||/\b(nba|props?|prizepicks|pick6|picks?|box scores?|nfl|nhl|mlb|wnba)\b/.test(s);
+ const sports=q.domain==='sports'||/\b(nba|props?|prizepicks|pick6|picks?|games?|scores?|box scores?|nfl|nhl|mlb|wnba)\b/.test(s);
  const stockResearch=q.domain==='research'||stocks&&/\b(backtests?|research|retrain|models?|strateg(?:y|ies)|calibrat\w*)\b/.test(s);
  const sportsResearch=sports&&/\b(backtests?|research|retrain|models?|algorithm|calibrat\w*|learning)\b/.test(s);
  const newLeague=/\b(nfl|nhl|mlb|wnba|college football|college basketball)\b/.test(s);
+ const genericModel=!publicEvent&&!stocks&&!sports&&/\b(retrain|train|model|algorithm|learning|calibration)\b/.test(s);
  const deploy=/\b(deploy|merge|pull request|release|production)\b/.test(s);
  const release=/\b(activate|enable|disable|turn on|turn off)\b/.test(s);
  let labels:string[];
@@ -157,6 +158,9 @@ export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
  }else if(sportsResearch){
   labels=['AI Learning Lab','All recorded sports predictions','Sports picks and graded results'];
   note='Learning Lab comparisons are research only; the active NBA props model and virtual stake are unchanged.';
+ }else if(genericModel){
+  labels=['AI Learning Lab','Stock strategy research','Independent Kalshi research'];
+  note='Sports, stocks and public-event forecasting have separate research models. Choose the relevant lab; neither retraining nor model promotion happens from chat.';
  }else if(sports){
   labels=['Sports picks and graded results','All recorded sports predictions','Automation monitor'];
   note='Collector receipts and virtual entries must be verified; schedules do not imply any picks were placed.';
