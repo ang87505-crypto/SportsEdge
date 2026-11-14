@@ -18,7 +18,7 @@ export default async function PredictionMarketsKalshiPage(){
    action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
   <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
    No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
-  <Panel title="Independent NYC weather forecast memory" actions={<Evidence kind={archive.state==='RECORDED'?'verified':'unavailable'}/>}>
+  <Panel title="Independent NYC weather forecast memory" actions={<Evidence kind={archive.state==='RECORDED'?'recorded':'unavailable'}/>}>
    {archive.state==='RECORDED'?<>
     <p>Archived from the public NWS hourly grid forecast, before the target weather day. The comparison uses
      the Central Park climate-report standard-time day. This is <strong>not a Kalshi contract prediction</strong>,
