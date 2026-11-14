@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {buildIndependentWeatherMemory} from './weather-memory.ts';
-import {loadLatestIndependentWeather} from './weather-memory-view.ts';
+import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from './weather-memory-view.ts';
+import {scoreIndependentWeatherForward} from './weather-scorecard.ts';
 const now='2026-11-13T21:00:00Z';
 const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 function record(){
@@ -48,4 +49,18 @@ test('403 or oversized provider result is unavailable, never interpreted as a ma
  const oversize=await loadLatestIndependentWeather(now,async()=>
   new Response('a'.repeat(120001),{headers:{'content-length':'120001'}}));
  assert.equal(oversize.state,'ARCHIVE_UNAVAILABLE');
+});
+
+test('latest independent scorecard is loaded solely from archived NOAA data',async()=>{
+ const saved=scoreIndependentWeatherForward([]),requests=[];
+ const result=await loadLatestWeatherScorecard(now,async(url)=>{
+  requests.push(url);
+  assert.match(url,/raw\.githubusercontent\.com/);
+  assert.doesNotMatch(url,/kalshi\.com/);
+  return url.endsWith('/scorecards/2026-11-12.json')?
+   new Response(JSON.stringify(saved)) : new Response('',{status:404});
+ });
+ assert.equal(result.state,'RECORDED');
+ assert.equal(result.scorecard.evaluatedDays,0);
+ assert.equal(requests.length,1);
 });
