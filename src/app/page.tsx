@@ -5,7 +5,7 @@ import {AssistantChat} from '@/components/assistant-chat';
 import {CommandStrip} from '@/components/command-strip';
 import {BriefingNow,BriefingBoard} from '@/components/briefing-home';
 
-const HOME_STARTERS=['How much did we make yesterday?',"How did all our predictions do yesterday, including ones we didn't bet?",'What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
+const HOME_STARTERS=['How much did we make yesterday?',"How did all our predictions do yesterday, including ones we didn't bet?",'How did our 60%+ tracked lines do yesterday?','What did our AI learn?','Why did we choose this lineup?',"Why didn't we trade?",
  'Which features actually improve our predictions?','How accurate are our 80% predictions actually?','Would flat staking have performed better?','What has Kalshi weather research recorded?','Are there real Kalshi opportunities yet?','Is everything running?'];
 
 function StripFallback(){
@@ -29,7 +29,7 @@ export default function Home(){
   <div className="command-main">
    <div className="command-chat">
     <AssistantChat starters={HOME_STARTERS} intro="What would you like to know? Pick a question or type your own."/>
-    <p className="quiet small-print">Also: <Link href="/lab">AI Learning Lab</Link> · <Link href="/paper-betting/props">PrizePicks picks</Link> · <Link href="/stocks/paper-auto">Stock autopilot</Link> · <Link href="/automation">Automation</Link> · <Link href="/prediction-markets/kalshi">Kalshi research</Link></p>
+    <p className="quiet small-print">Also: <Link href="/lab">AI Learning Lab</Link> · <Link href="/paper-betting/props">PrizePicks picks</Link> · <Link href="/paper-betting/watch">Watch Only (no bets)</Link> · <Link href="/stocks/paper-auto">Stock autopilot</Link> · <Link href="/automation">Automation</Link> · <Link href="/prediction-markets/kalshi">Kalshi research</Link></p>
    </div>
    <div className="command-rail">
     <Suspense fallback={<Panel title="Right now" className="status-panel"><Skeleton lines={5}/></Panel>}><BriefingNow/></Suspense>
