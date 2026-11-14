@@ -1,0 +1,46 @@
+# Offline, free independently licensed game schedule + source-reported
+# result snapshots for NFL/NHL. NEVER the paid Odds API, Kalshi or DFS feeds.
+# Separate from all existing sports, props and stock production controllers.
+name: Independent NFL NHL daily research memory (no paid odds)
+on:
+  schedule:
+    - cron: '43 12 * * *' # 05:43 MST; missed slots never backfill false pregame forecasts
+  workflow_dispatch:
+    inputs:
+      league:
+        description: One free sports source to archive (or both)
+        required: true
+        type: choice
+        options: [both, nfl, nhl]
+permissions:
+  contents: write
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  independent-snapshots:
+    if: github.ref == 'refs/heads/main' && vars.SPORTSEDGE_INDEPENDENT_SPORTS_COLLECT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LEAGUE: ${{ inputs.league || 'both' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Offline fail-closed collector contract tests
+        run: node --test scripts/independent-sports-collect.test.mjs
+      - name: Checkout append-only research-data branch
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Freeze NFL data, one provider GET at most on the first run per date
+        if: env.LEAGUE == 'nfl' || env.LEAGUE == 'both'
+        run: node scripts/independent-sports-collect.mjs nfl research-data
+      - name: Freeze NHL data, one provider GET at most on the first run per date
+        if: env.LEAGUE == 'nhl' || env.LEAGUE == 'both'
+        run: node scripts/independent-sports-collect.mjs nhl research-data
+      - name: Commit independent-source results only
+        run: bash .github/scripts/research-data-branch.sh commit "independent NFL NHL research ${{ github.run_id }}"
