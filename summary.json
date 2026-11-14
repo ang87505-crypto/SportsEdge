@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 3,
+    "sessions": 4,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.008766660366666734
+    "totalReturn": 0.0024763270333332255
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 3,
+    "sessions": 4,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.002744281666666737
+    "totalReturn": 0.008849281666666764
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-13T09:41:15Z",
+  "forwardAt": "2026-11-14T04:43:46Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "ACN": 0.2,
-      "AMZN": 0.2,
-      "MCD": 0.2,
-      "META": 0.2,
-      "MSFT": 0.2
+      "AMAT": 0.2,
+      "CMG": 0.2,
+      "GE": 0.2,
+      "NEM": 0.2,
+      "NVDA": 0.2
      },
-     "sessions": 3,
+     "sessions": 4,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.053047747999999895
+     "totalReturn": -0.06319495816666643
     },
     "historical": {
      "asLive": {
@@ -150,15 +150,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
+      "ADI": 0.2,
       "AMD": 0.2,
-      "CHTR": 0.2,
-      "CVS": 0.2,
-      "EOG": 0.2,
-      "TMUS": 0.2
+      "AVGO": 0.2,
+      "TSLA": 0.2,
+      "TXN": 0.2
      },
-     "sessions": 3,
+     "sessions": 4,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.0036614688333331813
+     "totalReturn": -0.039469702999999745
     },
     "historical": {
      "asLive": {
@@ -203,7 +203,7 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 3,
+     "sessions": 4,
      "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": 0.0
     },
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-13T09:41:05Z",
- "generatedAt": "2026-11-13T09:41:27Z",
+ "forwardAt": "2026-11-14T04:43:42Z",
+ "generatedAt": "2026-11-14T04:43:52Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -266,9 +266,80 @@
   "experiment": "lab-stock-psychology-v1",
   "forward": {
    "firstDecision": "2026-11-16",
-   "frozenRows": 0,
+   "frozenRows": 10,
    "minWeeks": 26,
-   "variants": {}
+   "variants": {
+    "base": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "base+attention_spike": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "base+market_regime": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "base+short_term_overreaction": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "base+volatility_shock": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "combined": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "combined-attention_spike": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "combined-market_regime": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "combined-short_term_overreaction": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    },
+    "combined-volatility_shock": {
+     "latest_session": "2026-11-16",
+     "pending": 1,
+     "status": "collecting",
+     "total_return": null,
+     "weeks": 0
+    }
+   }
   },
   "historicalAt": "2026-11-12T18:13:21Z",
   "holdout": {
@@ -410,8 +481,8 @@
     "items": 1
    },
    "lastSuccessAt": "2026-11-13T09:41:05Z",
-   "retrievedAt": "2026-11-13T09:41:05Z",
-   "status": "OK"
+   "retrievedAt": "2026-11-14T04:43:41Z",
+   "status": "PARSE_FAILED"
   },
   {
    "id": "sec-company-tickers",
@@ -429,8 +500,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-13T09:41:05Z",
-   "retrievedAt": "2026-11-13T09:41:05Z",
+   "lastSuccessAt": "2026-11-14T04:43:41Z",
+   "retrievedAt": "2026-11-14T04:43:41Z",
    "status": "OK"
   },
   {
