@@ -18,7 +18,6 @@ import type {WeatherTrainingDay} from '../src/lib/prediction-markets/kalshi/weat
 import {scoreIndependentWeatherForward} from '../src/lib/prediction-markets/kalshi/weather-scorecard.ts';
 import type {IndependentWeatherMemory} from '../src/lib/prediction-markets/kalshi/weather-memory.ts';
 import type {IndependentWeatherGrade,CentralParkCliDaily} from '../src/lib/prediction-markets/kalshi/nws-cli.ts';
-const DATE=/^\d{4}-\d{2}-\d{2}$/;
 export type Phase='forecast'|'outcome';
 export type CollectResult={status:'CREATED'|'ALREADY_ARCHIVED';phase:Phase;date:string;
  file:string;independentGraded:boolean;historicalTrainingDays:number};
