@@ -32,13 +32,16 @@ export function kalshiPublicAnswer(q:QuestionRoute,view:KalshiPublicResearch):Re
  const w=view.weather,s=view.scorecard;
  const score=s.state==='RECORDED'?s.scorecard:null;
  const archiveState=w.state;
- const archiveText=archiveState==='ARCHIVE_UNAVAILABLE'?
-  'The independent NOAA archive could not be verified. Missing or invalid evidence is not proof of zero activity. Check workflow receipts.':
-  archiveState==='AWAITING_FIRST_ARCHIVE'?
-   'No recent frozen NOAA forecast appears in the archive window. This does not establish whether older runs succeeded; check the collector and research-data branch.':
-   'A frozen independent NWS grid forecast for '+w.memory.targetLocalDate+' was captured '+timestamp(w.memory.capturedAt)+
+ let archiveText:string;
+ if(w.state==='RECORDED'){
+  archiveText='A frozen independent NWS grid forecast for '+w.memory.targetLocalDate+' was captured '+timestamp(w.memory.capturedAt)+
    '. Modeled high: '+w.memory.forecastHighF+'°F (experimental '+w.memory.bandLowF+'–'+w.memory.bandHighF+
    '°F range). This is not an official Central Park station high or a Kalshi contract.';
+ }else if(w.state==='ARCHIVE_UNAVAILABLE'){
+  archiveText='The independent NOAA archive could not be verified. Missing or invalid evidence is not proof of zero activity. Check workflow receipts.';
+ }else{
+  archiveText='No recent frozen NOAA forecast appears in the archive window. This does not establish whether older runs succeeded; check the collector and research-data branch.';
+ }
  const gradeText=w.state==='RECORDED'&&w.grade?
   'A preliminary NWS Central Park report recorded '+w.grade.observedHighF+'°F. The independent forecast range was '+
   (w.grade.hitIndependentBand?'hit':'missed')+' with '+w.grade.absoluteErrorF+
