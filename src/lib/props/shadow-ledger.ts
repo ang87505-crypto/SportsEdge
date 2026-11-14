@@ -26,7 +26,7 @@ export type ShadowRow={
  game:string;player:string;stat:string;line:number;modelVersion:string;lockAt:string;
  capturedAt:string;predictedAt:string;slateDate:string;side:'more'|'less';
  probability:number;tieProbability:number;liveStatus:'recorded'|'skipped'|'no_decision';
- liveSkipReason:string|null;outsideLiveBand:boolean;tieRisk:boolean;
+ outsideLiveBand:boolean;tieRisk:boolean;
  state:ShadowState;actual:number|null;gradedAt:string|null;
  stakeCents:500;hypotheticalExpectedNetCents:number;
  /** Null is pending/unknown, not a zero-valued loss. */
@@ -44,14 +44,14 @@ const evidenceTime=(s:string)=>validTime(s)?Date.parse(s):NaN;
 const sideOf=(p:{p_more:number;p_less:number}):'more'|'less'=>p.p_more>=p.p_less?'more':'less';
 const round=(n:number)=>Math.round(n);
 const cent=(n:number)=>Math.round(n*SHADOW_STUDY.stakeCents);
-const admission=(o:ResearchRaw['observations'][number],p:ResearchRaw['predictions'][number]):boolean=>{
+const admission=(o:ResearchRaw['observations'][number],p:ResearchRaw['predictions'][number],now:number):boolean=>{
  const ms=[o.ingested_at,o.recorded_at,o.provider_last_update,o.lock_at,p.data_cutoff,p.predicted_at].map(evidenceTime);
  if(ms.some(x=>!Number.isFinite(x)))return false;
  const [ingested,recorded,provider,lock,cutoff,predicted]=ms;
  return Boolean(
   p.model_version===MODEL_VERSION&&p.status==='scored'&&p.athlete_id&&
   ingested<=recorded&&recorded<lock&&ingested<lock&&predicted>=ingested&&predicted<lock&&
-  cutoff<=predicted&&provider<=ingested+60000&&provider<lock&&
+  cutoff<=predicted&&predicted<=now&&provider<=ingested+60000&&provider>=ingested-7200000&&provider<lock&&
   Number.isFinite(Number(o.line))&&Number(o.line)>0&&
   typeof o.provider_event_id==='string'&&o.provider_event_id.length>0
  );
@@ -78,7 +78,7 @@ export function shadowLedger(r:ResearchRaw,nowIso:string=r.nowIso){
  });
  for(const p of predictions){
   const o=observations.get(p.observation_id);
-  if(!o||!admission(o,p)){invalidSkipped++;continue;}
+  if(!o||!admission(o,p,now)){invalidSkipped++;continue;}
   if(p.p_more===null||p.p_less===null||p.p_tie===null){invalidSkipped++;continue;}
   const probs={pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)};
   if(!validProbabilities(probs)){invalidSkipped++;continue;}
@@ -110,8 +110,7 @@ export function shadowLedger(r:ResearchRaw,nowIso:string=r.nowIso){
    game:o.away_team+' @ '+o.home_team,player:o.player_name,stat:o.stat,line:Number(o.line),
    modelVersion:p.model_version,lockAt:o.lock_at,capturedAt:o.recorded_at,predictedAt:p.predicted_at,
    slateDate:et.format(new Date(o.lock_at)),side,probability,tieProbability:probs.pTie,
-   liveStatus,liveSkipReason:pick?.status==='skipped'?null:null,
-   outsideLiveBand,tieRisk,state,actual,gradedAt,
+   liveStatus,outsideLiveBand,tieRisk,state,actual,gradedAt,
    stakeCents:SHADOW_STUDY.stakeCents,
    hypotheticalExpectedNetCents:cent(probability-(side==='more'?probs.pLess:probs.pMore)),
    hypotheticalNetCents:net});
