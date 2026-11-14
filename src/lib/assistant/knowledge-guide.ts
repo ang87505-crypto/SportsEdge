@@ -21,7 +21,7 @@ const DESTINATIONS:readonly Destination[]=[
 ];
 export function isNavigationQuestion(message:string):boolean{
  const s=conversationalText(message);
- return /\b(where (can|do|should) i (find|see|check|look|open)|where (is|are) (the|my) (page|dashboard|report)|how (can|do) i (find|open|view)|take me to|show me (the )?(page|dashboard|screen)|link (me|to)|which page)\b/.test(s);
+ return /\b(where (can|do|should) i (find|see|check|look|open)|where (is|are) (the|my) (page|dashboard|report)|where (is|are) (the|my) [a-z ]{1,40} (page|dashboard|report)|how (can|do) i (find|open|view)|take me to|show me (the )?(page|dashboard|screen)|show me (the )?[a-z ]{1,40} (page|dashboard|screen)|link (me|to)|which page|where did (that|this) (number|stat|result|figure) come from)\b/.test(s);
 }
 function relevant(q:QuestionRoute,s:string):Destination[]{
  const matches=(label:string)=>DESTINATIONS.filter(d=>d.label===label);
