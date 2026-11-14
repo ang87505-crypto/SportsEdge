@@ -37,7 +37,7 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  if(directControl)topic='controls';
  else if(/\b(what can you do|what commands?|which commands|commands can you|help me|help|which questions|how do i use (this|you)|what do you know|capabilities)\b/.test(t))topic='help';
  else if(/\b(improv\w*|get better|do better|make .* better|next steps?|what should we fix)\b/.test(t))topic='improving';
- else if(/\b(why|explain|learn|learning|changed)\b/.test(t))topic='explain';
+ else if(/\b(why|explain|learn|learning|changed|mistakes?|went wrong|what failed|why not|reason)\b/.test(t))topic='explain';
  else if(/\b(hold|holds|holding|holdings|positions?|shares|own|portfolio)\b/.test(t))topic='holdings';
  else if(/\b(profit|returns?|pnl|p l|results?|perform|performance|doing|compare|beat|money|lost|balance|accuracy|accurate|hit rate|brier|calibrat\w*|good|better|worthwhile|decent)\b|how did|are we up|am i up/.test(t))topic='performance';
  else if(/\b(running|status|schedule|scheduled|next|automation|workflow|collect|collection|enabled|paused|blocked|failed|working|refresh|updated|update|snapshot|captured)\b/.test(t))topic='automation';
