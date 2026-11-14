@@ -48,7 +48,7 @@ function tokens(input:string):Set<string>{
   .map(x=>MAP[x]??x).filter(x=>x.length>=2&&!IGNORE.has(x));
  return new Set(t);
 }
-const examples=NATIVE_EXAMPLES.map(x=>({...x,tokens:tokens(x.q)}));
+const examples=NATIVE_EXAMPLES.map(x=>({...x,tokens:tokens(conversationalText(x.q)||x.q)}));
 const corpus=new Map<string,number>();
 for(const x of examples)for(const t of x.tokens)corpus.set(t,(corpus.get(t)??0)+1);
 function idf(t:string):number{return Math.log(1+(examples.length+1)/(1+(corpus.get(t)??0)))}
