@@ -269,7 +269,9 @@ test('operational how-to links reflect the correct research domain, not a generi
   ['backfill NFL scores','/sports',/not evidence that new-league forecasting/i],
   ['refresh NOAA data','/prediction-markets/kalshi',/separate from Kalshi exchange access/i],
   ['reconcile Alpaca paper account','/stocks/paper-auto',/owner sign-in/i],
-  ['deploy SportsEdge','https://github.com/ang87505-crypto/SportsEdge/actions',/separate code review/i]
+  ['deploy SportsEdge','https://github.com/ang87505-crypto/SportsEdge/actions',/separate code review/i],
+  ['retrain our model','/lab',/separate research models/i],
+  ['backfill game scores','/paper-betting/props',/collector receipts and virtual entries/i]
  ]){
   const ps=fakePorts();
   const r=await ask(message,null,ps);
