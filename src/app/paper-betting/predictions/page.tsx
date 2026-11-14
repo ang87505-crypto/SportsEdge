@@ -17,7 +17,7 @@ const one=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
 export default function Page({searchParams}:{searchParams:Search}){
  return <>
   <PageHeading title="All predictions" description="Every saved pregame forecast from every model, graded from final box scores — including the many that never became a $5 virtual entry. Research results, not returns."
-   action={<Link className="button button-secondary" href="/paper-betting/props">Virtual entries</Link>}/>
+   action={<><Link className="button button-secondary" href="/paper-betting/watch">Watch Only · no bets</Link> <Link className="button button-secondary" href="/paper-betting/props">Virtual entries</Link> <Link className="button button-secondary" href="/paper-betting/shadow">60%+ shadow research</Link></>}/>
   <Suspense fallback={<Loading label="Reading every saved prediction"/>}><Live searchParams={searchParams}/></Suspense>
   <Details title="How this is counted">
    <p>The collect run saves a stats-model forecast for every valid pregame line (or records why it could not score it), and every learning model scores each scored line before lock. The settle run grades every saved line from the final box score. Nothing here makes an extra Odds API request.</p>
