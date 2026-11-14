@@ -23,6 +23,7 @@ import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {CHAT_ACTIONS,parseControlRequest,type ChatActionId} from '../assistant/actions.ts';
 import {labAnswer} from '../assistant/lab-answer.ts';
 import {kalshiPublicAnswer,type KalshiPublicResearch} from '../assistant/kalshi-answer.ts';
+import {isFreshnessQuestion,freshnessAnswer} from '../assistant/source-freshness.ts';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '../prediction-markets/kalshi/weather-memory-view.ts';
 import {loadLab} from './lab-load.ts';
 import type {LabView} from '../lab/view.ts';
@@ -84,6 +85,11 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(isManualOperationQuestion(message)&&!parseControlRequest(message))
   return respond(manualOperationAnswer(message,q));
  if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
+ if(isFreshnessQuestion(message)){
+  if(!ports.ops)return respond(freshnessAnswer(q,null));
+  try{return respond(freshnessAnswer(q,await ports.ops(nowIso)));}
+  catch{return respond(freshnessAnswer(q,null));}
+ }
  const unsupportedLeague=unsupportedLeagueAnswer(message);
  if(unsupportedLeague)return respond(unsupportedLeague);
  if(q.topic==='help')return respond(supportedCommandsAnswer());
