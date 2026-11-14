@@ -11,20 +11,37 @@ type Destination={label:string;href:string;purpose:string;domain:AssistantDomain
 const DESTINATIONS:readonly Destination[]=[
  {label:'Sports picks and graded results',href:'/paper-betting/props',purpose:'Recorded picks, entries, grading and virtual results',domain:'sports'},
  {label:'Sports games',href:'/sports',purpose:'NBA and soccer game research',domain:'sports'},
+ {label:'All recorded sports predictions',href:'/paper-betting/predictions',purpose:'Candidate-only forecasts as well as recorded paper picks, with grade and calibration evidence',domain:'sports'},
+ {label:'NBA model research',href:'/research/nba',purpose:'Historical and forward NBA model evaluation',domain:'sports'},
  {label:'AI Learning Lab',href:'/lab',purpose:'Forecast calibration, model comparisons and shadow challengers',domain:'sports'},
  {label:'Stock PAPER autopilot',href:'/stocks/paper-auto',purpose:'Owner Start/Stop, frozen decisions, PAPER worker evidence and after-close marks',domain:'stocks'},
  {label:'Alpaca PAPER account',href:'/stocks/alpaca',purpose:'Signed-in account balance, positions and broker-side fills',domain:'stocks'},
  {label:'Stock strategy research',href:'/stocks/research',purpose:'Historical/forward studies, benchmark SPY and unpromoted strategies',domain:'research'},
  {label:'Independent Kalshi research',href:'/prediction-markets/kalshi',purpose:'NOAA weather forecasts, preliminary station observations and independent scorecards',domain:'kalshi'},
  {label:'Automation monitor',href:'/automation',purpose:'Collector, scheduler and worker health; job status does not prove an order',domain:'all'},
+ {label:'GitHub Actions workflows',href:'https://github.com/ang87505-crypto/SportsEdge/actions',purpose:'Run history and manually dispatched workflows; owner permissions may be needed',domain:'all'},
  {label:'Ask SportsEdge',href:'/assistant',purpose:'This read-only assistant and its supported research topics',domain:'all'}
 ];
 export function isNavigationQuestion(message:string):boolean{
  const s=conversationalText(message);
- return /\b(where (can|do|should) i (find|see|check|look|open)|where (is|are) (the|my) (page|dashboard|report)|where (is|are) (the|my) [a-z ]{1,40} (page|dashboard|report)|how (can|do) i (find|open|view)|take me to|show me (the )?(page|dashboard|screen)|show me (the )?[a-z ]{1,40} (page|dashboard|screen)|link (me|to)|which page|where did (that|this) (number|stat|result|figure) come from)\b/.test(s);
+ // Explicit navigation only: "show me today's trades" requests data,
+ // while "show me the trade dashboard" requests a link.
+ return /\b(where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s);
 }
 function relevant(q:QuestionRoute,s:string):Destination[]{
  const matches=(label:string)=>DESTINATIONS.filter(d=>d.label===label);
+ if(/\b(all|every|everything|whole site)\b/.test(s)&&/\b(page|pages|dashboards?|tabs?|screens?)\b/.test(s))
+  return ['Sports picks and graded results','All recorded sports predictions','Stock PAPER autopilot',
+   'Stock strategy research','Independent Kalshi research','Automation monitor'].flatMap(matches);
+ if(/\b(candidate|all predictions?|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
+  return matches('All recorded sports predictions');
+ if(/\b(nba model|elo|basketball model|nba research)\b/.test(s))return matches('NBA model research');
+ if(/\b(stock|stocks|strategy|strategies)\b/.test(s)&&/\b(research|backtests?|models?|performance vs spy|lab)\b/.test(s))
+  return matches('Stock strategy research');
+ if(/\b(learning lab|calibration|brier|model comparisons?|challengers?)\b/.test(s))
+  return matches('AI Learning Lab');
+ if(/\b(github|actions|workflow runs?|logs?|ci|build checks?)\b/.test(s))
+  return matches('GitHub Actions workflows');
  if(/\b(kalshi|noaa|nws|weather|inflation|cpi)\b/.test(s))return matches('Independent Kalshi research');
  if(/\b(monitor|automation|workflow|scheduled|cron|collector|jobs|run receipts)\b/.test(s))
   return matches('Automation monitor');
@@ -50,7 +67,7 @@ export function navigationAnswer(message:string,q:QuestionRoute):Reply{
  const cards:Card[]=[{kind:'links',items:choices.map(x=>({label:x.label,href:x.href}))}];
  const text=choices.map(x=>x.label+': '+x.purpose+'.').join('\n')+
   '\n\nThese pages show recorded evidence where available. Missing or stale records do not mean zero trades, zero profit or a failed model. Private Alpaca information requires owner sign-in.';
- return {text,cards,suggestions:choices.map(x=>'Open '+x.label).slice(0,4),
+ return {text,cards,suggestions:['What can you help me check?','Is anything failing?'],
   context:{domain:q.domain??'all',topic:q.topic}};
 }
 /** Domain-aware next steps, not invented analysis or an action to retrain. */
@@ -94,4 +111,52 @@ export function unsupportedQuestion(q:QuestionRoute):Reply{
   suggestions:['Were today’s stock PAPER trades good?','How did sports picks do yesterday?','Are there Kalshi opportunities?','Is everything running?'],
   context:{domain:q.domain??'all',topic:'help'}
  };
+}
+
+/**
+ * Source-linked operational guidance. Never initiates scheduling, training,
+ * deployment, broker writes, release changes or paid API requests.
+ */
+export function isManualOperationQuestion(message:string):boolean{
+ const s=conversationalText(message);
+ // "Did the collector run?" is a read-only status question, not a request to run it.
+ return /^(?:(?:please|can you|could you|would you|will you|i want to|i need to|help me|how do i|how can i|how should i) )?(?:run|trigger|dispatch|execute|retrain|backfill|sync|refresh|collect|settle|reconcile|deploy|merge|activate|enable|disable|restart|force|train)\b/.test(s)||
+  /\bhow (?:do|can|should) i (?:run|retrain|trigger|dispatch|execute|collect|settle|reconcile|backfill|deploy|activate|enable|disable)\b/.test(s);
+}
+export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
+ const s=conversationalText(message);
+ const kalshi=q.domain==='kalshi'||/\b(kalshi|noaa|bls|cpi|weather)\b/.test(s);
+ const stocks=q.domain==='stocks'||/\b(stocks?|alpaca|autopilot|broker|fills?|portfolio)\b/.test(s);
+ const sports=q.domain==='sports'||/\b(nba|props?|prizepicks|pick6|picks?|box scores?)\b/.test(s);
+ const source=kalshi?'Independent Kalshi research':stocks?'Stock PAPER autopilot':sports?'Sports picks and graded results':'Automation monitor';
+ const links=DESTINATIONS.filter(d=>d.label===source||d.label==='Automation monitor'||d.label==='GitHub Actions workflows');
+ const action=/\b(retrain|train|model|algorithm|learning)\b/.test(s)?'Model training and promotion':
+  /\b(deploy|merge|release|activate|enable|disable)\b/.test(s)?'Release or activation':
+  /\b(collect|settle|backfill|sync|refresh)\b/.test(s)?'Collection or settlement':
+  /\b(reconcile|execute|run|trigger|dispatch|restart)\b/.test(s)?'Workflow or execution':'Operation';
+ return {
+  text:action+' cannot be performed automatically by asking this chat. Nothing was changed. Open the linked owner page to inspect the current state, then use its authorized controls or the documented GitHub workflow. The assistant cannot guarantee a job is running just because it is scheduled, and it will not bypass release approvals.',
+  cards:[{kind:'links',items:links.map(x=>({label:x.label,href:x.href}))}],
+  suggestions:['Is everything running?','What needs my approval?'],
+  context:{domain:q.domain??'all',topic:'automation'}
+ };
+}
+export function supportedCommandsAnswer():Reply{
+ return {
+  text:'Ask me in ordinary language, even with common typos or short follow-ups. I can read saved sports predictions and virtual results, explain why no picks appeared, check stock PAPER status (private details require owner sign-in), summarize public Kalshi/NOAA research, review model evidence, and describe automation health. I can point you to the right page or workflow when a record is unavailable.\n\nFor safety, I cannot place bets, submit stock orders, start stock autopilot, activate collectors, deploy code, or automatically change a model. Pause/Stop and PrizePicks Resume can only be proposed to a signed-in owner and require a separate Confirm.',
+  cards:[{kind:'links',items:DESTINATIONS.filter(x=>['Sports picks and graded results','All recorded sports predictions',
+   'AI Learning Lab','Stock PAPER autopilot','Independent Kalshi research','Automation monitor'].includes(x.label)).map(x=>({label:x.label,href:x.href}))}],
+  suggestions:['Did my picks hit yesterday?','Why no picks tonight?','Were today’s stock trades good?','What did NOAA record?','What needs my approval?','Where are all the dashboards?'],
+  context:{domain:'all',topic:'help'}
+ };
+}
+/** New leagues are data research, not proof of live game-forecast or bets coverage. */
+export function unsupportedLeagueAnswer(message:string):Reply|null{
+ const s=conversationalText(message);
+ if(!/\b(nfl|nhl|mlb|wnba|college football|college basketball)\b/.test(s))return null;
+ if(!/\b(picks?|bets?|lines?|odds|predictions?|win rate|forecast|results?|accuracy|model|available|supported|tonight)\b/.test(s))return null;
+ const league=/(nfl|nhl|mlb|wnba|college football|college basketball)/.exec(s)?.[1]?.toUpperCase()??'that league';
+ return {text:'I cannot verify an active '+league+' picks or settled betting ledger from this chat. The current sports-picks answers come from recorded NBA props; a league being considered for independent data research does not mean its prediction model or betting integration is live. Check the Sports and research pages for supported games, or check GitHub for any unmerged research work. I will not invent '+league+' predictions.',
+  cards:[{kind:'links',items:[{label:'Sports research',href:'/sports'},{label:'Research workflows and PRs',href:'https://github.com/ang87505-crypto/SportsEdge/pulls'}]}],
+  suggestions:['How are NBA picks doing?','Where are all recorded predictions?'],context:{domain:'sports',topic:'help'}};
 }
