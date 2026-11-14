@@ -52,7 +52,7 @@ export function sourceFor(league,now){
 }
 /** RFC4180 for bounded text. Strings are data and never converted to commands. */
 export function parseCsv(text){
- if(typeof text!=='string'||text.length<20||Buffer.byteLength(text,'utf8')>MAX_CSV_BYTES||text.includes('\0'))
+ if(typeof text!=='string'||text.length<5||Buffer.byteLength(text,'utf8')>MAX_CSV_BYTES||text.includes('\0'))
   throw Error('SPORTS_CSV_INVALID_SIZE');
  const rows=[];let cells=[],part='',quoted=false,wasQuoted=false;
  const pushCell=()=>{cells.push(part);part='';wasQuoted=false;};
