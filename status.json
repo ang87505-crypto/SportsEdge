@@ -1,11 +1,11 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-14T12:04:18.127Z",
+ "generatedAt": "2026-11-14T13:38:30.279Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 43592986634,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43592986634",
-  "event": "schedule"
+  "id": 43600768537,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43600768537",
+  "event": "workflow_dispatch"
  },
  "overall": {
   "state": "WARN",
@@ -150,28 +150,28 @@
    "workflow": "props-tick.yml",
    "note": "Released off until the owner activates props-capture-v1; while off, each tick exits before any database or provider call.",
    "historyUrl": "https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-tick.yml",
-   "status": "OK",
-   "detail": "Last run succeeded.",
+   "status": "MISSED_SLOT",
+   "detail": "The latest planned time passed without a run; GitHub may have dropped it.",
    "workflowState": "active",
    "running": null,
    "lastRun": {
-    "id": 43564868885,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43564868885",
-    "event": "schedule",
+    "id": 43599262391,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43599262391",
+    "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-14T06:08:35.000Z",
-    "finishedAt": "2026-11-14T06:08:48.000Z",
+    "startedAt": "2026-11-14T13:20:25.000Z",
+    "finishedAt": "2026-11-14T13:20:38.000Z",
     "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "lastSuccess": {
-    "id": 43564868885,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43564868885",
-    "event": "schedule",
+    "id": 43599262391,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43599262391",
+    "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-14T06:08:35.000Z",
-    "finishedAt": "2026-11-14T06:08:48.000Z",
+    "startedAt": "2026-11-14T13:20:25.000Z",
+    "finishedAt": "2026-11-14T13:20:38.000Z",
     "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "lastFailure": null,
@@ -187,13 +187,13 @@
    },
    "consecutiveFailures": 0,
    "slots7d": {
-    "due": 81,
-    "missed": 57,
-    "lastMissedAt": "2026-11-14T04:07:00.000Z"
+    "due": 84,
+    "missed": 60,
+    "lastMissedAt": "2026-11-14T12:07:00.000Z"
    },
    "nextPlanned": [
-    "2026-11-14T12:07:00.000Z",
-    "2026-11-14T12:37:00.000Z"
+    "2026-11-14T14:07:00.000Z",
+    "2026-11-14T14:37:00.000Z"
    ],
    "schedule": [
     "7,37 11-23 * * *",
@@ -559,13 +559,13 @@
    },
    "consecutiveFailures": 0,
    "slots7d": {
-    "due": 149,
-    "missed": 126,
-    "lastMissedAt": "2026-11-14T08:43:00.000Z"
+    "due": 150,
+    "missed": 127,
+    "lastMissedAt": "2026-11-14T09:43:00.000Z"
    },
    "nextPlanned": [
-    "2026-11-14T12:43:00.000Z",
-    "2026-11-14T13:43:00.000Z"
+    "2026-11-14T13:43:00.000Z",
+    "2026-11-14T14:43:00.000Z"
    ],
    "schedule": [
     "43 * * * *"
@@ -584,45 +584,45 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 43592986634,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43592986634",
-    "event": "schedule",
+    "id": 43600768537,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43600768537",
+    "event": "workflow_dispatch",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-14T12:04:12.000Z",
+    "startedAt": "2026-11-14T13:38:20.000Z",
     "finishedAt": null,
     "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "lastRun": {
-    "id": 43592986634,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43592986634",
-    "event": "schedule",
+    "id": 43600768537,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43600768537",
+    "event": "workflow_dispatch",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-14T12:04:12.000Z",
+    "startedAt": "2026-11-14T13:38:20.000Z",
     "finishedAt": null,
     "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "lastSuccess": {
-    "id": 43587671751,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43587671751",
-    "event": "workflow_run",
+    "id": 43592986634,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43592986634",
+    "event": "schedule",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-14T10:57:06.000Z",
-    "finishedAt": "2026-11-14T10:57:44.000Z",
+    "startedAt": "2026-11-14T12:04:12.000Z",
+    "finishedAt": "2026-11-14T12:04:42.000Z",
     "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "lastFailure": null,
    "lastScheduledSuccess": {
-    "id": 43540477864,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43540477864",
+    "id": 43592986634,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/43592986634",
     "event": "schedule",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-14T01:25:13.000Z",
-    "finishedAt": "2026-11-14T01:25:48.000Z",
-    "headSha": "f014dd1e64e8079cd1863ea9214837e43a0ae57c"
+    "startedAt": "2026-11-14T12:04:12.000Z",
+    "finishedAt": "2026-11-14T12:04:42.000Z",
+    "headSha": "89fa650a6cfc454bdd95b23ee501b606fea3342c"
    },
    "consecutiveFailures": 0,
    "slots7d": {
@@ -631,8 +631,8 @@
     "lastMissedAt": "2026-11-11T09:07:00.000Z"
    },
    "nextPlanned": [
-    "2026-11-14T13:07:00.000Z",
-    "2026-11-14T17:07:00.000Z"
+    "2026-11-14T17:07:00.000Z",
+    "2026-11-14T21:07:00.000Z"
    ],
    "schedule": [
     "7 1,5,9,13,17,21 * * *"
@@ -648,8 +648,8 @@
     "kind": "collect",
     "status": "completed",
     "outcome": "NOTHING_DUE",
-    "startedAt": "2026-11-14T06:08:42.397587+00:00",
-    "finishedAt": "2026-11-14T06:08:43.891213+00:00"
+    "startedAt": "2026-11-14T13:20:32.850359+00:00",
+    "finishedAt": "2026-11-14T13:20:34.361262+00:00"
    },
    "lastSettle": {
     "kind": "settle",
@@ -762,91 +762,91 @@
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-14T12:04:36.151Z",
+  "checkedAt": "2026-11-14T13:38:47.993Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 3528,
+    "ms": 3451,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 21,
+    "ms": 41,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 1712,
+    "ms": 1883,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 132,
+    "ms": 113,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 1636,
+    "ms": 1854,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 2587,
+    "ms": 2071,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 234,
+    "ms": 108,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 126,
+    "ms": 50,
     "detail": "answered"
    },
    {
     "name": "Chat: health briefing",
     "ok": true,
-    "ms": 120,
+    "ms": 54,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 99,
+    "ms": 38,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 92,
+    "ms": 29,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 114,
+    "ms": 60,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 766,
+    "ms": 738,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 105,
+    "ms": 48,
     "detail": "HTTP 401"
    }
   ],
