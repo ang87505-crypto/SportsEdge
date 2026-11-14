@@ -94,7 +94,7 @@ test('navigation is link-only and manual operations are guidance-only',()=>{
   assert.ok(links.some(x=>x.href===href),message);
   assert.ok(result.cards.every(c=>c.kind!=='action'),message);
  }
- for(const phrase of ['run collect now','how do i retrain','where do i stop the bot','deploy the site'])
+ for(const phrase of ['run collect now','how do i retrain','where do i stop the bot','deploy the site','stop stocks tonight','please pause picks at 4 pm'])
   assert.equal(isManualOperationQuestion(phrase),true,phrase);
 });
 test('a free schedule archive is never misrepresented as live league picks',()=>{
