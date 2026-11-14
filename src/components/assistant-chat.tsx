@@ -11,6 +11,7 @@ type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestio
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
 const TOPICS=[
   {label:'Sports',question:"Tonight's picks"},
+  {label:'Watch Only',question:'How did our 60%+ tracked lines do yesterday?'},
   {label:'Stocks',question:'Stock PAPER results'},
   {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
   {label:'Research',question:'Stock strategy research results'},
@@ -131,7 +132,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence and read-only tools. A hosted conversational model is optional and disabled until the owner explicitly configures its shared cost budget; the built-in planner works without one. Independent NOAA results are not Kalshi wins. Chat cannot place bets or stock orders; Pause/Stop proposals require a separate owner confirmation. Chat history stays in this browser tab.</p>
+  <p className="quiet small-print">Use <a href="/paper-betting/watch">Watch Only</a> to track lines without wagering. Answers use recorded evidence and read-only tools. A hosted conversational model is optional and disabled until the owner explicitly configures its shared cost budget; the built-in planner works without one. Independent NOAA results are not Kalshi wins. Chat cannot place bets or stock orders; Pause/Stop proposals require a separate owner confirmation. Chat history stays in this browser tab.</p>
  </div>;
 }
 /**
