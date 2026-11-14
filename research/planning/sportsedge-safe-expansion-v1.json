@@ -1,0 +1,432 @@
+{
+  "schema": "sportsedge-safe-expansion-v1",
+  "capturedAt": "2026-11-13",
+  "purpose": "Coordinate parallel additive, research-first changes without disrupting production SportsEdge.",
+  "developmentMode": "isolated-draft-no-merge-no-deploy-no-activation",
+  "productionBaseline": {
+    "source": "main",
+    "notes": [
+      "The live NBA props collector and learning system already run; do not change schedules, automatic model-switch policy, budget or release controls here.",
+      "The stock PAPER schedule is on, but brokerWritesEnabled is false on main; PR #102 is not a shortcut for owner acceptance.",
+      "Real money is disabled. No workstream can enable betting, trading, order submission, or Kalshi access."
+    ]
+  },
+  "protectedFiles": [
+    "src/lib/props/schedule.ts",
+    "src/lib/stocks/paper-auto-release.ts",
+    "src/lib/server/paper-auto-controller.ts",
+    "src/lib/server/paper-auto-broker.ts",
+    "scripts/paper-auto-worker.ts",
+    ".github/workflows/paper-auto-worker.yml",
+    ".github/workflows/paper-auto-controller.yml",
+    ".github/workflows/props-tick.yml",
+    ".github/workflows/props-daily.yml",
+    "vercel.json",
+    "package.json",
+    "package-lock.json"
+  ],
+  "defaultSafetyGates": [
+    "Work on one isolated branch per domain, only additive/read-only changes until reviewed.",
+    "No merge to main or deployment without code review and green full regression.",
+    "Preserve sealed forward decisions and existing research-data append-only records.",
+    "Point-in-time availability must precede forecast lock; unavailable is not zero.",
+    "No new paid sources, secrets, provider accounts, live data dispatch, new orders or model promotion.",
+    "Manual approval for new scheduled collection even if source is free.",
+    "Shadow performance uses genuine future forecasts, not old data labeled as forward.",
+    "Keep current collection budgets, model selection, PAPER stake and stock release flags unchanged."
+  ],
+  "streams": [
+    {
+      "id": "safety",
+      "priority": 0,
+      "title": "Release firewall and regression baseline",
+      "status": "start-now",
+      "sourcePRs": [],
+      "dependsOn": [],
+      "area": "platform",
+      "deliverable": "Snapshot protected settings and current workflows; test release-diff and risk-switch changes; audit PR dependencies.",
+      "acceptance": [
+        "No active production or write-capable file changed without explicit review",
+        "All modified PRs have repeatable regression/check evidence",
+        "Owner rollback and alert paths documented"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "source-nfl-nhl",
+      "priority": 1,
+      "title": "NFL/NHL public data archive and compatibility",
+      "status": "draft",
+      "sourcePRs": [
+        172
+      ],
+      "dependsOn": [
+        "safety"
+      ],
+      "area": "sports",
+      "deliverable": "Read-only live source preflight, verify NHL/NFL asset schema/license; bounded daily append-only archive.",
+      "acceptance": [
+        "Real provider source downloads verified independently",
+        "No schedules activated without owner consent",
+        "Retry/deduplication and partial-failure preservation proven"
+      ],
+      "ownerGate": true
+    },
+    {
+      "id": "source-expansion",
+      "priority": 3,
+      "title": "MLB, WNBA, NCAAF, NCAAB, extra soccer",
+      "status": "proposed",
+      "sourcePRs": [],
+      "dependsOn": [
+        "source-nfl-nhl"
+      ],
+      "area": "sports",
+      "deliverable": "Source rights register and one provider adapter per league; schedule/final schema fixtures.",
+      "acceptance": [
+        "Source license and access documented",
+        "Unique event IDs, UTC observation time, finalization checks",
+        "Per-source no-cost/request caps, failing unknown schemas"
+      ],
+      "ownerGate": true
+    },
+    {
+      "id": "history",
+      "priority": 2,
+      "title": "Permanent point-in-time research memory",
+      "status": "draft-prototype",
+      "sourcePRs": [
+        172,
+        173,
+        176
+      ],
+      "dependsOn": [
+        "safety"
+      ],
+      "area": "research",
+      "deliverable": "Pure, unintegrated timeline/provenance audit prototype in #176; next add adapters on separately reviewed read-only branches.",
+      "acceptance": [
+        "Late observations excluded from pregame/pre-release features",
+        "Corrections append new versions, never mutate prior snapshots",
+        "Idempotent backfill never invents historical prediction times"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "sports-model",
+      "priority": 4,
+      "title": "NBA props uncertainty and challenger evaluation",
+      "status": "draft",
+      "sourcePRs": [
+        164
+      ],
+      "dependsOn": [
+        "history"
+      ],
+      "area": "sports",
+      "deliverable": "Rest/calendar defect review; minutes uncertainty, line-gap and More/Less calibration as separate frozen challengers.",
+      "acceptance": [
+        "All changes remain shadow-only",
+        "Chronological out-of-season holdout and game-clustered CI",
+        "Reject models with no significant calibrated improvement"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "sports-ledger",
+      "priority": 4,
+      "title": "All-candidate prediction and paper audit",
+      "status": "existing-on-main",
+      "sourcePRs": [],
+      "dependsOn": [
+        "history"
+      ],
+      "area": "sports",
+      "deliverable": "Audit existing every-line saved prediction path, labeling paper picks separately from candidate-only lines.",
+      "acceptance": [
+        "No credit usage increase",
+        "All pending/graded/void/stale cases explicitly distinguished",
+        "Virtual P/L is only from settled paper entries"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "staking",
+      "priority": 6,
+      "title": "Risk-sized paper staking research",
+      "status": "existing-shadow-on-main",
+      "sourcePRs": [],
+      "dependsOn": [
+        "sports-model",
+        "sports-ledger"
+      ],
+      "area": "sports",
+      "deliverable": "Compare flat stake to bounded alternatives on genuine forward-calibrated evidence.",
+      "acceptance": [
+        "No change to live $5 virtual stake",
+        "Bad calibration or missing sample leads to $0 shadow suggestion",
+        "Correlation/exposure limits tested"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "stock-monday",
+      "priority": 1,
+      "title": "Supervised Monday PAPER evidence",
+      "status": "draft",
+      "sourcePRs": [
+        171
+      ],
+      "dependsOn": [
+        "safety"
+      ],
+      "area": "stocks",
+      "deliverable": "Read-only decision-to-fill provenance panel, owner preflight and reconciliation diagnostics.",
+      "acceptance": [
+        "No write permission or order dispatch added",
+        "No mutation to stock release flags, account gate or #102",
+        "Unknown fill/reconciliation is not reported as P/L"
+      ],
+      "ownerGate": true
+    },
+    {
+      "id": "stock-research",
+      "priority": 4,
+      "title": "Stock momentum, quality, psychology and day-trading research",
+      "status": "draft",
+      "sourcePRs": [
+        165,
+        133,
+        134
+      ],
+      "dependsOn": [
+        "history",
+        "stock-monday"
+      ],
+      "area": "stocks",
+      "deliverable": "Pre-registered cost-aware historical and forward-only challenger experiments, with SPY/exposure baselines.",
+      "acceptance": [
+        "No strategy promotion based solely on backtests",
+        "Fees, slippage, corporate actions, survivorship and embargoes audited",
+        "At least 26 forward weekly samples for strategy confirmation as appropriate"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "public-macro",
+      "priority": 2,
+      "title": "NOAA weather and BLS CPI public-event memory",
+      "status": "draft",
+      "sourcePRs": [
+        173
+      ],
+      "dependsOn": [
+        "history"
+      ],
+      "area": "kalshi",
+      "deliverable": "Independent weather and CPI observed-data snapshots with revisions and availability time.",
+      "acceptance": [
+        "Real source schema verified",
+        "No Kalshi quotes or exchange calls",
+        "No automatic forecast declared without pre-release freeze"
+      ],
+      "ownerGate": true
+    },
+    {
+      "id": "prediction-markets",
+      "priority": 7,
+      "title": "Prediction-market opportunity research only",
+      "status": "blocked-permissions",
+      "sourcePRs": [],
+      "dependsOn": [
+        "public-macro"
+      ],
+      "area": "kalshi",
+      "deliverable": "Legal/terms/age/account eligibility checklist and research-only settlement convention; no market API access.",
+      "acceptance": [
+        "No real-money or exchange order integration",
+        "Written rights/eligibility decision before any quote ingestion",
+        "Independent probability calibration proven before discussing edge"
+      ],
+      "ownerGate": true
+    },
+    {
+      "id": "chat",
+      "priority": 2,
+      "title": "Chat-first command center integration",
+      "status": "draft-conflict",
+      "sourcePRs": [
+        168,
+        174
+      ],
+      "dependsOn": [
+        "safety",
+        "stock-monday"
+      ],
+      "area": "assistant",
+      "deliverable": "Integrate informal questions/Kalshi evidence from #174 with read-only tool registry/multi-turn security of #168 without overwriting shared page/chat edits.",
+      "acceptance": [
+        "Never calls owner account loaders anonymously",
+        "Untrusted text injection rejected",
+        "Missing/stale evidence reported as unavailable",
+        "No assistant tool can execute trade, bet or state mutation"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "learning-engine",
+      "priority": 3,
+      "title": "Versioned learning experiments and research intake",
+      "status": "draft-stacked",
+      "sourcePRs": [
+        166,
+        167
+      ],
+      "dependsOn": [
+        "history",
+        "sports-model",
+        "stock-research"
+      ],
+      "area": "research",
+      "deliverable": "Preserve C→D dependency; experiment registry, provenance and SEC filing-time guard; bounded diagnostics only.",
+      "acceptance": [
+        "No self-promotion or active-model writes",
+        "Source availability strictly earlier than decision",
+        "Pre-registration fingerprints and terminal rejected states",
+        "Reject backfilled forecasts falsely labeled forward"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "command-analytics",
+      "priority": 5,
+      "title": "Explainable performance and reliability UI",
+      "status": "proposed",
+      "sourcePRs": [],
+      "dependsOn": [
+        "chat",
+        "learning-engine"
+      ],
+      "area": "assistant",
+      "deliverable": "Read-only cross-domain yesterday/today comparison, accuracy vs confidence, attribution and provenance panels.",
+      "acceptance": [
+        "Dates and timezone labels explicit",
+        "Small-N warnings and denominator displayed",
+        "Charts never imply profitability without settled receipts"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "operations",
+      "priority": 3,
+      "title": "API budget and workflow health observability",
+      "status": "proposed",
+      "sourcePRs": [],
+      "dependsOn": [
+        "safety"
+      ],
+      "area": "platform",
+      "deliverable": "Read-only freshness/failed-job checks, spend estimates, duplicates, missing scores and research collector run health.",
+      "acceptance": [
+        "No new secret exposure or monitoring bill",
+        "Only actionable failures alert",
+        "Missing collection distinguished from zero opportunities"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "ux",
+      "priority": 6,
+      "title": "Mobile and accessibility polishing",
+      "status": "proposed",
+      "sourcePRs": [],
+      "dependsOn": [
+        "chat",
+        "command-analytics"
+      ],
+      "area": "platform",
+      "deliverable": "Preserve dark/green glass UI; improve tables, safe mobile layout, semantic navigation and loading/error states.",
+      "acceptance": [
+        "48-route/viewport smoke or newer equivalent passes",
+        "Keyboard navigation and contrast audited",
+        "No change to existing API behavior"
+      ],
+      "ownerGate": false
+    },
+    {
+      "id": "release",
+      "priority": 8,
+      "title": "Controlled review and merge sequence",
+      "status": "proposed",
+      "sourcePRs": [],
+      "dependsOn": [
+        "source-nfl-nhl",
+        "public-macro",
+        "stock-monday",
+        "chat",
+        "learning-engine",
+        "operations",
+        "ux"
+      ],
+      "area": "platform",
+      "deliverable": "Per-PR dependency, CI, rights and rollout report; explicit merge checklist and rollback before promotion.",
+      "acceptance": [
+        "No silent merge/deploy or activation",
+        "No pending higher-impact owner gate bypassed",
+        "Shadow and prod metrics compared after supervised rollout"
+      ],
+      "ownerGate": true
+    }
+  ],
+  "knownCollisions": [
+    {
+      "prs": [
+        168,
+        174
+      ],
+      "paths": [
+        "src/app/page.tsx",
+        "src/components/assistant-chat.tsx"
+      ],
+      "resolution": "Create an integration branch after reviewing both diffs; preserve #168 tool/auth boundaries and #174 colloquial + Kalshi routing. Do not blindly merge either."
+    },
+    {
+      "prs": [
+        166,
+        167
+      ],
+      "paths": [
+        "src/lib/lab/engine/lifecycle.test.mjs",
+        "research/engine/registry.json"
+      ],
+      "resolution": "#167 targets #166's head. Rebase and land C before D; review merged registry history and tests."
+    },
+    {
+      "prs": [
+        168,
+        167
+      ],
+      "paths": [
+        ".github/workflows/verify.yml"
+      ],
+      "resolution": "Consolidate existing checks rather than overwrite/duplicate the workflow."
+    },
+    {
+      "prs": [
+        168,
+        171
+      ],
+      "paths": [
+        "src/lib/stocks/paper-auto-ledger.ts"
+      ],
+      "resolution": "#168 reads ledger types; verify owner-only access and updated schema from #171."
+    }
+  ],
+  "excluded": [
+    "Real-money orders",
+    "Bookmaker/DFS browser automation",
+    "Kalshi account/exchange access",
+    "Unlicensed scraping",
+    "Automated live risk or model release"
+  ]
+}

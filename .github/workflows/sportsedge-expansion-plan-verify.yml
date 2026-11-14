@@ -1,0 +1,35 @@
+# Safety check for this planning-only handoff. No cron, deployment, database,
+# API, secrets, network provider requests or write permissions.
+name: SportsEdge safe expansion plan verification
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sportsedge-expansion-plan-verify.yml'
+      - 'docs/SPORTSEDGE_SAFE_EXPANSION_ROADMAP_2026_11_13.md'
+      - 'docs/SPORTSEDGE_CLAUDE_HANDOFF_2026_11_13.md'
+      - 'research/planning/sportsedge-safe-expansion-v1.json'
+      - 'scripts/sportsedge-expansion-guard.mjs'
+      - 'scripts/sportsedge-expansion-guard.test.mjs'
+permissions:
+  contents: read
+jobs:
+  planning-only-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate safety roadmap and reject unsafe test mutations
+        run: node --test scripts/sportsedge-expansion-guard.test.mjs
+      - name: Validate dependency graph and external approvals
+        run: node scripts/sportsedge-expansion-guard.mjs
+      - name: Verify original planning branch changes documentation and isolated checks only
+        if: github.event.pull_request.head.ref == 'plan/sportsedge-safe-expansion-20261113'
+        run: |
+          git fetch --no-tags origin main
+          node scripts/sportsedge-expansion-guard.mjs --diff
