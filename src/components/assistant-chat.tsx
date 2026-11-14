@@ -33,12 +33,12 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
  const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
- const requestId=useRef(0);
+ const requestId=useRef(0),requestPending=useRef(false);
  function applyAccess(a:Access){
   const valid=currentOwnerAccess(a).ownerAccess;
   if(!valid&&owner.current){
    // A reply authorized before logout must not resurrect private content afterward.
-   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
+   requestId.current++;requestPending.current=false;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
   }
   owner.current=valid;setAccess(valid?a:NO_ACCESS);
  }
@@ -72,7 +72,11 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  },[]);
  async function send(raw:string){
   const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
-  if(!text||busy)return;
+  // A ref blocks rapid double-submit synchronously; React's busy state is
+  // not updated until the next render. Never issue two assistant reads for one
+  // user action or let a stale response overwrite new conversation context.
+  if(!text||requestPending.current)return;
+  requestPending.current=true;
   const id=++requestId.current;
   lastAsked.current=text;follow.current=true;
   setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
@@ -91,10 +95,10 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
     }
    }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
   }catch{if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
-  finally{if(id===requestId.current)setBusy(false);}
+  finally{if(id===requestId.current){requestPending.current=false;setBusy(false);}}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);}
+ function reset(){requestId.current++;requestPending.current=false;lastAsked.current='';setBusy(false);setMsgs([opening]);setContext(null);}
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">
