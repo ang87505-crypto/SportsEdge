@@ -276,7 +276,9 @@ TOOLS.push({name:'watch_only',access:'public',
    period==='prior_7_days'?'Previous 7 Eastern game dates':'90-day retained study window';
   const rate=wins+losses?wins/(wins+losses):null;
   const data={source:'Existing saved The Odds API observations (no live provider query)',label,period,threshold,platform,
-   from,to,uniqueLines:unique.length,sourceRows:filtered.length,distinctGames:new Set(unique.map(x=>x.eventId)).size,
+   from,to,latestSavedLineAt:ledger.rows.reduce((date,row)=>row.recordedAt>date?row.recordedAt:date,'')||null,
+   latestVerifiedGradeAt:ledger.rows.reduce((date,row)=>row.gradedAt&&row.gradedAt>date?row.gradedAt:date,'')||null,
+   uniqueLines:unique.length,sourceRows:filtered.length,distinctGames:new Set(unique.map(x=>x.eventId)).size,
    wins,losses,pushes,pending,unscored,graded:wins+losses+pushes,hitRate:rate,
    hasFurtherRows:unique.length>rows.length,rows,
    note:'No bets or virtual entries created. No actual profit or executable odds. Figures depend on retained database coverage and latest verified grades.'};
