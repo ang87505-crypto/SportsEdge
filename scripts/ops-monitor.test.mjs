@@ -181,3 +181,18 @@ test('a job behind an off release switch is RELEASED_OFF, never a green "Healthy
   const cfg = JSON.parse(readFileSync(new URL('../config/ops/jobs.json', import.meta.url), 'utf8'));
   assert.equal(cfg.jobs.find(j => j.id === 'props-tick').releaseSwitch, 'props-capture');
 });
+
+test('independent NOAA daily workflow appears as optional public-event health, never a Kalshi exchange job',()=>{
+ const cfg=JSON.parse(readFileSync(new URL('../config/ops/jobs.json',import.meta.url),'utf8'));
+ const jobs=cfg.jobs.filter(j=>j.id==='independent-noaa-weather');
+ assert.equal(jobs.length,1);
+ const j=jobs[0];
+ assert.equal(j.required,false);
+ assert.equal(j.area,'public_events');
+ assert.equal(j.workflow,'kalshi-independent-weather-memory.yml');
+ assert.equal(j.releaseSwitch,undefined);
+ assert.match(j.note,/no.*Kalshi market opportunity/i);
+ const yml=readFileSync(new URL('../.github/workflows/kalshi-independent-weather-memory.yml',import.meta.url),'utf8');
+ assert.deepEqual(workflowCrons(yml),['11 1,3 * * *','17 9,11 * * *']);
+ assert.doesNotMatch(yml,/\b(odds_api|api\.kalshi\.com|ALPACA_PAPER_SECRET_KEY|realMoneyEnabled)\b/i);
+});
