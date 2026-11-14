@@ -47,7 +47,9 @@ export function parseControlRequest(text:string):ControlRequest|null{
  const t=text.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
  if(!t||/\b(dont|do not|never|not to|without|shouldnt|should not|no need to|cancel that)\b/.test(t))return null;
  // No future/conditional scheduling can be initiated from a chat proposal.
- if(/\b(if|unless|until|after|before|tomorrow|later|next week|next month|yesterday|last night)\b/.test(t))return null;
+ if(/\b(if|unless|until|after|before|when|tomorrow|tonight|later|next|yesterday|last night|this evening|this afternoon|in the morning|at open|at close|at noon|at midnight)\b/.test(t)||
+  /\b(?:at|around|by) \d{1,2}(?::\d{2})?(?: (?:am|pm))?\b/.test(t)||
+  /\bin \d+ (?:minutes?|hours?|days?|weeks?)\b/.test(t))return null;
  // Asking about a past, hypothetical or procedural action is NOT issuing it.
  if(/^(why|when|where|what|how|did|does|is|are|was|were|should i|what if|tell me|explain|show me)\b/.test(t))return null;
  const m=/^(?:(?:please|pls|plz) )?(?:(?:can|could|would|will) you |i want (?:you )?to |i need (?:you )?to |i would like (?:you )?to |help me )?(pause|resume|unpause|stop|halt|start|turn off|turn on|switch off|switch on|buy|sell|place)\b/.exec(t);
