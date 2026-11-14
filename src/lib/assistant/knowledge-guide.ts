@@ -164,3 +164,27 @@ export function unsupportedLeagueAnswer(message:string):Reply|null{
   cards:[{kind:'links',items:[{label:'Sports research',href:'/sports'},{label:'Research workflows and PRs',href:'https://github.com/ang87505-crypto/SportsEdge/pulls'}]}],
   suggestions:['How are NBA picks doing?','Where are all recorded predictions?'],context:{domain:'sports',topic:'help'}};
 }
+
+/**
+ * Distinguish "why aren't you working?" about the conversational assistant
+ * from "is SportsEdge down?" about real collector/server health.
+ * A chat availability question never checks private accounts or proposes an action.
+ */
+export function isAssistantAvailabilityQuestion(message:string):boolean{
+ const t=conversationalText(message);
+ if(!t||/\b(sportsedge|website|site|server|stocks?|props?|picks?|models?|kalshi|collectors?|workflows?|jobs?|alpaca|nba|nhl|nfl)\b/.test(t))
+  return false;
+ return /^(?:why (?:are you not|are not you|is (?:the )?(?:assistant|chat) not) (?:working|coding)|why (?:did you )?stop (?:working|coding)|are you (?:still |actually )?(?:working|coding)|are you doing (?:anything|work)|can you (?:still |keep )?(?:working|coding|work|code)|how (?:long|often) (?:do you )?(?:keep|continue) (?:working|coding))\b/.test(t);
+}
+/** Plain answer with grounded monitoring links, not fabricated live statuses. */
+export function assistantAvailabilityAnswer():Reply{
+ return {
+  text:'I can help when you send a message, but I do not continue editing code or running checks after a chat reply ends. Existing scheduled GitHub Actions can run independently of the chat. That does not mean a particular job actually succeeded. Nothing was started or changed by this question. To see whether SportsEdge collectors or automated jobs ran, open the Automation monitor or GitHub Actions history.',
+  cards:[{kind:'links',items:[
+   {label:'Automation monitor',href:'/automation'},
+   {label:'GitHub Actions history',href:'https://github.com/ang87505-crypto/SportsEdge/actions'}
+  ]}],
+  suggestions:['Is any automation broken?','What did the system do today?','Where are the workflow logs?'],
+  context:{domain:'all',topic:'help'}
+ };
+}
