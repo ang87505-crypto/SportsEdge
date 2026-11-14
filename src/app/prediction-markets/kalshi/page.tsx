@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
-import {loadLatestIndependentWeather} from '@/lib/prediction-markets/kalshi/weather-memory-view';
+import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
 
 /**
  * Only independent archived NOAA weather data is read from the research-data branch.
@@ -11,7 +11,8 @@ export const metadata={title:'Prediction markets research · SportsEdge',
 
 export const revalidate=600;
 export default async function PredictionMarketsKalshiPage(){
- const archive=await loadLatestIndependentWeather();
+ const asOf=new Date().toISOString();
+ const [archive,scorecard]=await Promise.all([loadLatestIndependentWeather(asOf),loadLatestWeatherScorecard(asOf)]);
  return <>
   <PageHeading title="Prediction markets research"
    description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
@@ -47,6 +48,26 @@ export default async function PredictionMarketsKalshiPage(){
     'Awaiting the first independently captured NWS forecast after the owner-approved research workflow is released. No market data is being requested.'}</p>}
    <p><a href="https://github.com/ang87505-crypto/SportsEdge/tree/research-data/kalshi-independent/nyc-weather"
     target="_blank" rel="noreferrer">View archived independent NOAA evidence</a></p>
+  </Panel>
+  <Panel title="Independent forward forecast scorecard" actions={<Evidence kind={scorecard.state==='RECORDED'?'recorded':'unavailable'}/>}>
+   {scorecard.state==='RECORDED'?<>
+    <KeyValues items={[
+     ['Distinct climate days evaluated',String(scorecard.scorecard.evaluatedDays)],
+     ['Mean temperature forecast error',scorecard.scorecard.meanAbsoluteErrorF===null?'Not measured':
+      scorecard.scorecard.meanAbsoluteErrorF.toFixed(1)+'°F'],
+     ['Independent 5°F-range coverage',scorecard.scorecard.independentBandHitRate===null?'Not measured':
+      (scorecard.scorecard.independentBandHitRate*100).toFixed(1)+'% (NOT bets)'],
+     ['Calibrated probabilities evaluated',String(scorecard.scorecard.modelScoredDays)],
+     ['Experimental model Brier score',scorecard.scorecard.modelBrier===null?
+      'Insufficient trained forward probabilities':scorecard.scorecard.modelBrier.toFixed(4)],
+     ['Evidence status',scorecard.scorecard.status==='INSUFFICIENT_HISTORY'?'Insufficient history':
+      'Exploratory only — no verified Kalshi edge'],
+    ]}/>
+    <p className="quiet small-print">These comparisons use preliminary NWS climate reports, not final Kalshi
+     contract results. They represent weather forecasting evidence only and never count as orders, fills or profit.</p>
+   </>:<p>{scorecard.state==='ARCHIVE_UNAVAILABLE'?
+    'The archived independent scorecard could not be verified. No accuracy or trading results are inferred.':
+    'There are not yet completed archived government forecast/outcome pairs to summarize.'}</p>}
   </Panel>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
    <p>Offline market data normalization, tentative fee-aware paper forecasts, strict settlement grading and
