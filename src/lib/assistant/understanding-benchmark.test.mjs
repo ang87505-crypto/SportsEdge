@@ -105,3 +105,17 @@ test('a free schedule archive is never misrepresented as live league picks',()=>
   assert.equal(answer.cards.some(c=>c.kind==='action'),false);
  }
 });
+
+test('stock picks tonight stays in stocks while an explicitly mixed question spans both',()=>{
+ for(const [message,domain] of [
+  ['stock picks tonight','stocks'],
+  ['tonight stock picks','stocks'],
+  ['what stocks did we pick tonight','stocks'],
+  ['why stock picks failed last night','stocks'],
+  ['how did NBA and stocks do','all'],
+  ['what about sports and stocks','all'],
+  ['which NBA research model','sports']
+ ]){
+  assert.equal(routeQuestion(message,null).domain,domain,message);
+ }
+});
