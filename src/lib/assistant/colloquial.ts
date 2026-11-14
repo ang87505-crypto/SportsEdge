@@ -45,7 +45,7 @@ const TERMS=[
  'today','yesterday','tomorrow','tonight',
  'improve','improving','improvements','model','models','training',
  'paper','research','backtest','strategy','strategies','money','credits',
- 'record','recorded','filled','settled','settlement','scores','graded',
+ 'record','recorded','future','futures','filled','settled','settlement','scores','graded',
  'account','accounts','future','current','available','availability',
  'sources','refresh','updated','failed','working','status'
 ] as const;
