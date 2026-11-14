@@ -80,7 +80,8 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
  // Explicit run/retrain/deploy requests are answered with safe destination
  // links, not silently treated as owner POSTs or as already-completed work.
- if(isManualOperationQuestion(message))return respond(manualOperationAnswer(message,q));
+ if(isManualOperationQuestion(message)&&!parseControlRequest(message))
+  return respond(manualOperationAnswer(message,q));
  const unsupportedLeague=unsupportedLeagueAnswer(message);
  if(unsupportedLeague)return respond(unsupportedLeague);
  if(q.topic==='help')return respond(supportedCommandsAnswer());
