@@ -43,10 +43,16 @@ export function auditFrozenForecast(forecast,sourceRecords,outcome=null,receipt=
  if(typeof forecast?.probability!=='number'||!Number.isFinite(forecast.probability)||
    forecast.probability<0||forecast.probability>1)reasons.push('INVALID_PROBABILITY');
  if(!Array.isArray(sourceRecords)||sourceRecords.length===0)reasons.push('NO_SOURCE_EVIDENCE');
- else if(cutoff!==null)for(const source of sourceRecords){
+ else if(cutoff!==null){
+  const seen=new Set();
+  for(const source of sourceRecords){
+   const key=(source?.sourceId??'')+'|'+(source?.payloadSha256??'');
+   if(seen.has(key)){reasons.push('DUPLICATE_SOURCE');continue;}
+   seen.add(key);
    if(source?.domain!==domain){reasons.push('CROSS_DOMAIN_SOURCE');continue;}
    const result=sourceAtDecision(source,forecast.featureCutoff);
    if(!result.usable)reasons.push(result.reason);
+  }
  }
  const uniq=[...new Set(reasons)],eligible=uniq.length===0;
  const base={
@@ -73,7 +79,8 @@ export function auditFrozenForecast(forecast,sourceRecords,outcome=null,receipt=
 export function summarizeReadOnlyAudit(records){
  if(!Array.isArray(records))throw Error('AUDIT_EXPECTS_RECORDS');
  const total=records.length,eligible=records.filter(r=>r.eligibleForForwardEvaluation).length;
- const graded=records.filter(r=>r.gradeState==='graded'),settled=records.filter(r=>r.netVirtualCents!==null);
+ const graded=records.filter(r=>r.gradeState==='graded');
+ const settled=graded.filter(r=>r.decision==='paper_entry'&&Number.isSafeInteger(r.netVirtualCents));
  return {
   total,eligible,excluded:total-eligible,graded:graded.length,
   pending:records.filter(r=>r.gradeState==='pending').length,
