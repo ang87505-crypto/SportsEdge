@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {callTool,toolByName} from './tools.ts';
 import {plan,compose} from './planner.ts';
+import {handleCommand} from '../server/command-handler.ts';
 
 const nowIso='2026-11-14T20:00:00.000Z';
 const obs=(id,event,name,day,platform='prizepicks')=>({
@@ -98,4 +99,33 @@ test('no trading or money controls can leak into the Watch Only planner',()=>{
  for(const q of ['Why no bets tonight?','Compare our Kalshi weather and NBA picks yesterday',
   'How did our stock picks compare with NBA this week?','Stop the stock bot and show lines'])
   assert.notEqual(plan(q,[])?.calls[0]?.tool,'watch_only',q);
+});
+
+test('complete no-bet conversation answers from saved records and carries 60% threshold into follow-up',async()=>{
+ let reads=0,legacy=0;
+ const p=ports({watch:async()=>{reads++;return data;}});
+ async function q(message,session){
+  const res=await handleCommand({
+   contentType:'application/json',
+   text:async()=>JSON.stringify({message,...(session?{session}:{})}),
+   clientKey:'synthetic-watch-only'
+  },{},{
+   ports:p,
+   legacy:async()=>{legacy++;return {text:'UNEXPECTED_LEGACY',cards:[],suggestions:[],context:{domain:'sports'}};}
+  });
+  assert.equal(res.status,200);
+  return res.json();
+ }
+ const first=await q('How did all 60%+ predictions do yesterday?');
+ assert.equal(first.mode,'tools');
+ assert.match(first.reply.text,/2 distinct saved lines/);
+ assert.match(first.reply.text,/50\.0%/);
+ assert.equal(first.session.last[0].tool,'watch_only');
+ const next=await q('what about 70%?',first.session);
+ assert.equal(next.mode,'tools');
+ assert.equal(next.session.last[0].input.threshold,'70');
+ assert.equal(next.session.last[0].input.period,'yesterday');
+ assert.match(next.reply.text,/1 distinct saved lines/);
+ assert.equal(legacy,0);
+ assert.equal(reads,2);
 });
