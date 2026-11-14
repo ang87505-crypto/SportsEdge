@@ -9,6 +9,7 @@
 import {normalize} from './understand.ts';
 
 const DIRECT:Readonly<Record<string,string>>=Object.freeze({
+ wer:'were',improv:'improve',
  kalhsi:'kalshi',kalsi:'kalshi',kalsh:'kalshi',
  alpca:'alpaca',alapca:'alpaca',
  stoks:'stocks',stokcs:'stocks',stcoks:'stocks',stockz:'stocks',
