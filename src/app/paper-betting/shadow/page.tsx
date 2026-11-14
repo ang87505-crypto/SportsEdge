@@ -39,7 +39,8 @@ async function Live({searchParams}:{searchParams:Search}){
  const date=chosen&&dates.includes(chosen)?chosen:dates[0];
  if(!date)return <Empty title="No qualifying forecasts saved yet">The live collector must save valid before-lock observations before this research ledger has any rows. It will never invent picks just to reach a daily quota.</Empty>;
  const rows=x.rows.filter(r=>r.slateDate===date);
- const daily=x.summarize(rows);
+ const impact=x.impact(date);
+ const daily=impact.daily;
  const display=rows.slice(0,800);
  const dateHref=(d:string)=>'/paper-betting/shadow?date='+encodeURIComponent(d);
  return <>
@@ -49,6 +50,13 @@ async function Live({searchParams}:{searchParams:Search}){
    <Metric label="Graded shadow results" value={String(daily.graded)} detail={daily.wins+' wins · '+daily.losses+' losses · '+daily.pushes+' pushes · '+daily.pending+' pending'}/>
    <Metric label="Hypothetical settled net" value={signed(daily.hypotheticalNetCents)} detail="$5 imaginary even-money stake per settled candidate; NOT actual returns"/>
   </MetricGrid>
+  <Panel title={'How '+date+' changed the overall win percentage'} description="Before versus after this NBA slate, using only verified win/loss outcomes. The slate dates use US Eastern time.">
+   <div className="evidence-list">
+    <p>Before this slate: <strong>{pct(impact.prior.winRate)}</strong> ({impact.prior.wins} wins, {impact.prior.losses} losses). Through this slate: <strong>{pct(impact.through.winRate)}</strong> ({impact.through.wins} wins, {impact.through.losses} losses).</p>
+    <p>Effect on the cumulative win percentage: <strong>{impact.deltaPoints===null?'Not measurable yet':(impact.deltaPoints>0?'+':'')+impact.deltaPoints.toFixed(2)+' percentage points'}</strong>. {daily.pending} predictions are still pending, so this figure can change when legitimate final grades arrive or are corrected.</p>
+    <p>These percentages track the 60%+ shadow-research selections only. They are separate from the live pick selection win rate and the actual multi-leg virtual-entry accounting. New forecasts do not become wins until a verified result is recorded.</p>
+   </div>
+  </Panel>
   <Panel title="Research quality and coverage" description="A >=60% model probability is not verified profitability or evidence of a market edge.">
    <div className="evidence-list">
     <p>Graded directional win rate: <strong>{pct(daily.winRate)}</strong> ({daily.wins+daily.losses} excluding voids/ties). Virtual benchmark expected net over all candidates: <strong>{signed(daily.hypotheticalExpectedNetCents)}</strong>; pending forecasts have not contributed to settled net.</p>
@@ -61,7 +69,7 @@ async function Live({searchParams}:{searchParams:Search}){
     {dates.slice(0,15).map(d=><Link key={d} className="chat-chip" aria-current={date===d?'true':undefined} href={dateHref(d)}>{d}</Link>)}
    </div></div>
    <div className="chat-table-scroll"><table className="chat-table predictions-table">
-    <thead><tr>{['Game / athlete','Line','Model side','Stated chance','Live selection','Final outcome','Hypothetical $5 net'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead>
+    <thead><tr>{['Game / athlete','Line','Model side','Stated chance','Live pick decision (not entry)','Final outcome','Hypothetical $5 net'].map(h=><th key={h} scope="col">{h}</th>)}</tr></thead>
     <tbody>{display.map(r=><tr key={r.predictionId}>
      <th scope="row">{r.player}<small className="quiet"> · {r.game}</small></th>
      <td>{r.stat} {r.line}</td>
