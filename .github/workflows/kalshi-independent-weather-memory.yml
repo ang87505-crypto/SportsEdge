@@ -5,8 +5,8 @@
 name: Independent NYC weather memory (NOAA only)
 on:
   schedule:
-    - cron: '11 3 * * *'   # 03:11 UTC: freeze tomorrow's NYC EST-day grid forecast
-    - cron: '17 11 * * *'  # 11:17 UTC: archive prior day's next-morning CLINYC report
+    - cron: '11 1,3 * * *'   # early + backup: first frozen NYC EST-day grid forecast wins
+    - cron: '17 9,11 * * *'  # early + backup: next-morning complete CLINYC daily report
   workflow_dispatch:
     inputs:
       phase:
@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 12
     env:
       GH_TOKEN: ${{ github.token }}
-      PHASE: ${{ inputs.phase || (github.event.schedule == '11 3 * * *' && 'forecast' || 'outcome') }}
+      PHASE: ${{ inputs.phase || (github.event.schedule == '11 1,3 * * *' && 'forecast' || 'outcome') }}
     steps:
       - uses: actions/checkout@v4
         with:
