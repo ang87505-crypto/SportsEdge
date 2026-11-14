@@ -180,6 +180,24 @@ async function download(url,fetcher){
  for(const part of chunks){bytes.set(part,offset);offset+=part.length;}
  return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
 }
+/**
+ * Read-only source compatibility probe. Exactly one bounded public download;
+ * no archive, credentials, bets, deployment or GitHub branch mutation.
+ * Intended for supervised pre-activation checks, never automatic daily CI.
+ */
+export async function preflightIndependentSports({league,now=()=>new Date().toISOString(),fetcher=fetch}){
+ if(!leagues.includes(league))throw Error('SPORTS_LEAGUE_NOT_ALLOWED');
+ const at=captureTime(now());
+ const source=sourceFor(league,at);
+ const csv=await download(source.url,fetcher);
+ const frozen=freezeSportsSnapshot(league,csv,at);
+ return {
+  status:'SOURCE_SCHEMA_OK',league,observedAt:at,season:source.season,
+  sourceUrl:source.url,sourceCsvSha256:frozen.sourceCsvSha256,
+  rows:frozen.rows,sourceReportedResults:frozen.sourceReportedResults,
+  sourceCalls:1,writes:0
+ };
+}
 export async function collectIndependentSports({league,root,now=()=>new Date().toISOString(),fetcher=fetch}){
  if(typeof root!=='string'||!root.trim()||!Object.hasOwn(SPORTS_SOURCES,league))throw Error('SPORTS_BAD_CONFIG');
  const at=captureTime(now()),day=at.slice(0,10),path=dailyPath(root,league,day);
