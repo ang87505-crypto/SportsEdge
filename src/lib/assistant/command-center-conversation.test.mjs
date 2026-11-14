@@ -261,3 +261,32 @@ test('site failures and automation questions do not become assistant availabilit
  assert.deepEqual((({domain,topic})=>({domain,topic}))(routeQuestion('why is the site not working',null)),
   {domain:'all',topic:'health'});
 });
+
+test('operational how-to links reflect the correct research domain, not a generic trade page',async()=>{
+ for(const [message,expectedLink,expectedNote] of [
+  ['retrain the NBA props model','/lab',/research only/i],
+  ['run stock research backtest','/stocks/research',/do not enable broker orders/i],
+  ['backfill NFL scores','/sports',/not evidence that new-league forecasting/i],
+  ['refresh NOAA data','/prediction-markets/kalshi',/separate from Kalshi exchange access/i],
+  ['reconcile Alpaca paper account','/stocks/paper-auto',/owner sign-in/i],
+  ['deploy SportsEdge','https://github.com/ang87505-crypto/SportsEdge/actions',/separate code review/i]
+ ]){
+  const ps=fakePorts();
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200,message);
+  assert.match(r.reply.text,/Nothing was changed/,message);
+  assert.match(r.reply.text,expectedNote,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[])
+   .some(l=>l.href===expectedLink),message);
+  assert.ok(r.reply.cards.every(c=>c.kind!=='action'),message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
+test('an owner control remains a proposal rather than being misrouted as a workflow guide',async()=>{
+ const ps=fakePorts();
+ const r=await ask('please pause prizepicks',null,ps);
+ assert.equal(r.http,200);
+ assert.match(r.reply.text,/only the signed-in owner/i);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
