@@ -94,16 +94,17 @@
       "id": "history",
       "priority": 2,
       "title": "Permanent point-in-time research memory",
-      "status": "proposed",
+      "status": "draft-prototype",
       "sourcePRs": [
         172,
-        173
+        173,
+        176
       ],
       "dependsOn": [
         "safety"
       ],
       "area": "research",
-      "deliverable": "Shared immutable contract for source, fetchedAt, availableAt, eventAt, revision, checksum and attribution; distinct archives per domain.",
+      "deliverable": "Pure, unintegrated timeline/provenance audit prototype in #176; next add adapters on separately reviewed read-only branches.",
       "acceptance": [
         "Late observations excluded from pregame/pre-release features",
         "Corrections append new versions, never mutate prior snapshots",
