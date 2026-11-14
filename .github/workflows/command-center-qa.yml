@@ -4,6 +4,18 @@
 name: Command center QA (manual)
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/lib/command/**'
+      - 'src/lib/server/command*'
+      - 'src/app/api/command/**'
+      - 'src/components/assistant-chat.tsx'
+      - 'src/components/command-insights.tsx'
+      - 'src/app/assistant/page.tsx'
+      - 'scripts/command-real-conversation.ts'
+      - 'package*.json'
+      - 'database/command/**'
+      - '.github/workflows/command-center-qa.yml'
   push:
     branches: [command-center-2]
     paths:
@@ -50,6 +62,7 @@ jobs:
           PGPASSWORD: postgres
         run: node --experimental-strip-types --test src/lib/server/command-ledger.integration.test.mjs
       - name: Real multi-turn conversation (read-only records)
+        if: github.event_name == 'workflow_dispatch'
         env:
           SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
           SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
