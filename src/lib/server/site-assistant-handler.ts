@@ -20,6 +20,8 @@ import {briefingAnswer,BRIEFING_TOPICS,type BriefingTopic} from '../assistant/br
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {CHAT_ACTIONS,parseControlRequest,type ChatActionId} from '../assistant/actions.ts';
 import {labAnswer} from '../assistant/lab-answer.ts';
+import {kalshiPublicAnswer,type KalshiPublicResearch} from '../assistant/kalshi-answer.ts';
+import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '../prediction-markets/kalshi/weather-memory-view.ts';
 import {loadLab} from './lab-load.ts';
 import type {LabView} from '../lab/view.ts';
 type Env=Readonly<Record<string,string|undefined>>;
