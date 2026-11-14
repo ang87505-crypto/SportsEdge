@@ -48,3 +48,13 @@ test('mis-spelled commands cannot alter ticker, quantity, player or odds values'
  assert.equal(conversationalText('Why 12.5 rebounds for Sengun?'),'why 12.5 rebounds for sengun');
  assert.equal(conversationalText('XYZ 9000 moneymade'),'xyz 9000 moneymade');
 });
+
+test('short-form assistant availability text is repaired without implying a site outage',()=>{
+ for(const message of ['y rnt worky','y rnt u worky','why rnt you workin','why are not you wrkng']){
+  const normalized=conversationalText(message);
+  assert.match(normalized,/why are you not working|why are not you working/,message+' -> '+normalized);
+ }
+ assert.equal(conversationalText('r u worky'),'are you working');
+ assert.equal(conversationalText('Is SportsEdge down?'),'is sportsedge down');
+ assert.equal(conversationalText('why are my stocks not working'),'why are my stocks not working');
+});
