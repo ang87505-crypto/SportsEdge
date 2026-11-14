@@ -295,7 +295,9 @@ test('native domain router refuses cross-market comparisons and respects colloqu
   'Are Kalshi weather predictions accurate last week?',
   'How did my alpaca stocks perform today?',
   'What was the CPI forecast hit rate last week?',
-  'Compare stock returns last week to the week before'
+  'Compare stock returns last week to the week before',
+  'Compare NBA picks and stock profits this week',
+  'Compare Kalshi forecasts and NBA props yesterday'
  ])assert.equal(plan(text,[]),null,text);
  const props=plan('how did our nba picks do yesterday',[]);
  assert.equal(props?.calls?.[0]?.tool,'sports_results');
