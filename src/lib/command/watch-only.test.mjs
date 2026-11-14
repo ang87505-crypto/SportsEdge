@@ -126,6 +126,10 @@ test('complete no-bet conversation answers from saved records and carries 60% th
  assert.equal(next.session.last[0].input.threshold,'70');
  assert.equal(next.session.last[0].input.period,'yesterday');
  assert.match(next.reply.text,/1 distinct saved lines/);
+ const misses=await q('which ones missed?',next.session);
+ assert.equal(misses.mode,'tools');
+ assert.match(misses.reply.text,/incorrect/);
+ assert.ok(misses.reply.cards.some(c=>c.kind==='table'&&c.title==='Misses'&&c.rows.some(row=>row[0].includes('Loser Two'))));
  assert.equal(legacy,0);
- assert.equal(reads,2);
+ assert.equal(reads,3);
 });
