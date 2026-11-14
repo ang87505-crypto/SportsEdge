@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,existsSync,writeFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {parseCsv,sourceFor,freezeSportsSnapshot,collectIndependentSports} from './independent-sports-collect.mjs';
+import {parseCsv,sourceFor,freezeSportsSnapshot,collectIndependentSports,preflightIndependentSports} from './independent-sports-collect.mjs';
 const now='2026-11-13T18:00:00.000Z';
 const nfl=[
  'game_id,season,game_type,week,gameday,gametime,away_team,away_score,home_team,home_score,away_rest,home_rest,away_moneyline,home_moneyline,spread_line',
@@ -116,4 +116,39 @@ test('rejects fake settled scores on the same date even when provider reports bo
  const r=freezeSportsSnapshot('nfl',inPlay,now);
  assert.equal(r.sourceReportedResults,0);
  assert.equal(r.games[0].homeScore,null);
+});
+
+test('read-only preflight verifies both source schemas using only one mocked GET each',async()=>{
+ const requests=[];
+ const nflReport=await preflightIndependentSports({league:'nfl',now:()=>now,
+  fetcher:async(url,opts)=>{requests.push(url);assert.equal(opts.method,'GET');return new Response(nfl);}});
+ const nhlReport=await preflightIndependentSports({league:'nhl',now:()=>now,
+  fetcher:async(url,opts)=>{requests.push(url);assert.equal(opts.method,'GET');return new Response(nhl);}});
+ assert.equal(requests.length,2);
+ assert.equal(nflReport.rows,2);
+ assert.equal(nhlReport.rows,2);
+ for(const report of [nflReport,nhlReport]){
+  assert.equal(report.status,'SOURCE_SCHEMA_OK');
+  assert.equal(report.sourceCalls,1);
+  assert.equal(report.writes,0);
+  assert.equal(report.sourceCsvSha256.length,64);
+  assert.ok(report.observedAt.endsWith('Z'));
+ }
+});
+
+test('read-only preflight fails closed on upstream schema drift and invalid leagues',async()=>{
+ await assert.rejects(preflightIndependentSports({league:'nfl',now:()=>now,
+  fetcher:async()=>new Response(nfl.replace('home_score','bad_score'))}),/SCHEMA_CHANGED/);
+ await assert.rejects(preflightIndependentSports({league:'kalshi',now:()=>now,
+  fetcher:async()=>{throw Error('must not fetch');}}),/NOT_ALLOWED/);
+});
+
+test('daily workflow archives each successful league before attempting the next',()=>{
+ const workflow=readFileSync(new URL('../.github/workflows/independent-sports-memory.yml',import.meta.url),'utf8');
+ assert.match(workflow,/vars\.SPORTSEDGE_INDEPENDENT_SPORTS_COLLECT_ENABLED == 'true'/);
+ assert.match(workflow,/if: always\(\) && steps\.nfl\.outcome == 'success'/);
+ assert.match(workflow,/if: always\(\) && steps\.research_checkout\.outcome == 'success'/);
+ assert.match(workflow,/if: always\(\) && steps\.nhl\.outcome == 'success'/);
+ assert.match(workflow,/run: bash \.github\/scripts\/research-data-branch\.sh commit "independent NFL research/);
+ assert.match(workflow,/run: bash \.github\/scripts\/research-data-branch\.sh commit "independent NHL research/);
 });
