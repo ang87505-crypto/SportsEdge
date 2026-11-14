@@ -60,6 +60,22 @@ test('classifier abstains on unsafe, Kalshi, unknown, ambiguous and cross-market
   'tell me about another persons account'
  ])assert.equal(nativeIntent(phrase),null,phrase);
 });
+test('colloquial chat shorthand is repaired only when the intended evidence tool is clear',()=>{
+ for(const [message,tool,period] of [
+  ['how many piks hit yday','sports_results','yesterday'],
+  ['wats the virtual bankroll','virtual_bankroll',null],
+  ['show yesterday losing player propz','sports_results','yesterday']
+ ]){
+  const d=nativeIntent(message);
+  assert.equal(d?.call.tool,tool,message);
+  if(period)assert.equal(d?.call.input.period,period,message);
+ }
+ for(const message of [
+  'can u buy stocks rn',
+  'plz start our betting bot',
+  'can u scrape prizepicks'
+ ])assert.equal(nativeIntent(message),null,message);
+});
 test('classifier never selects mutable tools and owner tool remains authorization gated',()=>{
  for(const x of NATIVE_EXAMPLES){
   const found=nativeIntent(x.q);
