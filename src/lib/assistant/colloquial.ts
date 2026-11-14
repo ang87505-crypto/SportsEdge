@@ -9,7 +9,29 @@
 import {normalize} from './understand.ts';
 
 const DIRECT:Readonly<Record<string,string>>=Object.freeze({
- wer:'were',improv:'improve',
+ wer:'were',improv:'improve',worky:'working',workin:'working',wrkng:'working',rnt:'are not',
+ pls:'please',plz:'please',plss:'please',rn:'right now',yday:'yesterday',
+ ydayy:'yesterday',ystrday:'yesterday',ystrdy:'yesterday',
+ tmrwz:'tomorrow',tonite:'tonight',twonite:'tonight',
+ wats:'what is',wat:'what',wht:'what',whr:'where',
+ ar:'are',ur:'your',u:'you',r:'are',idk:'i do not know',
+ smth:'something',nothin:'nothing',nuthing:'nothing',abt:'about',
+ cant:'cannot',coudnt:'could not',wont:'will not',shant:'shall not',
+ botz:'bots',botss:'bots',dashbord:'dashboard',dashbaord:'dashboard',
+ systm:'system',systmes:'systems',sysytem:'system',settlemnt:'settlement',
+ activat:'activate',autopliot:'autopilot',
+ preditcions:'predictions',prediciton:'prediction',accuraccy:'accuracy',
+ loses:'losses',loosing:'losing',wining:'winning',prfit:'profit',
+ mony:'money',statz:'stats',statss:'stats',stoksbot:'stock bot',
+ calsi:'kalshi',kalish:'kalshi',kalshiis:'kalshi',
+ wheatherz:'weather',wether:'weather',weathr:'weather',
+ opportunitites:'opportunities',oppertunities:'opportunities',oppertunity:'opportunity',
+ commnads:'commands',comands:'commands',commadns:'commands',
+ commnd:'command',controlls:'controls',controlz:'controls',
+ retarin:'retrain',retreain:'retrain',retrainn:'retrain',
+ calabration:'calibration',calbiration:'calibration',
+ nhll:'nhl',nfll:'nfl',baskteball:'basketball',basebal:'baseball',
+
  kalhsi:'kalshi',kalsi:'kalshi',kalsh:'kalshi',
  alpca:'alpaca',alapca:'alpaca',
  stoks:'stocks',stokcs:'stocks',stcoks:'stocks',stockz:'stocks',
@@ -47,7 +69,15 @@ const TERMS=[
  'paper','research','backtest','strategy','strategies','money','credits',
  'record','recorded','future','futures','filled','settled','settlement','scores','graded',
  'account','accounts','future','current','available','availability',
- 'sources','refresh','updated','failed','working','status'
+ 'sources','refresh','updated','failed','working','status',
+ 'dashboard','commands','controls','settings','history','receipts','alerts',
+ 'collector','collectors','settlement','settle','reconcile','reconciliation',
+ 'activation','activate','deactivate','disabled','enable','enabled',
+ 'pause','paused','resume','stop','stopped','start','started',
+ 'autopilot','bots','system','systems','workflow','workflows','jobs',
+ 'yesterday','last','tomorrow','tonight','right','now','help',
+ 'opportunity','opportunities','prediction','forecasts',
+ 'nfl','nhl','mlb','wnba','football','baseball','basketball'
 ] as const;
 const termSet=new Set<string>(TERMS);
 function editDistance(a:string,b:string,max:number):number{
@@ -84,8 +114,21 @@ export function conversationalText(input:string):string{
  if(typeof input!=='string'||input.length>300)return '';
  const n=normalize(input);
  if(!n)return '';
+ // A short text-style status question must not become a sports bet or a
+ // command: "y rnt worky" is about assistant availability, not a system receipt.
+ if(/^(?:y|why) (?:rnt|arent|are not) (?:u |you )?(?:worky|working|workin|wrkng)$/.test(n))
+  return 'why are you not working';
  // Treat content as ordinary text: never execute or query anything here.
  let t=n.split(' ').filter(Boolean).map(repair).join(' ');
+ // Common chat contractions/abbreviations; only intent words, never names,
+ // ticker symbols, amounts, sport results or numbers.
+ t=t.replace(/\br u\b/g,'are you')
+  .replace(/\bwanna\b/g,'want to')
+  .replace(/\bgonna\b/g,'going to')
+  .replace(/\bgimme\b/g,'show me')
+  .replace(/\bhow come\b/g,'why')
+  .replace(/\bhow many\b/g,'how many')
+  .replace(/\bwhy (?:is|are) there no\b/g,'why no');
  // Compact colloquial phrasing with unambiguous, *non-action* intent meaning.
  t=t.replace(/\b(our|the) algo\b/g,'$1 algorithm')
   .replace(/\bhow (can|do|could|should) (we|i) (make (it|this|the (model|system)) )?(get |be )?better( from here)?\b/g,

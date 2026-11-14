@@ -24,3 +24,41 @@ test('only allowlisted actions produce a request; stock actions need a well-form
     if (a.target === 'stocks') assert.notEqual(a.body('stock-v2-weekly-1').action, 'resume');
   }
 });
+
+test('questions, quoted commands, negations and future requests cannot propose owner mutations',()=>{
+ for(const message of [
+  'Why did you stop the stock bot?',
+  'How do I pause props?',
+  'What happens if I stop everything?',
+  'Do not stop the stock bot',
+  "Don't pause PrizePicks",
+  'Please never start stock trading',
+  'Stop stock autopilot tomorrow',
+  'Pause picks after the game',
+  'Could you stop stocks if the market drops?',
+  'Tell me to pause the props',
+  'I wrote stop the bot in a note',
+  'did the assistant buy OXY',
+  'stop stock autopilot tonight',
+  'stop stocks next Wednesday',
+  'please pause picks at 4 PM',
+  'stop the stock bot in 10 minutes',
+  'resume PrizePicks at noon',
+  'start stock bot when we win'
+ ])assert.equal(parseControlRequest(message),null,message);
+});
+test('explicit immediate owner requests still parse but never execute from parsing',()=>{
+ for(const [message,verb,target] of [
+  ['Please pause PrizePicks now','pause','props'],
+  ['Could you stop stock autopilot?','stop','stocks'],
+  ['Can you resume picks?','resume','props'],
+  ['Turn off the stock autopilot','stop','stocks'],
+  ['Can you start stock bot','start','stocks'],
+  ['pause everything','pause',null],
+  ['buy OXY','trade',null]
+ ]){
+  const parsed=parseControlRequest(message);
+  assert.deepEqual(parsed,{verb,target},message);
+ }
+ assert.equal(parseControlRequest('x'.repeat(301)),null);
+});

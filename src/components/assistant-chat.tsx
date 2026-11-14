@@ -4,6 +4,7 @@ import type {Card,Reply} from '@/lib/assistant/answer';
 import type {AssistantContext} from '@/lib/assistant/understand';
 import {currentOwnerAccess} from '@/lib/assistant/session';
 import {chatActionRequest} from '@/lib/assistant/actions';
+import {AssistantRequestGate} from '@/lib/assistant/request-gate';
 
 type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
@@ -12,7 +13,8 @@ const TOPICS=[
   {label:'Stocks',question:'Stock PAPER results'},
   {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
   {label:'Research',question:'Stock strategy research results'},
-  {label:'Systems',question:'Is everything running?'}
+  {label:'Systems',question:'Is everything running?'},
+  {label:'Help',question:'What commands can you follow?'}
 ] as const;
 const STARTERS=TOPICS.map(t=>t.question);
 const OPENING:Msg={role:'bot',text:'Ask about sports, stocks, independent Kalshi research, or automation. Answers use saved records, not invented trades.',suggestions:STARTERS};
@@ -32,12 +34,12 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
  const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
- const requestId=useRef(0);
+ const gate=useRef(new AssistantRequestGate());
  function applyAccess(a:Access){
   const valid=currentOwnerAccess(a).ownerAccess;
   if(!valid&&owner.current){
    // A reply authorized before logout must not resurrect private content afterward.
-   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
+   gate.current.invalidate();setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
   }
   owner.current=valid;setAccess(valid?a:NO_ACCESS);
  }
@@ -71,14 +73,18 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  },[]);
  async function send(raw:string){
   const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
-  if(!text||busy)return;
-  const id=++requestId.current;
+  // A ref blocks rapid double-submit synchronously; React's busy state is
+  // not updated until the next render. Never issue two assistant reads for one
+  // user action or let a stale response overwrite new conversation context.
+  if(!text)return;
+  const id=gate.current.start();
+  if(id===null)return;
   lastAsked.current=text;follow.current=true;
   setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
   try{
    const res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context})});
    const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
-   if(id!==requestId.current)return;
+   if(!gate.current.isCurrent(id))return;
    if(res.ok&&data?.reply){
     const valid=currentOwnerAccess(data).ownerAccess;
     applyAccess({ownerAccess:valid,ownerExpiresAt:valid?data.ownerExpiresAt!:null});setChecking(false);
@@ -89,11 +95,11 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
      setContext(r.context);
     }
    }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
-  }catch{if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
-  finally{if(id===requestId.current)setBusy(false);}
+  }catch{if(gate.current.isCurrent(id))setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
+  finally{if(gate.current.finish(id))setBusy(false);}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);}
+ function reset(){gate.current.invalidate();lastAsked.current='';setBusy(false);setMsgs([opening]);setContext(null);}
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">

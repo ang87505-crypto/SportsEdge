@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {routeQuestion} from './domain.ts';
-import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion} from './knowledge-guide.ts';
+import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer,isAssistantAvailabilityQuestion} from './knowledge-guide.ts';
 import {kalshiPublicAnswer} from './kalshi-answer.ts';
 import {handleSiteAssistant} from '../server/site-assistant-handler.ts';
 const NOW='2026-11-13T22:00:00.000Z';
@@ -133,4 +133,246 @@ test('unknown context and unrelated words do not turn into owner controls',async
  assert.equal(a.reply.cards.some(c=>c.kind==='action'),false);
  assert.equal(ps.calls.accounts,0);assert.equal(ps.calls.broker,0);
  assert.equal(routeQuestion('qwerty stocks',null).topic,'overview');
+});
+
+test('informal natural wording and short followups select the right domain without switching to an order',()=>{
+ for(const [message,domain,topic] of [
+  ['r our botz working rn','all','automation'],
+  ['wer stockz trdes good','stocks','performance'],
+  ['Kalhsi oppertunities rn','kalshi','opportunity'],
+  ['how are nhl picks tonight','sports','picks'],
+  ['which nba model is better','sports','performance'],
+  ['can you stop?','all','controls'],
+  ['why did you stop the stock bot','stocks','explain'],
+  ['which commands can you follow','all','help']
+ ]){
+  const q=routeQuestion(message,null);
+  assert.equal(q.domain,domain,message);
+  assert.equal(q.topic,topic,message);
+ }
+ assert.equal(routeQuestion('and what about yesterday?',{domain:'stocks',topic:'performance'}).domain,'stocks');
+ assert.equal(routeQuestion('what about kalshi?',{domain:'stocks',topic:'performance'}).domain,'kalshi');
+});
+test('navigation supports messy destination requests but does not steal a data question',()=>{
+ for(const [message,path] of [
+  ['whr is the dashbord for all predictions','/paper-betting/predictions'],
+  ['where do i see every line','/paper-betting/predictions'],
+  ['where do i find stock backtest page','/stocks/research'],
+  ['where can i open my kalshi weather dashboard','/prediction-markets/kalshi'],
+  ['where do i find the logs','https://github.com/ang87505-crypto/SportsEdge/actions'],
+  ['send me the link to the automation monitor','/automation'],
+  ['which page has the nba model','/research/nba']
+ ]){
+  assert.equal(isNavigationQuestion(message),true,message);
+  const a=navigationAnswer(message,routeQuestion(message,null));
+  assert.ok(a.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===path),message);
+  assert.ok(a.cards.every(c=>c.kind!=='action'));
+ }
+ for(const message of ['show me the latest trades','how many predictions hit yesterday','did the collector run?'])
+  assert.equal(isNavigationQuestion(message),false,message);
+});
+test('manual operations are routed to documented owner controls, never run',async()=>{
+ for(const message of [
+  'run collect now','can you retrain our model','how do i stop the stock bot',
+  'deploy the site','how can i backfill the game scores','enable the collector'
+ ]){
+  const ps=fakePorts();
+  assert.equal(isManualOperationQuestion(message),true,message);
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200);
+  assert.match(r.reply.text,/nothing was changed/i);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+  assert.ok(r.reply.cards.some(c=>c.kind==='links'));
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+ assert.equal(isManualOperationQuestion('Did the collector run?'),false);
+ assert.equal(isManualOperationQuestion('When did you retrain?'),false);
+});
+test('help catalog answers supported questions and cites working pages without claiming execution',async()=>{
+ const ps=fakePorts();
+ const a=await ask('what commands can you follow',null,ps);
+ assert.equal(a.http,200);
+ assert.match(a.reply.text,/saved sports predictions/i);
+ assert.match(a.reply.text,/cannot place bets/i);
+ assert.ok(a.reply.cards.some(c=>c.kind==='links'));
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+ assert.equal(supportedCommandsAnswer().context.topic,'help');
+});
+test('new leagues are not silently treated as NBA prop picks',async()=>{
+ for(const message of ['what about NFL picks tonight?','are NHL predictions available?','what is WNBA win rate?']){
+  const ps=fakePorts();
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200);
+  assert.match(r.reply.text,/cannot verify an active/i);
+  assert.match(r.reply.text,/nba props/i);
+  assert.ok(r.reply.cards.some(c=>c.kind==='links'));
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+  assert.ok(unsupportedLeagueAnswer(message));
+ }
+});
+test('trading commands are never interpreted as already submitted trades',async()=>{
+ const ps=fakePorts();
+ const r=await ask('buy OXY',null,ps);
+ assert.equal(r.http,200);
+ assert.match(r.reply.text,/cannot submit/i);
+ assert.match(r.reply.text,/no trade was sent/i);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.equal(ps.calls.accounts,0);
+ assert.equal(ps.calls.broker,0);
+});
+test('valid lab context survives previous-turn parsing and invalid context remains rejected',async()=>{
+ const ps=fakePorts();
+ const req={contentType:'application/json',text:async()=>JSON.stringify({
+  message:'where is the learning lab page',context:{domain:'all',topic:'lab'}})};
+ const response=await handleSiteAssistant(req,{},NOW,ps.ports);
+ assert.equal(response.status,200);
+ const r=await response.json();
+ assert.ok(r.reply.cards.some(c=>c.kind==='links'));
+ const bad={contentType:'application/json',text:async()=>JSON.stringify({
+  message:'help',context:{domain:'all',topic:'DROP TABLE'}})};
+ assert.equal((await handleSiteAssistant(bad,{},NOW,ps.ports)).status,400);
+});
+
+test('assistant-vs-site status questions remain separate and require no private loads',async()=>{
+ for(const message of ['y rnt worky','y rnt u worky','why rnt you workin','why did you stop working']){
+  const ps=fakePorts();
+  assert.equal(isAssistantAvailabilityQuestion(message),true,message);
+  const r=await ask(message,{domain:'stocks',topic:'performance'},ps);
+  assert.equal(r.http,200,message);
+  assert.equal(r.reply.context.domain,'all',message);
+  assert.match(r.reply.text,/do not continue editing code/i,message);
+  assert.match(r.reply.text,/nothing was started or changed/i,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[])
+   .some(item=>item.href==='/automation'),message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
+test('site failures and automation questions do not become assistant availability replies',()=>{
+ for(const message of [
+  'is sportsedge site down','why is the site not working',
+  'why are stocks not working','why is the NBA bot not working',
+  'are the workflows failing','what happened to the jobs'
+ ]){
+  assert.equal(isAssistantAvailabilityQuestion(message),false,message);
+ }
+ assert.deepEqual((({domain,topic})=>({domain,topic}))(routeQuestion('is SportsEdge site down',null)),
+  {domain:'all',topic:'health'});
+ assert.deepEqual((({domain,topic})=>({domain,topic}))(routeQuestion('why is the site not working',null)),
+  {domain:'all',topic:'health'});
+});
+
+test('operational how-to links reflect the correct research domain, not a generic trade page',async()=>{
+ for(const [message,expectedLink,expectedNote] of [
+  ['retrain the NBA props model','/lab',/research only/i],
+  ['run stock research backtest','/stocks/research',/do not enable broker orders/i],
+  ['backfill NFL scores','/sports',/not evidence that new-league forecasting/i],
+  ['refresh NOAA data','/prediction-markets/kalshi',/separate from Kalshi exchange access/i],
+  ['reconcile Alpaca paper account','/stocks/paper-auto',/owner sign-in/i],
+  ['deploy SportsEdge','https://github.com/ang87505-crypto/SportsEdge/actions',/separate code review/i],
+  ['retrain our model','/lab',/separate research models/i],
+  ['backfill game scores','/paper-betting/props',/collector receipts and virtual entries/i]
+ ]){
+  const ps=fakePorts();
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200,message);
+  assert.match(r.reply.text,/Nothing was changed/,message);
+  assert.match(r.reply.text,expectedNote,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[])
+   .some(l=>l.href===expectedLink),message);
+  assert.ok(r.reply.cards.every(c=>c.kind!=='action'),message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
+test('an owner control remains a proposal rather than being misrouted as a workflow guide',async()=>{
+ const ps=fakePorts();
+ const r=await ask('please pause prizepicks',null,ps);
+ assert.equal(r.http,200);
+ assert.match(r.reply.text,/only the signed-in owner/i);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
+
+test('ambiguous user language links every major research area rather than hiding Kalshi and ops',async()=>{
+ const ps=fakePorts();
+ const r=await ask('purple elephants have orange shoes',null,ps);
+ assert.equal(r.http,200);
+ const hrefs=r.reply.cards.flatMap(c=>c.kind==='links'?c.items.map(item=>item.href):[]);
+ for(const path of [
+  '/paper-betting/props','/paper-betting/predictions','/lab',
+  '/stocks/paper-auto','/stocks/research','/prediction-markets/kalshi','/automation'
+ ])assert.ok(hrefs.includes(path),'Missing safe fallback '+path);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
+test('short navigation wording from chat users provides the right specific page',()=>{
+ for(const [message,path] of [
+  ['where to find stock research','/stocks/research'],
+  ['where to see all predictions','/paper-betting/predictions'],
+  ['how to find my alpaca fills','/stocks/alpaca'],
+  ['where to check kalshi weather','/prediction-markets/kalshi'],
+  ['where to find collector logs','https://github.com/ang87505-crypto/SportsEdge/actions']
+ ]){
+  assert.equal(isNavigationQuestion(message),true,message);
+  const r=navigationAnswer(message,routeQuestion(message,null));
+  assert.ok(r.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===path),message);
+ }
+});
+
+test('procedure and navigation verbs still lead to safe pages without executing actions',async()=>{
+ const links=[
+  ['how do i check stock backtests','/stocks/research'],
+  ['how can i see my alpaca fills','/stocks/alpaca'],
+  ['how should i check the kalshi dashboard','/prediction-markets/kalshi']
+ ];
+ for(const [message,href] of links){
+  const ps=fakePorts();
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===href),message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+ for(const message of ['where should i click to stop the stock bot','where can i go to resume the props']){
+  const ps=fakePorts();
+  assert.equal(isManualOperationQuestion(message),true,message);
+  const r=await ask(message,null,ps);
+  assert.match(r.reply.text,/Nothing was changed/,message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
+
+test('stale-data questions use public ops receipts without contacting private brokers',async()=>{
+ const ps=fakePorts();
+ let opsCalls=0;
+ ps.ports.ops=async()=>{opsCalls++;return {
+  mode:'live',checkedAt:NOW,monitorStale:false,
+  status:{schemaVersion:'ops-status-v1',generatedAt:NOW,monitorRun:null,
+   overall:{state:'OK',attention:[]},blockers:[],
+   jobs:[{id:'props-tick',label:'Sports props: event-aware capture ticks',area:'sports',
+    status:'OK',detail:'ok',required:true,
+    historyUrl:'https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-tick.yml',
+    lastRun:null,lastSuccess:null,lastFailure:null,running:null,
+    slots7d:{due:0,missed:0,lastMissedAt:null},nextPlanned:[],note:null}],
+   site:{url:'x',checkedAt:NOW,ok:true,checks:[]},evidence:{},credentials:[]}
+ };};
+ const r=await ask('are NBA picks up to date?',{domain:'stocks',topic:'performance'},ps);
+ assert.equal(r.http,200);
+ assert.equal(r.reply.context.domain,'sports');
+ assert.match(r.reply.text,/no successful workflow recorded/);
+ assert.match(r.reply.text,/workflow success proves only/);
+ assert.equal(opsCalls,1);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
+test('missing monitor response stays unknown and never exposes private data',async()=>{
+ const ps=fakePorts();
+ ps.ports.ops=async()=>{throw Error('TEST_ONLY_DOWN');};
+ const r=await ask('when was stock data last updated?',null,ps);
+ assert.equal(r.http,200);
+ assert.equal(r.reply.context.domain,'stocks');
+ assert.match(r.reply.text,/cannot say whether the records are fresh/i);
+ assert.doesNotMatch(r.reply.text,/stock profit was|account equity is/i);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
 });

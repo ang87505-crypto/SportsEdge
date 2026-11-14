@@ -8,7 +8,7 @@ import type {ResearchView} from '../research/stock-summary.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
 import {understand} from '../assistant/understand.ts';
 import {conversationalText} from '../assistant/colloquial.ts';
-import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion} from '../assistant/knowledge-guide.ts';
+import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer,isAssistantAvailabilityQuestion,assistantAvailabilityAnswer} from '../assistant/knowledge-guide.ts';
 import {propsStoreConfig} from './props-store.ts';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {handlePaperAutoGet} from './paper-auto-owner.ts';
@@ -23,6 +23,7 @@ import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {CHAT_ACTIONS,parseControlRequest,type ChatActionId} from '../assistant/actions.ts';
 import {labAnswer} from '../assistant/lab-answer.ts';
 import {kalshiPublicAnswer,type KalshiPublicResearch} from '../assistant/kalshi-answer.ts';
+import {isFreshnessQuestion,freshnessAnswer} from '../assistant/source-freshness.ts';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '../prediction-markets/kalshi/weather-memory-view.ts';
 import {loadLab} from './lab-load.ts';
 import type {LabView} from '../lab/view.ts';
@@ -77,11 +78,23 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(context===undefined)return json({status:'invalid_request'},400);
  const message=b.message,understood=conversationalText(message),q=routeQuestion(message,context);
  const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
+ if(isAssistantAvailabilityQuestion(message))return respond(assistantAvailabilityAnswer());
+ // A procedural request like "where can I go to stop the bot?" needs
+ // safety/approval guidance, not a bare page link or an immediate command.
+ // Explicit signed-in owner actions still reach the separate confirm path.
+ if(isManualOperationQuestion(message)&&!parseControlRequest(message))
+  return respond(manualOperationAnswer(message,q));
  if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
+ if(isFreshnessQuestion(message)){
+  if(!ports.ops)return respond(freshnessAnswer(q,null));
+  try{return respond(freshnessAnswer(q,await ports.ops(nowIso)));}
+  catch{return respond(freshnessAnswer(q,null));}
+ }
+ const unsupportedLeague=unsupportedLeagueAnswer(message);
+ if(unsupportedLeague)return respond(unsupportedLeague);
+ if(q.topic==='help')return respond(supportedCommandsAnswer());
  if(!q.domain)return respond(unsupportedQuestion(q));
  if(q.topic==='improving'&&q.domain!=='all')return respond(improvementAnswer(q));
- if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, the signed-in stock paper-account, strategy research, independent Kalshi weather research, and the last recorded automation status. No real bets or orders can be placed by asking.',{domain:'all',topic:'help'}),
-  cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'},{label:'Independent Kalshi research',href:'/prediction-markets/kalshi'}]}]});
  async function sports():Promise<Reply>{
   try{
    const safeContext=context?.domain&&context.domain!=='sports'?null:context;
@@ -116,7 +129,9 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  // Owner controls: chat can only PROPOSE an allowlisted change; the confirm button calls the existing owner endpoint.
  if(q.topic==='controls'){
   const c=parseControlRequest(message);
-  if(c&&c.verb!=='trade')return respond(await controlProposal(c));
+  if(c?.verb==='trade')return respond({...simple('This chat has not submitted a bet, entry or stock order and cannot submit one. No trade was sent and no balance was changed. You can inspect recorded PAPER results on the relevant page.',{domain:q.domain??'all',topic:'controls'}),
+   cards:[{kind:'links',items:[{label:'Sports virtual entries',href:'/paper-betting/props'},{label:'Stock PAPER autopilot',href:'/stocks/paper-auto'}]}]});
+  if(c)return respond(await controlProposal(c));
  }
  async function controlProposal(c:NonNullable<ReturnType<typeof parseControlRequest>>):Promise<Reply>{
   const ctx:AssistantContext={domain:'all',topic:'controls'};
