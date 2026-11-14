@@ -28,7 +28,7 @@ export type Source={label:string;href:string};
 export type ToolResult={tool:string;input?:Record<string,unknown>;ok:boolean;
  /** Strings withheld because they read like instructions (prompt injection through recorded data). */
  withheld?:number;data:unknown;cards:Card[];sources:Source[];asOf:string;truncated:boolean;error?:string};
-export type CommandPorts={nowIso:string;ownerAccess:boolean;
+export type CommandPorts={nowIso:string;ownerAccess:boolean;ownerExpiresAt?:number|null;
  sports:()=>Promise<Raw|null>;ops:()=>Promise<OpsView|null>;research:()=>Promise<ResearchView|null>;lab:()=>Promise<LabView|null>;
  /** Owner-only; never invoked unless the request carries a validated owner session. */
  accounts:()=>Promise<StockAccounts>;
