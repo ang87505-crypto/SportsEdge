@@ -19,6 +19,7 @@ export const SECTIONS:NavSection[]=[
   ]},
  {id:'paper',href:'/paper-betting/props',label:'PrizePicks',shortLabel:'Picks',icon:'paper',description:'Daily virtual player-prop picks, results and controls',match:['/paper-betting'],
   children:[
+   {href:'/paper-betting/watch',label:'Watch Only · no bets',description:'Every captured line, original probability, verified result and hit rate'},
    {href:'/paper-betting/predictions',label:'All predictions',description:'Every saved forecast, graded, picked or not'},
    {href:'/paper-betting/shadow',label:'60%+ shadow ledger',description:'All qualifying NBA forecasts with imaginary $5 benchmark outcomes'},
    {href:'/paper-betting/props-research',label:'Ranked picks & research',description:'Top qualifying picks and the model comparison'},
