@@ -5,6 +5,7 @@
  */
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 
 export const PLAN_URL=new URL('../research/planning/sportsedge-safe-expansion-v1.json',import.meta.url);
 export const PLANNING_FILES=Object.freeze([
@@ -77,6 +78,6 @@ function main(){
  }
  console.log(JSON.stringify({status:'PASS',...summary}));
 }
-if(process.argv[1]&&new URL('file://'+process.argv[1]).href===import.meta.url){
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
  try{main();}catch(e){console.error(e instanceof Error?e.message:String(e));process.exitCode=1;}
 }
