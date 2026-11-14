@@ -1,5 +1,6 @@
 /** Routes domains before any sports player matching or data access. */
-import {normalize,type AssistantContext} from './understand.ts';
+import type {AssistantContext} from './understand.ts';
+import {conversationalText} from './colloquial.ts';
 import type {ResearchId} from '../research/stock-summary.ts';
 import {labTopic} from './lab-answer.ts';
 export type AssistantDomain='sports'|'stocks'|'research'|'kalshi'|'all';
@@ -7,7 +8,7 @@ export type AssistantTopic='overview'|'performance'|'holdings'|'picks'|'automati
  'today'|'money'|'health'|'improving'|'opportunity'|'ready'|'lab';
 export type QuestionRoute={domain:AssistantDomain|null;topic:AssistantTopic;symbol?:string;strategyId?:ResearchId};
 export function routeQuestion(message:string,previous:AssistantContext|null):QuestionRoute{
- const t=normalize(message);
+ const t=conversationalText(message);
  // AI Learning Lab and staking questions are answered from the lab reports and saved records, before any other route.
  // Kalshi forecasting/calibration questions must not accidentally invoke the sports props lab.
  const kalshi=/\b(kalshi|prediction markets?|event contracts?|noaa|nws|central park|weather (?:research|forecasts?|model|accuracy|predictions?)|inflation|cpi|bls)\b/.test(t);
@@ -27,17 +28,19 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  const explicitWholeSite=/\b(all systems|whole site|everything|across all)\b/.test(t);
  let domain:QuestionRoute['domain']=kalshi?(explicitSports||stocks||explicitWholeSite?'all':'kalshi'):
   sports&&(stocks||research)||general?'all':research?'research':stocks?'stocks':sports?'sports':null;
- const follow=/^(why|and|also|what about|how about|explain|is it|did it|does it|does that|is that|when|how much|how accurate|how good|how are|what does that mean|what changed|what is next|what happened|how did|show me)\b/.test(t)||
+ const follow=/^(why|and|also|what about|how about|explain|is it|did it|does it|does that|is that|when|how much|how accurate|how good|how are|how can|how do|what should|what can|what does that mean|what changed|what is next|what happened|how did|show me)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);
  if(!domain&&follow)domain=previous?.domain??null;
  let topic:AssistantTopic='overview';
  if(/^(please )?(buy|sell|place|pause|resume|stop|start)\b|\b(can you|could you) (buy|sell|place|pause|resume|stop|start)\b/.test(t))topic='controls';
- else if(/\b(why|explain|learn|learning|improving|improve|better|changed)\b/.test(t))topic='explain';
+ else if(/\b(improv\w*|get better|do better|make .* better|next steps?|what should we fix)\b/.test(t))topic='improving';
+ else if(/\b(why|explain|learn|learning|changed)\b/.test(t))topic='explain';
  else if(/\b(hold|holds|holding|holdings|positions?|shares|own|portfolio)\b/.test(t))topic='holdings';
- else if(/\b(profit|returns?|pnl|p l|results?|perform|performance|doing|compare|beat|money|lost|balance|accuracy|accurate|hit rate|brier|calibrat\w*)\b|how did|are we up|am i up/.test(t))topic='performance';
+ else if(/\b(profit|returns?|pnl|p l|results?|perform|performance|doing|compare|beat|money|lost|balance|accuracy|accurate|hit rate|brier|calibrat\w*|good|worthwhile|decent)\b|how did|are we up|am i up/.test(t))topic='performance';
  else if(/\b(running|status|schedule|scheduled|next|automation|workflow|collect|collection|enabled|paused|blocked|failed|working|refresh|updated|update|snapshot|captured)\b/.test(t))topic='automation';
  else if(/\b(picks|picked|bought|targets)\b/.test(t))topic='picks';
  if(kalshi&&domain==='kalshi'&&/\b(opportunit\w*|edge|best (current )?(bet|market)|profitable|value)\b/.test(t))topic='opportunity';
+ if(topic==='improving'&&domain===null)domain=previous?.domain??'all';
  if(ops&&!kalshi){domain='all';topic=ops;}
  // Whole-site questions answered from the shared briefing (the same read model as the Overview page).
  else if(topic!=='controls'){
@@ -48,11 +51,19 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
    /\bpromising\b|\bopportunit\w*|\bbest (current )?(bet|play|idea)\b/.test(t)&&domain!=='stocks'&&domain!=='kalshi'?'opportunity':
    (!kalshi&&(!domain||domain==='all'))&&(/\b(algorithm|model|models|system|ai)\b.*\b(improv\w*|learn\w*|better|progress\w*)\b/.test(t)||/\b(improving|getting better)\b/.test(t))?'improving':
    !domain&&/\b(money|made|make|earn\w*|profit\w*|pnl|p l|up or down|losing|lost)\b/.test(t)?'money':null;
-  if(brief){domain='all';topic=brief;}
+  if(brief){
+   // A specific sports/stock/Kalshi improvement follow-up stays in that
+   // domain; unqualified whole-site progress requests use the full briefing.
+   if(brief!=='improving'||!domain)domain='all';
+   topic=brief;
+  }
   else if(!domain&&/\bmistakes?\b|\bwent wrong\b|\bwhy (are|do|did) we (keep )?los/.test(t))domain='sports';
  }
  if(!t||/^(help|hi|hello|hey|what can you do)$/.test(t)){domain='all';topic='help';}
  if(topic==='overview'&&follow&&domain===previous?.domain&&previous?.topic)topic=previous.topic;
+ // A past-domain follow-up like 'and yesterday?' must retain the original
+ // performance topic without inventing a new trade from the message.
+ if(topic==='overview'&&domain===previous?.domain&&follow&&previous?.topic==='performance')topic='performance';
  let strategyId:ResearchId|undefined;
  if(/\b(qmom|fund follower)\b/.test(t))strategyId='qmom-disclosure-follower-v1';
  else if(/\b(berkshire|buffett|13f)\b/.test(t))strategyId='berkshire-13f-top5-paper-v1';
