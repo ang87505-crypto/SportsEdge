@@ -82,3 +82,17 @@ test('a verified losing forecast is not silently omitted from measured accuracy'
  assert.equal(summary.correct,1);
  assert.equal(summary.accuracy,0.5);
 });
+
+test('duplicate same-version source evidence is excluded rather than counted twice',()=>{
+ const forecast=f(),source=src();
+ const x=auditFrozenForecast(forecast,[source,source],o);
+ assert.equal(x.eligibleForForwardEvaluation,false);
+ assert.ok(x.exclusions.includes('DUPLICATE_SOURCE'));
+});
+test('summary refuses unverified or non-paper payouts even from forged input records',()=>{
+ const forged=[{eligibleForForwardEvaluation:false,gradeState:'excluded',correct:null,netVirtualCents:100000,decision:'paper_entry'},
+   {eligibleForForwardEvaluation:true,gradeState:'graded',correct:true,netVirtualCents:500,decision:'candidate_only'}];
+ const summary=summarizeReadOnlyAudit(forged);
+ assert.equal(summary.paperSettled,0);
+ assert.equal(summary.paperNetVirtualCents,null);
+});
