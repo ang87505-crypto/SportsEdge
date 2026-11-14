@@ -36,13 +36,26 @@ export function chatActionRequest(id:unknown,experimentId?:unknown):{endpoint:st
 }
 
 export type ControlRequest={verb:'pause'|'resume'|'stop'|'start'|'trade';target:'props'|'stocks'|null};
-/** "pause the props", "stop autopilot", "resume picks", "start the stock bot", "buy OXY". */
+/**
+ * Only an explicit, immediate imperative may reach the owner proposal flow.
+ * Educational, hypothetical, negative, quoted or scheduled instructions
+ * must NOT be converted into a change that could happen when Confirm is clicked.
+ * Unrecognized requests stay read-only and can be directed to the actual page.
+ */
 export function parseControlRequest(text:string):ControlRequest|null{
- const t=text.toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
- const m=/\b(pause|resume|unpause|stop|halt|start|turn (?:off|on)|switch (?:off|on)|buy|sell|place)\b/.exec(t);
+ if(typeof text!=='string'||text.length>300)return null;
+ const t=text.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+ if(!t||/\b(dont|do not|never|not to|without|shouldnt|should not|no need to|cancel that)\b/.test(t))return null;
+ // No future/conditional scheduling can be initiated from a chat proposal.
+ if(/\b(if|unless|until|after|before|tomorrow|later|next week|next month|yesterday|last night)\b/.test(t))return null;
+ // Asking about a past, hypothetical or procedural action is NOT issuing it.
+ if(/^(why|when|where|what|how|did|does|is|are|was|were|should i|what if|tell me|explain|show me)\b/.test(t))return null;
+ const m=/^(?:(?:please|pls|plz) )?(?:(?:can|could|would|will) you |i want (?:you )?to |i need (?:you )?to |i would like (?:you )?to |help me )?(pause|resume|unpause|stop|halt|start|turn off|turn on|switch off|switch on|buy|sell|place)\b/.exec(t);
  if(!m)return null;
  const w=m[1];
- const verb:ControlRequest['verb']=/buy|sell|place/.test(w)?'trade':/pause/.test(w)&&w!=='unpause'?'pause':/resume|unpause|turn on|switch on/.test(w)?'resume':/stop|halt|turn off|switch off/.test(w)?'stop':'start';
+ const verb:ControlRequest['verb']=/^(buy|sell|place)$/.test(w)?'trade':w==='pause'?'pause':
+  /^(resume|unpause|turn on|switch on)$/.test(w)?'resume':
+  /^(stop|halt|turn off|switch off)$/.test(w)?'stop':'start';
  const props=/\b(props?|picks?|prizepicks|prize picks|pick6|sports?|nba|collection|betting)\b/.test(t);
  const stocks=/\b(stocks?|autopilot|alpaca|stock bot|trading|orders?|portfolio)\b/.test(t);
  return {verb,target:props&&!stocks?'props':stocks&&!props?'stocks':null};
