@@ -31,6 +31,8 @@ export type Plan={calls:ToolCall[];filter?:'misses'|'hits'};
 
 export function plan(message:string,last:ToolCall[]):Plan|null{
  const t=norm(message);
+ // Preserve original percentage punctuation; colloquial normalization strips %.
+ const numericThreshold=message.toLowerCase().match(/\b(60|70|80)\s*(?:%|percent)(?![a-z0-9])/);
  const prev=last[0];
  const prevPeriod=(prev?.input.period??prev?.input.a) as Period|undefined;
  const periods=periodsIn(t);
@@ -59,14 +61,13 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  // Watch Only is a distinct research ledger. Don't turn it into the capped
  // virtual-entry stats or the speculative $5 shadow benchmark.
  const watchPhrase=/\b(watch ?only|watchlist|tracked lines?|captured lines?|all lines|every line|saved lines?|without betting|not entered|all predictions|every prediction|unbet|not wagered|unentered)\b/.test(t)||
-  (/\b(60|70|80)\s*(?:%|percent)(?=\s|$)/.test(t)&&/\b(lines?|picks?|predictions?|hit rate|accuracy)\b/.test(t));
+  (!!numericThreshold&&/\b(lines?|picks?|predictions?|hit rate|accuracy)\b/.test(t));
  const watchPrev=prev?.tool==='watch_only';
  const watchFollow=watchPrev&&(/^(and|what about|how about|same for|now|ok|okay|which ones)\b/.test(t)||t.split(' ').length<=4);
  if(watchPhrase||watchFollow){
   // Distinct platforms are optional filters; these do not authenticate to
   // PrizePicks or call The Odds API.
-  const match=t.match(/\b(60|70|80)\s*(?:%|percent)(?=\s|$)/);
-  const threshold=match?.[1]??(watchPrev?String(prev.input.threshold??'all'):'all');
+  const threshold=numericThreshold?.[1]??(watchPrev?String(prev.input.threshold??'all'):'all');
   const prevPeriod=watchPrev?prev.input.period as Period|undefined:undefined;
   const period=periods[0]??prevPeriod??'today';
   const platform=/\bpick6\b|\bpick 6\b/.test(t)&&!/\bprizepicks\b/.test(t)?'pick6':
