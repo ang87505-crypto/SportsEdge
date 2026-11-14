@@ -40,8 +40,11 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  const stock=/\b(stocks?|alpaca|portfolio|broker|shares?|autopilot|stock trading|stock bot|equity)\b/.test(t);
  const kalshi=/\b(kalshi|weather|noaa|nws|cpi|bls|event contracts?|prediction markets?)\b/.test(t);
  const sportExplicit=/\b(prizepicks|prize picks|pick6|nba|sports?|dfs|player props?|rebounds?|assists?|points)\b/.test(t);
- if(kalshi&&!sportExplicit)return null;
- if(stock&&!sportExplicit){
+ // Mixed-domain requests must be composed by the site assistant rather
+ // than answered with a one-domain sportsbook comparison.
+ if((kalshi&&sportExplicit)||(stock&&sportExplicit))return null;
+ if(kalshi)return null;
+ if(stock){
   // Owner-only stock status remains available; general comparisons fall
   // back to the existing stock/research assistant instead of mixing domains.
   if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
