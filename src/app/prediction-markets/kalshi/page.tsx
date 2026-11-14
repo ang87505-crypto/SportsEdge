@@ -1,20 +1,53 @@
 import Link from 'next/link';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
+import {loadLatestIndependentWeather} from '@/lib/prediction-markets/kalshi/weather-memory-view';
 
 /**
- * Research preview only. NO API call, credentials, order, account or live data.
- * Deliberately no automatic market preview until data-use authorization is reviewed.
+ * Only independent archived NOAA weather data is read from the research-data branch.
+ * NO Kalshi API calls, credentials, orders, market previews or account data.
  */
 export const metadata={title:'Prediction markets research · SportsEdge',
  description:'Kalshi integration research status; no live collection or real-money trading.'};
 
-export default function PredictionMarketsKalshiPage(){
+export const revalidate=600;
+export default async function PredictionMarketsKalshiPage(){
+ const archive=await loadLatestIndependentWeather();
  return <>
   <PageHeading title="Prediction markets research"
    description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
    action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
   <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
    No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
+  <Panel title="Independent NYC weather forecast memory" actions={<Evidence kind={archive.state==='RECORDED'?'verified':'unavailable'}/>}>
+   {archive.state==='RECORDED'?<>
+    <p>Archived from the public NWS hourly grid forecast, before the target weather day. The comparison uses
+     the Central Park climate-report standard-time day. This is <strong>not a Kalshi contract prediction</strong>,
+     price, settlement or real trade.</p>
+    <KeyValues items={[
+     ['Target Central Park climate date',archive.memory.targetLocalDate],
+     ['Captured',archive.memory.capturedAt],
+     ['NWS grid forecast high',String(archive.memory.forecastHighF)+'°F'],
+     ['Independent experimental range',String(archive.memory.bandLowF)+'–'+String(archive.memory.bandHighF)+'°F'],
+     ['Experimental range probability',archive.memory.estimatedBandProbabilityPpm===null?
+      'Not available: awaiting independently verified history':
+      (archive.memory.estimatedBandProbabilityPpm/10000).toFixed(1)+'% (NOT validated)'],
+     ['Historical training pairs',String(archive.memory.historicalTrainingDays)],
+     ['Next-morning NWS Central Park high',archive.grade?
+      String(archive.grade.observedHighF)+'°F (PRELIMINARY; not certified)':'Awaiting archived full daily climate report'],
+     ['Independent 5°F range check',archive.grade?
+      (archive.grade.hitIndependentBand?'Inside range':'Outside range'):'Not graded'],
+     ['Market prices','Not requested; rights review pending'],
+     ['Kalshi requests used','0'],
+    ]}/>
+    <p className="quiet small-print">Each independent daily forecast and its eventual preliminary NWS
+     climate report is saved once in the append-only research-data archive. Revisiting this page
+     reads stored files, not Kalshi or NWS endpoints.</p>
+   </>:<p>{archive.state==='ARCHIVE_UNAVAILABLE'?
+    'The independent NWS research archive could not be verified right now. No forecast or win rate is inferred.':
+    'Awaiting the first independently captured NWS forecast after the owner-approved research workflow is released. No market data is being requested.'}</p>}
+   <p><a href="https://github.com/ang87505-crypto/SportsEdge/tree/research-data/kalshi-independent/nyc-weather"
+    target="_blank" rel="noreferrer">View archived independent NOAA evidence</a></p>
+  </Panel>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
    <p>Offline market data normalization, tentative fee-aware paper forecasts, strict settlement grading and
     research evaluation have been implemented on a draft branch. No forward evidence is available yet,
