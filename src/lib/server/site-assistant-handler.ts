@@ -36,10 +36,17 @@ export type SitePorts={access:AssistantAccess;sports:(nowIso:string)=>Promise<Ra
  /** Public background-job status from the operations monitor. */
  ops?:(nowIso:string)=>Promise<OpsView>;
  /** AI Learning Lab view (public research evidence; no account data). */
- lab?:(nowIso:string)=>Promise<LabView>};
+ lab?:(nowIso:string)=>Promise<LabView>;
+ /** Independently archived public NOAA research; never Kalshi market API. */
+ kalshi?:(nowIso:string)=>Promise<KalshiPublicResearch>};
 export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):SitePorts{
  const access=assistantAccess(req.ownerCookie);
  return {access,sports,research:loadStockResearch,ops:loadOpsStatus,lab:loadLab,
+  async kalshi(nowIso){
+   const [weather,scorecard]=await Promise.all([
+    loadLatestIndependentWeather(nowIso),loadLatestWeatherScorecard(nowIso)]);
+   return {checkedAt:nowIso,weather,scorecard};
+  },
   async accounts(){
    if(!access.ownerAccess)return {state:'owner_required',ledgers:[],brokerWritesEnabled:null};
    const response=await handlePaperAutoGet({...req,ownerCookie:req.ownerCookie},env);
@@ -55,7 +62,7 @@ export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):Si
   }};
 }
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store','Pragma':'no-cache','X-Content-Type-Options':'nosniff'}});
-const simple=(text:string,context:AssistantContext={}):Reply=>({text,cards:[],suggestions:["Tonight's picks",'Stock results','Research results','Is everything running?'],context});
+const simple=(text:string,context:AssistantContext={}):Reply=>({text,cards:[],suggestions:["Tonight's picks",'Stock results','Kalshi weather research','Is everything running?'],context});
 export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'text'>,env:Env,nowIso:string,ports:SitePorts):Promise<Response>{
  if(req.contentType?.split(';')[0]?.trim()!=='application/json')return json({status:'invalid_request'},400);
  let body:unknown;
@@ -68,9 +75,9 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(context===undefined)return json({status:'invalid_request'},400);
  const message=b.message,q=routeQuestion(message,context);
  const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
- if(!q.domain)return respond(simple('Do you mean sports picks, your stock account, or strategy research? Choose one below.'));
- if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, stock paper-account results and positions, strategy research, and the last recorded automation status. Ask a question or choose a topic.',{domain:'all',topic:'help'}),
-  cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'}]}]});
+ if(!q.domain)return respond(simple('Do you mean sports picks, your stock PAPER account, Kalshi weather research, or stock strategy research? Choose a topic below.'));
+ if(q.topic==='help')return respond({...simple('I can explain sports picks and entry results, the signed-in stock PAPER account, strategy research, independent Kalshi weather research, and the last recorded automation status. No real bets or orders can be placed by asking.',{domain:'all',topic:'help'}),
+  cards:[{kind:'links',items:[{label:'Sports picks',href:'/paper-betting/props'},{label:'Stock paper account / owner sign-in',href:'/stocks/alpaca'},{label:'Stock research',href:'/stocks/research'},{label:'Independent Kalshi research',href:'/prediction-markets/kalshi'}]}]});
  async function sports():Promise<Reply>{
   try{
    const safeContext=context?.domain&&context.domain!=='sports'?null:context;
@@ -93,6 +100,15 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   try{return researchAnswer({...q,domain:'research'},await ports.research(nowIso));}
   catch{return simple('Research records are unavailable right now. Your stock account and sports records are separate.',{domain:'research'});}
  }
+ async function kalshi():Promise<Reply>{
+  if(!ports.kalshi)return simple('Independent Kalshi weather research is unavailable here. No exchange data is connected.',{domain:'kalshi'});
+  try{return kalshiPublicAnswer({...q,domain:'kalshi'},await ports.kalshi(nowIso));}
+  catch{return simple('Independent NOAA research could not be checked. That does not prove zero forecasts or bets. Kalshi market access remains unverified.',{domain:'kalshi'});}
+ }
+ // A Kalshi request can NEVER be translated into a props or stock owner action.
+ if(q.domain==='kalshi'&&q.topic==='controls')return respond({
+  ...simple('Kalshi API access and trading cannot be enabled from chat. Nothing was changed. No authorized live Kalshi orders or prices are connected.',{domain:'kalshi',topic:'controls'}),
+  cards:[{kind:'links',items:[{label:'Research only',href:'/prediction-markets/kalshi'}]}]});
  // Owner controls: chat can only PROPOSE an allowlisted change; the confirm button calls the existing owner endpoint.
  if(q.topic==='controls'){
   const c=parseControlRequest(message);
@@ -135,6 +151,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());
  if(q.domain==='research')return respond(await research());
+ if(q.domain==='kalshi')return respond(await kalshi());
  async function jobs():Promise<Reply>{
   if(!ports.ops)return simple('Background job status is not connected here.',{domain:'all'});
   try{return simple(opsSummaryText(await ports.ops(nowIso)),{domain:'all'});}
@@ -169,9 +186,12 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
    cards:[{kind:'links',items:[{label:'Automation status',href:'/automation'}]}]});}
   catch{return respond(simple('Background job status is unavailable right now, so I cannot list what is waiting on you.',{domain:'all',topic:'approvals'}));}
  }
- const results=await Promise.allSettled([sports(),stocks(),research(),jobs()]);
- const names=['Sports','Stock account','Stock research','Background jobs'];
+ // Only fetch the separate public NOAA archive when the question explicitly names
+ // Kalshi/weather. Ordinary whole-site summaries keep their old latency and source set.
+ const withKalshi=/\b(kalshi|noaa|nws|weather|prediction markets?)\b/i.test(message);
+ const results=await Promise.allSettled([sports(),stocks(),research(),jobs(),...(withKalshi?[kalshi()]:[])]);
+ const names=['Sports','Stock account','Stock research','Background jobs',...(withKalshi?['Independent Kalshi research']:[])];
  const replies=results.map((r,i)=>r.status==='fulfilled'?r.value:simple(names[i]+' records are unavailable.'));
  return respond({text:replies.map((r,i)=>names[i]+'\n'+r.text).join('\n\n'),cards:replies.flatMap(r=>r.cards),
-  suggestions:["Tonight's picks",'Stock results','Research results','Stock bot status'],context:{domain:'all',topic:q.topic},private:replies.some(r=>r.private)});
+  suggestions:["Tonight's picks",'Stock results','Kalshi weather research','Is everything running?'],context:{domain:'all',topic:q.topic},private:replies.some(r=>r.private)});
 }
