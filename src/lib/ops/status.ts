@@ -15,7 +15,11 @@ export type OpsStatus={schemaVersion:'ops-status-v1';generatedAt:string;monitorR
   deployment?:{state:string;detail:string;deployedSha:string|null;deployedRef:string|null;mainSha:string|null}};
  evidence:{props?:{state:string;controlState?:string|null;lastCompletedCollectAt?:string|null;lastCompletedSettleAt?:string|null};
   research?:{state:string;generatedAt?:string|null;overall?:string|null};
-  release?:{pr:number;state:string;draft?:boolean;merged?:boolean;url?:string}};
+  release?:{pr:number;state:string;draft?:boolean;merged?:boolean;url?:string};
+  /** Archive existence, never an assertion of Kalshi data or contract prices. */
+  publicWeather?:{source:'PUBLIC_NOAA_ONLY';forecastState:'RECORDED'|'AWAITING_FIRST_ARCHIVE'|'ARCHIVE_UNAVAILABLE';
+   scorecardState:'RECORDED'|'AWAITING_FIRST_ARCHIVE'|'ARCHIVE_UNAVAILABLE';
+   latestTargetDate:string|null;forecastCapturedAt:string|null;lastGradedDate:string|null}};
  credentials:{name:string;store:string;usedBy:string;present:boolean|null;expiresAt:string|null;note?:string}[]};
 export type OpsView={status:OpsStatus|null;mode:'live'|'unavailable';checkedAt:string;monitorStale:boolean};
 
@@ -44,6 +48,15 @@ export function parseOpsStatus(v:unknown,nowIso:string):OpsStatus|null{
  }
  for(const b of v.blockers)if(!obj(b)||!str(b.id,120)||!str(b.text,600)||!str(b.action,600))return null;
  for(const c of v.site.checks)if(!obj(c)||!str(c.name,80)||typeof c.ok!=='boolean')return null;
+ if(obj(v.evidence)&&v.evidence.publicWeather!==undefined){
+  const x=v.evidence.publicWeather;
+  if(!obj(x)||x.source!=='PUBLIC_NOAA_ONLY'||
+   !['RECORDED','AWAITING_FIRST_ARCHIVE','ARCHIVE_UNAVAILABLE'].includes(x.forecastState as string)||
+   !['RECORDED','AWAITING_FIRST_ARCHIVE','ARCHIVE_UNAVAILABLE'].includes(x.scorecardState as string)||
+   !(x.latestTargetDate===null||(typeof x.latestTargetDate==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.latestTargetDate)))||
+   !ntime(x.forecastCapturedAt)||!(x.lastGradedDate===null||(typeof x.lastGradedDate==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.lastGradedDate))))
+   return null;
+ }
  if(!Array.isArray(v.credentials)||v.credentials.length>20)return null;
  return v as unknown as OpsStatus;
 }
@@ -81,6 +94,15 @@ export function opsSummaryText(view:OpsView):string{
   const last=j.lastSuccess?`last success ${mt(j.lastSuccess.startedAt)}`:'no successful run yet';
   const next=j.nextPlanned[0]?`; next planned ${mt(j.nextPlanned[0])} (planned, not yet run)`:'';
   lines.push(`- ${j.label}: ${opsLabel(j.status).label} — ${last}${next}.`);
+ }
+ const publicWeather=s.evidence?.publicWeather;
+ if(publicWeather){
+  const status=publicWeather.forecastState==='RECORDED'?
+   'archived for '+publicWeather.latestTargetDate+' (captured '+mt(publicWeather.forecastCapturedAt)+')':
+   publicWeather.forecastState==='AWAITING_FIRST_ARCHIVE'?'no recent verified archive found':
+   'archive check unavailable';
+  lines.push('Independent NOAA weather memory: '+status+
+   '; scorecard '+publicWeather.scorecardState+'. This is public research, not Kalshi quotes or a market edge.');
  }
  if(s.blockers.length)lines.push('Needs attention: '+s.blockers.map(b=>b.text).join(' '));
  lines.push(`Live site check: ${s.site.ok?'all pages and chat answered':'some checks failed'}.`);
