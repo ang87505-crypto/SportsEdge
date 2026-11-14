@@ -48,7 +48,7 @@ export async function handleCommand(req:{contentType:string|null;text:()=>Promis
  const owner=deps.ports.ownerAccess;
  const key=deps.historyKey??null;
  const respond=(reply:Reply,mode:Mode,last:ToolCall[],extra:Record<string,unknown>={})=>
-  json({status:'ok',mode,reply,session:{context:reply.context??null,last},ownerAccess:owner,...(key?{sig:signTurn(key,reply.text.slice(0,1500))}:{}),...extra});
+  json({status:'ok',mode,reply,session:{context:reply.context??null,last},ownerAccess:owner,ownerExpiresAt:owner?deps.ports.ownerExpiresAt??null:null,...(key?{sig:signTurn(key,reply.text.slice(0,1500))}:{}),...extra});
  const legacy=async(note?:string)=>{
   const out=await deps.legacy(r.message,r.session.context).catch(()=>null);
   if(!out)return respond({text:'The records are unavailable right now.',cards:[],suggestions:['Is everything running?'],context:{}},'assistant',[]);
