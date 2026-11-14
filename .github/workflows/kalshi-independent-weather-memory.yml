@@ -1,0 +1,45 @@
+# NOAA/NWS-only independent station weather research memory. No Kalshi API/data,
+# no account, quotes, trades or paid data. Proposed schedule activates ONLY if
+# owner reviews and merges the K0 PR after the Monday stock PAPER release.
+# Immutable daily files in research-data; existing commit guard prevents rewrites.
+name: Independent NYC weather memory (NOAA only)
+on:
+  schedule:
+    - cron: '11 3 * * *'   # 03:11 UTC: freeze tomorrow's NYC EST-day grid forecast
+    - cron: '17 11 * * *'  # 11:17 UTC: archive prior day's next-morning CLINYC report
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: NOAA-only record phase; never Kalshi data
+        type: choice
+        required: true
+        options: [forecast, outcome]
+permissions:
+  contents: write
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  archive:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PHASE: ${{ inputs.phase || (github.event.schedule == '11 3 * * *' && 'forecast' || 'outcome') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify independent NOAA parsers, immutable records and fetch limits (offline)
+        run: |
+          node --experimental-strip-types --test src/lib/prediction-markets/kalshi/nws.test.mjs src/lib/prediction-markets/kalshi/nws-cli.test.mjs src/lib/prediction-markets/kalshi/weather-memory.test.mjs scripts/kalshi-independent-weather-collect.test.mjs
+      - name: Check out existing append-only research-data branch
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Archive one independently-sourced forecast or preliminary daily station outcome
+        run: node --experimental-strip-types scripts/kalshi-independent-weather-collect.ts "$PHASE" research-data
+      - name: Commit only new independent NOAA memory records
+        run: bash .github/scripts/research-data-branch.sh commit "independent NOAA weather $PHASE ${{ github.run_id }}"
