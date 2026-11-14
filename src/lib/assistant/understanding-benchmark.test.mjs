@@ -81,6 +81,11 @@ test('navigation is link-only and manual operations are guidance-only',()=>{
   ['where is the nba model page','/research/nba'],
   ['where can i check github actions','https://github.com/ang87505-crypto/SportsEdge/actions'],
   ['where can i see my stock fills','/stocks/alpaca'],
+  ['open stocks','/stocks/paper-auto'],
+  ['go to the sports','/sports'],
+  ['navigate to kalshi','/prediction-markets/kalshi'],
+  ['take me to predictions','/paper-betting/predictions'],
+  ['visit automation','/automation'],
   ['where is our kalshi dashboard','/prediction-markets/kalshi']
  ]){
   assert.equal(isNavigationQuestion(message),true,message);
