@@ -58,7 +58,7 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  }
  // Watch Only is a distinct research ledger. Don't turn it into the capped
  // virtual-entry stats or the speculative $5 shadow benchmark.
- const watchPhrase=/\b(watch ?only|watchlist|tracked lines?|captured lines?|all lines|every line|saved lines?|no bets?|without betting|not paper|not entered|all predictions|every prediction|unbet|not wagered|unentered)\b/.test(t)||
+ const watchPhrase=/\b(watch ?only|watchlist|tracked lines?|captured lines?|all lines|every line|saved lines?|without betting|not entered|all predictions|every prediction|unbet|not wagered|unentered)\b/.test(t)||
   (/\b(60|70|80)\s*(?:%|percent)(?=\s|$)/.test(t)&&/\b(lines?|picks?|predictions?|hit rate|accuracy)\b/.test(t));
  const watchPrev=prev?.tool==='watch_only';
  const watchFollow=watchPrev&&(/^(and|what about|how about|same for|now|ok|okay|which ones)\b/.test(t)||t.split(' ').length<=4);
