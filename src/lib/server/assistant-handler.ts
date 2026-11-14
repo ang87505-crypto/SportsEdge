@@ -46,7 +46,7 @@ export function parseContext(v:unknown):AssistantContext|null|undefined{
   else if(k==='stat'&&typeof val==='string'&&(STATS as readonly string[]).includes(val))out.stat=val as AssistantContext['stat'];
   else if(k==='range'&&typeof val==='string'&&RANGE.test(val))out.range=val as AssistantContext['range'];
   else if(k==='lastPickIds'&&Array.isArray(val)&&val.length<=10&&val.every(n=>Number.isSafeInteger(n)&&n>0))out.lastPickIds=val as number[];
-  else if(k==='domain'&&['sports','stocks','research','all'].includes(val as string))out.domain=val as AssistantContext['domain'];
+  else if(k==='domain'&&['sports','stocks','research','kalshi','all'].includes(val as string))out.domain=val as AssistantContext['domain'];
   else if(k==='topic'&&['overview','performance','holdings','picks','automation','explain','controls','help','approvals','jobs','today','money','health','improving','opportunity','ready'].includes(val as string))out.topic=val as AssistantContext['topic'];
   else if(k==='symbol'&&typeof val==='string'&&/^[A-Z]{1,5}(\.[A-Z])?$/.test(val))out.symbol=val;
   else if(k==='strategyId'&&RESEARCH_IDS.includes(val as ResearchId))out.strategyId=val as ResearchId;
