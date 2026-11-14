@@ -53,8 +53,8 @@ export function parseOpsStatus(v:unknown,nowIso:string):OpsStatus|null{
   if(!obj(x)||x.source!=='PUBLIC_NOAA_ONLY'||
    !['RECORDED','AWAITING_FIRST_ARCHIVE','ARCHIVE_UNAVAILABLE'].includes(x.forecastState as string)||
    !['RECORDED','AWAITING_FIRST_ARCHIVE','ARCHIVE_UNAVAILABLE'].includes(x.scorecardState as string)||
-   !(x.latestTargetDate===null||(typeof x.latestTargetDate==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.latestTargetDate)))||
-   !ntime(x.forecastCapturedAt)||!(x.lastGradedDate===null||(typeof x.lastGradedDate==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.lastGradedDate))))
+   !(x.latestTargetDate===null||(typeof x.latestTargetDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.latestTargetDate)))||
+   !ntime(x.forecastCapturedAt)||!(x.lastGradedDate===null||(typeof x.lastGradedDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x.lastGradedDate))))
    return null;
  }
  if(!Array.isArray(v.credentials)||v.credentials.length>20)return null;
