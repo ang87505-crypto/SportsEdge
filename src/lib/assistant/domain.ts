@@ -11,6 +11,11 @@ export type QuestionRoute={domain:AssistantDomain|null;topic:AssistantTopic;symb
 export function routeQuestion(message:string,previous:AssistantContext|null):QuestionRoute{
  const t=conversationalText(message);
  const directControl=parseControlRequest(message);
+ // Route genuine site outages to the real operations evidence instead of
+ // repeating a previous stock/sports chat topic or guessing a live status.
+ if(/\b(sportsedge|website|site|app|server|system)\b.{0,65}\b(down|offline|broken|crashed|unresponsive|not working|not loading)\b/.test(t)||
+    /\b(is|are) not\b.{0,30}\b(sportsedge|website|site|app|server)\b.{0,35}\b(working|loading)\b/.test(t))
+  return {domain:'all',topic:'health'};
  // AI Learning Lab and staking questions are answered from the lab reports and saved records, before any other route.
  // Kalshi forecasting/calibration questions must not accidentally invoke the sports props lab.
  const kalshi=/\b(kalshi|prediction markets?|event contracts?|noaa|nws|central park|weather (?:research|forecasts?|model|accuracy|predictions?)|inflation|cpi|bls)\b/.test(t);
