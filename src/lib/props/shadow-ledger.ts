@@ -129,5 +129,16 @@ export function shadowLedger(r:ResearchRaw,nowIso:string=r.nowIso){
    uniquePlatforms:new Set(list.map(x=>x.platform)).size,
    invalidSkipped,duplicatesSkipped};
  };
- return {version:SHADOW_STUDY.version,asOf:nowIso,rows,summary:sum(rows),summarize:sum};
+ const impact=(date:string)=>{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('SHADOW_INVALID_DATE');
+  const prior=sum(rows.filter(x=>x.slateDate<date));
+  const daily=sum(rows.filter(x=>x.slateDate===date));
+  const through=sum(rows.filter(x=>x.slateDate<=date));
+  return {date,prior,daily,through,
+   // Percentage points, not relative percent; only settled win/loss grades
+   // affect the cumulative rate. A push or pending leg does not.
+   deltaPoints:prior.winRate===null||through.winRate===null?null:
+    Math.round((through.winRate-prior.winRate)*10000)/100};
+ };
+ return {version:SHADOW_STUDY.version,asOf:nowIso,rows,summary:sum(rows),summarize:sum,impact};
 }
