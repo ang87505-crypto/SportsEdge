@@ -9,6 +9,7 @@ import type {ToolCall} from './session.ts';
 import type {Period} from './tools.ts';
 import type {ToolResult} from './tools.ts';
 import {conversationalText} from '../assistant/colloquial.ts';
+import {nativeIntent} from './native-intent.ts';
 
 const norm=(s:string)=>conversationalText(s);
 const PERIOD_WORDS:[RegExp,Period][]=[
@@ -76,7 +77,10 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  }
  if(sportsy&&periods.length&&/\b(hit rate|accuracy|how did (we|our|the picks)|results?|record|did we do)\b/.test(t))
   return {calls:[{tool:'sports_results',input:{period:periods[0]}}]};
- return null;
+ // Our own small intent model only fills high-confidence gaps. The established
+ // domain assistant handles unknown and ambiguous messages without guessing.
+ const learned=nativeIntent(message);
+ return learned?{calls:[learned.call],...(learned.filter?{filter:learned.filter}:{})}:null;
 }
 
 const pct=(x:number|null|undefined)=>x===null||x===undefined?'not available':(x*100).toFixed(1)+'%';
