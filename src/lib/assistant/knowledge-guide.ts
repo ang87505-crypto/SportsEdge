@@ -29,7 +29,7 @@ function relevant(q:QuestionRoute,s:string):Destination[]{
  if(/\b(monitor|automation|workflow|scheduled|cron|collector|jobs|run receipts)\b/.test(s))
   return matches('Automation monitor');
  if(/\b(stock|alpaca|paper order|portfolio|holdings|fills|trades?)\b/.test(s)){
-  return /\b(positions?|balance|fills|broker|alpaca)\b/.test(s)?
+  return /\b(positions?|balance|fill|fills|filled|broker|alpaca)\b/.test(s)?
    matches('Alpaca PAPER account'):matches('Stock PAPER autopilot');
  }
  if(/\b(calibrat|learning lab|improv|model|predict|backtest)\b/.test(s)){
