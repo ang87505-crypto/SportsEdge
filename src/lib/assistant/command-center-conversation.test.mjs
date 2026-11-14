@@ -342,3 +342,37 @@ test('procedure and navigation verbs still lead to safe pages without executing 
   assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
  }
 });
+
+test('stale-data questions use public ops receipts without contacting private brokers',async()=>{
+ const ps=fakePorts();
+ let opsCalls=0;
+ ps.ports.ops=async()=>{opsCalls++;return {
+  mode:'live',checkedAt:NOW,monitorStale:false,
+  status:{schemaVersion:'ops-status-v1',generatedAt:NOW,monitorRun:null,
+   overall:{state:'OK',attention:[]},blockers:[],
+   jobs:[{id:'props-tick',label:'Sports props: event-aware capture ticks',area:'sports',
+    status:'OK',detail:'ok',required:true,
+    historyUrl:'https://github.com/ang87505-crypto/SportsEdge/actions/workflows/props-tick.yml',
+    lastRun:null,lastSuccess:null,lastFailure:null,running:null,
+    slots7d:{due:0,missed:0,lastMissedAt:null},nextPlanned:[],note:null}],
+   site:{url:'x',checkedAt:NOW,ok:true,checks:[]},evidence:{},credentials:[]}
+ };};
+ const r=await ask('are NBA picks up to date?',{domain:'stocks',topic:'performance'},ps);
+ assert.equal(r.http,200);
+ assert.equal(r.reply.context.domain,'sports');
+ assert.match(r.reply.text,/no successful workflow recorded/);
+ assert.match(r.reply.text,/workflow success proves only/);
+ assert.equal(opsCalls,1);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
+test('missing monitor response stays unknown and never exposes private data',async()=>{
+ const ps=fakePorts();
+ ps.ports.ops=async()=>{throw Error('TEST_ONLY_DOWN');};
+ const r=await ask('when was stock data last updated?',null,ps);
+ assert.equal(r.http,200);
+ assert.equal(r.reply.context.domain,'stocks');
+ assert.match(r.reply.text,/cannot say whether the records are fresh/i);
+ assert.doesNotMatch(r.reply.text,/stock profit was|account equity is/i);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
