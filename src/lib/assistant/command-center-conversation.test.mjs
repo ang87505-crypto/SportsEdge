@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {routeQuestion} from './domain.ts';
-import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer} from './knowledge-guide.ts';
+import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer,isAssistantAvailabilityQuestion} from './knowledge-guide.ts';
 import {kalshiPublicAnswer} from './kalshi-answer.ts';
 import {handleSiteAssistant} from '../server/site-assistant-handler.ts';
 const NOW='2026-11-13T22:00:00.000Z';
@@ -231,4 +231,33 @@ test('valid lab context survives previous-turn parsing and invalid context remai
  const bad={contentType:'application/json',text:async()=>JSON.stringify({
   message:'help',context:{domain:'all',topic:'DROP TABLE'}})};
  assert.equal((await handleSiteAssistant(bad,{},NOW,ps.ports)).status,400);
+});
+
+test('assistant-vs-site status questions remain separate and require no private loads',async()=>{
+ for(const message of ['y rnt worky','y rnt u worky','why rnt you workin','why did you stop working']){
+  const ps=fakePorts();
+  assert.equal(isAssistantAvailabilityQuestion(message),true,message);
+  const r=await ask(message,{domain:'stocks',topic:'performance'},ps);
+  assert.equal(r.http,200,message);
+  assert.equal(r.reply.context.domain,'all',message);
+  assert.match(r.reply.text,/do not continue editing code/i,message);
+  assert.match(r.reply.text,/nothing was started or changed/i,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[])
+   .some(item=>item.href==='/automation'),message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
+test('site failures and automation questions do not become assistant availability replies',()=>{
+ for(const message of [
+  'is sportsedge site down','why is the site not working',
+  'why are stocks not working','why is the NBA bot not working',
+  'are the workflows failing','what happened to the jobs'
+ ]){
+  assert.equal(isAssistantAvailabilityQuestion(message),false,message);
+ }
+ assert.deepEqual((({domain,topic})=>({domain,topic}))(routeQuestion('is SportsEdge site down',null)),
+  {domain:'all',topic:'health'});
+ assert.deepEqual((({domain,topic})=>({domain,topic}))(routeQuestion('why is the site not working',null)),
+  {domain:'all',topic:'health'});
 });
