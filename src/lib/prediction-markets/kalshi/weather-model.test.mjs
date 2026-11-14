@@ -25,3 +25,12 @@ test('minimum history, after-cutoff labels and duplicates all rejected',()=>{
 test('training does not accept unverified data source or future-date observations',()=>{
  assert.throws(()=>estimateStationTemperatureRange({...base(),training:[...training.slice(0,34),{...training[34],forecastSource:'kalshi'}]}),/ASOF_OR_SOURCE/);
 });
+
+
+test('model accepts next station climate day even after midnight UTC but before midnight EST',()=>{
+ const b=base();
+ const result=estimateStationTemperatureRange({...b,asOf:'2026-11-14T03:11:00Z'});
+ assert.equal(result.targetLocalDate,'2026-11-14');
+ assert.equal(result.trainingDays,35);
+ assert.throws(()=>estimateStationTemperatureRange({...b,asOf:'2026-11-14T06:11:00Z'}),/TARGET_NOT_FUTURE/);
+});
