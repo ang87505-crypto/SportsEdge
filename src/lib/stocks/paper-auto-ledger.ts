@@ -16,7 +16,7 @@ export type PaperAutoLedger={experimentId:string;registered:true;status:PaperAut
  experiment:{registeredAt:string;startingEquityCents:number;brokerAccountNumberSuffix:string;configDigest:string};
  decisions:Array<{decisionId:string;session:string;decisionAt:string;outcome:string;targets:string[];
   reasons:string[];recordedAt:string}>;
- intents:Array<{intentId:string;symbol:string;side:'buy'|'sell';phase:string;attempt:number;shares:number;
+ intents:Array<{intentId:string;decisionId:string|null;symbol:string;side:'buy'|'sell';phase:string;attempt:number;shares:number;
   limitCents:number;status:string;brokerStatus:string|null;filledQty:string;filledAvgPrice:string|null;
   createdAt:string;updatedAt:string}>;
  daily:DailyMark[];
@@ -93,6 +93,9 @@ export function parseLedger(raw:unknown):PaperAutoLedger|UnregisteredLedger|null
     targets:arr(d.targets,50).map(t=>str(obj(t).symbol,/^[A-Z][A-Z0-9.-]{0,9}$/)),
     reasons:reasonsOf(d.diagnostics),recordedAt:time(d.recordedAt)};}),
    intents:arr(x.intents,200).map(v=>{const i=obj(v);return {intentId:str(i.intentId,/^pai-[a-f0-9]{32}$/),
+    // The protected database view emits decisionId; retain it for forward evidence linkage.
+    // Legacy/test fixtures without the optional field stay readable, but cannot prove a match.
+    decisionId:maybe(i.decisionId,d=>str(d,/^[a-f0-9]{64}$/)),
     symbol:str(i.symbol,/^[A-Z][A-Z0-9.-]{0,9}$/),side:oneOf(i.side,['buy','sell'] as const),
     phase:oneOf(i.phase,['SELL','BUY'] as const),attempt:int(i.attempt,1),shares:int(i.shares,1),
     limitCents:int(i.limitCents,1),status:str(i.status,/^[a-z_]{3,20}$/),
