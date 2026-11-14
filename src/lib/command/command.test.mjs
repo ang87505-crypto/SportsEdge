@@ -99,11 +99,13 @@ test('session: oversized, malformed or forged previous tool calls are rejected',
 // ---- language model loop with a scripted fake (no network, no spend)
 const fake = (script) => {let i = 0; const seen = []; return {id: 'claude-opus-5-5', seen, async complete(req) {seen.push(req); return script[Math.min(i++, script.length - 1)](req);}};};
 const usage = {input_tokens: 2000, output_tokens: 200};
-const LLM_ENV = {COMMAND_LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'test-key-not-real', COMMAND_LLM_DAILY_BUDGET_USD: '1', COMMAND_LLM_LEDGER: 'supabase'};
+const LLM_ENV = {COMMAND_LLM_ENABLED: 'true', COMMAND_LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'test-key-not-real', COMMAND_LLM_DAILY_BUDGET_USD: '1', COMMAND_LLM_LEDGER: 'supabase'};
 const loop = (model, over = {}) => runConversation(model, {history: [], message: 'q', ports: ports(), ledger: memoryLedger(5, 60), clientKey: 'c', maxOutputTokens: 2000, maxToolRounds: 4, ...over});
 
 test('paid inference is off unless provider, key, a daily budget AND the shared ledger are configured', () => {
   assert.equal(llmConfig({}), null);
+  assert.equal(llmConfig({...LLM_ENV,COMMAND_LLM_ENABLED:undefined}),null,'an API key and budget alone must not turn on hosted inference');
+  assert.equal(llmConfig({...LLM_ENV,COMMAND_LLM_ENABLED:'false'}),null,'paid mode disabled explicitly');
   assert.equal(llmConfig({...LLM_ENV, COMMAND_LLM_LEDGER: undefined}), null, 'no shared ledger → off (no per-instance budgets)');
   assert.equal(llmConfig({...LLM_ENV, COMMAND_LLM_DAILY_BUDGET_USD: '0'}), null);
   assert.equal(llmConfig({...LLM_ENV, COMMAND_LLM_DAILY_BUDGET_USD: '51'}), null);
