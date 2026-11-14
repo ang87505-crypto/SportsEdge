@@ -90,8 +90,10 @@ export async function handleCommand(req:{contentType:string|null;text:()=>Promis
   const text=compose(results,p.filter)+(fallbackNote?'\n\n'+fallbackNote:'');
   let cards=results.flatMap(x=>x.cards);
   if(p.filter)cards=([] as Card[]).concat(cards.filter(c=>c.kind!=='table'),results.flatMap((x):Card[]=>{
-   const rows=((x.data as {rows?:{player:string;side:string;line:number;stat:string;correct:boolean|null;probability:number|null}[]}|null)?.rows??[])
-    .filter(row=>row.correct===(p.filter==='hits'));
+   const rows=((x.data as {rows?:{player:string;side:string|null;line:number;stat:string;
+    correct?:boolean|null;outcome?:string;probability:number|null}[]}|null)?.rows??[])
+    .filter(row=>row.correct!==undefined?row.correct===(p.filter==='hits'):
+     row.outcome===(p.filter==='hits'?'win':'loss'));
    return rows.length?[{kind:'table' as const,title:p.filter==='misses'?'Misses':'Hits',columns:['Pick','Chance'],
     rows:rows.slice(0,15).map(row=>[`${row.player} ${row.side==='less'?'Less':'More'} ${row.line} ${row.stat}`,row.probability===null?'—':(row.probability*100).toFixed(1)+'%'])}]:[];
   }));
