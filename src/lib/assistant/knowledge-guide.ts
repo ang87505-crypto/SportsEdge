@@ -26,7 +26,7 @@ export function isNavigationQuestion(message:string):boolean{
  const s=conversationalText(message);
  // Explicit navigation only: "show me today's trades" requests data,
  // while "show me the trade dashboard" requests a link.
- return /\b(where to (find|see|check|look|go|open)|how to (find|open|get to)|where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s)||
+ return /\b(where to (find|see|check|look|go|open)|how to (find|open|get to)|where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|check|see|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s)||
   /^(?:open|go to|navigate to|visit|take me to) (?:the |my |our )?(?:sports|nba|stock|stocks|alpaca|kalshi|noaa|prediction|predictions|research|backtests?|paper picks|picks|props|automation|workflows?|jobs|dashboard|learning lab|system status)\b/.test(s);
 }
 function relevant(q:QuestionRoute,s:string):Destination[]{
@@ -125,7 +125,8 @@ export function isManualOperationQuestion(message:string):boolean{
  // "Did the collector run?" is a read-only status question, not a request to run it.
  return /^(?:(?:please|can you|could you|would you|will you|i want to|i need to|help me|how do i|how can i|how should i) )?(?:run|trigger|dispatch|execute|retrain|backfill|sync|refresh|collect|settle|reconcile|deploy|merge|activate|enable|disable|restart|force|train|pause|stop|resume|start|buy|sell|place|turn on|turn off)\b/.test(s)||
   /\bhow (?:do|can|should) i (?:run|retrain|trigger|dispatch|execute|collect|settle|reconcile|backfill|deploy|activate|enable|disable|pause|stop|resume|start|buy|sell|place)\b/.test(s)||
-  /\bwhere (?:do|can|should) i (?:run|retrain|trigger|dispatch|collect|settle|reconcile|pause|stop|resume|start)\b/.test(s);
+  /\bwhere (?:do|can|should) i (?:run|retrain|trigger|dispatch|collect|settle|reconcile|pause|stop|resume|start)\b/.test(s)||
+  /\bwhere (?:should|do|can) i (?:click|go) to (?:pause|stop|resume|start|retrain|collect|settle|reconcile|deploy|activate|enable|disable)\b/.test(s);
 }
 export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
  const s=conversationalText(message);
