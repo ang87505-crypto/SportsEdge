@@ -33,8 +33,12 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  // user also names NBA/soccer/PrizePicks/stocks or explicitly asks about all systems.
  const explicitSports=/\b(nba|wnba|nfl|nhl|mlb|soccer|football|baseball|basketball|prizepicks|prize picks|pick6|pick 6|sports|player props|jokic|booker)\b/.test(t);
  const explicitWholeSite=/\b(all systems|whole site|everything|across all)\b/.test(t);
+ // "stock picks tonight" must stay stocks: generic words such as picks
+ // and tonight are not proof of an NBA/DFS request. Explicitly naming
+ // both a sport and stocks still warrants a combined answer.
  let domain:QuestionRoute['domain']=kalshi?(explicitSports||stocks||explicitWholeSite?'all':'kalshi'):
-  sports&&(stocks||research)||general&&!(sports||stocks||research)?'all':research?'research':stocks?'stocks':sports?'sports':null;
+  (explicitSports&&stocks)||(general&&!(sports||stocks||research))?'all':
+  stocks&&research?'research':stocks?'stocks':sports?'sports':research?'research':null;
  const follow=/^(why|and|also|same (for|with)|what about|how about|what if|what does that mean|explain|is it|did it|does it|does that|is that|are they|when|how much|how accurate|how good|how are|how can|how do|what should|what can|what changed|what is next|what happened|how did|show me|tell me more)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);
  if(!domain&&follow)domain=previous?.domain??null;
