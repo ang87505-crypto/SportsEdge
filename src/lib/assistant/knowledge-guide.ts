@@ -33,7 +33,7 @@ function relevant(q:QuestionRoute,s:string):Destination[]{
  if(/\b(all|every|everything|whole site)\b/.test(s)&&/\b(page|pages|dashboards?|tabs?|screens?)\b/.test(s))
   return ['Sports picks and graded results','All recorded sports predictions','Stock PAPER autopilot',
    'Stock strategy research','Independent Kalshi research','Automation monitor'].flatMap(matches);
- if(/\b(candidate|all predictions?|full prediction|prediction list|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
+ if(/\b(candidate|all predictions?|every predictions?|full prediction|prediction list|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
   return matches('All recorded sports predictions');
  if(/\b(nba model|elo|basketball model|nba research)\b/.test(s))return matches('NBA model research');
  if(/\b(stock|stocks|strategy|strategies)\b/.test(s)&&/\b(research|backtests?|models?|performance vs spy|lab)\b/.test(s))
