@@ -288,3 +288,19 @@ test('honest labels: "all" is the loaded 14-day window, and an empty period says
   const c = await ask('compare this week with last week');
   assert.match(c.body.reply.text, /The 7 days before: no graded picks\./);
 });
+
+test('native domain router refuses cross-market comparisons and respects colloquial sports questions',()=>{
+ for(const text of [
+  'How do our stock profits compare with yesterday?',
+  'Are Kalshi weather predictions accurate last week?',
+  'How did my alpaca stocks perform today?',
+  'What was the CPI forecast hit rate last week?',
+  'Compare stock returns last week to the week before'
+ ])assert.equal(plan(text,[]),null,text);
+ const props=plan('how did our nba picks do yesterday',[]);
+ assert.equal(props?.calls?.[0]?.tool,'sports_results');
+ assert.equal(props?.calls?.[0]?.input?.period,'yesterday');
+ const grammar=plan('how did our prizepicks perform last night',[]);
+ assert.equal(grammar?.calls?.[0]?.tool,'sports_results');
+ assert.equal(grammar?.calls?.[0]?.input?.period,'yesterday');
+});
