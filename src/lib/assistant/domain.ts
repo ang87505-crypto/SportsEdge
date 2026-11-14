@@ -22,15 +22,15 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
   /\b(workflows?|github actions)\b/.test(t)&&!sports&&!stocks?'jobs':null;
  let domain:QuestionRoute['domain']=kalshi?(sports||stocks||general?'all':'kalshi'):
   sports&&(stocks||research)||general?'all':research?'research':stocks?'stocks':sports?'sports':null;
- const follow=/^(why|and|also|what about|how about|explain|is it|did it|when|how much|what changed|what is next|what happened|how did|show me)\b/.test(t)||
+ const follow=/^(why|and|also|what about|how about|explain|is it|did it|does it|does that|is that|when|how much|how accurate|how good|how are|what does that mean|what changed|what is next|what happened|how did|show me)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);
  if(!domain&&follow)domain=previous?.domain??null;
  let topic:AssistantTopic='overview';
  if(/^(please )?(buy|sell|place|pause|resume|stop|start)\b|\b(can you|could you) (buy|sell|place|pause|resume|stop|start)\b/.test(t))topic='controls';
  else if(/\b(why|explain|learn|learning|improving|improve|better|changed)\b/.test(t))topic='explain';
  else if(/\b(hold|holds|holding|holdings|positions?|shares|own|portfolio)\b/.test(t))topic='holdings';
- else if(/\b(profit|returns?|pnl|p l|results?|perform|performance|doing|compare|beat|money|lost|balance)\b|how did|are we up|am i up/.test(t))topic='performance';
- else if(/\b(running|status|schedule|scheduled|next|automation|workflow|collect|collection|enabled|paused|blocked|failed|working)\b/.test(t))topic='automation';
+ else if(/\b(profit|returns?|pnl|p l|results?|perform|performance|doing|compare|beat|money|lost|balance|accuracy|accurate|hit rate|brier|calibrat\w*)\b|how did|are we up|am i up/.test(t))topic='performance';
+ else if(/\b(running|status|schedule|scheduled|next|automation|workflow|collect|collection|enabled|paused|blocked|failed|working|refresh|updated|update|snapshot|captured)\b/.test(t))topic='automation';
  else if(/\b(picks|picked|bought|targets)\b/.test(t))topic='picks';
  if(kalshi&&domain==='kalshi'&&/\b(opportunit\w*|edge|best (current )?(bet|market)|profitable|value)\b/.test(t))topic='opportunity';
  if(ops&&!kalshi){domain='all';topic=ops;}
