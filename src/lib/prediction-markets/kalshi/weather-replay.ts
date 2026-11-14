@@ -1,7 +1,6 @@
 /**
  * Strictly chronological independent weather forecast research.
- * Input records must have separately evidenced NWS forecast and official Central Park
- * station observation timestamps. This module DOES NOT use Kalshi prices or outcomes.
+ * Input records must have separately evidenced NWS forecast and Central Park station observation timestamps (including preliminary NWS CLI). This module DOES NOT use Kalshi prices or outcomes.
  * Synthetic unit fixtures are not evidence of forecasting skill or market profitability.
  */
 import {estimateStationTemperatureRange,type WeatherTrainingDay} from './weather-model.ts';
@@ -39,7 +38,7 @@ function bandFor(forecastHighF:number):{lo:number;hi:number}{
  return {lo,hi:lo+4};
 }
 function validateDay(d:WeatherTrainingDay):void{
- if(!validDate(d.localDate)||d.forecastSource!=='NWS'||d.observationSource!=='OFFICIAL_CENTRAL_PARK'||
+ if(!validDate(d.localDate)||d.forecastSource!=='NWS'||!['OFFICIAL_CENTRAL_PARK','NWS_CLI_PRELIMINARY_CENTRAL_PARK'].includes(d.observationSource)||
   !Number.isFinite(d.forecastHighF)||!Number.isFinite(d.observedHighF)||
   d.forecastHighF< -150||d.forecastHighF>180||
   d.observedHighF< -150||d.observedHighF>180)
