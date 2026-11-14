@@ -7,8 +7,15 @@ import {chatActionRequest} from '@/lib/assistant/actions';
 
 type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
-const STARTERS=["Tonight's picks",'Stock results','Research results','Is everything running?'];
-const OPENING:Msg={role:'bot',text:'Ask about sports picks, stock paper accounts, research results, or automation.',suggestions:STARTERS};
+const TOPICS=[
+  {label:'Sports',question:"Tonight's picks"},
+  {label:'Stocks',question:'Stock PAPER results'},
+  {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
+  {label:'Research',question:'Stock strategy research results'},
+  {label:'Systems',question:'Is everything running?'}
+] as const;
+const STARTERS=TOPICS.map(t=>t.question);
+const OPENING:Msg={role:'bot',text:'Ask about sports, stocks, independent Kalshi research, or automation. Answers use saved records, not invented trades.',suggestions:STARTERS};
 const NO_ACCESS:Access={ownerAccess:false,ownerExpiresAt:null};
 
 /** Lets any button on the page ask the conversation a question (the homepage summary strip uses it). */
@@ -90,7 +97,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">
-   {STARTERS.map((s,i)=><button key={s} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(s)}>{['Sports','Stocks','Research','All systems'][i]}</button>)}
+   {TOPICS.map(t=><button key={t.label} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
   </div>
   <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
   <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
@@ -108,11 +115,11 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
   </div>:null}
   <form className="chat-form" onSubmit={submit}>
    <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
-   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, research…"/>
+   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, Kalshi, research…"/>
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence: SportsEdge matches your question to built-in topics and reads its own records; no external AI model is called. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
+  <p className="quiet small-print">Answers are grounded in saved evidence: this free assistant matches questions to supported topics, not a hosted language model. Independent NOAA weather scores are not Kalshi wins. Chat does not place bets or orders; eligible Pause/Stop proposals require separate owner confirmation. Private conversation data stays in this tab.</p>
  </div>;
 }
 /**
