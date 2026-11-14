@@ -9,7 +9,6 @@ import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/pre
 export const metadata={title:'Prediction markets research · SportsEdge',
  description:'Kalshi integration research status; no live collection or real-money trading.'};
 
-export const revalidate=600;
 export default async function PredictionMarketsKalshiPage(){
  const asOf=new Date().toISOString();
  const [archive,scorecard]=await Promise.all([loadLatestIndependentWeather(asOf),loadLatestWeatherScorecard(asOf)]);
