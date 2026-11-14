@@ -12,7 +12,7 @@
 >
 > Use the phases and acceptance tests below. For each finished PR report: what changed, why, exact touched files, CI/test results, source rights, data usage, what remains disabled, any failed tests, rollback, and which owner decisions remain. **Do not claim completion of unimplemented or unverified items.**
 
-## Phase 0 — preflight / no code changes yet
+**New isolated prototype:** [PR #176](https://github.com/ang87505-crypto/SportsEdge/pull/176) adds an offline, pure research-only evidence contract for source availability, frozen forecasts, verified outcomes and virtual-paper receipts, with negative tests. It is **not connected to the running app or collectors**. Use it as a reviewed starting point for future *read-only adapters*, not as evidence of model performance or as an excuse to alter production.\n\n## Phase 0 — preflight / no code changes yet
 
 1. Inspect `main` and confirm exact release manifest fields:
    - `src/lib/props/schedule.ts`: `PROPS_RELEASE.scheduledRunsEnabled`, `PROPS_COLLECTION_V2.tickEnabled`.
