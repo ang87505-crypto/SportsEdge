@@ -53,6 +53,8 @@ test('all persisted qualifying lines are counted without any wager, $5 or odds c
  assert.equal(r.data.pending,0);
  assert.equal(r.data.sourceRows,2);
  assert.equal(r.data.from,'2026-11-13');
+ assert.equal(r.data.latestSavedLineAt,'2026-11-14T18:00:10.000Z');
+ assert.equal(r.data.latestVerifiedGradeAt,'2026-11-14T03:00:00.000Z');
  assert.equal(r.data.to,'2026-11-13');
  assert.equal(r.cards.some(c=>c.kind==='table'&&c.rows.length===2),true);
  assert.ok(r.sources.some(x=>x.href==='/paper-betting/watch'));
@@ -69,6 +71,9 @@ test('all persisted qualifying lines are counted without any wager, $5 or odds c
  assert.equal(today.data.uniqueLines,1);
  assert.equal(today.data.pending,1);
  assert.equal(today.data.hitRate,null);
+ const empty=await ask({period:'yesterday',threshold:'80'});
+ assert.equal(empty.data.uniqueLines,0);
+ assert.match(compose([empty]),/does not mean no market lines existed/);
 });
 test('missing source and unavailable records cannot be turned into zero picks',async()=>{
  const r=await callTool('watch_only',{period:'today',threshold:'60'},ports({watch:async()=>null}));
