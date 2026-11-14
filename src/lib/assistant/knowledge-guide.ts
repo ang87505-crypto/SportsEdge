@@ -33,7 +33,7 @@ function relevant(q:QuestionRoute,s:string):Destination[]{
  if(/\b(all|every|everything|whole site)\b/.test(s)&&/\b(page|pages|dashboards?|tabs?|screens?)\b/.test(s))
   return ['Sports picks and graded results','All recorded sports predictions','Stock PAPER autopilot',
    'Stock strategy research','Independent Kalshi research','Automation monitor'].flatMap(matches);
- if(/\b(candidate|all predictions?|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
+ if(/\b(candidate|all predictions?|full prediction|prediction list|every line|unrecorded|not paper|every pick|every forecast)\b/.test(s))
   return matches('All recorded sports predictions');
  if(/\b(nba model|elo|basketball model|nba research)\b/.test(s))return matches('NBA model research');
  if(/\b(stock|stocks|strategy|strategies)\b/.test(s)&&/\b(research|backtests?|models?|performance vs spy|lab)\b/.test(s))
@@ -121,7 +121,8 @@ export function isManualOperationQuestion(message:string):boolean{
  const s=conversationalText(message);
  // "Did the collector run?" is a read-only status question, not a request to run it.
  return /^(?:(?:please|can you|could you|would you|will you|i want to|i need to|help me|how do i|how can i|how should i) )?(?:run|trigger|dispatch|execute|retrain|backfill|sync|refresh|collect|settle|reconcile|deploy|merge|activate|enable|disable|restart|force|train)\b/.test(s)||
-  /\bhow (?:do|can|should) i (?:run|retrain|trigger|dispatch|execute|collect|settle|reconcile|backfill|deploy|activate|enable|disable)\b/.test(s);
+  /\bhow (?:do|can|should) i (?:run|retrain|trigger|dispatch|execute|collect|settle|reconcile|backfill|deploy|activate|enable|disable|pause|stop|resume|start|buy|sell|place)\b/.test(s)||
+  /\bwhere (?:do|can|should) i (?:run|retrain|trigger|dispatch|collect|settle|reconcile|pause|stop|resume|start)\b/.test(s);
 }
 export function manualOperationAnswer(message:string,q:QuestionRoute):Reply{
  const s=conversationalText(message);
