@@ -15,6 +15,18 @@ SportsEdge owns and can test its **prediction engines**, **stored sports-stat ob
 - Sensitive owner actions never flow through a language model. They can only be proposed by the fixed allowlist from the existing assistant and require an independent owner confirmation via protected endpoints. Chat cannot Start stock order trading, create a real wager, expand a betting limit, promote a model, or enable Kalshi exchange access.
 - Native period routing must NEVER answer an independent weather/Kalshi, stock, or mixed-domain question using sports-betting accuracy; those go to source-aware legacy paths.
 
+## The native 50-question model (built here, not purchased)
+
+`src/lib/command/native-intent.ts` is a tiny transparent, CPU-only nearest-neighbour intent classifier built from a versioned catalog of **60+ real example question phrasings**. It has no GPT, no API subscription, no externally hosted model, no inference tokens and no GPU requirement.
+
+- The catalog maps known, tested questions onto SportsEdge's existing `callTool()` read-only tools: recorded NBA pick results, different time periods, upcoming picks, virtual bankroll, stock research, lab progress, job-health receipts, the today's briefing, and **owner-verified only** stock account status. It does NOT learn betting outcomes or forecast odds itself: the existing SportsEdge sports/stocks/NOAA models do that.
+- Lightweight token normalization and weighted lexical matching score a question against known exemplars. It only accepts high-confidence matches where at least two meaningful terms match and the best candidate is substantially better than competing intents. Low-scoring or ambiguous requests ABSTAIN; they go to the established SportsEdge assistant. All source numbers remain generated from live, verified, or honestly unavailable data; no fabricated answers.
+- The actual user interface under `/assistant` includes a collapsed example-question browser organized by topic. Clicking a question sends it to the same chat as freeform text. It is a discovery tool, not a list of canned numeric answers.
+- No wording can generate a money movement, real or paper bet, automatic order, job dispatch, secret read, or model promotion through this intent model. Domain barriers keep Kalshi/NOAA and stock comparisons out of the PrizePicks-only analytics; exact tools are authorized again at execution time with `callTool()`.
+- Tests cover **all catalog examples**, read-only routing, fallback for unknown or unsafe prompts, model-off-by-default behavior and the browser chat's private-reply protection. Future additions can be tested as new question examples rather than retraining a huge model.
+
+This is an **intent model**, not a self-trained foundation LLM: it is suitable for a limited set of ~50–100 SportsEdge command types, but does not have open-ended human-language reasoning. If we eventually need better paraphrase understanding, we can train a small supervised classifier locally from anonymized *opted-in* owner questions. A GPU model is unnecessary for this phase, and manual examples should be evaluated on **held-out questions**, not only the training sentences.
+
 ## Zero paid inference by default
 
 `llmConfig()` returns `null` unless **all** the following are explicitly set: `COMMAND_LLM_ENABLED=true`, `COMMAND_LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `COMMAND_LLM_LEDGER=supabase`, a supported model, and a positive daily budget under $50. Without the separately applied database budget migration, the model also fails closed. **This PR sets no such variables, applies no database migration, and enables no provider account.**
