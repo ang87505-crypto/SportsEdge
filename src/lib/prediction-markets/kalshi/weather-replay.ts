@@ -3,7 +3,7 @@
  * Input records must have separately evidenced NWS forecast and Central Park station observation timestamps (including preliminary NWS CLI). This module DOES NOT use Kalshi prices or outcomes.
  * Synthetic unit fixtures are not evidence of forecasting skill or market profitability.
  */
-import {estimateStationTemperatureRange,type WeatherTrainingDay} from './weather-model.ts';
+import {estimateStationTemperatureRange,centralParkStandardDate,type WeatherTrainingDay} from './weather-model.ts';
 
 export type WeatherReplayRow={
  date:string;asOf:string;trainDays:number;forecastHighF:number;
@@ -44,7 +44,7 @@ function validateDay(d:WeatherTrainingDay):void{
   d.observedHighF< -150||d.observedHighF>180)
   throw Error('WEATHER_REPLAY_INVALID_SOURCE');
  const issued=checkedTime(d.forecastAvailableAt),observed=checkedTime(d.observedAvailableAt);
- if(issued>=observed||d.localDate<d.forecastAvailableAt.slice(0,10)||
+ if(issued>=observed||d.localDate<centralParkStandardDate(d.forecastAvailableAt)||
   d.localDate>d.observedAvailableAt.slice(0,10))
   throw Error('WEATHER_REPLAY_BAD_PROVENANCE');
 }
@@ -62,7 +62,7 @@ export function walkForwardNwsTemperature(days:readonly WeatherTrainingDay[]):We
  for(const target of ordered){
   // Today's forecasts require an intra-day time-window design; do not silently
   // bypass the existing model's prospective-date validation.
-  if(target.forecastAvailableAt.slice(0,10)>=target.localDate){skippedSameDay++;continue;}
+  if(centralParkStandardDate(target.forecastAvailableAt)>=target.localDate){skippedSameDay++;continue;}
   const known=ordered.filter(r=>r.localDate<target.localDate&&
    checkedTime(r.observedAvailableAt)<checkedTime(target.forecastAvailableAt));
   if(known.length<30)continue;
