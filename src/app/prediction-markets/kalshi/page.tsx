@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {Suspense} from 'react';
+import {connection} from 'next/server';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
 
@@ -11,6 +12,8 @@ export const metadata={title:'Prediction markets research · SportsEdge',
  description:'Kalshi integration research status; no live collection or real-money trading.'};
 
 async function IndependentWeatherPanels(){
+ // Read current time only at request time, never while Cache Components prerenders.
+ await connection();
  const asOf=new Date().toISOString();
  const [archive,scorecard]=await Promise.all([loadLatestIndependentWeather(asOf),loadLatestWeatherScorecard(asOf)]);
  return <>
