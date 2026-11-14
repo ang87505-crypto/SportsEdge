@@ -70,3 +70,14 @@ Ask Kalshi Developer Support whether the exchange permits the proposed private r
 The public Kalshi Get Market endpoint is cached. The published market-list filter vocabulary and market record lifecycle statuses differ. The present normalizer is a conservative interpretation tested on synthetic fixtures, not verified live responses. Weather research bands are NOT Kalshi contract bins. Exact contract rules, fees, special settlements, original BLS release vintages, historical NWS archives, and licensed data rights remain external prerequisites.
 
 All exchange connections remain disabled: no Kalshi API account, no live Kalshi collection, no quote storage, no orders or real money, and no production schedules. Nothing in this PR demonstrates a profitable strategy.
+
+## Independent live-government-data memory — additional work
+See docs/KALSHI_INDEPENDENT_WEATHER_MEMORY_2026_11_13.md for details and NOAA/NWS source links.
+
+New research-only workflow .github/workflows/kalshi-independent-weather-memory.yml is prepared (currently inert because this PR remains unmerged). When the owner reviews and merges the research code after the stock PAPER release, its scheduled NOAA-only jobs will archive two GETs for a future NWS hourly forecast and one subsequent GET for the full next-morning Central Park CLI report. Duplicate successful dates use cached files rather than provider requests. Preliminary CLI observations are never called Kalshi settlements.
+
+Immutable filenames: kalshi-independent/nyc-weather/forecasts/YYYY-MM-DD.json, cli-daily-preliminary/YYYY-MM-DD.json, independent-grades/YYYY-MM-DD.json and scorecards/YYYY-MM-DD.json on the existing append-only research-data branch. The site's read-only research view retrieves these archived independent records and displays forecast-high, training count, observed preliminary high, independent band coverage, and Brier when available. It makes zero Kalshi API requests.
+
+Critical measurement detail: Central Park daily climate reports use local STANDARD time UTC-5 year-round, not an ordinary America/New_York civil-day window during daylight saving time. This timezone boundary is encoded and tested. NWS forecast grid temperature is not a station observation. Daily NWS CLINYC observations are preliminary, not NCEI-certified, and not an exchange resolution. Weather model calibration requires 30 earlier qualifying point-in-time forecast/report pairs and stays experimental. No live Kalshi prices, quotes, market-data archives, automatic trading, user accounts or real-money activity are enabled.
+
+Kalshi-specific data use remains separately permission-gated. Do not upload exchange quotes to the public research-data branch or flip network switches based on NOAA permission.
