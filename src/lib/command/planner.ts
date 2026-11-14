@@ -50,7 +50,12 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  if(stock){
   // Owner-only stock status remains available; general comparisons fall
   // back to the existing stock/research assistant instead of mixing domains.
-  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
+  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t)||
+   // Owner account status is NOT the public stock-research report. Treat
+   // "What's my stock paper account status?" as an owner-gated read.
+   /\b(?:stock|alpaca)\b.*\b(?:paper|autopilot|broker|account)\b.*\b(?:status|readiness|ready)\b/.test(t)||
+   /\b(?:stock|alpaca)\b.*\b(?:account)\b.*\b(?:status|ready)\b/.test(t))
+   return {calls:[{tool:'stock_status',input:{}}]};
   // A precise stock-only research question may use the read-only research
   // view. Owner account information still passes callTool's owner guard.
   const stockDecision=nativeIntent(message);
