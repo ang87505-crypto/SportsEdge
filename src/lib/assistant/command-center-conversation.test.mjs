@@ -290,3 +290,29 @@ test('an owner control remains a proposal rather than being misrouted as a workf
  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
 });
+
+test('ambiguous user language links every major research area rather than hiding Kalshi and ops',async()=>{
+ const ps=fakePorts();
+ const r=await ask('purple elephants have orange shoes',null,ps);
+ assert.equal(r.http,200);
+ const hrefs=r.reply.cards.flatMap(c=>c.kind==='links'?c.items.map(item=>item.href):[]);
+ for(const path of [
+  '/paper-betting/props','/paper-betting/predictions','/lab',
+  '/stocks/paper-auto','/stocks/research','/prediction-markets/kalshi','/automation'
+ ])assert.ok(hrefs.includes(path),'Missing safe fallback '+path);
+ assert.equal(r.reply.cards.some(c=>c.kind==='action'),false);
+ assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0});
+});
+test('short navigation wording from chat users provides the right specific page',()=>{
+ for(const [message,path] of [
+  ['where to find stock research','/stocks/research'],
+  ['where to see all predictions','/paper-betting/predictions'],
+  ['how to find my alpaca fills','/stocks/alpaca'],
+  ['where to check kalshi weather','/prediction-markets/kalshi'],
+  ['where to find collector logs','https://github.com/ang87505-crypto/SportsEdge/actions']
+ ]){
+  assert.equal(isNavigationQuestion(message),true,message);
+  const r=navigationAnswer(message,routeQuestion(message,null));
+  assert.ok(r.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===path),message);
+ }
+});
