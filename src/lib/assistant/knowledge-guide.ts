@@ -123,7 +123,7 @@ export function unsupportedQuestion(q:QuestionRoute):Reply{
 export function isManualOperationQuestion(message:string):boolean{
  const s=conversationalText(message);
  // "Did the collector run?" is a read-only status question, not a request to run it.
- return /^(?:(?:please|can you|could you|would you|will you|i want to|i need to|help me|how do i|how can i|how should i) )?(?:run|trigger|dispatch|execute|retrain|backfill|sync|refresh|collect|settle|reconcile|deploy|merge|activate|enable|disable|restart|force|train)\b/.test(s)||
+ return /^(?:(?:please|can you|could you|would you|will you|i want to|i need to|help me|how do i|how can i|how should i) )?(?:run|trigger|dispatch|execute|retrain|backfill|sync|refresh|collect|settle|reconcile|deploy|merge|activate|enable|disable|restart|force|train|pause|stop|resume|start|buy|sell|place|turn on|turn off)\b/.test(s)||
   /\bhow (?:do|can|should) i (?:run|retrain|trigger|dispatch|execute|collect|settle|reconcile|backfill|deploy|activate|enable|disable|pause|stop|resume|start|buy|sell|place)\b/.test(s)||
   /\bwhere (?:do|can|should) i (?:run|retrain|trigger|dispatch|collect|settle|reconcile|pause|stop|resume|start)\b/.test(s);
 }
