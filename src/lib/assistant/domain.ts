@@ -20,7 +20,12 @@ export function routeQuestion(message:string,previous:AssistantContext|null):Que
  // Operations questions ("what failed", "what needs my approval") are answered from the monitor alone.
  const ops=/\b(approvals?|approve|sign off)\b|needs? (me|my)|requires? (me|my)/.test(t)?'approvals':
   /\b(workflows?|github actions)\b/.test(t)&&!sports&&!stocks?'jobs':null;
- let domain:QuestionRoute['domain']=kalshi?(sports||stocks||general?'all':'kalshi'):
+ // Generic words such as 'bets', 'odds', 'picks' and 'jobs' are NOT a sports
+ // signal when Kalshi is explicitly named; retain a mixed domain only if the
+ // user also names NBA/soccer/PrizePicks/stocks or explicitly asks about all systems.
+ const explicitSports=/\b(nba|soccer|prizepicks|prize picks|pick6|pick 6|sports|player props|jokic|booker)\b/.test(t);
+ const explicitWholeSite=/\b(all systems|whole site|everything|across all)\b/.test(t);
+ let domain:QuestionRoute['domain']=kalshi?(explicitSports||stocks||explicitWholeSite?'all':'kalshi'):
   sports&&(stocks||research)||general?'all':research?'research':stocks?'stocks':sports?'sports':null;
  const follow=/^(why|and|also|what about|how about|explain|is it|did it|does it|does that|is that|when|how much|how accurate|how good|how are|what does that mean|what changed|what is next|what happened|how did|show me)\b/.test(t)||
   /^(results|performance|profit|status|picks|holdings|yes|more)$/.test(t);
