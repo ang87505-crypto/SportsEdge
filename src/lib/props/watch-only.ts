@@ -109,18 +109,22 @@ export function watchOnlyLedger(r:ResearchRaw,asOf=r.nowIso){
   return rows.filter(row=>(threshold===0||row.probability!==null&&row.probability>=threshold)&&
    (!dates||row.date===dates)&&(!platform||row.platform===platform));
  };
- const report=(threshold:number,date?:string,platform?:string)=>{
-  const selected=filter(threshold,date,platform);
-  // Platform-filtered analytics count once per filtered group too.
-  const unique=new Set<string>();
-  return tally(selected.map(row=>({...row,isUnique:!unique.has(row.key)&&!!unique.add(row.key)})));
+ // Keep analytics independent of whether the earliest saved source was a
+ // different platform (e.g. a Pick6-only filter must not become all zeros).
+ const countUnique=(items:WatchRow[])=>{
+  const seen=new Set<string>();
+  return tally(items.map(row=>{
+   const isUnique=!seen.has(row.key);seen.add(row.key);
+   return {...row,isUnique};
+  }));
  };
+ const report=(threshold:number,date?:string,platform?:string)=>countUnique(filter(threshold,date,platform));
  const impact=(threshold:number,date:string,platform?:string)=>{
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('WATCH_BAD_DATE');
   const selected=filter(threshold,undefined,platform);
-  const before=tally(selected.filter(row=>row.date<date));
-  const daily=tally(selected.filter(row=>row.date===date));
-  const through=tally(selected.filter(row=>row.date<=date));
+  const before=countUnique(selected.filter(row=>row.date<date));
+  const daily=countUnique(selected.filter(row=>row.date===date));
+  const through=countUnique(selected.filter(row=>row.date<=date));
   return {before,daily,through,
    deltaPercentagePoints:before.winRate===null||through.winRate===null?null:
     Math.round((through.winRate-before.winRate)*10000)/100};
