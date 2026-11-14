@@ -26,7 +26,7 @@ export function isNavigationQuestion(message:string):boolean{
  const s=conversationalText(message);
  // Explicit navigation only: "show me today's trades" requests data,
  // while "show me the trade dashboard" requests a link.
- return /\b(where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s)||
+ return /\b(where to (find|see|check|look|go|open)|how to (find|open|get to)|where (can|do|should) i (find|see|check|look|open|go)|where (is|are) (the|my|our) (page|dashboard|report|tab)|where (is|are) (the|my|our) [a-z ]{1,50} (page|dashboard|report|tab)|how (can|do|should) i (find|open|view|access|get to|navigate to)|take me (to|back to)|go to (the|my|our)|open (the|my|our) [a-z ]{1,50} (page|dashboard|tab|screen)|show me (the )?(page|dashboard|screen|tab)|show me (the )?[a-z ]{1,50} (page|dashboard|screen|tab)|send me (the )?link|give me (the )?link|point me to|link (me|to)|which (page|screen|tab|dashboard)|where did (that|this) (number|stat|result|figure) come from)\b/.test(s)||
   /^(?:open|go to|navigate to|visit|take me to) (?:the |my |our )?(?:sports|nba|stock|stocks|alpaca|kalshi|noaa|prediction|predictions|research|backtests?|paper picks|picks|props|automation|workflows?|jobs|dashboard|learning lab|system status)\b/.test(s);
 }
 function relevant(q:QuestionRoute,s:string):Destination[]{
@@ -110,7 +110,7 @@ export function improvementAnswer(q:QuestionRoute):Reply{
 export function unsupportedQuestion(q:QuestionRoute):Reply{
  return {
   text:'Do you mean sports picks, stock PAPER results, stock research, Kalshi weather research, or automation? I cannot reliably identify which stored evidence answers that question yet. I can check recorded sports predictions, signed-in stock PAPER results, research reports, independent Kalshi weather observations or automation receipts. Choose a topic or open the relevant page. I will not invent a trade, metric or explanation.',
-  cards:[{kind:'links',items:DESTINATIONS.filter(d=>d.domain!=='all').map(d=>({label:d.label,href:d.href})).slice(0,7)}],
+  cards:[{kind:'links',items:DESTINATIONS.filter(d=>['Sports picks and graded results','All recorded sports predictions','AI Learning Lab','Stock PAPER autopilot','Stock strategy research','Independent Kalshi research','Automation monitor'].includes(d.label)).map(d=>({label:d.label,href:d.href}))}],
   suggestions:['Were today’s stock PAPER trades good?','How did sports picks do yesterday?','Are there Kalshi opportunities?','Is everything running?'],
   context:{domain:q.domain??'all',topic:'help'}
  };
