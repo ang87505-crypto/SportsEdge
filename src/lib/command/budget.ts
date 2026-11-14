@@ -65,7 +65,9 @@ export type LlmConfig={provider:'anthropic';model:string;dailyCapUsd:number;perM
  */
 export function llmConfig(env:Readonly<Record<string,string|undefined>>):LlmConfig|null{
  const cap=Number(env.COMMAND_LLM_DAILY_BUDGET_USD);
- if(env.COMMAND_LLM_PROVIDER!=='anthropic'||!env.ANTHROPIC_API_KEY||!(cap>0)||cap>50||env.COMMAND_LLM_LEDGER!=='supabase')return null;
+ // An explicit additional opt-in prevents merely having unrelated API keys
+ // in an environment from silently enabling hosted inference or spend.
+ if(env.COMMAND_LLM_ENABLED!=='true'||env.COMMAND_LLM_PROVIDER!=='anthropic'||!env.ANTHROPIC_API_KEY||!(cap>0)||cap>50||env.COMMAND_LLM_LEDGER!=='supabase')return null;
  const model=env.COMMAND_LLM_MODEL||'claude-opus-5-5';
  if(!PRICES_PER_MTOK[model])return null;
  return {provider:'anthropic',model,dailyCapUsd:cap,perMinute:6,maxOutputTokens:2000,maxToolRounds:4};
