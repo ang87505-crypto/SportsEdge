@@ -45,3 +45,26 @@ export function scoreIndependentWeatherForward(rows:readonly {
  };
  return {id:sha(base),...base};
 }
+
+/** Public data-branch report parser: never silently trusts a rewritten daily summary. */
+export function verifyIndependentWeatherScorecard(raw:unknown):WeatherScorecard{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('WEATHER_SCORE_INVALID_ARCHIVE');
+ const r=raw as Record<string,unknown>,{id,...base}=r;
+ if(typeof id!=='string'||!/^[a-f0-9]{64}$/.test(id)||sha(base)!==id||
+  r.schemaVersion!=='independent-weather-forward-scorecard-v1'||
+  r.source!=='INDEPENDENT_NWS_GRID_VS_PRELIMINARY_KNYC_CLIMATE'||
+  !Number.isSafeInteger(r.evaluatedDays)||(r.evaluatedDays as number)<0||
+  !Number.isSafeInteger(r.modelScoredDays)||(r.modelScoredDays as number)<0||
+  (r.modelScoredDays as number)>(r.evaluatedDays as number)||
+  !Array.isArray(r.dates)||r.dates.length!==r.evaluatedDays||
+  r.dates.some(d=>typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d))||
+  new Set(r.dates).size!==r.dates.length||
+  (r.evaluatedDays===0&&
+   (r.meanAbsoluteErrorF!==null||r.independentBandHitRate!==null))||
+  (r.modelScoredDays===0&&r.modelBrier!==null)||
+  (r.status!=='INSUFFICIENT_HISTORY'&&r.status!=='EXPLORATORY_FORWARD_ONLY')||
+  (r.independentBandHitRate!==null&&
+   (typeof r.independentBandHitRate!=='number'||r.independentBandHitRate<0||r.independentBandHitRate>1)))
+  throw Error('WEATHER_SCORE_INVALID_ARCHIVE');
+ return raw as WeatherScorecard;
+}
