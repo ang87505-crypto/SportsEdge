@@ -29,7 +29,7 @@ const matrix=[
  ['is everything running','all','health'],
  ['what needs my approval','all','approvals'],
  ['what happened today','all','today'],
- ['what is next for all systems','all','overview']
+ ['what is next for all systems','all','automation']
 ];
 test('realistic language corpus classifies domain and topic',()=>{
  for(const [message,domain,topic] of matrix){
