@@ -121,7 +121,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  // Owner controls: chat can only PROPOSE an allowlisted change; the confirm button calls the existing owner endpoint.
  if(q.topic==='controls'){
   const c=parseControlRequest(message);
-  if(c?.verb==='trade')return respond({...simple('This chat cannot submit a bet, entry or stock order. No trade was sent and no balance was changed. You can inspect recorded PAPER results on the relevant page.',{domain:q.domain??'all',topic:'controls'}),
+  if(c?.verb==='trade')return respond({...simple('This chat has not submitted a bet, entry or stock order and cannot submit one. No trade was sent and no balance was changed. You can inspect recorded PAPER results on the relevant page.',{domain:q.domain??'all',topic:'controls'}),
    cards:[{kind:'links',items:[{label:'Sports virtual entries',href:'/paper-betting/props'},{label:'Stock PAPER autopilot',href:'/stocks/paper-auto'}]}]});
   if(c)return respond(await controlProposal(c));
  }
