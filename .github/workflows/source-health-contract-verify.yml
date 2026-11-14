@@ -1,0 +1,31 @@
+# Synthetic-only health diagnostic verification. No cron, network,
+# provider polling, database, actions dispatch or write-capable permission.
+name: Source freshness contract verification
+on:
+  pull_request:
+    paths:
+      - 'research/ops/source-health-v1.mjs'
+      - 'research/ops/source-health-v1.test.mjs'
+      - 'docs/SPORTSEDGE_SOURCE_HEALTH_PROTOTYPE_2026_11_13.md'
+      - '.github/workflows/source-health-contract-verify.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-health-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify freshness, missing data, timestamp and disabled safeguards
+        run: node --test research/ops/source-health-v1.test.mjs
+      - name: No production file modifications from this branch
+        if: github.event.pull_request.head.ref == 'research/read-only-source-health-20261113'
+        run: |
+          git fetch --no-tags origin main
+          ! git diff --name-only origin/main...HEAD | grep -Ev '^(research/ops/source-health-v1(\.test)?\.mjs|docs/SPORTSEDGE_SOURCE_HEALTH_PROTOTYPE_2026_11_13\.md|\.github/workflows/source-health-contract-verify\.yml)$'
