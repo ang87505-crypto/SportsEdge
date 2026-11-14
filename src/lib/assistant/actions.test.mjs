@@ -38,7 +38,13 @@ test('questions, quoted commands, negations and future requests cannot propose o
   'Could you stop stocks if the market drops?',
   'Tell me to pause the props',
   'I wrote stop the bot in a note',
-  'did the assistant buy OXY'
+  'did the assistant buy OXY',
+  'stop stock autopilot tonight',
+  'stop stocks next Wednesday',
+  'please pause picks at 4 PM',
+  'stop the stock bot in 10 minutes',
+  'resume PrizePicks at noon',
+  'start stock bot when we win'
  ])assert.equal(parseControlRequest(message),null,message);
 });
 test('explicit immediate owner requests still parse but never execute from parsing',()=>{
