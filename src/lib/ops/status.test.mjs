@@ -53,11 +53,11 @@ test('chat summary reports which commit production serves only when the monitor 
 
 test('public NOAA archive is not mistaken for Kalshi quotes, prices or trade outcomes',()=>{
  const published={source:'PUBLIC_NOAA_ONLY',forecastState:'RECORDED',scorecardState:'AWAITING_FIRST_ARCHIVE',
-  latestTargetDate:'2026-11-11',forecastCapturedAt:'2026-11-10T20:20:00Z',lastGradedDate:null};
+  latestTargetDate:'2026-11-10',forecastCapturedAt:'2026-11-09T20:20:00Z',lastGradedDate:null};
  const s=status({evidence:{publicWeather:published}});
  assert.ok(parseOpsStatus(s,NOW));
  const text=opsSummaryText({status:s,mode:'live',checkedAt:NOW,monitorStale:false});
- assert.match(text,/Independent NOAA weather memory: archived for 2026-11-11/);
+ assert.match(text,/Independent NOAA weather memory: archived for 2026-11-10/);
  assert.match(text,/not Kalshi quotes or a market edge/);
  assert.doesNotMatch(text,/Kalshi profits|trade filled|we won 60/i);
  const missing={...published,forecastState:'AWAITING_FIRST_ARCHIVE',scorecardState:'ARCHIVE_UNAVAILABLE',
@@ -70,11 +70,12 @@ test('public NOAA archive is not mistaken for Kalshi quotes, prices or trade out
 test('invalid or foreign NOAA evidence state is refused, legacy status remains supported',()=>{
  assert.ok(parseOpsStatus(status(),NOW));
  const base={source:'PUBLIC_NOAA_ONLY',forecastState:'RECORDED',scorecardState:'RECORDED',
-  latestTargetDate:'2026-11-11',forecastCapturedAt:'2026-11-10T20:20:00Z',lastGradedDate:'2026-11-10'};
+  latestTargetDate:'2026-11-10',forecastCapturedAt:'2026-11-09T20:20:00Z',lastGradedDate:'2026-11-09'};
  for(const change of [
   {source:'KALSHI_EXCHANGE'}, {forecastState:'PROFITABLE'}, {scorecardState:'KALSHI_WIN'},
   {latestTargetDate:'not a date'}, {forecastCapturedAt:'invalid clock'},
-  {lastGradedDate:'tomorrow'}
+  {lastGradedDate:'tomorrow'}, {forecastCapturedAt:'2026-11-11T01:00:00Z'},
+  {forecastState:'AWAITING_FIRST_ARCHIVE'}
  ]){
   assert.equal(parseOpsStatus(status({evidence:{publicWeather:{...base,...change}}}),NOW),null);
  }
