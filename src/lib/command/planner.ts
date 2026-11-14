@@ -49,6 +49,11 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
   // Owner-only stock status remains available; general comparisons fall
   // back to the existing stock/research assistant instead of mixing domains.
   if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
+  // A precise stock-only research question may use the read-only research
+  // view. Owner account information still passes callTool's owner guard.
+  const stockDecision=nativeIntent(message);
+  if(stockDecision&&['stock_status','research_strategies'].includes(stockDecision.call.tool))
+   return {calls:[stockDecision.call]};
   return null;
  }
  // Comparison, including "how does that compare with last week?"
