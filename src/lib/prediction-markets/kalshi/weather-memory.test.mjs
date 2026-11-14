@@ -46,9 +46,11 @@ test('even a thirty-day independent model is marked uncalibrated and keeps sourc
  const b=buildIndependentWeatherMemory(mock(),newer);
  assert.notEqual(r.id,b.id,'training changes are preserved in the hash');
 });
-test('frozen day depends on NY local date, including both DST switches',()=>{
+test('Central Park report day stays on fixed EST even when civil NYC uses EDT',()=>{
  assert.equal(nextNewYorkDate('2026-11-14T03:20:00Z'),'2026-11-14');
  assert.equal(nextNewYorkDate('2026-11-14T05:20:00Z'),'2026-11-15');
+ assert.equal(nextNewYorkDate('2026-07-04T04:20:00Z'),'2026-07-04','00:20 EDT is still the previous Central Park EST day');
+ assert.equal(nextNewYorkDate('2026-07-04T05:20:00Z'),'2026-07-05','00:20 EST starts the new Central Park climate day');
  for(const [at,expected] of [
   ['2026-03-07T22:00:00Z','2026-03-08'],
   ['2026-10-31T21:00:00Z','2026-11-01']
