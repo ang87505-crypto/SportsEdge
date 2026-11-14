@@ -23,7 +23,7 @@ export function inspectSource(source, nowIso){
   enabled:source.enabled,lastSuccessAt:source.lastSuccessAt??null,
   lastAttemptAt:source.lastAttemptAt??null,cadenceMinutes:source.cadenceMinutes};
  if(!source.enabled)return {...safe,state:'disabled',actionable:false,ageMinutes:null,
-  reason:'Collection is intentionally disabled. No missing-data or zero-opportunity conclusion is possible.'};
+  reason:'Collection is intentionally disabled. This is not zero predictions or zero opportunities.'};
  const success=source.lastSuccessAt===null||source.lastSuccessAt===undefined?null:instant(source.lastSuccessAt);
  const attempt=source.lastAttemptAt===null||source.lastAttemptAt===undefined?null:instant(source.lastAttemptAt);
  if((source.lastSuccessAt!=null&&success===null)||(source.lastAttemptAt!=null&&attempt===null)||
