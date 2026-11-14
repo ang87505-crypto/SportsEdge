@@ -8,8 +8,9 @@
 import type {ToolCall} from './session.ts';
 import type {Period} from './tools.ts';
 import type {ToolResult} from './tools.ts';
+import {conversationalText} from '../assistant/colloquial.ts';
 
-const norm=(s:string)=>s.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const norm=(s:string)=>conversationalText(s);
 const PERIOD_WORDS:[RegExp,Period][]=[
  [/\b(last|previous|prior) week\b|\bweek before\b|\bthe 7 days before\b/,'prior_7_days'],
  [/\bthis week\b|\b(last|past) (7|seven) days\b|\bpast week\b|\bweekly\b/,'last_7_days'],
@@ -33,6 +34,19 @@ export function plan(message:string,last:ToolCall[]):Plan|null{
  const prevPeriod=(prev?.input.period??prev?.input.a) as Period|undefined;
  const periods=periodsIn(t);
  const sportsy=/\b(picks?|predictions?|hit rate|accuracy|results?|record|did we do|how did we|virtual|prizepicks|net|profit)\b/.test(t);
+ // Do not silently answer a STOCK or independent Kalshi question with a
+ // PrizePicks-only tool. The existing site assistant has domain-aware
+ // fallback answers. This remains true for comparisons and follow-ups.
+ const stock=/\b(stocks?|alpaca|portfolio|broker|shares?|autopilot|stock trading|stock bot|equity)\b/.test(t);
+ const kalshi=/\b(kalshi|weather|noaa|nws|cpi|bls|event contracts?|prediction markets?)\b/.test(t);
+ const sportExplicit=/\b(prizepicks|prize picks|pick6|nba|sports?|dfs|player props?|rebounds?|assists?|points)\b/.test(t);
+ if(kalshi&&!sportExplicit)return null;
+ if(stock&&!sportExplicit){
+  // Owner-only stock status remains available; general comparisons fall
+  // back to the existing stock/research assistant instead of mixing domains.
+  if(/\b(stock (status|autopilot)|autopilot status|stock bot status)\b/.test(t))return {calls:[{tool:'stock_status',input:{}}]};
+  return null;
+ }
  // Comparison, including "how does that compare with last week?"
  if(/\b(compare|compared|comparison|versus|vs|better than|worse than|than the)\b/.test(t)&&(sportsy||prev||periods.length)){
   // "compare THAT with yesterday": the previous answer's period is the first side.
