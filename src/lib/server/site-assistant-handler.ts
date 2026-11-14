@@ -8,7 +8,7 @@ import type {ResearchView} from '../research/stock-summary.ts';
 import type {AssistantContext} from '../assistant/understand.ts';
 import {understand} from '../assistant/understand.ts';
 import {conversationalText} from '../assistant/colloquial.ts';
-import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer} from '../assistant/knowledge-guide.ts';
+import {isNavigationQuestion,navigationAnswer,improvementAnswer,unsupportedQuestion,isManualOperationQuestion,manualOperationAnswer,supportedCommandsAnswer,unsupportedLeagueAnswer,isAssistantAvailabilityQuestion,assistantAvailabilityAnswer} from '../assistant/knowledge-guide.ts';
 import {propsStoreConfig} from './props-store.ts';
 import {ownerSecret,validOwnerSession} from './alpaca-owner-session.ts';
 import {handlePaperAutoGet} from './paper-auto-owner.ts';
@@ -77,6 +77,7 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(context===undefined)return json({status:'invalid_request'},400);
  const message=b.message,understood=conversationalText(message),q=routeQuestion(message,context);
  const respond=(reply:Reply)=>json({status:'ok',reply,...ports.access});
+ if(isAssistantAvailabilityQuestion(message))return respond(assistantAvailabilityAnswer());
  if(isNavigationQuestion(message))return respond(navigationAnswer(message,q));
  // Explicit run/retrain/deploy requests are answered with safe destination
  // links, not silently treated as owner POSTs or as already-completed work.
