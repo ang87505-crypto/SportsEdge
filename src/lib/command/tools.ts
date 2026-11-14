@@ -19,6 +19,8 @@ import type {StockAccounts} from '../assistant/stock-answer.ts';
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {buildBriefing,propsInput} from '../briefing/briefing.ts';
 import {untrustedText,looksLikeInstruction} from '../research/discovery.ts';
+import {watchOnlyLedger} from '../props/watch-only.ts';
+import type {ResearchRaw} from '../props/research.ts';
 
 export const MAX_RESULT_BYTES=8_000;
 export type Access='public'|'owner';
@@ -33,7 +35,9 @@ export type CommandPorts={nowIso:string;ownerAccess:boolean;ownerExpiresAt?:numb
  /** Owner-only; never invoked unless the request carries a validated owner session. */
  accounts:()=>Promise<StockAccounts>;
  /** AI 2.0 learning engine registry and job history (research/engine/*.json); null until that work is deployed. */
- engine?:()=>Promise<{registry:unknown;jobs:unknown}|null>};
+ engine?:()=>Promise<{registry:unknown;jobs:unknown}|null>;
+ /** Existing bounded 90-day, pre-lock source ledger; never a provider query. */
+ watch?:()=>Promise<ResearchRaw|null>};
 export type ToolDef={name:string;description:string;access:Access;input_schema:Schema;
  run:(input:Record<string,unknown>,p:CommandPorts)=>Promise<Omit<ToolResult,'tool'|'truncated'|'asOf'>>};
 
@@ -222,6 +226,69 @@ TOOLS.push({name:'research_experiments',access:'public',input_schema:obj({status
      ...(x.minimums.dates?[{label:'Dates',value:Math.min(1,(x.result!.dates??0)/x.minimums.dates),display:`${x.result!.dates??0}/${x.minimums.dates}`}]:[]),
      ...(x.minimums.clusters?[{label:'Games',value:Math.min(1,(x.result!.clusters??0)/x.minimums.clusters),display:`${x.result!.clusters??0}/${x.minimums.clusters}`}]:[])]}))],
    sources:[{label:'AI Learning Lab',href:'/lab'}]};
+ }});
+
+
+/** Existing recorded line ledger: counts are not entries or hypothetical bets. */
+const WATCH_THRESHOLDS=['all','60','70','80'] as const;
+const WATCH_SOURCES=['all','prizepicks','pick6'] as const;
+const easternDate=(iso:string)=>new Intl.DateTimeFormat('en-CA',{
+ timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'
+}).format(new Date(iso));
+const shiftEastern=(date:string,days:number)=>{
+ const noon=new Date(date+'T12:00:00.000Z');
+ return new Date(noon.getTime()+days*86400_000).toISOString().slice(0,10);
+};
+TOOLS.push({name:'watch_only',access:'public',
+ input_schema:obj({
+  period:str('Eastern-time NBA game dates in the retained 90-day source ledger.',PERIODS),
+  threshold:str('Original saved raw side probability: all, at least 60%, 70%, 80%.',WATCH_THRESHOLDS),
+  platform:str('Saved provider platform; no PrizePicks account is used.',WATCH_SOURCES)
+ },['period','threshold']),
+ description:'Read every legitimate, pre-lock saved PrizePicks or Pick6 line, including unscored observations, from SportsEdge Supabase; show model probability, final box-score outcome and directional hit rate. Watch Only NEVER creates a bet or virtual entry. Distinct from paper bankroll and speculative shadow P/L.',
+ async run(i,p){
+  if(!p.watch)return unavailable('Watch Only');
+  const source=await p.watch().catch(()=>null);
+  if(!source)return unavailable('Watch Only');
+  const ledger=watchOnlyLedger(source,p.nowIso);
+  const period=i.period as Period, threshold=i.threshold as typeof WATCH_THRESHOLDS[number],
+   platform=(i.platform??'all') as typeof WATCH_SOURCES[number];
+  const min=threshold==='all'?0:Number(threshold)/100;
+  const sourcePlatform=platform==='all'?undefined:platform;
+  const localNow=easternDate(p.nowIso);
+  const previous=shiftEastern(localNow,-1);
+  const from=period==='today'?localNow:period==='yesterday'?previous:
+   period==='last_7_days'?shiftEastern(localNow,-6):period==='prior_7_days'?shiftEastern(localNow,-13):'0000-01-01';
+  const to=period==='today'||period==='all'?localNow:period==='yesterday'?previous:
+   period==='last_7_days'?localNow:shiftEastern(localNow,-7);
+  const filtered=ledger.filter(min,undefined,sourcePlatform).filter(row=>row.date>=from&&row.date<=to);
+  const keys=new Set<string>();
+  const unique=filtered.filter(row=>{if(keys.has(row.key))return false;keys.add(row.key);return true;});
+  const wins=unique.filter(row=>row.outcome==='win').length;
+  const losses=unique.filter(row=>row.outcome==='loss').length;
+  const pushes=unique.filter(row=>row.outcome==='push').length;
+  const pending=unique.filter(row=>row.outcome==='pending').length;
+  const unscored=unique.filter(row=>row.outcome==='unscored').length;
+  const rows=unique.slice(0,12).map(row=>({player:row.player,game:row.game,stat:row.stat,line:row.line,
+   side:row.side,probability:row.probability,outcome:row.outcome,actual:row.actual,recordedAt:row.recordedAt}));
+  const label=period==='today'?'Today':period==='yesterday'?'Yesterday':
+   period==='last_7_days'?'Last 7 Eastern game dates':
+   period==='prior_7_days'?'Previous 7 Eastern game dates':'90-day retained study window';
+  const rate=wins+losses?wins/(wins+losses):null;
+  const data={source:'Existing saved The Odds API observations (no live provider query)',label,period,threshold,platform,
+   from,to,uniqueLines:unique.length,sourceRows:filtered.length,distinctGames:new Set(unique.map(x=>x.eventId)).size,
+   wins,losses,pushes,pending,unscored,graded:wins+losses+pushes,hitRate:rate,
+   hasFurtherRows:unique.length>rows.length,rows,
+   note:'No bets or virtual entries created. No actual profit or executable odds. Figures depend on retained database coverage and latest verified grades.'};
+  return {ok:true,data,cards:[
+   {kind:'facts',items:[
+    {label:'Distinct recorded lines',value:String(data.uniqueLines),detail:data.distinctGames+' games; '+data.sourceRows+' platform source rows'},
+    {label:'Correct / incorrect',value:wins+' / '+losses,detail:pending+' pending · '+unscored+' unscored · '+pushes+' ties/voids'},
+    {label:'Directional hit rate',value:pct(rate),detail:(threshold==='all'?'All captured':threshold+'%+ original stated probability')+'; research only, no stakes'} ]},
+   ...(rows.length?[{kind:'table' as const,title:'Watch Only '+label+': '+(threshold==='all'?'all captured':threshold+'%+'),columns:['Line','Original model chance','Verified outcome'],
+    rows:rows.map(x=>[x.player+' '+(x.side??'(unscored)')+' '+x.line+' '+x.stat,pct(x.probability),x.outcome+(x.actual!==null?' ('+x.actual+')':'')])}]:[])],
+   sources:[{label:'Watch Only: all saved lines',href:'/paper-betting/watch'},
+    {label:'Original model predictions',href:'/paper-betting/predictions'}]};
  }});
 
 export const toolByName=(n:unknown)=>typeof n==='string'?TOOLS.find(t=>t.name===n)??null:null;
