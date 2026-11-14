@@ -318,3 +318,27 @@ test('short navigation wording from chat users provides the right specific page'
   assert.ok(r.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===path),message);
  }
 });
+
+test('procedure and navigation verbs still lead to safe pages without executing actions',async()=>{
+ const links=[
+  ['how do i check stock backtests','/stocks/research'],
+  ['how can i see my alpaca fills','/stocks/alpaca'],
+  ['how should i check the kalshi dashboard','/prediction-markets/kalshi']
+ ];
+ for(const [message,href] of links){
+  const ps=fakePorts();
+  const r=await ask(message,null,ps);
+  assert.equal(r.http,200,message);
+  assert.ok(r.reply.cards.flatMap(c=>c.kind==='links'?c.items:[]).some(x=>x.href===href),message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+ for(const message of ['where should i click to stop the stock bot','where can i go to resume the props']){
+  const ps=fakePorts();
+  assert.equal(isManualOperationQuestion(message),true,message);
+  const r=await ask(message,null,ps);
+  assert.match(r.reply.text,/Nothing was changed/,message);
+  assert.equal(r.reply.cards.some(c=>c.kind==='action'),false,message);
+  assert.deepEqual(ps.calls,{sports:0,accounts:0,broker:0,research:0,kalshi:0},message);
+ }
+});
