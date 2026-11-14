@@ -26,7 +26,7 @@ export async function POST(req:NextRequest){
  const clientKey=createHash('sha256').update(cookie?'o:'+cookie:'ip:'+ip).digest('hex').slice(0,32);
  const cfg=llmConfig(env);
  return handleCommand({contentType:req.headers.get('content-type'),text:()=>req.text(),clientKey},env,{
-  ports:{nowIso,ownerAccess:site.access.ownerAccess,
+  ports:{nowIso,ownerAccess:site.access.ownerAccess,ownerExpiresAt:site.access.ownerExpiresAt,
    sports:()=>propsConfigured?cachedPropsRaw(sports,nowIso):Promise.resolve(null),
    ops:()=>site.ops?site.ops(nowIso):Promise.resolve(null),research:()=>site.research(nowIso),lab:()=>site.lab?site.lab(nowIso):Promise.resolve(null),
    accounts:()=>site.accounts(),
