@@ -73,7 +73,7 @@ All the above are *separate* draft changes, not a merged product. The status of 
   replaced by or imported into a new research execution path.
 ```
 
-## Shared read-only evidence contract — proposal, not a migration
+**New isolated prototype:** [PR #176](https://github.com/ang87505-crypto/SportsEdge/pull/176) adds an offline, pure research-only evidence contract for source availability, frozen forecasts, verified outcomes and virtual-paper receipts, with negative tests. It is **not connected to the running app or collectors**. Use it as a reviewed starting point for future *read-only adapters*, not as evidence of model performance or as an excuse to alter production.\n\n## Shared read-only evidence contract — proposal, not a migration
 
 Implement as pure types and adapters in a later PR; **do not** add a live database migration just for this sketch.
 
