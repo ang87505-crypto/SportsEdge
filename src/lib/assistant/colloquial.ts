@@ -9,7 +9,7 @@
 import {normalize} from './understand.ts';
 
 const DIRECT:Readonly<Record<string,string>>=Object.freeze({
- wer:'were',improv:'improve',
+ wer:'were',improv:'improve',worky:'working',workin:'working',wrkng:'working',rnt:'are not',
  pls:'please',plz:'please',plss:'please',rn:'right now',yday:'yesterday',
  ydayy:'yesterday',ystrday:'yesterday',ystrdy:'yesterday',
  tmrwz:'tomorrow',tonite:'tonight',twonite:'tonight',
@@ -114,6 +114,10 @@ export function conversationalText(input:string):string{
  if(typeof input!=='string'||input.length>300)return '';
  const n=normalize(input);
  if(!n)return '';
+ // A short text-style status question must not become a sports bet or a
+ // command: "y rnt worky" is about assistant availability, not a system receipt.
+ if(/^(?:y|why) (?:rnt|arent|are not) (?:u |you )?(?:worky|working|workin|wrkng)$/.test(n))
+  return 'why are you not working';
  // Treat content as ordinary text: never execute or query anything here.
  let t=n.split(' ').filter(Boolean).map(repair).join(' ');
  // Common chat contractions/abbreviations; only intent words, never names,
