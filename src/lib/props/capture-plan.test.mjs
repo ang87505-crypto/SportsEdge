@@ -229,7 +229,7 @@ test('two unspent missed selections can be replaced as a balanced new cohort, ne
  assert.deepEqual(replacement.map(p=>p.arm).sort(),['early','late']);
  assert.equal(new Set(replacement.map(p=>p.reason.match(/^late_addition_(\d+)_/)?.[1])).size,1);
  assert.equal(gamesPerSlate(BUDGET_POLICY_V2),2);
- assert.ok(replacement.every(p=>Date.parse(p.commence_time)-Date.parse(now)>CFG.windows.late.toMin*MIN));
+ assert.ok(replacement.every(p=>Date.parse(p.commence_time)-Date.parse(now)>CFG.windows.late.toMin*60_000));
  assert.equal(added.filter(p=>p.reason==='added_after_plan').length,1);
 });
 
