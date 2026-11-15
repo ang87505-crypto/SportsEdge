@@ -85,7 +85,9 @@ export function slateFullyVisible(slate:string,nowIso:string,cfg:CaptureConfig=C
  * Plan rows for slates seen for the first time. Existing slates are never re-planned; a game that appears
  * after its slate was planned is recorded as not selected. Selection ignores lines, players and odds.
  */
-export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];nowIso:string;policy:BudgetPolicy;cfg?:CaptureConfig}):PlanRow[]{
+const lateAdditionCohort=(p:PlanRow)=>/^late_addition_(\d+)_/.exec(p.reason)?.[1]??null;
+
+export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];captures?:CaptureRow[];nowIso:string;policy:BudgetPolicy;cfg?:CaptureConfig}):PlanRow[]{
  const cfg=input.cfg??CAPTURE_PLAN_V1;const now=Date.parse(input.nowIso);
  if(!Number.isFinite(now))throw new Error('PROPS_INVALID_CLOCK');
  const planned=new Set(input.existing.filter(p=>p.plan_version===cfg.version).map(p=>p.provider_event_id));
@@ -101,7 +103,31 @@ export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];nowIso:s
   const base=(e:PlanEvent)=>({plan_version:cfg.version,slate_date:slate,provider_event_id:e.id,home_team:e.homeTeam,away_team:e.awayTeam,
    commence_time:new Date(Date.parse(e.commenceTime)).toISOString()});
   if(plannedSlates.has(slate)){
-   for(const e of games)out.push({...base(e),selected:false,selection_rank:1,arm:null,reason:'added_after_plan'});
+   // Event feeds can reveal games after the first slate plan. Keep every original row immutable,
+   // but let a genuinely MISSED (never claimed, therefore unspent) selection donate its slot to
+   // a newly listed game. Captured, unresolved, failed and empty paid attempts still consume a slot.
+   const prior= input.existing.filter(p=>p.plan_version===cfg.version&&p.slate_date===slate&&p.selected);
+   const active=prior.filter(p=>captureState(p,input.captures??[],input.nowIso,cfg,input.existing)!=='MISSED');
+   const slots=Math.max(0,n-active.length);
+   const open=(e:PlanEvent)=>Date.parse(e.commenceTime)-now>cfg.windows.late.toMin*MIN;
+   const ranked=[...games].sort((a,b)=>hashUnit(cfg.salt,'select:'+a.id)-hashUnit(cfg.salt,'select:'+b.id)||a.id.localeCompare(b.id));
+   const anchor=slots>0?ranked.find(open):undefined;
+   const near=anchor?ranked.filter(e=>open(e)&&e.id!==anchor.id).sort((a,b)=>
+    Math.abs(Date.parse(a.commenceTime)-Date.parse(anchor.commenceTime))-Math.abs(Date.parse(b.commenceTime)-Date.parse(anchor.commenceTime))||
+    hashUnit(cfg.salt,'select:'+a.id)-hashUnit(cfg.salt,'select:'+b.id)): [];
+   const chosen=new Map<string,string>(anchor?[[anchor.id,'anchor'],...near.slice(0,slots-1).map(e=>[e.id,'nearest_tip'] as [string,string])]:[]);
+   const firstArm:Arm=active.length===1?(active[0].arm==='early'?'late':'early'):slateArm(slate,cfg);
+   const other:Arm=firstArm==='early'?'late':'early';
+   const cohort=String(Math.floor(now/1_800_000));
+   const armOf=new Map([...chosen.keys()].sort((a,b)=>hashUnit(cfg.salt,'late-arm:'+a)-hashUnit(cfg.salt,'late-arm:'+b)||a.localeCompare(b))
+    .map((id,i)=>[id,i%2===0?firstArm:other] as [string,Arm]));
+   ranked.forEach((e,i)=>{
+    if(!open(e)){out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:'too_close_when_planned'});return;}
+    const why=chosen.get(e.id);
+    if(why){out.push({...base(e),selected:true,selection_rank:i+1,arm:armOf.get(e.id)!,
+     reason:`late_addition_${cohort}_${why}`});return;}
+    out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:'added_after_plan'});
+   });
    continue;
   }
   if(!slateFullyVisible(slate,input.nowIso,cfg))continue;
@@ -135,7 +161,11 @@ export type CaptureState='NOT_SELECTED'|'WAITING_FOR_WINDOW'|'DUE'|'CAPTURED'|'N
 const inWin=(now:number,from:string,to:string)=>now>=Date.parse(from)&&now<Date.parse(to);
 /** The slate's earliest selected tip-off: every selected game of the slate uses windows anchored to it. */
 export function slateAnchor(plan:PlanRow,plans:PlanRow[]){
- const tips=plans.filter(p=>p.selected&&p.slate_date===plan.slate_date&&p.plan_version===plan.plan_version).map(p=>p.commence_time);
+ // A late-arrival replacement is its own immutable timing cohort. It must not inherit an
+ // already-expired window from the original slate plan; the original cohort remains unchanged.
+ const cohort=lateAdditionCohort(plan);
+ const tips=plans.filter(p=>p.selected&&p.slate_date===plan.slate_date&&p.plan_version===plan.plan_version&&
+  lateAdditionCohort(p)===cohort).map(p=>p.commence_time);
  return [plan.commence_time,...tips].sort()[0];
 }
 export const planWindows=(plan:PlanRow,plans:PlanRow[],cfg:CaptureConfig=CAPTURE_PLAN_V1)=>captureWindows(slateAnchor(plan,plans),cfg);
