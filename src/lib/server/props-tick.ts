@@ -81,7 +81,7 @@ export async function runTick(d:CycleDeps,slot:string,scheduledFor:string|null=n
   // 2. Plan slates seen for the first time (written before any of their lines are requested).
   const fromSlate=slateDateOf(ago(now,36*3600_000));
   let {plans,captures}=await loadPlans(d,fromSlate);
-  const fresh=planSlates({events:listed.events,existing:plans,nowIso:now,policy:budget.policy});
+  const fresh=planSlates({events:listed.events,existing:plans,captures,nowIso:now,policy:budget.policy});
   if(fresh.length){
    const rows=fresh.map(p=>({...p,run_id:runId}));
    await d.store.insert('props_capture_plans',rows,{onConflict:'plan_version,provider_event_id',ignoreDuplicates:true});
