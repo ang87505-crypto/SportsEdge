@@ -349,6 +349,9 @@ all original plan rows, but may append a new timing cohort when an original sele
   empty paid attempts continue to count against the two-game slate allowance.
 - Late additions are selected by the same outcome-blind event-ID hash and nearest-tip rule. They are
   recorded as new append-only rows; original selections are never rewritten.
+- While a selected primary is still unclaimed, other still-open late-arriving games remain uncommitted
+  candidates rather than being permanently frozen as NOT_SELECTED. Once the selected capacity is resolved,
+  remaining candidates can be recorded as not selected.
 - Each appended cohort has its own timing anchor so it does not inherit an already-expired window from
   the first plan. A later tick cannot re-plan an event already recorded.
 - The existing 7-credit/24-hour, 200-credit/30-day and provider-floor controls remain authoritative.
