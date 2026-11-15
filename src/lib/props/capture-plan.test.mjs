@@ -208,7 +208,13 @@ test('late-listed games replace only unspent MISSED slots; original plans remain
  assert.equal(captureState(kept,captures,now,CFG,[...original,...added]),'CAPTURED');
  const missed=selected.find(p=>p.provider_event_id!==kept.provider_event_id);
  assert.equal(captureState(missed,captures,now,CFG,[...original,...added]),'MISSED');
- assert.ok(Date.parse(captureWindows(slateAnchor(replacement[0],[...original,...added])).lateTo)>Date.parse(now));
+ const all=[...original,...added];
+ const replacementWindow=captureWindows(slateAnchor(replacement[0],all));
+ assert.ok(Date.parse(replacementWindow.lateTo)>Date.parse(now));
+ const captureAt=new Date(Date.parse(replacementWindow.lateFrom)+60_000).toISOString();
+ const due=dueCaptures({plans:all,captures,nowIso:captureAt,policy:BUDGET_POLICY_V2,state:fresh});
+ assert.deepEqual(due.due.map(d=>d.plan.provider_event_id),[replacement[0].provider_event_id],
+  'the missed original must not reserve credits or block its replacement');
  assert.equal(original.filter(p=>p.selected).length,2,'the original frozen selections are not edited');
  assert.equal(replacement.filter(p=>p.slate_date===original[0].slate_date).length,1);
 });
