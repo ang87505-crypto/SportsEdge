@@ -82,8 +82,8 @@ export function slateFullyVisible(slate:string,nowIso:string,cfg:CaptureConfig=C
 }
 
 /**
- * Plan rows for slates seen for the first time. Existing slates are never re-planned; a game that appears
- * after its slate was planned is recorded as not selected. Selection ignores lines, players and odds.
+ * Plan rows for slates seen for the first time. Existing rows are never edited; later event-feed additions
+ * may fill slots only after a prior selected game is MISSED without a capture claim. Selection ignores odds.
  */
 const lateAdditionCohort=(p:PlanRow)=>/^late_addition_(\d+)_/.exec(p.reason)?.[1]??null;
 
@@ -116,6 +116,11 @@ export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];captures
     Math.abs(Date.parse(a.commenceTime)-Date.parse(anchor.commenceTime))-Math.abs(Date.parse(b.commenceTime)-Date.parse(anchor.commenceTime))||
     hashUnit(cfg.salt,'select:'+a.id)-hashUnit(cfg.salt,'select:'+b.id)): [];
    const chosen=new Map<string,string>(anchor?[[anchor.id,'anchor'],...near.slice(0,slots-1).map(e=>[e.id,'nearest_tip'] as [string,string])]:[]);
+   // Do not permanently write currently-unselected, still-open games while any selected primary
+   // is unclaimed. That primary may later be MISSED; keep those feed candidates eligible for a
+   // subsequent tick instead of freezing them as added_after_plan too early.
+   const deferOpenCandidates=chosen.size>0||active.some(p=>!(input.captures??[]).some(c=>
+    c.provider_event_id===p.provider_event_id&&c.capture_key==='primary'));
    const firstArm:Arm=active.length===1?(active[0].arm==='early'?'late':'early'):slateArm(slate,cfg);
    const other:Arm=firstArm==='early'?'late':'early';
    const cohort=String(Math.floor(now/1_800_000));
@@ -126,7 +131,7 @@ export function planSlates(input:{events:PlanEvent[];existing:PlanRow[];captures
     const why=chosen.get(e.id);
     if(why){out.push({...base(e),selected:true,selection_rank:i+1,arm:armOf.get(e.id)!,
      reason:`late_addition_${cohort}_${why}`});return;}
-    out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:'added_after_plan'});
+    if(!deferOpenCandidates)out.push({...base(e),selected:false,selection_rank:i+1,arm:null,reason:'added_after_plan'});
    });
    continue;
   }
