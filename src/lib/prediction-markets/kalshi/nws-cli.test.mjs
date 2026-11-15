@@ -51,7 +51,7 @@ test('accepts the actual next-morning CLINYC YESTERDAY temperature heading',()=>
  assert.equal(c.observedHighF,52);
 });
 test('retains compatibility with CLINYC TODAY temperature heading',()=>{
- const legacy=text.replace(' TODAY\\n',' TODAY\\n');
+ const legacy=text.replace(' YESTERDAY\\n',' TODAY\\n');
  const c=parseCentralParkCli(legacy,at);
  assert.equal(c.observedHighF,52);
 });
