@@ -337,3 +337,22 @@ Exact SQL, verification queries and rollback: `docs/PROPS_CAPTURE_ACTIVATION_CHE
 6. **Optional scheduler.** A minute-precise external trigger for `/api/internal/scheduler/props-tick-HH` (for example
    Supabase `pg_cron` + `pg_net` or an external cron service), using the existing `CRON_SECRET`. This needs secrets
    configured by the owner.
+
+
+## 10. Late-arriving event recovery (added 2026-11-15)
+
+The free events feed can reveal games after the first immutable slate plan. The collector now preserves
+all original plan rows, but may append a new timing cohort when an original selected game is explicitly
+**MISSED** and therefore had no capture claim or paid reservation.
+
+- A missed, unclaimed selection releases only its unused game slot; captured, unresolved, failed and
+  empty paid attempts continue to count against the two-game slate allowance.
+- Late additions are selected by the same outcome-blind event-ID hash and nearest-tip rule. They are
+  recorded as new append-only rows; original selections are never rewritten.
+- Each appended cohort has its own timing anchor so it does not inherit an already-expired window from
+  the first plan. A later tick cannot re-plan an event already recorded.
+- The existing 7-credit/24-hour, 200-credit/30-day and provider-floor controls remain authoritative.
+  The change does not expand the provider plan or guarantee 15–20 games per day.
+
+This is a coverage-recovery mechanism, not a model or confidence-threshold change. The same 60–80%
+selection rule, duplicate claims, pre-lock checks, and virtual-entry safeguards remain in force.
