@@ -7,6 +7,7 @@ import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredL
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 import {paperRisk} from '@/lib/stocks/paper-risk';
+import {stockPaperLearningEvidence} from '@/lib/stocks/paper-auto-learning-evidence';
 import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
 
 type View='checking'|'login'|'unconfigured'|'error'|'ready';
@@ -190,6 +191,7 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
  const s=l.status,id=l.experimentId,h=headline(l,release??{brokerWritesEnabled:false,scheduledRunsEnabled:false});
  const perf=forwardPerformance(l.experiment.startingEquityCents,l.experiment.registeredAt,l.daily);
  const v=perf.verified,b=perf.benchmark,picks=latestPicks(l),held=holdings(l),feed=activity(l);
+ const learning=stockPaperLearningEvidence(l);
  const [now,setNow]=useState<number|null>(null);
  useEffect(()=>{const t=window.setTimeout(()=>setNow(Date.now()),0),timer=window.setInterval(()=>setNow(Date.now()),30_000);
   return()=>{window.clearTimeout(t);window.clearInterval(timer);};},[]);
@@ -281,6 +283,28 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
    </table></div></Panel>}
 
   <RiskPanel l={l} practice={practice}/>
+
+  <Panel title="Stock learning evidence" description="Owner-only observations from the existing PAPER ledger; recording is not retraining.">
+   <MetricGrid columns={4}>
+    <Metric label="Frozen decisions" value={String(learning.decisionsInView)}
+     detail={`${learning.targetDecisions} targeted · ${learning.holdDecisions} held · ${learning.missedDecisions} missed/rejected`}/>
+    <Metric label="Observed fill intents" value={String(learning.filledIntents)}
+     detail={`${learning.intentsLinkedToVisibleDecision} matched to visible decisions · ${learning.intentsWithoutVisibleLink} outside read window`}/>
+    <Metric label="Verified after-close marks" value={String(learning.verifiedCloses)}
+     detail={learning.latestVerifiedSession?`Through ${learning.latestVerifiedSession}`:'Awaiting clean PAPER daily marks'}/>
+    <Metric label="Completed-trade win rate" value="—"
+     detail="Not measurable from the bounded ledger; no invented 60% metric"/>
+   </MetricGrid>
+   <p className="quiet small-print">Forward state: <strong>{learning.status.replaceAll('_',' ')}</strong>.
+    The database retains the original frozen signals and broker receipts. This summary verifies visible links and marks;
+    it cannot establish individual round-trip P&amp;L, independent forecast accuracy or automatic model improvements.
+    Learning research must remain separate from the frozen trading strategy.</p>
+   {learning.status==='EVIDENCE_CONFLICT'&&<Callout tone="warning">Conflicting PAPER evidence: do not use these records for learning until reviewed.</Callout>}
+   {(learning.unresolvedIntents>0||learning.unreconciledCloses>0||learning.contaminatedOrLaterCloses>0)&&
+    <p className="quiet small-print">Data quality: {learning.unresolvedIntents} unresolved orders,
+     {' '}{learning.unreconciledCloses} unreconciled closes,
+     {' '}{learning.contaminatedOrLaterCloses} contaminated or subsequent closes.</p>}
+  </Panel>
 
   {l.alerts.some(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code))&&<Panel title="Alerts to review" description="Acknowledging an alert does not start anything">
    <ul className="activity-feed">{l.alerts.filter(a=>!a.acknowledgedAt&&!isOwnerStopAlert(a.code)).map(a=><li key={a.alertId}>
