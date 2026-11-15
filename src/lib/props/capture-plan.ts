@@ -208,6 +208,9 @@ export function dueCaptures(input:{plans:PlanRow[];captures:CaptureRow[];nowIso:
   const primary=mine.find(c=>c.capture_key==='primary');const again=mine.find(c=>c.capture_key==='retry');
   const inEarly=p.arm==='early'&&inWin(now,w.earlyFrom,w.earlyTo),inLate=inWin(now,w.lateFrom,w.lateTo);
   if(!primary){
+   // A selected game whose shared capture window has closed without a claim is MISSED.
+   // It is no longer a pending primary and must not reserve credits against its replacement.
+   if(captureState(p,input.captures,input.nowIso,cfg,input.plans)==='MISSED')continue;
    if(Date.parse(p.commence_time)-now<=24*3600_000)pendingPrimaries++;
    if(inEarly||inLate)prim.push({plan:p,captureKey:'primary',window:inEarly?'early':'late',fallback:p.arm==='early'&&!inEarly});
    continue;
