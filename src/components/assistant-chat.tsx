@@ -34,7 +34,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  const [msgs,setMsgs]=useState<Msg[]>([opening]);
  const [context,setContext]=useState<AssistantContext|null>(null);
  const [lastCalls,setLastCalls]=useState<ToolCall[]>([]);
- const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
+ const [input,setInput]=useState(''),[busy,setBusy]=useState(false),[showAllSuggestions,setShowAllSuggestions]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
  const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
  const gate=useRef(new AssistantRequestGate());
@@ -106,25 +106,49 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
   finally{if(gate.current.finish(id))setBusy(false);}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){gate.current.invalidate();lastAsked.current='';setBusy(false);setMsgs([opening]);setContext(null);setLastCalls([]);}
+ function reset(){gate.current.invalidate();lastAsked.current='';setBusy(false);setShowAllSuggestions(false);setMsgs([opening]);setContext(null);setLastCalls([]);}
  const last=msgs[msgs.length-1];
+ const emptyState=msgs.length===1&&msgs[0].role==='bot'&&!!msgs[0].suggestions?.length;
+ const starterQuestions=msgs[0]?.suggestions??[];
  return <div className="chat">
-  <div className="chat-chips" role="group" aria-label="Chat topics">
-   {TOPICS.map(t=><button key={t.label} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
+  <nav className="chat-topics" aria-label="Quick access topics">
+   <span className="chat-topics-label">EXPLORE</span>
+   {TOPICS.map(t=><button key={t.label} type="button" className="chat-topic-link" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
+  </nav>
+  <div className="chat-access-note">
+   <span className="chat-access-dot" aria-hidden="true"/>
+   {checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'}
+   <a href="/stocks/alpaca">Manage access</a>
   </div>
-  <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
   <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
-   {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
-    {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
-     <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
-     {m.cards?.map((c,j)=><ChatCard key={j} card={c} owner={access.ownerAccess&&!checking}/>)}
-    </>}
-   </div>)}
-   {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
+   {emptyState?<section className="chat-empty-state" aria-label="Start a conversation">
+    <div className="chat-empty-mark" aria-hidden="true"><span>SE</span></div>
+    <div className="chat-empty-copy">
+     <span className="chat-empty-eyebrow">SPORTSEDGE ASSISTANT</span>
+     <h3>What would you like to investigate?</h3>
+     <p>{msgs[0].text}</p>
+    </div>
+    <div className="chat-suggestions-head"><span>START WITH A QUESTION</span><small>RECORDED DATA · TRACEABLE ANSWERS</small></div>
+    <div className="chat-suggestion-grid">
+     {(showAllSuggestions?starterQuestions:starterQuestions.slice(0,4)).map((s,i)=><button key={s} type="button" className="chat-suggestion-card" onClick={()=>void send(s)}>
+      <span className="chat-suggestion-index">{String(i+1).padStart(2,'0')}</span><span className="chat-suggestion-text">{s}</span><span className="chat-suggestion-arrow" aria-hidden="true">↗</span>
+     </button>)}
+    </div>
+    {starterQuestions.length>4&&<button type="button" className="chat-more-suggestions" onClick={()=>setShowAllSuggestions(v=>!v)}>{showAllSuggestions?'Show fewer questions':`Explore all ${starterQuestions.length} suggested questions`} <span aria-hidden="true">⌄</span></button>}
+   </section>:<>
+    {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
+     {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
+      <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
+      {m.cards?.map((c,j)=><ChatCard key={j} card={c} owner={access.ownerAccess&&!checking}/>)}
+     </>}
+    </div>)}
+    {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
+   </>}
    <div ref={end}/>
   </div>
-  {!busy&&last?.role==='bot'&&last.suggestions?.length?<div className="chat-chips" role="group" aria-label="Suggestions">
-   {last.suggestions.map(s=><button key={s} type="button" className="chat-chip" onClick={()=>void send(s)}>{s}</button>)}
+  {!emptyState&&!busy&&last?.role==='bot'&&last.suggestions?.length?<div className="chat-followups" role="group" aria-label="Suggested follow-up questions">
+   <span className="chat-followups-label">KEEP EXPLORING</span>
+   {last.suggestions.slice(0,3).map(s=><button key={s} type="button" className="chat-followup" onClick={()=>void send(s)}>{s}<span aria-hidden="true">↗</span></button>)}
   </div>:null}
   <form className="chat-form" onSubmit={submit}>
    <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
