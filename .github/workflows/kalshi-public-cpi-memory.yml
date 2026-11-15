@@ -1,0 +1,35 @@
+# BLS CPI independent public data research memory: NO Kalshi API, exchange
+# quotes, sportsbook/DFS calls, account, paid tokens or market orders.
+# Gated by an explicit owner-controlled GitHub Actions repository variable.
+name: Independent BLS CPI weekly memory (no Kalshi requests)
+on:
+  schedule:
+    - cron: '29 17 * * 3'  # Wednesday 17:29 UTC; one collection each week
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  independent-cpi:
+    if: github.ref == 'refs/heads/main' && vars.SPORTSEDGE_PUBLIC_CPI_MEMORY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Offline BLS CPI response, revision, idempotency and strict clock tests
+        run: node --experimental-strip-types --test scripts/kalshi-independent-cpi-collect.test.mjs
+      - name: Check out the separate append-only research-data branch
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Save one public CPI snapshot if this UTC date was not yet collected
+        run: node --experimental-strip-types scripts/kalshi-independent-cpi-collect.ts research-data
+      - name: Commit independent government observations only
+        run: bash .github/scripts/research-data-branch.sh commit "independent public BLS CPI memory ${{ github.run_id }}"
