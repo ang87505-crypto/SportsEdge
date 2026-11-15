@@ -33,9 +33,9 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-settle-midday':{hourUtc:16,workflow:'props-daily.yml',inputs:{kind:'settle',cron:'20 15 * * *'},props:true},
  'props-collect-early':{hourUtc:20,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 19 * * *'},props:true},
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
- // Props capture ticks (props-capture-v1). Two hours apart so each NBA capture window (EARLY 8-4 h, LATE 3 h-35 min
- // before tip-off) contains at least one backup hour for 22:00-04:00 UTC tip-offs, even if GitHub drops every tick.
- ...Object.fromEntries([13,14,15,16,17,18,19,20,21,22,23,0,1,2].map(h=>['props-tick-'+String(h).padStart(2,'0'),
+ // Props capture ticks (props-capture-v1). Hourly backups cover both EARLY (8-4 h) and LATE (3 h-35 min)
+ // capture windows, including early-afternoon ET tip-offs, even if GitHub drops its 30-minute schedule.
+ ...Object.fromEntries([9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2].map(h=>['props-tick-'+String(h).padStart(2,'0'),
   {hourUtc:h,workflow:'props-tick.yml',inputs:{trigger:'backup'},tick:true} satisfies Slot])),
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
