@@ -35,12 +35,21 @@ test('slates are ET days and are planned only once the whole slate is visible',(
  assert.deepEqual(plan('2026-11-10T09:00:00Z',[...NOV10].reverse()).map(r=>[r.provider_event_id,r.selected]).sort(),rows.map(r=>[r.provider_event_id,r.selected]).sort());
 });
 
-test('a slate is never re-planned; late additions are recorded as not selected',()=>{
+test('late candidates stay eligible until existing selected games have claimed their slots',()=>{
  const rows=plan('2026-11-10T09:00:00Z').map(r=>({...r,planned_at:'2026-11-10T09:00:00Z'}));
  assert.deepEqual(plan('2026-11-10T15:00:00Z',NOV10,rows),[]);
  const added={id:'evtNOV10late99',commenceTime:'2026-11-11T03:30:00Z',homeTeam:'Golden State Warriors',awayTeam:'Houston Rockets'};
- const more=plan('2026-11-10T15:00:00Z',[...NOV10,added],rows);
- assert.deepEqual(more.map(r=>[r.provider_event_id,r.selected,r.reason]),[['evtNOV10late99',false,'added_after_plan']]);
+ // Both original selections are still unclaimed, so an open late-arriving game is not frozen
+ // as NOT_SELECTED before either original slot has a chance to become MISSED.
+ const waiting=planSlates({events:[added],existing:rows,captures:[],nowIso:'2026-11-10T15:00:00Z',policy:BUDGET_POLICY_V2});
+ assert.deepEqual(waiting,[]);
+ const selected=rows.filter(r=>r.selected);
+ const w=captureWindows(slateAnchor(selected[0],rows));
+ const paid=selected.map(r=>({provider_event_id:r.provider_event_id,capture_key:'primary',window_name:r.arm,
+  claimed_at:r.arm==='early'?w.earlyFrom:w.lateFrom,outcome:'stored',dfs_lines:4}));
+ const afterClaims=new Date(Date.parse(w.lateTo)+60_000).toISOString();
+ const finalized=planSlates({events:[added],existing:rows,captures:paid,nowIso:afterClaims,policy:BUDGET_POLICY_V2});
+ assert.deepEqual(finalized.map(r=>[r.provider_event_id,r.selected,r.reason]),[['evtNOV10late99',false,'added_after_plan']]);
 });
 
 test('planning mid-slate never selects a game that has started or is inside its last window',()=>{
