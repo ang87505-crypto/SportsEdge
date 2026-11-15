@@ -16,6 +16,7 @@ on:
       - Recurring PAPER worker (manual)
       - Research collect (nightly)
       - Research evaluate (monthly)
+      - Independent NYC weather memory (NOAA only)
       - Independent PAPER release checks
     types: [completed]
     branches: [main]
@@ -47,6 +48,7 @@ jobs:
         with:
           node-version: '24'
       - run: node --test scripts/ops-monitor.test.mjs scripts/data-branches.test.mjs
+      - run: node --experimental-strip-types --test src/lib/ops/status.test.mjs
   monitor:
     if: github.event_name != 'pull_request' && github.repository == 'ang87505-crypto/SportsEdge'
     runs-on: ubuntu-latest

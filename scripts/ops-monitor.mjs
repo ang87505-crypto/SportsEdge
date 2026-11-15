@@ -10,6 +10,7 @@ import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
 import {compareDeployment} from '../src/lib/deployment-identity.ts';
 import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
+import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '../src/lib/prediction-markets/kalshi/weather-memory-view.ts';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -252,17 +253,33 @@ function blockers(jobs,props,research,release,site,creds){
  return out;
 }
 
+// Read only the existing PUBLIC GitHub archive. No NWS, Kalshi, Odds API,
+// broker, database or permissioned source is contacted by this extra check.
+// A successful workflow is not enough to claim it wrote a forecast file.
+async function independentPublicWeatherEvidence(){
+ try{
+  const [latest,score]=await Promise.all([
+   loadLatestIndependentWeather(nowIso),loadLatestWeatherScorecard(nowIso)
+  ]);
+  return {source:'PUBLIC_NOAA_ONLY',forecastState:latest.state,scorecardState:score.state,
+   latestTargetDate:latest.state==='RECORDED'?latest.memory.targetLocalDate:null,
+   forecastCapturedAt:latest.state==='RECORDED'?latest.memory.capturedAt:null,
+   lastGradedDate:latest.state==='RECORDED'&&latest.grade?latest.grade.date:null};
+ }catch{return {source:'PUBLIC_NOAA_ONLY',forecastState:'ARCHIVE_UNAVAILABLE',
+  scorecardState:'ARCHIVE_UNAVAILABLE',latestTargetDate:null,forecastCapturedAt:null,lastGradedDate:null};}
+}
+
 // ---------- main ----------
 const jobs=[];
 for(const job of cfg.jobs)jobs.push(await evaluate(job));
-const [props,research,release,site]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks()]);
+const [props,research,release,site,publicWeather]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks(),independentPublicWeatherEvidence()]);
 const creds=credentials();
 const blockerList=blockers(jobs,props,research,release,site,creds);
 const roll=rollUp(jobs);
 const overall={state:!site.ok||roll.state==='ATTENTION'?'ATTENTION':roll.state==='WARN'||blockerList.length?'WARN':'OK',attention:roll.attention};
 const status={schemaVersion:'ops-status-v1',generatedAt:nowIso,timezoneShown:'America/Denver',
  monitorRun:env.GITHUB_RUN_ID?{id:Number(env.GITHUB_RUN_ID),url:`https://github.com/${REPO}/actions/runs/${env.GITHUB_RUN_ID}`,event:env.GITHUB_EVENT_NAME??null}:null,
- overall,jobs,evidence:{props,research,release},site,credentials:creds,blockers:blockerList,
+ overall,jobs,evidence:{props,research,release,publicWeather},site,credentials:creds,blockers:blockerList,
  notes:['Planned times come from cron schedules and are not executions. Executions link to real GitHub runs.',
   'GitHub can start scheduled runs late or drop them under load; MISSED_SLOT means a planned time passed without any run.',
   'Stock account balances, positions and gate state are owner-only and are not in this public file.']};

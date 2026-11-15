@@ -2,31 +2,128 @@
   "schemaVersion": "ops-jobs-v1",
   "site": "https://sports-edge-eta.vercel.app",
   "jobs": [
-    {"id": "props-daily", "label": "Sports props: collect lines and settle results", "area": "sports",
-     "workflow": "props-daily.yml", "required": true, "staleAfterHours": 30, "graceMinutes": 120},
-    {"id": "props-research", "label": "Sports props research snapshot", "area": "sports",
-     "workflow": "props-research.yml", "required": true, "staleAfterHours": 30, "graceMinutes": 120},
-    {"id": "props-tick", "label": "Sports props: event-aware capture ticks", "area": "sports",
-     "workflow": "props-tick.yml", "required": false, "staleAfterHours": 30, "graceMinutes": 90, "releaseSwitch": "props-capture",
-     "note": "Released off until the owner activates props-capture-v1; while off, each tick exits before any database or provider call."},
-    {"id": "props-learn", "label": "Sports model training and shadow evaluation (weekly)", "area": "sports",
-     "workflow": "props-learn.yml", "required": true, "staleAfterHours": 192, "graceMinutes": 180},
-    {"id": "stock-decision", "label": "Stock paper: weekly decision", "area": "stocks",
-     "workflow": "paper-auto-decision-weekly.yml", "required": true, "staleAfterHours": 100, "graceMinutes": 120,
-     "coverBeforeMinutes": 180},
-    {"id": "stock-kickoff", "label": "Stock paper: early decision kickoff from Vercel cron", "area": "stocks",
-     "workflow": "paper-auto-decision-weekly.yml", "required": true, "staleAfterHours": 100, "graceMinutes": 120,
-     "crons": ["0 9 * * 1-5"], "events": ["workflow_dispatch"], "startedWithinMinutes": [0, 120],
-     "note": "Dispatched by the Vercel cron with SPORTSEDGE_GITHUB_DISPATCH_TOKEN; backup to the 11:20 UTC GitHub schedule."},
-    {"id": "stock-worker", "label": "Stock paper: execute and monitor slots", "area": "stocks",
-     "workflow": "paper-auto-worker.yml", "required": true, "staleAfterHours": 100, "graceMinutes": 120},
-    {"id": "research-collect", "label": "Strategy research: nightly collection, forward ledgers and report", "area": "research",
-     "workflow": "research-collect.yml", "required": true, "staleAfterHours": 100, "graceMinutes": 180},
-    {"id": "research-evaluate", "label": "Strategy research: monthly evaluation", "area": "research",
-     "workflow": "research-evaluate.yml", "required": true, "staleAfterHours": 800, "graceMinutes": 240},
-    {"id": "paper-release", "label": "Temporary PAPER release watcher", "area": "release",
-     "workflow": "paper-release.yml", "required": false, "expiresAt": "2026-11-21T07:00:00Z", "graceMinutes": 180},
-    {"id": "ops-monitor", "label": "Operations monitor (this status)", "area": "ops",
-     "workflow": "ops-monitor.yml", "required": true, "staleAfterHours": 8, "graceMinutes": 120}
+    {
+      "id": "props-daily",
+      "label": "Sports props: collect lines and settle results",
+      "area": "sports",
+      "workflow": "props-daily.yml",
+      "required": true,
+      "staleAfterHours": 30,
+      "graceMinutes": 120
+    },
+    {
+      "id": "props-research",
+      "label": "Sports props research snapshot",
+      "area": "sports",
+      "workflow": "props-research.yml",
+      "required": true,
+      "staleAfterHours": 30,
+      "graceMinutes": 120
+    },
+    {
+      "id": "props-tick",
+      "label": "Sports props: event-aware capture ticks",
+      "area": "sports",
+      "workflow": "props-tick.yml",
+      "required": false,
+      "staleAfterHours": 30,
+      "graceMinutes": 90,
+      "releaseSwitch": "props-capture",
+      "note": "Released off until the owner activates props-capture-v1; while off, each tick exits before any database or provider call."
+    },
+    {
+      "id": "props-learn",
+      "label": "Sports model training and shadow evaluation (weekly)",
+      "area": "sports",
+      "workflow": "props-learn.yml",
+      "required": true,
+      "staleAfterHours": 192,
+      "graceMinutes": 180
+    },
+    {
+      "id": "stock-decision",
+      "label": "Stock paper: weekly decision",
+      "area": "stocks",
+      "workflow": "paper-auto-decision-weekly.yml",
+      "required": true,
+      "staleAfterHours": 100,
+      "graceMinutes": 120,
+      "coverBeforeMinutes": 180
+    },
+    {
+      "id": "stock-kickoff",
+      "label": "Stock paper: early decision kickoff from Vercel cron",
+      "area": "stocks",
+      "workflow": "paper-auto-decision-weekly.yml",
+      "required": true,
+      "staleAfterHours": 100,
+      "graceMinutes": 120,
+      "crons": [
+        "0 9 * * 1-5"
+      ],
+      "events": [
+        "workflow_dispatch"
+      ],
+      "startedWithinMinutes": [
+        0,
+        120
+      ],
+      "note": "Dispatched by the Vercel cron with SPORTSEDGE_GITHUB_DISPATCH_TOKEN; backup to the 11:20 UTC GitHub schedule."
+    },
+    {
+      "id": "stock-worker",
+      "label": "Stock paper: execute and monitor slots",
+      "area": "stocks",
+      "workflow": "paper-auto-worker.yml",
+      "required": true,
+      "staleAfterHours": 100,
+      "graceMinutes": 120
+    },
+    {
+      "id": "independent-noaa-weather",
+      "label": "Independent NOAA Central Park weather memory (no Kalshi API)",
+      "area": "public_events",
+      "workflow": "kalshi-independent-weather-memory.yml",
+      "required": false,
+      "staleAfterHours": 30,
+      "graceMinutes": 150,
+      "note": "Read-only run monitoring. Success alone does not prove a daily archive was saved, forecast was graded, or any Kalshi market opportunity exists."
+    },
+    {
+      "id": "research-collect",
+      "label": "Strategy research: nightly collection, forward ledgers and report",
+      "area": "research",
+      "workflow": "research-collect.yml",
+      "required": true,
+      "staleAfterHours": 100,
+      "graceMinutes": 180
+    },
+    {
+      "id": "research-evaluate",
+      "label": "Strategy research: monthly evaluation",
+      "area": "research",
+      "workflow": "research-evaluate.yml",
+      "required": true,
+      "staleAfterHours": 800,
+      "graceMinutes": 240
+    },
+    {
+      "id": "paper-release",
+      "label": "Temporary PAPER release watcher",
+      "area": "release",
+      "workflow": "paper-release.yml",
+      "required": false,
+      "expiresAt": "2026-11-21T07:00:00Z",
+      "graceMinutes": 180
+    },
+    {
+      "id": "ops-monitor",
+      "label": "Operations monitor (this status)",
+      "area": "ops",
+      "workflow": "ops-monitor.yml",
+      "required": true,
+      "staleAfterHours": 8,
+      "graceMinutes": 120
+    }
   ]
 }
