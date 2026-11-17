@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 4,
+    "sessions": 5,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.0024763270333332255
+    "totalReturn": -0.014938339633333242
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 4,
+    "sessions": 5,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": 0.008849281666666764
+    "totalReturn": -0.005160718333333314
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-14T09:04:35Z",
+  "forwardAt": "2026-11-17T04:43:51Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "AMAT": 0.2,
-      "CMG": 0.2,
-      "GE": 0.2,
-      "NEM": 0.2,
-      "NVDA": 0.2
+      "AMD": 0.2,
+      "AVGO": 0.2,
+      "CSCO": 0.2,
+      "LRCX": 0.2,
+      "NUE": 0.2
      },
-     "sessions": 4,
+     "sessions": 5,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.06319495816666643
+     "totalReturn": -0.08157140916666639
     },
     "historical": {
      "asLive": {
@@ -151,14 +151,14 @@
      "firstExecution": "2026-11-10",
      "lastTargets": {
       "ADI": 0.2,
-      "AMD": 0.2,
       "AVGO": 0.2,
+      "CHTR": 0.2,
       "TSLA": 0.2,
       "TXN": 0.2
      },
-     "sessions": 4,
+     "sessions": 5,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.039469702999999745
+     "totalReturn": -0.07572675799999962
     },
     "historical": {
      "asLive": {
@@ -203,7 +203,7 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 4,
+     "sessions": 5,
      "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": 0.0
     },
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-14T09:04:30Z",
- "generatedAt": "2026-11-14T09:04:43Z",
+ "forwardAt": "2026-11-17T04:43:44Z",
+ "generatedAt": "2026-11-17T04:43:59Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -468,10 +468,10 @@
    "id": "openfigi-cusip",
    "lastBatch": {
     "failed": [],
-    "items": 6
+    "items": 1
    },
-   "lastSuccessAt": "2026-11-09T22:37:39Z",
-   "retrievedAt": "2026-11-09T22:37:39Z",
+   "lastSuccessAt": "2026-11-17T04:43:42Z",
+   "retrievedAt": "2026-11-17T04:43:42Z",
    "status": "OK"
   },
   {
@@ -480,9 +480,9 @@
     "failed": [],
     "items": 1
    },
-   "lastSuccessAt": "2026-11-13T09:41:05Z",
-   "retrievedAt": "2026-11-14T09:04:29Z",
-   "status": "PARSE_FAILED"
+   "lastSuccessAt": "2026-11-17T04:43:42Z",
+   "retrievedAt": "2026-11-17T04:43:42Z",
+   "status": "OK"
   },
   {
    "id": "sec-company-tickers",
@@ -498,10 +498,10 @@
    "id": "sec-edgar-13f",
    "lastBatch": {
     "failed": [],
-    "items": 3
+    "items": 6
    },
-   "lastSuccessAt": "2026-11-14T09:04:29Z",
-   "retrievedAt": "2026-11-14T09:04:29Z",
+   "lastSuccessAt": "2026-11-17T04:43:42Z",
+   "retrievedAt": "2026-11-17T04:43:42Z",
    "status": "OK"
   },
   {
