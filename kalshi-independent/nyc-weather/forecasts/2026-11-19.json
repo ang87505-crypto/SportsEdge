@@ -1,0 +1,269 @@
+{
+  "id": "6ec9275067e429f1b368a117336cccc3e12131e0e5ca0228c0cdd04536da81d4",
+  "schemaVersion": "independent-nyc-weather-memory-v1",
+  "status": "AWAITING_VERIFIED_HISTORY",
+  "source": "NWS_GRID_FORECAST_NOT_STATION_OBSERVATION",
+  "locale": "America/New_York",
+  "dayDefinition": "CENTRAL_PARK_LOCAL_STANDARD_TIME_UTC_MINUS_5",
+  "targetLocalDate": "2026-11-19",
+  "capturedAt": "2026-11-18T08:30:16.813Z",
+  "forecastIssuedAt": "2026-11-18T06:25:49+00:00",
+  "forecastHighF": 61,
+  "bandLowF": 60,
+  "bandHighF": 64,
+  "historicalTrainingDays": 0,
+  "historicalTrainingDigest": null,
+  "estimatedBandProbabilityPpm": null,
+  "modelId": null,
+  "sourceDigest": "cc96dd048ecc0741916a5f4de78b171cd82a10aa8573d4a86b20e907b35ad3de",
+  "sourceSnapshot": {
+    "source": "NWS_GRID_FORECAST_NOT_STATION_OBSERVATION",
+    "forecastIssuedAt": "2026-11-18T06:25:49+00:00",
+    "fetchedAt": "2026-11-18T08:30:16.813Z",
+    "sourceDigest": "cc96dd048ecc0741916a5f4de78b171cd82a10aa8573d4a86b20e907b35ad3de",
+    "gridForecastUrl": "https://api.weather.gov/gridpoints/OKX/34,45/forecast/hourly",
+    "hourly": [
+      {
+        "startTime": "2026-11-18T03:00:00-05:00",
+        "endTime": "2026-11-18T04:00:00-05:00",
+        "temperatureF": 43
+      },
+      {
+        "startTime": "2026-11-18T04:00:00-05:00",
+        "endTime": "2026-11-18T05:00:00-05:00",
+        "temperatureF": 43
+      },
+      {
+        "startTime": "2026-11-18T05:00:00-05:00",
+        "endTime": "2026-11-18T06:00:00-05:00",
+        "temperatureF": 42
+      },
+      {
+        "startTime": "2026-11-18T06:00:00-05:00",
+        "endTime": "2026-11-18T07:00:00-05:00",
+        "temperatureF": 42
+      },
+      {
+        "startTime": "2026-11-18T07:00:00-05:00",
+        "endTime": "2026-11-18T08:00:00-05:00",
+        "temperatureF": 42
+      },
+      {
+        "startTime": "2026-11-18T08:00:00-05:00",
+        "endTime": "2026-11-18T09:00:00-05:00",
+        "temperatureF": 44
+      },
+      {
+        "startTime": "2026-11-18T09:00:00-05:00",
+        "endTime": "2026-11-18T10:00:00-05:00",
+        "temperatureF": 48
+      },
+      {
+        "startTime": "2026-11-18T10:00:00-05:00",
+        "endTime": "2026-11-18T11:00:00-05:00",
+        "temperatureF": 51
+      },
+      {
+        "startTime": "2026-11-18T11:00:00-05:00",
+        "endTime": "2026-11-18T12:00:00-05:00",
+        "temperatureF": 54
+      },
+      {
+        "startTime": "2026-11-18T12:00:00-05:00",
+        "endTime": "2026-11-18T13:00:00-05:00",
+        "temperatureF": 58
+      },
+      {
+        "startTime": "2026-11-18T13:00:00-05:00",
+        "endTime": "2026-11-18T14:00:00-05:00",
+        "temperatureF": 59
+      },
+      {
+        "startTime": "2026-11-18T14:00:00-05:00",
+        "endTime": "2026-11-18T15:00:00-05:00",
+        "temperatureF": 60
+      },
+      {
+        "startTime": "2026-11-18T15:00:00-05:00",
+        "endTime": "2026-11-18T16:00:00-05:00",
+        "temperatureF": 60
+      },
+      {
+        "startTime": "2026-11-18T16:00:00-05:00",
+        "endTime": "2026-11-18T17:00:00-05:00",
+        "temperatureF": 59
+      },
+      {
+        "startTime": "2026-11-18T17:00:00-05:00",
+        "endTime": "2026-11-18T18:00:00-05:00",
+        "temperatureF": 57
+      },
+      {
+        "startTime": "2026-11-18T18:00:00-05:00",
+        "endTime": "2026-11-18T19:00:00-05:00",
+        "temperatureF": 55
+      },
+      {
+        "startTime": "2026-11-18T19:00:00-05:00",
+        "endTime": "2026-11-18T20:00:00-05:00",
+        "temperatureF": 52
+      },
+      {
+        "startTime": "2026-11-18T20:00:00-05:00",
+        "endTime": "2026-11-18T21:00:00-05:00",
+        "temperatureF": 50
+      },
+      {
+        "startTime": "2026-11-18T21:00:00-05:00",
+        "endTime": "2026-11-18T22:00:00-05:00",
+        "temperatureF": 49
+      },
+      {
+        "startTime": "2026-11-18T22:00:00-05:00",
+        "endTime": "2026-11-18T23:00:00-05:00",
+        "temperatureF": 48
+      },
+      {
+        "startTime": "2026-11-18T23:00:00-05:00",
+        "endTime": "2026-11-19T00:00:00-05:00",
+        "temperatureF": 47
+      },
+      {
+        "startTime": "2026-11-19T00:00:00-05:00",
+        "endTime": "2026-11-19T01:00:00-05:00",
+        "temperatureF": 46
+      },
+      {
+        "startTime": "2026-11-19T01:00:00-05:00",
+        "endTime": "2026-11-19T02:00:00-05:00",
+        "temperatureF": 46
+      },
+      {
+        "startTime": "2026-11-19T02:00:00-05:00",
+        "endTime": "2026-11-19T03:00:00-05:00",
+        "temperatureF": 45
+      },
+      {
+        "startTime": "2026-11-19T03:00:00-05:00",
+        "endTime": "2026-11-19T04:00:00-05:00",
+        "temperatureF": 44
+      },
+      {
+        "startTime": "2026-11-19T04:00:00-05:00",
+        "endTime": "2026-11-19T05:00:00-05:00",
+        "temperatureF": 43
+      },
+      {
+        "startTime": "2026-11-19T05:00:00-05:00",
+        "endTime": "2026-11-19T06:00:00-05:00",
+        "temperatureF": 43
+      },
+      {
+        "startTime": "2026-11-19T06:00:00-05:00",
+        "endTime": "2026-11-19T07:00:00-05:00",
+        "temperatureF": 42
+      },
+      {
+        "startTime": "2026-11-19T07:00:00-05:00",
+        "endTime": "2026-11-19T08:00:00-05:00",
+        "temperatureF": 42
+      },
+      {
+        "startTime": "2026-11-19T08:00:00-05:00",
+        "endTime": "2026-11-19T09:00:00-05:00",
+        "temperatureF": 44
+      },
+      {
+        "startTime": "2026-11-19T09:00:00-05:00",
+        "endTime": "2026-11-19T10:00:00-05:00",
+        "temperatureF": 52
+      },
+      {
+        "startTime": "2026-11-19T10:00:00-05:00",
+        "endTime": "2026-11-19T11:00:00-05:00",
+        "temperatureF": 54
+      },
+      {
+        "startTime": "2026-11-19T11:00:00-05:00",
+        "endTime": "2026-11-19T12:00:00-05:00",
+        "temperatureF": 58
+      },
+      {
+        "startTime": "2026-11-19T12:00:00-05:00",
+        "endTime": "2026-11-19T13:00:00-05:00",
+        "temperatureF": 61
+      },
+      {
+        "startTime": "2026-11-19T13:00:00-05:00",
+        "endTime": "2026-11-19T14:00:00-05:00",
+        "temperatureF": 61
+      },
+      {
+        "startTime": "2026-11-19T14:00:00-05:00",
+        "endTime": "2026-11-19T15:00:00-05:00",
+        "temperatureF": 61
+      },
+      {
+        "startTime": "2026-11-19T15:00:00-05:00",
+        "endTime": "2026-11-19T16:00:00-05:00",
+        "temperatureF": 61
+      },
+      {
+        "startTime": "2026-11-19T16:00:00-05:00",
+        "endTime": "2026-11-19T17:00:00-05:00",
+        "temperatureF": 59
+      },
+      {
+        "startTime": "2026-11-19T17:00:00-05:00",
+        "endTime": "2026-11-19T18:00:00-05:00",
+        "temperatureF": 57
+      },
+      {
+        "startTime": "2026-11-19T18:00:00-05:00",
+        "endTime": "2026-11-19T19:00:00-05:00",
+        "temperatureF": 55
+      },
+      {
+        "startTime": "2026-11-19T19:00:00-05:00",
+        "endTime": "2026-11-19T20:00:00-05:00",
+        "temperatureF": 52
+      },
+      {
+        "startTime": "2026-11-19T20:00:00-05:00",
+        "endTime": "2026-11-19T21:00:00-05:00",
+        "temperatureF": 51
+      },
+      {
+        "startTime": "2026-11-19T21:00:00-05:00",
+        "endTime": "2026-11-19T22:00:00-05:00",
+        "temperatureF": 50
+      },
+      {
+        "startTime": "2026-11-19T22:00:00-05:00",
+        "endTime": "2026-11-19T23:00:00-05:00",
+        "temperatureF": 49
+      },
+      {
+        "startTime": "2026-11-19T23:00:00-05:00",
+        "endTime": "2026-11-20T00:00:00-05:00",
+        "temperatureF": 48
+      },
+      {
+        "startTime": "2026-11-20T00:00:00-05:00",
+        "endTime": "2026-11-20T01:00:00-05:00",
+        "temperatureF": 48
+      },
+      {
+        "startTime": "2026-11-20T01:00:00-05:00",
+        "endTime": "2026-11-20T02:00:00-05:00",
+        "temperatureF": 47
+      },
+      {
+        "startTime": "2026-11-20T02:00:00-05:00",
+        "endTime": "2026-11-20T03:00:00-05:00",
+        "temperatureF": 46
+      }
+    ]
+  },
+  "warning": "Pre-event independent grid-point forecast for the Central Park standard-time climate day, NOT an official Central Park station high, Kalshi market bin, market settlement, executable price or profitable opportunity. Model probabilities require >=30 independently verified pre-as-of station observations and forward validation."
+}
