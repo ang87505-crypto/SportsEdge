@@ -6,6 +6,7 @@ import {VERDICT_TEXT,type LabView} from '@/lib/lab/view';
 import {METHOD_TEXT,type Method} from '@/lib/lab/staking';
 import {engineView} from '@/lib/lab/engine/view';
 import {loadResearchEngine} from '@/lib/server/research-engine-load';
+import type {SportsScorecard,ProbabilitySummary} from '@/lib/lab/engine/scorecard';
 
 export const metadata={title:'AI Learning Lab | SportsEdge',description:'What the SportsEdge models have measurably learned, what is still a hypothesis, and what is being tested.'};
 
@@ -105,6 +106,7 @@ async function EnginePanel(){
   <Callout tone={snapshot.mode!=='live'||snapshot.stale||snapshot.status!=='OK'?'warning':'info'} title={snapshot.mode==='live'?'Published evaluation':'Saved research snapshot'}>
    {snapshot.at?`Recorded ${snapshot.at}. `:''}{snapshot.detail} Production-shadow comparisons below use predictions already saved before lock; they are separate from the nine-variant ablation lab above.
   </Callout>
+  {snapshot.scorecard?<ProbabilityScorecard value={snapshot.scorecard}/>:<p className="home-panel-note">Detailed probability diagnostics will appear after an evaluation publishes the scorecard. Historical reports are retained.</p>}
   <MetricGrid columns={3}>
    <Metric label="Experiments recorded" value={String(e.total)} detail={`Sports: ${line('sports')}`}/>
    <Metric label="Ready for owner review" value={String(e.readyForReview.length)} detail="Needs forward evidence meeting the registered minimums"/>
@@ -127,4 +129,28 @@ async function EnginePanel(){
   </Details>
   <p className="home-panel-note">Research sources: connected {e.sources.connected.length} ({e.sources.connected.join(', ')}); built but not running {e.sources.implemented.join(', ')||'none'}; blocked {e.sources.blocked.join(', ')}; proposed {e.sources.proposed.join(', ')}. Evaluations read saved predictions after the props cycle and on a daily backup schedule. Research intake remains manual.</p>
  </Panel>;
+}
+
+function ProbabilityScorecard({value}:{value:SportsScorecard}){
+ const s=value.all;
+ const interval=(x:ProbabilitySummary['brierDifference95'])=>x?`[${signed(x.lower95)}, ${signed(x.upper95)}]`:'Needs at least two games';
+ return <div>
+  <p className="chat-card-title">NBA probability scorecard</p>
+  <MetricGrid columns={3}>
+   <Metric label="Unique graded non-tie lines" value={String(s.lines)} detail={`${s.games} games · ${s.dates} dates`}/>
+   <Metric label="Recorded picks correct" value={s.picks?`${s.hits} / ${s.picks}`:'—'} detail={`${pct(s.hitRate)} observed · ${pct(s.meanConfidence)} mean stated confidence`}/>
+   <Metric label="Binary Brier / 50-50 reference" value={s.brier===null?'—':`${s.brier.toFixed(4)} / 0.2500`} detail={`Lower is better. Difference 95% interval: ${interval(s.brierDifference95)}`}/>
+  </MetricGrid>
+  <Details title="Where probability errors occur">
+   {value.groups.map(g=><div key={g.id} style={{marginTop:12}}>
+    <p className="small-print"><strong>{g.label}</strong></p>
+    <Table head={['Group','Lines / games','Picks correct','Stated / observed','Brier','Brier − 50/50 (95% interval)','Sample']} rows={g.rows.map(b=>[
+     b.label,`${b.summary.lines} / ${b.summary.games}`,b.summary.picks?`${b.summary.hits} / ${b.summary.picks}`:'—',
+     `${pct(b.summary.meanConfidence)} / ${pct(b.summary.hitRate)}`,b.summary.brier?.toFixed(4)??'—',
+     `${signed(b.summary.brierDifference)} ${interval(b.summary.brierDifference95)}`,b.summary.smallSample?'Small group':'Exploratory'
+    ])}/>
+   </div>)}
+  </Details>
+  <p className="home-panel-note">{value.note}</p>
+ </div>;
 }

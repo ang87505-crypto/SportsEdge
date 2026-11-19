@@ -23,6 +23,7 @@ import {MODEL_VERSION} from '../src/lib/props/contract.ts';
 import {playerKey} from '../src/lib/props/identity.ts';
 import {validProbabilities} from '../src/lib/props/research.ts';
 import {trackProductionShadows,type ShadowArtifact} from '../src/lib/lab/engine/production-shadows.ts';
+import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -145,7 +146,7 @@ try{
   for(const h of prop.proposed)reg=register(reg,newExperiment(h,fp),now);
   (report.domains as Record<string,unknown>).sports={inputFingerprint:fp,rows:ledger.rows.length,clean:clean.length,ledgerRequests:ledger.requests,
    qualityIssues:issues.reduce((m:Record<string,number>,i)=>{m[i.code]=(m[i.code]??0)+1;return m;},{}),
-   picks:hitSummary(clean),patterns,proposed:prop.proposed,skipped:prop.skipped};
+   picks:hitSummary(clean),scorecard:sportsScorecard(clean),patterns,proposed:prop.proposed,skipped:prop.skipped};
   if(flag('evaluate-forward')){
    const due=reg.experiments.filter(e=>e.forward&&!['REJECTED','READY_FOR_REVIEW','FAILED'].includes(e.status)).slice(0,LIMITS.maxForwardEvaluations);
    for(const e of due){

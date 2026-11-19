@@ -41,4 +41,7 @@ test('the bounded GET reader paginates observations, verifies actual outcomes an
  assert.equal(report.forward[0].details.pairs,1);
  assert.equal(report.forward[0].details.invalidGrades,0);
  assert.ok(report.domains.sports.ledgerRequests>=10);
+ assert.equal(report.domains.sports.scorecard.all.lines,1);
+ assert.equal(report.domains.sports.scorecard.all.picks,1);
+ assert.equal(report.domains.sports.scorecard.all.brier,0.1225);
 });
