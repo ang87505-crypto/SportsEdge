@@ -1,7 +1,8 @@
 /**
  * Research discovery foundation (INACTIVE: no scheduler, no network in this module). Builds polite requests for
  * free scholarly sources, parses their responses into leads, treats every external string as untrusted DATA, and
- * keeps a research memory so the same paper or idea is never fetched or investigated twice. Leads only become
+ * keeps a research memory so duplicate papers do not become duplicate investigations. Metadata can be rechecked
+ * for revisions and withdrawals. Leads only become
  * testable through intake.ts (hypothesis cards) and a committed pre-registration; nothing here can reach an active
  * model, a pick rule, a stake, a budget or a schedule.
  */
@@ -9,11 +10,11 @@ import {createHash} from 'node:crypto';
 import type {SourceKind} from './intake.ts';
 
 export type SourceId='openalex'|'arxiv';
-/** Terms checked against each provider's own documentation on 2026-11-13. Re-check before any scheduled use. */
+/** Terms checked against each provider's own documentation on 2026-11-19. */
 export const SOURCE_CATALOG:Record<SourceId,{base:string;minIntervalMs:number;maxRequestsPerRun:number;terms:string;termsUrl:string;kind:SourceKind}>={
- openalex:{base:'https://api.openalex.org/works',minIntervalMs:200,maxRequestsPerRun:20,kind:'peer-reviewed',
+ openalex:{base:'https://api.openalex.org/works',minIntervalMs:200,maxRequestsPerRun:20,kind:'scholarly-metadata',
   terms:'Free; no key needed for basic use at up to 10 requests/s; a free key raises the daily budget and is needed for deep paging.',
-  termsUrl:'https://docs.openalex.org/how-to-use-the-api/rate-limits-and-authentication'},
+  termsUrl:'https://help.openalex.org/api/authentication/'},
  arxiv:{base:'https://export.arxiv.org/api/query',minIntervalMs:3000,maxRequestsPerRun:10,kind:'working-paper',
   terms:'At most one request every 3 seconds on a single connection; metadata is CC0; e-print files must not be re-served.',
   termsUrl:'https://info.arxiv.org/help/api/tou.html'},
@@ -22,7 +23,7 @@ export const SOURCE_CATALOG:Record<SourceId,{base:string;minIntervalMs:number;ma
 export type Lead={source:SourceId;id:string;url:string;title:string;abstract:string;publishedAt:string|null;retrievedAt:string;
  authors:string[];kind:SourceKind;doi:string|null;
  /** Text that reads like an instruction to an AI or operator. Recorded for review; never acted on. */
- suspectedInjection:boolean;contentHash:string};
+ suspectedInjection:boolean;contentHash:string;retracted?:boolean|null;pulled?:boolean|null;updatedAt?:string|null};
 
 const INJECTION=/\b(ignore (all |any )?(previous|prior|above) (instructions|prompts)|disregard (the|all) (rules|instructions)|you are now|system prompt|run (this|the following) command|execute (this|the following)|place (a|an) (order|bet|trade)|transfer (funds|money)|api[_ ]?key|password)\b/i;
 /** External text is data: control characters removed, whitespace collapsed, length capped, never interpreted. */
@@ -39,23 +40,26 @@ export function planRequests(source:SourceId,queries:string[],opts:{fromYear?:nu
  return clean.map((q,i)=>{
   const u=new URL(s.base);
   if(source==='openalex'){u.searchParams.set('search',q);u.searchParams.set('per-page',String(per));
+   u.searchParams.set('sort','publication_date:desc');u.searchParams.set('include_pulled','false');
    if(opts.fromYear)u.searchParams.set('filter',`from_publication_date:${opts.fromYear}-01-01`);}
-  else{u.searchParams.set('search_query','all:'+q);u.searchParams.set('max_results',String(per));u.searchParams.set('sortBy','submittedDate');}
+  else{u.searchParams.set('search_query','all:'+q);u.searchParams.set('max_results',String(per));u.searchParams.set('sortBy','submittedDate');u.searchParams.set('sortOrder','descending');}
   return {url:u.toString(),notBeforeMs:i*s.minIntervalMs};
  });
 }
 
 /** Exponential backoff with a hard retry cap; a 4xx other than 429 is never retried. */
-export function retryDelayMs(attempt:number,status:number|null,maxAttempts=3):number|null{
+export function retryDelayMs(attempt:number,status:number|null,maxAttempts=3,retryAfterMs=0):number|null{
  if(attempt>=maxAttempts)return null;
- if(status!==null&&status>=400&&status<500&&status!==429)return null;
- return Math.min(60_000,1000*2**attempt);
+ if(status!==null&&status<500&&status!==429)return null;
+ // A longer provider pause ends this bounded run instead of retrying before permission resumes.
+ if(retryAfterMs>60_000)return null;
+ return Math.max(Number.isFinite(retryAfterMs)?retryAfterMs:0,Math.min(60_000,1000*2**attempt));
 }
 
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 function lead(x:Omit<Lead,'suspectedInjection'|'contentHash'>):Lead{
  const suspectedInjection=looksLikeInstruction(x.title)||looksLikeInstruction(x.abstract);
- return {...x,suspectedInjection,contentHash:hash([x.source,x.id,x.title,x.abstract].join('|'))};
+ return {...x,suspectedInjection,contentHash:hash(JSON.stringify([x.source,x.id,x.title,x.abstract,x.publishedAt,x.authors,x.kind,x.doi,x.updatedAt??null,x.retracted??null,x.pulled??null]))};
 }
 
 /** OpenAlex /works response. The abstract arrives as an inverted index; it is rebuilt in word order. */
@@ -73,7 +77,8 @@ export function parseOpenAlex(body:unknown,retrievedAt:string):Lead[]{
   const authors=Array.isArray(w.authorships)?w.authorships.slice(0,20).map(a=>untrustedText((a as {author?:{display_name?:string}})?.author?.display_name,120)).filter(Boolean):[];
   return [lead({source:'openalex',id,url:doi??id,title:untrustedText(w.title??w.display_name,400),abstract:untrustedText(words.filter(Boolean).join(' ')),
    publishedAt:typeof w.publication_date==='string'&&/^\d{4}-\d\d-\d\d$/.test(w.publication_date)?w.publication_date:null,retrievedAt,authors,
-   kind:w.type==='preprint'?'working-paper':'peer-reviewed',doi})];
+   kind:w.type==='preprint'?'working-paper':'scholarly-metadata',doi,retracted:typeof w.is_retracted==='boolean'?w.is_retracted:null,
+   pulled:typeof w.is_pulled==='boolean'?w.is_pulled:null,updatedAt:typeof w.updated_date==='string'?w.updated_date:null})];
  });
 }
 

@@ -46,7 +46,7 @@ export async function loadPropsDashboardFrom(store:PropsStore,nowIso:string):Pro
   'id,observation_id,model_version,status,reason,p_more,p_less,p_tie,mean,inputs','observation_id',obsIds);
  const [picks,results]=await Promise.all([
   byIds<Raw['picks'][number]>(store,'props_picks','id,prediction_id,status,side,reason,selection_version','prediction_id',predictions.map(p=>p.id)),
-  byIds<Raw['results'][number]>(store,'props_line_results','observation_id,revision,outcome,actual','observation_id',obsIds,10000),
+  byIds<Raw['results'][number]>(store,'props_line_results','observation_id,revision,outcome,actual,graded_at','observation_id',obsIds,10000),
  ]);
  const entryIds=entries.map(e=>e.id);
  const [legs,settlements]=await Promise.all([

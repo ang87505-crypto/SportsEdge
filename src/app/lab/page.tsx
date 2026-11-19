@@ -4,6 +4,11 @@ import {PageHeading,Panel,Metric,MetricGrid,Badge,Callout,Evidence,Details,type 
 import {loadLab} from '@/lib/server/lab-load';
 import {VERDICT_TEXT,type LabView} from '@/lib/lab/view';
 import {METHOD_TEXT,type Method} from '@/lib/lab/staking';
+import {engineView} from '@/lib/lab/engine/view';
+import {loadResearchEngine} from '@/lib/server/research-engine-load';
+import type {SportsScorecard,ProbabilitySummary} from '@/lib/lab/engine/scorecard';
+import {PENNY_EXAMPLES,PENNY_POLICY} from '@/lib/lab/confidence-sizing';
+import {loadResearchIntake} from '@/lib/server/research-intake-load';
 
 export const metadata={title:'AI Learning Lab | SportsEdge',description:'What the SportsEdge models have measurably learned, what is still a hypothesis, and what is being tested.'};
 
@@ -34,7 +39,7 @@ export default async function LabPage(){
   <MetricGrid columns={4}>
    <Metric label="Active model" value={v.active?.version??'Unknown'} detail={v.active?`Learning ${v.active.learningEnabled?'on':'off'} · auto-switch ${v.active.autoSwitchEnabled?'on':'off'}`:'Production control not readable here'}/>
    <Metric label="Being tested" value={`${v.testing.productionShadows.length} + ${v.testing.labVariants}`} detail={`${v.testing.productionShadows.length} production shadow(s) (limit 3) + ${v.testing.labVariants} lab variants`}/>
-   <Metric label="Forward graded lines" value={v.samples.forward?String(v.samples.forward.graded):'0'} detail={`Needs ${v.samples.minimums.lines} lines, ${v.samples.minimums.dates} dates, ${v.samples.minimums.games} games`}/>
+   <Metric label="Ablation lab graded lines" value={v.samples.forward?String(v.samples.forward.graded):'—'} detail={`Needs ${v.samples.minimums.lines} lines, ${v.samples.minimums.dates} dates, ${v.samples.minimums.games} games`}/>
    <Metric label="Research cost" value={`${v.costs.paidRequests} credits`} detail="Reuses stored lines and quotes"/>
   </MetricGrid>
 
@@ -63,6 +68,11 @@ export default async function LabPage(){
   </Panel>
 
   <Panel title="Variable PAPER staking (shadow only)" description={v.staking.live} actions={<Evidence kind="simulated"/>}>
+   <Details title="Penny-per-percentage-point sizing proposal">
+    <p className="home-panel-note">One cent for each complete percentage point above break-even. This table uses a hypothetical even-money payout with a 50% break-even point. For a multi-leg entry, use the whole-entry probability and its recorded payout, not one leg&apos;s confidence.</p>
+    <Table head={['Probability','Proposed virtual stake']} rows={PENNY_EXAMPLES.map(x=>[`${x.percent}%`,money(x.stakeCents)])}/>
+    <p className="home-panel-note">Preview only: {PENNY_POLICY.version}. The current paper database requires a fixed account stake of at least $1. Cent-sized variable entries need a separate versioned cohort and a database migration; they have not been activated. Higher stated confidence can be wrong, so calibration and payout checks remain necessary.</p>
+   </Details>
    {v.staking.retro?.folds.map(f=><div key={f.label} style={{marginBottom:12}}>
     <p className="chat-card-title">{f.label.replace(/^fold\d-/,'')} · {f.comparison.entries} entries, same for every method</p>
     <Table head={['Method','Staked / skipped','Virtual P&L','ROI','Max drawdown','Max day exposure']} rows={f.comparison.methods.map(m=>[METHOD_TEXT[m.method as Method].split(':')[0],
@@ -86,9 +96,88 @@ export default async function LabPage(){
     </Details>
    </Panel>
   </div>
+  <EnginePanel/>
+  <ResearchIntakePanel/>
   <Details title="Method and caveats">
    <ul>{v.caveats.map(c=><li key={c}>{c}</li>)}</ul>
    <p className="quiet small-print">Spec {v.specSha256.slice(0,12)}… · artifact {v.artifactSha256.slice(0,12)}… · Ask about any of this on the <Link href="/">home page</Link>.</p>
   </Details>
+ </div>;
+}
+
+const ENGINE_TONE:Record<string,Tone>={RUNNING:'info',PROPOSED:'neutral',INSUFFICIENT_DATA:'warning',PROMISING:'positive',FAILED:'negative',READY_FOR_REVIEW:'positive',REJECTED:'negative'};
+async function EnginePanel(){
+ const snapshot=await loadResearchEngine(new Date().toISOString());
+ const e=engineView(snapshot.registry,snapshot.jobs);
+ const line=(d:'sports'|'stocks')=>Object.entries(e.counts[d]).filter(([,n])=>n).map(([s,n])=>`${s.replaceAll('_',' ').toLowerCase()} ${n}`).join(' · ');
+ return <Panel title="Learning engine (research only)" description="Every registered experiment, from the recorded registry. Nothing here changes a model, pick, stake or order; a ready experiment waits for the owner." actions={<Evidence kind="recorded"/>}>
+  <Callout tone={snapshot.mode!=='live'||snapshot.stale||snapshot.status!=='OK'?'warning':'info'} title={snapshot.mode==='live'?'Published evaluation':'Saved research snapshot'}>
+   {snapshot.at?`Recorded ${snapshot.at}. `:''}{snapshot.detail} Production-shadow comparisons below use predictions already saved before lock; they are separate from the nine-variant ablation lab above.
+  </Callout>
+  {snapshot.scorecard?<ProbabilityScorecard value={snapshot.scorecard}/>:<p className="home-panel-note">Detailed probability diagnostics will appear after an evaluation publishes the scorecard. Historical reports are retained.</p>}
+  {snapshot.drift?<Callout tone={snapshot.drift.status==='REVIEW_REQUESTED'?'warning':'info'} title={`Adaptation watch: ${snapshot.drift.status.replaceAll('_',' ').toLowerCase()}`}>
+   {snapshot.drift.reason} Recent 7 days: {snapshot.drift.recent.lines} lines / {snapshot.drift.recent.games} games. Previous 28 days: {snapshot.drift.reference.lines} lines / {snapshot.drift.reference.games} games. Alerts request review; training and promotion remain separate.
+  </Callout>:null}
+  <MetricGrid columns={3}>
+   <Metric label="Experiments recorded" value={String(e.total)} detail={`Sports: ${line('sports')}`}/>
+   <Metric label="Ready for owner review" value={String(e.readyForReview.length)} detail="Needs forward evidence meeting the registered minimums"/>
+   <Metric label="Rejected and remembered" value={String(e.rejected.length)} detail={`Stocks: ${line('stocks')}`}/>
+  </MetricGrid>
+  {e.whyNoCandidate?<p className="home-panel-note"><strong>Why nothing qualifies yet:</strong> {e.whyNoCandidate}</p>:null}
+  {e.forward.map(f=><div key={f.id}>
+   <p className="small-print"><strong>Forward test: {f.candidate}</strong> vs {f.baseline} (frozen predictions before lock, production review gate) <Badge tone={ENGINE_TONE[f.status]}>{f.status.replaceAll('_',' ').toLowerCase()}</Badge></p>
+   <ul className="evidence-list">{f.progress.map(p=><li key={p.label}><span>{p.label}</span><span><strong>{p.have??'—'}</strong> / {p.need}</span></li>)}</ul>
+  </div>)}
+  {e.readyForReview.length?<ul className="evidence-list">{e.readyForReview.map(x=><li key={x.id}><span><strong>{x.id}</strong><br/><small className="quiet">{x.why}</small></span><Badge tone="positive">ready for review</Badge></li>)}</ul>:null}
+  <Details title={`Still collecting evidence (${e.collecting.length})`}>
+   <ul className="evidence-list">{e.collecting.map(x=><li key={x.id}><span><strong>{x.id}</strong> <small className="quiet">({x.domain})</small><br/><small className="quiet">{x.why}</small></span><Badge tone={ENGINE_TONE[x.status]}>{x.status.replaceAll('_',' ').toLowerCase()}</Badge></li>)}</ul>
+  </Details>
+  <Details title={`Rejected ideas (${e.rejected.length}); never retested automatically`}>
+   <ul className="evidence-list">{e.rejected.map(x=><li key={x.id}><span><strong>{x.id}</strong> <small className="quiet">({x.domain})</small><br/><small className="quiet">{x.why}</small></span><Badge tone="negative">rejected</Badge></li>)}</ul>
+  </Details>
+  <Details title={`Job history (${e.jobs.length})`}>
+   <ul className="evidence-list">{e.jobs.map(j=><li key={j.run}><span><strong>{j.job}</strong> <small className="quiet">({j.at}, run {j.run})</small><br/><small className="quiet">{j.summary}</small></span><Badge tone={j.status==='OK'?'positive':'negative'}>{j.status}</Badge></li>)}</ul>
+  </Details>
+  <p className="home-panel-note">Research sources: connected {e.sources.connected.length} ({e.sources.connected.join(', ')}); built but not running {e.sources.implemented.join(', ')||'none'}; blocked {e.sources.blocked.join(', ')}; proposed {e.sources.proposed.join(', ')}. Evaluations read saved predictions after the props cycle and on a daily backup schedule. Research intake remains manual.</p>
+ </Panel>;
+}
+
+async function ResearchIntakePanel(){
+ const s=await loadResearchIntake(new Date().toISOString());
+ return <Panel title="Research source memory" description="Dated collection receipts, provenance and a review queue; web text never changes a model directly.">
+  <Callout tone={!s.receipt||s.stale||s.receipt.status!=='OK'?'warning':'info'} title={s.receipt?`${s.receipt.status} · ${s.receipt.at}`:'Awaiting a verified intake receipt'}>{s.detail}</Callout>
+  {s.receipt?<>
+   <MetricGrid columns={3}>
+    <Metric label="Candidates for method review" value={String(s.receipt.reviewQueue)} detail="Metadata only; not validated findings"/>
+    <Metric label="Quarantined leads" value={String(s.receipt.quarantined)} detail="Dates, relevance, withdrawals or unsafe text"/>
+    <Metric label="Unchanged objects reused" value={String(s.receipt.objectsReused)} detail={`${s.receipt.objectsAdded} new content versions stored`}/>
+   </MetricGrid>
+   <ul className="evidence-list">{s.sources.map(x=><li key={x.id}><span>{x.id}</span><Badge tone={x.state==='VERIFIED_THIS_RUN'?'info':'warning'}>{x.state.replaceAll('_',' ').toLowerCase()}</Badge></li>)}</ul>
+  </>:null}
+  <p className="home-panel-note">Recent relevant literature is screened for timestamps, topic overlap and withdrawal flags. Indexing does not verify peer review or correctness. Durable content hashes avoid storing unchanged items twice; a reviewed rule and a pre-registered test are required before research can inform a model change.</p>
+ </Panel>;
+}
+
+function ProbabilityScorecard({value}:{value:SportsScorecard}){
+ const s=value.all;
+ const interval=(x:ProbabilitySummary['brierDifference95'])=>x?`[${signed(x.lower95)}, ${signed(x.upper95)}]`:'Needs at least two games';
+ return <div>
+  <p className="chat-card-title">NBA probability scorecard</p>
+  <MetricGrid columns={3}>
+   <Metric label="Unique graded non-tie lines" value={String(s.lines)} detail={`${s.games} games · ${s.dates} dates`}/>
+   <Metric label="Recorded picks correct" value={s.picks?`${s.hits} / ${s.picks}`:'—'} detail={`${pct(s.hitRate)} observed · ${pct(s.meanConfidence)} mean stated confidence`}/>
+   <Metric label="Binary Brier / 50-50 reference" value={s.brier===null?'—':`${s.brier.toFixed(4)} / 0.2500`} detail={`Lower is better. Difference 95% interval: ${interval(s.brierDifference95)}`}/>
+  </MetricGrid>
+  <Details title="Where probability errors occur">
+   {value.groups.map(g=><div key={g.id} style={{marginTop:12}}>
+    <p className="small-print"><strong>{g.label}</strong></p>
+    <Table head={['Group','Lines / games','Picks correct','Stated / observed','Brier','Brier − 50/50 (95% interval)','Sample']} rows={g.rows.map(b=>[
+     b.label,`${b.summary.lines} / ${b.summary.games}`,b.summary.picks?`${b.summary.hits} / ${b.summary.picks}`:'—',
+     `${pct(b.summary.meanConfidence)} / ${pct(b.summary.hitRate)}`,b.summary.brier?.toFixed(4)??'—',
+     `${signed(b.summary.brierDifference)} ${interval(b.summary.brierDifference95)}`,b.summary.smallSample?'Small group':'Exploratory'
+    ])}/>
+   </div>)}
+  </Details>
+  <p className="home-panel-note">{value.note}</p>
  </div>;
 }

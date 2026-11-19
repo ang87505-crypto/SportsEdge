@@ -82,9 +82,7 @@ export default function PredictionMarketsKalshiPage(){
     <IndependentWeatherPanels/>
   </Suspense>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
-   <p>Offline market data normalization, tentative fee-aware paper forecasts, strict settlement grading and
-    research evaluation have been implemented on a draft branch. No forward evidence is available yet,
-    and no Kalshi data is being collected by this page.</p>
+   <p>The K0 research scaffold is integrated on main: offline market normalization, hypothetical fee-aware paper forecasts, strict settlement checks and evaluation are implemented. The scheduled collector currently archives independent NOAA forecasts only. It does not fetch Kalshi quotes. Exchange-data ingestion, storage and use in this software remain disabled pending written authorization for this specific research use.</p>
    <KeyValues items={[
     ['Market data','Code-only; live access disabled pending rights review'],
     ['First research categories','NYC weather and US CPI, offline research only'],
@@ -92,7 +90,8 @@ export default function PredictionMarketsKalshiPage(){
     ['Independent CPI source','BLS CPI-U current published series; release vintages not reconstructed'],
     ['Independent forecast source','NWS hourly grid API; not the official station result'],
     ['Trading','Disabled — no credentials or trade endpoint'],
-    ['Production schedule','None'],
+    ['Kalshi market-data schedule','None; exchange collection is disabled'],
+    ['Independent NOAA schedule','Active; government-source research only'],
     ['Profitability','Unmeasured; no proven edge'],
     ['New Mexico eligibility','Sports contracts contested; not approved for real-money use']
    ]}/>

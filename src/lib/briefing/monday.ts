@@ -1,7 +1,8 @@
 /**
  * "Are we ready for Monday?" — the supervised first stock PAPER session, item by item, from receipts only.
  * Pre-session items can be READY now; session items are ON_THE_DAY until the session's own receipts exist.
- * A planned time, a successful workflow, a shadow plan or an unfilled intent never counts as a fill.
+ * A planned time, a successful workflow, a shadow plan or an unfilled intent never counts as a fill. The execute item names
+ * the one owner dispatch that sends orders, because no schedule or assistant does it (2026-11-16 ended with shadow plans only).
  */
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
 import {nextRuns} from '../stocks/autopilot-view.ts';
@@ -52,13 +53,24 @@ export function mondayReadiness(x:{nowIso:string;ops:OpsView|null;ledger:PaperAu
  // 5. The reviewed release branch stays protected.
  const rel=x.ops?.status?.evidence.release;
  items.push(rel?{id:'release',label:'Reviewed release (PR #'+rel.pr+') protected',state:rel.merged?'BLOCKED':'READY',
-  detail:rel.merged?'The release PR is already merged; this should not happen before the gate passes.':'Open and unmerged, as required until the gate passes. The manual execute uses its pinned, reviewed head.'}:
+  detail:rel.merged?'The release PR is already merged; this should not happen before the gate passes.':'Open and unmerged, as required until the gate passes. The manual execute uses its pinned, reviewed head. The release watcher window has ended, so once the monitor reports the gate passed you review and merge it yourself.'}:
   {id:'release',label:'Reviewed release protected',state:'NOT_YET',detail:'The operations monitor has not reported the release PR state.'});
  // 6. Fresh weekly decision for the session.
  const decision=(l?.decisions??[]).find(d=>d.session===day)??null;
  items.push(l?{id:'decision',label:'Fresh weekly decision',state:decision?'READY':'ON_THE_DAY',
   detail:decision?`Decision for ${day}: ${decision.outcome}; targets ${decision.targets.join(', ')||'none'}.`:`Made at 8:00 AM ET on ${day} (planned, not yet run).`}:owner('decision','Fresh weekly decision'));
- // 7–10. Session receipts.
+ // 7. The supervised execute. Nothing automatic sends PAPER orders before #102 merges: main's executes record shadow plans
+ // only. On 2026-11-16 this step never ran (it waited on an assistant check-in), so the day ended with shadow plans only.
+ const SENT=new Set(['submitting','open','partially_filled','filled','canceled','expired','rejected','uncertain','confirmed_absent']);
+ const sent=l?(l.intents??[]).filter(i=>i.createdAt.slice(0,10)===day&&SENT.has(i.status)):[];
+ const shadows=l?(l.runs??[]).filter(r=>r.kind==='execute'&&r.startedAt.slice(0,10)===day&&r.summary==='SHADOW_PLAN_ONLY').length:0;
+ const how='You dispatch it from your own GitHub account: Actions → Recurring PAPER worker (manual) → Run workflow → branch release/stock-paper-orders, kind execute, experiment stock-v2-weekly-1, trigger manual. Once, between 7:31 AM and 1:00 PM MT, and only after the decision reads TARGETS. Never re-run an execute whose outcome is unknown.';
+ items.push(l?{id:'execute',label:'Supervised execute on the reviewed release branch',
+  state:sent.length?'READY':decision&&decision.outcome!=='TARGETS'?'BLOCKED':'ON_THE_DAY',
+  detail:sent.length?`${sent.length} PAPER order(s) sent on ${day}.`:decision&&decision.outcome!=='TARGETS'?`The decision is ${decision.outcome}: no order day. Do not dispatch.`:
+   (shadows?`Only ${shadows} shadow plan(s) so far: those come from main, where orders are off, and are not orders. `:'')+how}:
+  owner('execute','Supervised execute on the reviewed release branch'));
+ // 8–11. Session receipts.
  const filled=l?(l.intents??[]).filter(i=>Number(i.filledQty)>0&&i.createdAt.slice(0,10)>=day):[];
  items.push(l?{id:'fills',label:'Real PAPER orders with confirmed fills',state:filled.length?'READY':'ON_THE_DAY',
   detail:filled.length?`${filled.length} intent(s) report broker fills: ${filled.map(i=>`${i.side} ${i.filledQty} ${i.symbol}`).join(', ')}.`:
@@ -69,7 +81,7 @@ export function mondayReadiness(x:{nowIso:string;ops:OpsView|null;ledger:PaperAu
  const restart=stop?events.find(e=>e.at>stop.at&&e.actor==='owner'&&e.toMode==='ARMED')??null:null;
  const recon=stop?runs.find(r=>r.kind==='reconcile'&&r.startedAt>=stop.at&&(!restart||r.startedAt<=restart.at)&&/^CLEAN/.test(r.summary??''))??null:null;
  items.push(l?{id:'stop-start',label:'Owner Stop, clean reconciliation, then Start',state:stop&&restart&&recon?'READY':'ON_THE_DAY',
-  detail:stop&&restart&&recon?'Stop, a CLEAN reconcile and the restart are recorded.':'After the fills and before the 2:00 PM MT close: press Stop, let the account check come back clean, then press Start.'}:
+  detail:stop&&restart&&recon?'Stop, a CLEAN reconcile and the restart are recorded.':'Once every order on the Autopilot page shows filled (none open or partly filled), and before the 2:00 PM MT close: press Stop, let the account check come back clean, then press Start. A Stop after the close cannot pass for this session.'}:
   owner('stop-start','Owner Stop, clean reconciliation, then Start'));
  const mark=(l?.daily??[]).find(m=>m.session===day)??null;
  items.push(l?{id:'mark',label:'Same-session after-close mark',state:mark?'READY':'ON_THE_DAY',

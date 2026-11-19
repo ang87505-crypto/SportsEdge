@@ -6,17 +6,20 @@
 import type {Raw} from '../props/dashboard-view.ts';
 import {assessEntry,recommend,calibrationBins,METHODS,STAKING_POLICY_V1,type Method,type EntryAssessment,type CalibrationBin} from './staking.ts';
 import {wilson,round} from './stats.ts';
+import {playerKey} from '../props/identity.ts';
 
 const etDate=(iso:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));
 export type EntryExplanation={entryId:number;platform:string;createdAt:string;lockAt:string;liveStakeCents:number;settled:boolean;profitCents:number|null;
  legs:{player:string;stat:string;line:number;side:string;stated:number;observed:number|null;lower:number|null;n:number}[];
  assessment:EntryAssessment;research:Record<Method,{stakeCents:number;reason:string}>;calibrationPicks:number};
 
-function latestResults(r:Raw){const m=new Map<number,Raw['results'][number]>();for(const x of r.results){const p=m.get(x.observation_id);if(!p||x.revision>p.revision)m.set(x.observation_id,x);}return m;}
+function latestResults(r:Raw,beforeIso?:string){const m=new Map<number,Raw['results'][number]>();for(const x of r.results){
+ if(beforeIso&&(!x.graded_at||!Number.isFinite(Date.parse(x.graded_at))||Date.parse(x.graded_at)>=Date.parse(beforeIso)))continue;
+ const p=m.get(x.observation_id);if(!p||x.revision>p.revision)m.set(x.observation_id,x);}return m;}
 
-/** Graded recorded picks with their stated side probability, optionally only those graded before `beforeIso` (approximated by lock). */
+/** Optional historical calibration requires actual grade availability; lock time cannot stand in for publication. */
 export function gradedPicks(r:Raw,beforeIso?:string){
- const res=latestResults(r),pred=new Map(r.predictions.map(p=>[p.id,p])),obs=new Map(r.observations.map(o=>[o.id,o]));
+ const res=latestResults(r,beforeIso),pred=new Map(r.predictions.map(p=>[p.id,p])),obs=new Map(r.observations.map(o=>[o.id,o]));
  const seen=new Set<string>();
  return r.picks.flatMap(k=>{
   if(k.status!=='recorded'||!k.side)return [];
@@ -24,7 +27,7 @@ export function gradedPicks(r:Raw,beforeIso?:string){
   if(!p||!o||!x||(x.outcome!=='more'&&x.outcome!=='less')||p.p_more===null||p.p_less===null)return [];
   if(beforeIso&&Date.parse(o.lock_at)>=Date.parse(beforeIso))return [];
   // The same line on two platforms is one observation of the world.
-  const key=[o.provider_event_id,o.player_name.toLowerCase(),o.stat,Number(o.line)].join('|');if(seen.has(key))return [];seen.add(key);
+  const key=[o.provider_event_id,playerKey(o.player_name),o.stat,Number(o.line)].join('|');if(seen.has(key))return [];seen.add(key);
   return [{probability:k.side==='more'?Number(p.p_more):Number(p.p_less),correct:x.outcome===k.side,stat:o.stat,lockAt:o.lock_at}];
  });
 }
@@ -50,15 +53,16 @@ export function explainEntries(r:Raw):EntryExplanation[]{
   const legs=r.legs.filter(l=>l.entry_id===e.id).map(l=>{const k=pick.get(l.pick_id),p=k?pred.get(k.prediction_id):undefined,o=p?obs.get(p.observation_id):undefined;
    return k&&p&&o&&k.side?{k,p,o}:null;}).filter((x):x is NonNullable<typeof x>=>!!x);
   if(legs.length<2)continue;
-  // Calibration only from picks whose games locked before this entry was made: nothing from the future.
+  // Calibration uses only grades and result revisions actually published before this entry.
   const bins:CalibrationBin[]=calibrationBins(gradedPicks(r,e.created_at));
   const input={id:String(e.id),date:etDate(e.lock_at),platform:a.platform,legs:legs.map(l=>({probability:l.k.side==='more'?Number(l.p.p_more):Number(l.p.p_less),
    eventId:l.o.provider_event_id,playerKey:l.o.player_name.toLowerCase()}))};
   const assessment=assessEntry(input,bins);
   // Bankroll before this entry: initial + settled profit of earlier entries − open earlier stakes (as the ledger computes it).
   const earlier=ordered.filter(x=>x.account_id===e.account_id&&x.created_at<e.created_at);
-  const settledProfit=earlier.reduce((s,x)=>s+(sett.get(x.id)?.profit_cents??0),0);
-  const open=earlier.filter(x=>!sett.has(x.id)).reduce((s,x)=>s+x.stake_cents,0);
+  const knownSettlement=(id:number)=>{const s=sett.get(id);return s&&Number.isFinite(Date.parse(s.settled_at))&&Date.parse(s.settled_at)<Date.parse(e.created_at)?s:undefined;};
+  const settledProfit=earlier.reduce((s,x)=>s+(knownSettlement(x.id)?.profit_cents??0),0);
+  const open=earlier.filter(x=>!knownSettlement(x.id)).reduce((s,x)=>s+x.stake_cents,0);
   const day=a.id+'|'+etDate(e.created_at);
   const used=stakedToday.get(day)??Object.fromEntries(METHODS.map(m=>[m,0])) as Record<Method,number>;
   const research=Object.fromEntries(METHODS.map(m=>{const rec=recommend(m,assessment,{bankrollCents:a.initial_cents+settledProfit-open,peakCents:a.initial_cents+Math.max(0,settledProfit),stakedTodayCents:used[m]});

@@ -51,3 +51,20 @@ test('research-data publisher adds vercel.json once and keeps its append-only gu
  const bad=run(['commit','rewrite']);
  assert.equal(bad.ok,false);assert.match(bad.out,/APPEND_ONLY_VIOLATION/);
 });
+
+test('research intake index may append; rewriting a receipt or immutable content is refused',()=>{
+ for(const target of ['index.jsonl','objects/a.json']){
+  const {d,b}=bare();
+  const run=(args)=>sh('bash',[join(repo,'.github/scripts/research-data-branch.sh'),...args],{cwd:d,env:env({RESEARCH_DATA_REMOTE:b})});
+  assert.ok(run(['checkout']).ok);
+  const dir=join(d,'research-data/research-intake');mkdirSync(join(dir,'objects'),{recursive:true});
+  writeFileSync(join(dir,'index.jsonl'),'{"run":1}\n');writeFileSync(join(dir,'objects/a.json'),'{"frozen":1}\n');
+  assert.ok(run(['commit','first receipt']).ok);
+  writeFileSync(join(dir,'index.jsonl'),'{"run":1}\n{"run":2}\n');
+  assert.ok(run(['commit','second receipt']).ok);
+  writeFileSync(join(dir,target),'{"rewritten":true}\n');
+  const bad=run(['commit','invalid rewrite']);assert.equal(bad.ok,false);assert.match(bad.out,/APPEND_ONLY_VIOLATION/);
+  assert.equal(show(b,'research-data','research-intake/index.jsonl').out,'{"run":1}\n{"run":2}\n');
+  assert.equal(show(b,'research-data','research-intake/objects/a.json').out,'{"frozen":1}\n');
+ }
+});

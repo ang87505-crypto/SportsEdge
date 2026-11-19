@@ -7,7 +7,7 @@
 import {createHash} from 'node:crypto';
 
 export type Domain='sports'|'stocks';
-export type SourceKind='primary-filing'|'peer-reviewed'|'working-paper'|'official-fund-disclosure'|'audited-track-record'|
+export type SourceKind='primary-filing'|'peer-reviewed'|'working-paper'|'scholarly-metadata'|'official-fund-disclosure'|'audited-track-record'|
  'practitioner-writeup'|'self-reported-claim'|'social-media'|'marketing';
 export type SourceRef={url:string;kind:SourceKind;retrievedAt:string;author:string|null;
  /** Does the author sell picks, a fund, a course or a subscription tied to the claim? */
@@ -29,7 +29,7 @@ export type IntakeVerdict={status:'READY_TO_PREREGISTER'|'DUPLICATE'|'PREVIOUSLY
  key:string;credibility:number;reasons:string[]};
 
 const WEIGHT:Record<SourceKind,number>={'primary-filing':1,'official-fund-disclosure':0.9,'audited-track-record':0.9,'peer-reviewed':0.8,
- 'working-paper':0.6,'practitioner-writeup':0.4,'self-reported-claim':0.2,'social-media':0.1,'marketing':0};
+ 'working-paper':0.6,'scholarly-metadata':0.4,'practitioner-writeup':0.4,'self-reported-claim':0.2,'social-media':0.1,'marketing':0};
 
 /** 0..1: the best source's base weight, halved for a conflict of interest, capped at 0.3 when performance can't be verified. */
 export function credibility(sources:SourceRef[]):number{

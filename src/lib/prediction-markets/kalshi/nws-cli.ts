@@ -57,7 +57,7 @@ export function parseCentralParkCli(text:string,fetchedAt:string):CentralParkCli
  const fetched=Date.parse(fetchedAt);
  if(!Number.isFinite(fetched)||fetched<Date.parse(issuedAt)||fetched-Date.parse(issuedAt)>36*3600_000)
   throw Error('NWS_CLI_BAD_AVAILABILITY');
- const temp=/TEMPERATURE\s*\(F\)\s*\n\s*TODAY\s*\n\s*MAXIMUM\s+(-?\d{1,3}|MM)(?:\s|$)/i.exec(raw);
+ const temp=/TEMPERATURE\s*\(F\)\s*\n\s*(?:YESTERDAY|TODAY)\s*\n\s*MAXIMUM\s+(-?\d{1,3}|MM)(?:\s|$)/i.exec(raw);
  if(!temp||temp[1]==='MM')throw Error('NWS_CLI_MISSING_HIGH');
  const observedHighF=Number(temp[1]);
  if(!Number.isSafeInteger(observedHighF)||observedHighF< -100||observedHighF>150)
