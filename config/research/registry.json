@@ -1,6 +1,6 @@
 {
   "registry_version": "sportsedge-research-registry-v1",
-  "revision": "2026-11-09-r1+daily-2026-11-10+lab-2026-11-12",
+  "revision": "2026-11-09-r1+daily-2026-11-10+lab-2026-11-12+holdrank10-2026-11-19",
   "note": "Research only. Listing a strategy here never activates it. Status values: active (the frozen live paper strategy), challenger (collecting evidence, activation off), rejected (failed its pre-registered test; kept as a permanent negative result), reference (a comparison only).",
   "strategies": [
     {
@@ -116,6 +116,17 @@
         "analytics/stock_weekly_backtest_v1.py"
       ],
       "rules": "docs/AI_LEARNING_LAB_2026_11_12.md"
+    },
+    {
+      "id": "stock-weekly-holdrank10-wholeshare-v1",
+      "status": "challenger",
+      "kind": "weekly-challenger",
+      "description": "Live weekly momentum rules plus the frozen top-10 hold buffer (stock-mom252-skip21-trend200-holdrank10-v1), judged with the $1,000 account's whole-share sizing against the live rules and SPY at matched exposure. Research only; never activates.",
+      "code": [
+        "analytics/stock_rank_buffer_candidate.py",
+        "analytics/stock_weekly_backtest_v1.py"
+      ],
+      "rules": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md"
     }
   ],
   "sources": [
@@ -218,6 +229,15 @@
       "strategy": "lab-stock-psychology-v1",
       "status": "registered",
       "prereg": "docs/AI_LEARNING_LAB_2026_11_12.md"
+    },
+    {
+      "id": "holdrank10-wholeshare-2026-11-19",
+      "strategy": "stock-weekly-holdrank10-wholeshare-v1",
+      "status": "complete",
+      "verdict": "BEATS_CURRENT_BELOW_MATCHED_SPY",
+      "result_ref": "run 44602976829; research/stock_challenger_holdrank10_20261119/results.json; docs/STOCK_CHALLENGER_HOLDRANK10_RESULTS_2026_11_19.md",
+      "mode": "historical-exploratory",
+      "prereg": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md"
     }
   ]
 }

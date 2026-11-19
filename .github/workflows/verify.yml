@@ -46,6 +46,8 @@ jobs:
         run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs
       - name: Published learning evidence reader (offline)
         run: node --experimental-strip-types --test src/lib/server/research-engine-load.test.mjs
+      - name: Cent sizing, research quality and durable intake memory (offline)
+        run: node --experimental-strip-types --test src/lib/lab/confidence-sizing.test.mjs src/lib/research/quality.test.mjs scripts/research-intake-archive.test.mjs src/lib/server/research-intake-load.test.mjs
       - name: Lint code
         run: npm run lint
       - name: Production build

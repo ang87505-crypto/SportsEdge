@@ -1,0 +1,80 @@
+name: Research source memory
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Research engine (AI 2.0)']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '17 17 * * *'
+  pull_request:
+    paths:
+      - 'src/lib/research/**'
+      - 'src/lib/server/research-intake-*'
+      - 'scripts/research-intake-*'
+      - '.github/workflows/research-source-memory.yml'
+      - '.github/scripts/research-data-branch.sh'
+permissions:
+  contents: read
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node --experimental-strip-types --no-warnings --test src/lib/research/*.test.mjs scripts/research-intake-archive.test.mjs src/lib/server/research-intake-load.test.mjs scripts/data-branches.test.mjs
+  collect:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Restore manifest and enforce collection cadence
+        id: restore
+        run: |
+          node --experimental-strip-types scripts/research-intake-archive.ts restore --data research-data --out "$RUNNER_TEMP/intake" > "$RUNNER_TEMP/intake-restore.json"
+          node -e 'const fs=require("node:fs");const r=require(process.argv[1]);fs.appendFileSync(process.env.GITHUB_OUTPUT,"collect="+r.collect+"\n");fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,JSON.stringify(r)+"\n")' "$RUNNER_TEMP/intake-restore.json"
+      - name: Check approved sources (bounded GET-only)
+        id: collect
+        if: steps.restore.outputs.collect == 'true'
+        continue-on-error: true
+        env:
+          SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+          INTAKE_MAX_REQUESTS: '40'
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/research-intake-collect.ts --out "$RUNNER_TEMP/intake" --previous "$RUNNER_TEMP/intake/previous-manifest.json" --tickers AAPL,MSFT,NVDA,JPM,XOM,JNJ,PG,KO,WMT,CAT --literature | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish immutable receipts and content-addressed memory
+        if: steps.restore.outputs.collect == 'true'
+        run: |
+          node --experimental-strip-types scripts/research-intake-archive.ts publish --data research-data --out "$RUNNER_TEMP/intake" --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --source-commit "$(git rev-parse HEAD)" | tee -a "$GITHUB_STEP_SUMMARY"
+          bash .github/scripts/research-data-branch.sh commit "research source memory $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+      - name: Surface failed source collection after recording it
+        if: steps.collect.outcome == 'failure'
+        run: exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-source-memory-${{ github.run_id }}
+          path: ${{ runner.temp }}/intake/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -24,10 +24,18 @@ export function verify(r:ProvenanceRecord,cutoffIso:string|null=null):Provenance
  if(!src)reasons.push('UNREGISTERED_SOURCE');
  else if(src.status==='blocked'||src.status==='proposed')reasons.push('SOURCE_NOT_APPROVED_'+src.status.toUpperCase());
  if(src&&src.reliability!==r.reliability)reasons.push('RELIABILITY_MISMATCH');
+ const literature=r.sourceId==='openalex'||r.sourceId==='arxiv';
+ if(literature&&r.intendedUse!=='hypothesis-only')reasons.push('LITERATURE_NEVER_A_FEATURE');
+ try{
+  const u=new URL(r.originalUrl),hosts:Record<string,string[]>={'openalex':['openalex.org','doi.org'],'arxiv':['arxiv.org'],
+   'sec-edgar-companyfacts':['data.sec.gov','www.sec.gov'],'sec-edgar-13f':['data.sec.gov','www.sec.gov']};
+  if(u.protocol!=='https:'||u.username||u.password||(hosts[r.sourceId]&&!hosts[r.sourceId].includes(u.hostname)))reasons.push('UNTRUSTED_SOURCE_URL');
+ }catch{reasons.push('UNTRUSTED_SOURCE_URL');}
  if(!r.sourceItemId||!r.originalUrl)reasons.push('MISSING_IDENTIFIER');
  if(!Number.isFinite(Date.parse(r.retrievedAt)))reasons.push('BAD_RETRIEVED_AT');
  if(checksum(r.content)!==r.checksumSha256)reasons.push('CHECKSUM_MISMATCH');
  const avail=r.availableAt!==null&&Number.isFinite(Date.parse(r.availableAt))?Date.parse(r.availableAt):null;
+ if(r.availableAt!==null&&avail===null)reasons.push('BAD_AVAILABILITY_TIME');
  if(avail!==null&&Number.isFinite(Date.parse(r.retrievedAt))&&avail>Date.parse(r.retrievedAt))reasons.push('AVAILABLE_AFTER_RETRIEVAL');
  const usable=!reasons.length;
  let pointInTime=usable&&r.intendedUse==='point-in-time-feature';

@@ -70,7 +70,18 @@ ROUND2 = {
     'momentum-buffer10-nocap-full': {'model': 'momentum', **_LIVE, 'buffer': 10, 'price_cap': False, 'weight': 0.20},
     'momentum-6m-nocap-full':       {'model': 'momentum', **_LIVE, 'lookback': 126, 'price_cap': False, 'weight': 0.20},
 }
-ROUNDS = {1: VARIANTS, 2: ROUND2}
+# Round 3 (docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md, committed before its run): ONE challenger, the
+# top-10 hold buffer frozen on 2026-10-12 (analytics/stock_rank_buffer_candidate.py, HOLD_RANK_MAX=10), against the
+# live rules, both with the $1,000 account's whole-share sizing. The fractional rows are reference only (not judged).
+CURRENT, CHALLENGER = 'current', 'challenger-holdrank10'
+ROUND3 = {
+    CURRENT:                       {'model': 'momentum', **_LIVE, 'whole_shares': True},
+    CHALLENGER:                    {'model': 'momentum', **_LIVE, 'buffer': 10, 'whole_shares': True},
+    'current-fractional':          {'model': 'momentum', **_LIVE},
+    'challenger-fractional':       {'model': 'momentum', **_LIVE, 'buffer': 10},
+}
+ROUND3_END = '2026-11-18'
+ROUNDS = {1: VARIANTS, 2: ROUND2, 3: ROUND3}
 
 
 # ---------------------------------------------------------------- data
@@ -144,7 +155,8 @@ def select(scores: dict, sectors: dict, held: set, spec: dict, price_cap: float 
 def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, start: str, end: str,
            cost_bps: float = COST_BPS, adjust=None):
     """`adjust(scores, series, k)` (research overlays only; default None = the registered rules unchanged) may mark
-    members ineligible from information before session k."""
+    members ineligible from information before session k. `spec['whole_shares']` (round 3) sizes every pick as the live
+    planner does: floor(10% of equity / raw open) whole shares, traded only by whole-share differences."""
     sectors = {u['symbol']: u['sector'] for u in universe['securities']}
     members = [s for s in sorted(sectors) if s in series]
     cap = float(universe['max_last_close']) if 'max_last_close' in universe and spec.get('price_cap', True) else None
@@ -152,7 +164,7 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
     units: dict[str, float] = {}
     cash = STARTING
     last_px: dict[str, float] = {}
-    curve, decisions, rejected, traded, exposure = [], 0, 0, 0.0, []
+    curve, decisions, rejected, traded, exposure, cash_blocked = [], 0, 0, 0.0, [], 0
 
     def px(sym, k, field):
         v = series[sym][field][k]
@@ -176,6 +188,13 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
             held = {s for s, u in units.items() if u > 0}
             if not held <= set(scores):
                 rejected += 1  # live: HELD_SECURITY_SKIPPED rejects the decision; hold unchanged
+            elif spec.get('whole_shares'):
+                picks = set(select(scores, sectors, held, spec, cap))
+                cash, moved, blocked = _whole_share_trades(series, k, units, cash, held | picks, picks, weight,
+                                                            cost_bps)
+                traded += moved
+                cash_blocked += blocked
+                units = {s: u for s, u in units.items() if u > 1e-12}
             else:
                 picks = set(select(scores, sectors, held, spec, cap))
                 equity = cash + sum(u * px(s, k, 'ao') for s, u in units.items())
@@ -194,7 +213,44 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
         curve.append((sessions[k], cash + invested))
         exposure.append(invested / (cash + invested) if cash + invested > 0 else 0.0)
     return {'curve': curve, 'decisions': decisions, 'rejected': rejected, 'traded': traded,
-            'avg_exposure': fmean(exposure) if exposure else 0.0}
+            'avg_exposure': fmean(exposure) if exposure else 0.0, 'exposure': exposure, 'cash_blocked': cash_blocked}
+
+
+def _whole_share_trades(series: dict, k: int, units: dict, cash: float, names: set, picks: set, weight: float,
+                        cost_bps: float):
+    """The live planner's sizing at session k's open (src/lib/stocks/paper-strategy-rebalance.ts): budget = 10% of
+    equity, target = floor(budget / price) whole shares, held stocks not picked go to 0. Positions are kept in
+    all-adjusted units (value = units x adjusted price); held raw shares are recovered with the raw/adjusted ratio, so
+    a split never looks like a trade. Sells settle before buys; buys are all-or-nothing on cash, as in the planner."""
+    adj = {s: series[s]['ao'][k] for s in names}
+    raw = {s: series[s]['o'][k] for s in names}
+    equity = cash + sum(u * adj[s] for s, u in units.items())  # every holding is in `names` (held | picks)
+    budget = math.floor(weight * equity * 100) / 100
+    delta = {}
+    for s in sorted(names):
+        if raw[s] is None or adj[s] is None or raw[s] <= 0 or adj[s] <= 0:
+            continue
+        held = round(units.get(s, 0.0) * adj[s] / raw[s])
+        want = math.floor(budget / raw[s]) if s in picks else 0
+        if want != held:
+            delta[s] = want - held
+    moved, blocked = 0.0, 0
+    for s, d in sorted(delta.items()):
+        if d < 0:
+            value = -d * raw[s]
+            cash += value * (1 - cost_bps / 1e4)
+            moved += value
+            units[s] = (round(units.get(s, 0.0) * adj[s] / raw[s]) + d) * raw[s] / adj[s]
+    buys = {s: d for s, d in delta.items() if d > 0}
+    need = sum(d * raw[s] * (1 + cost_bps / 1e4) for s, d in buys.items())
+    if buys and need > cash + 1e-9:
+        return cash, moved, 1
+    for s, d in sorted(buys.items()):
+        value = d * raw[s]
+        cash -= value * (1 + cost_bps / 1e4)
+        moved += value
+        units[s] = (round(units.get(s, 0.0) * adj[s] / raw[s]) + d) * raw[s] / adj[s]
+    return cash, moved, blocked
 
 
 def benchmark(sessions: list[str], spy: dict, *, start: str, end: str, weight: float):
@@ -242,6 +298,8 @@ def combine(a: list, b: list) -> list:
 
 
 def evaluate(data: dict, universe: dict, end: str | None = None, round_: int = 1) -> dict:
+    if round_ == 3:
+        return evaluate_round3(data, universe, end)
     variants = ROUNDS[round_]
     sessions, series = align(data)
     end = end or sessions[-1]
@@ -274,6 +332,79 @@ def evaluate(data: dict, universe: dict, end: str | None = None, round_: int = 1
         out['variants'][name]['full_at_25bps'] = metrics(r['curve'], *periods['full'])
     out['verdicts'] = verdicts(out) if round_ == 1 else verdicts_round2(out)
     return out
+
+
+def weekly_returns(curve: list[tuple[str, float]], lo: str, hi: str) -> dict:
+    """Return per ISO week from each week's last value (the first week is measured from the prior value)."""
+    last: dict = {}
+    for d, v in curve:
+        last[date.fromisoformat(d).isocalendar()[:2]] = (d, v)
+    weeks = sorted(last.values())
+    return {b[0]: b[1] / a[1] - 1 for a, b in zip(weeks, weeks[1:]) if lo <= b[0] <= hi}
+
+
+def evaluate_round3(data: dict, universe: dict, end: str | None = None) -> dict:
+    """Round 3: the frozen hold-buffer challenger against the live rules, whole shares, SPY at matched exposure."""
+    sessions, series = align(data)
+    end = end or sessions[-1]
+    periods = {'dev': DEV, 'holdout': (HOLDOUT_START, end), 'full': (DEV[0], end)}
+    out = {'round': 3, 'variants': {}, 'benchmarks': {}, 'matched_spy': {}, 'periods': {k: list(v) for k, v in periods.items()},
+           'sessions': [sessions[0], sessions[-1]], 'end': end, 'universe_revision': universe.get('revision'),
+           'members_with_data': len([s for s in universe['securities'] if s['symbol'] in series])}
+    curves = {}
+    for name, spec in ROUND3.items():
+        r = replay(sessions, series, universe, spec, start=DEV[0], end=end)
+        curves[name] = r['curve']
+        years = len(r['curve']) / 252
+        dates = [d for d, _ in r['curve']]
+        exp = {p: (fmean([x for d, x in zip(dates, r['exposure']) if lo <= d <= hi]) if any(lo <= d <= hi for d in dates)
+                   else None) for p, (lo, hi) in periods.items()}
+        row = {'spec': spec, 'judged': bool(spec.get('whole_shares')), 'decisions': r['decisions'],
+               'rejected': r['rejected'], 'cash_blocked': r['cash_blocked'],
+               'turnover_per_year': r['traded'] / STARTING / years if years else None,
+               'avg_exposure': r['avg_exposure'], 'exposure_by_period': exp,
+               **{p: metrics(r['curve'], *rng) for p, rng in periods.items()}}
+        if spec.get('whole_shares'):
+            r25 = replay(sessions, series, universe, spec, start=DEV[0], end=end, cost_bps=25)
+            row['full_at_25bps'] = metrics(r25['curve'], *periods['full'])
+            row['holdout_at_25bps'] = metrics(r25['curve'], *periods['holdout'])
+            if 'SPY' in series:
+                out['matched_spy'][name] = {p: metrics(benchmark(sessions, series['SPY'], start=DEV[0], end=end,
+                                                                 weight=exp[p])['curve'], *rng)
+                                            for p, rng in periods.items() if exp[p] is not None}
+                for p in out['matched_spy'][name]:
+                    out['matched_spy'][name][p]['weight'] = exp[p]
+        out['variants'][name] = row
+    if 'SPY' in series:
+        for label, weight in (('spy', 1.0), ('spy-50', 0.5)):
+            c = benchmark(sessions, series['SPY'], start=DEV[0], end=end, weight=weight)['curve']
+            out['benchmarks'][label] = {p: metrics(c, *rng) for p, rng in periods.items()}
+    a, b = weekly_returns(curves[CHALLENGER], *periods['holdout']), weekly_returns(curves[CURRENT], *periods['holdout'])
+    diff = [a[w] - b[w] for w in sorted(set(a) & set(b))]
+    sd = pstdev(diff) if len(diff) > 1 else 0.0
+    out['paired_weekly_holdout'] = {'weeks': len(diff), 'mean': fmean(diff) if diff else None,
+                                    't_stat': fmean(diff) / (sd / math.sqrt(len(diff))) if sd > 0 else None,
+                                    'note': 'descriptive only; not part of the pre-registered rule'}
+    out['verdicts'] = verdicts_round3(out)
+    return out
+
+
+def verdicts_round3(out: dict) -> dict:
+    """docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md. A tie is not better; a missing metric is a failure."""
+    def above(x, y, key='sharpe'):
+        u, v = (x or {}).get(key), (y or {}).get(key)
+        return u is not None and v is not None and u > v
+    a, b = out['variants'][CHALLENGER], out['variants'][CURRENT]
+    dd = lambda r: (r.get('holdout') or {}).get('max_drawdown')
+    r1 = all(above(a.get(p), b.get(p)) for p in ('dev', 'holdout')) and dd(a) is not None and dd(b) is not None \
+        and dd(a) >= dd(b) - 0.05 and above(b, a, 'turnover_per_year')
+    r2 = above(a.get('full_at_25bps'), b.get('full_at_25bps'))
+    m = out.get('matched_spy', {}).get(CHALLENGER, {})
+    r3 = all(above(a.get(p), m.get(p)) for p in ('dev', 'holdout'))
+    verdict = 'PROMISING' if r1 and r2 and r3 else 'BEATS_CURRENT_BELOW_MATCHED_SPY' if r1 and r2 else 'REJECTED'
+    status = {'PROMISING': 'PROMISING', 'BEATS_CURRENT_BELOW_MATCHED_SPY': 'RUNNING', 'REJECTED': 'REJECTED'}[verdict]
+    return {'R1_beats_current': r1, 'R2_survives_25bps': r2, 'R3_beats_matched_spy': r3, 'verdict': verdict,
+            'registry_status': status}
 
 
 def verdicts(out: dict) -> dict:
@@ -315,7 +446,45 @@ def verdicts_round2(out: dict) -> dict:
     return {'vs_live': vs_live, 'vs_spy': vs_spy}
 
 
+def markdown_round3(out: dict) -> str:
+    pct = lambda x: '—' if x is None else f'{x * 100:+.1f}%'
+    num = lambda x: '—' if x is None else f'{x:.2f}'
+    lines = [f"Round 3 · sessions {out['sessions'][0]} to {out['sessions'][1]} · end {out['end']} · universe "
+             f"{out['universe_revision']} · members with data {out['members_with_data']} · {COST_BPS:g} bps per side · "
+             'whole shares from $1,000 (judged) · NOT survivorship-free', '']
+    for p in ('dev', 'holdout', 'full'):
+        lo, hi = out['periods'][p]
+        lines += [f'### {p} ({lo} to {hi})', '', '| Strategy | Total | CAGR | Volatility | Sharpe | Max drawdown | Avg invested |',
+                  '|---|---|---|---|---|---|---|']
+        rows = [(n, r, r.get('exposure_by_period', {}).get(p)) for n, r in out['variants'].items()]
+        rows += [(f'SPY at {n} exposure', m, m.get(p, {}).get('weight')) for n, m in out['matched_spy'].items()]
+        rows += [('SPY (100%)', out['benchmarks'].get('spy', {}), 1.0), ('SPY 50% + cash', out['benchmarks'].get('spy-50', {}), 0.5)]
+        for name, r, w in rows:
+            m = r.get(p, {})
+            if m:
+                lines.append(f"| {name} | {pct(m['total'])} | {pct(m['cagr'])} | {pct(m['vol'])} | {num(m['sharpe'])} | "
+                             f"{pct(m['max_drawdown'])} | {'—' if w is None else f'{w * 100:.0f}%'} |")
+        lines.append('')
+    lines += ['### Operations and costs (full period)', '', '| Strategy | Judged | Decisions | Rejected | Cash-blocked | Turnover / yr | '
+              'Full Sharpe at 25 bps | Full CAGR at 25 bps |', '|---|---|---|---|---|---|---|---|']
+    for name, r in out['variants'].items():
+        f25 = r.get('full_at_25bps', {})
+        lines.append(f"| {name} | {'yes' if r['judged'] else 'reference'} | {r['decisions']} | {r['rejected']} | {r['cash_blocked']} | "
+                     f"{r['turnover_per_year']:.1f}× | {num(f25.get('sharpe'))} | {pct(f25.get('cagr'))} |")
+    pw = out['paired_weekly_holdout']
+    v = out['verdicts']
+    lines += ['', f"Paired weekly difference in the holdout (challenger − current, descriptive): {pw['weeks']} weeks, "
+              f"mean {pct(pw['mean'])}, t {num(pw['t_stat'])}.", '', '### Pre-registered verdict', '',
+              f"- R1 beats the current rules (Sharpe in both periods, holdout drawdown, turnover): **{v['R1_beats_current']}**",
+              f"- R2 survives 25 bps: **{v['R2_survives_25bps']}**",
+              f"- R3 beats SPY at its own exposure in both periods: **{v['R3_beats_matched_spy']}**",
+              f"- Verdict: **{v['verdict']}** → learning registry `{v['registry_status']}**`".replace('**`', '`')]
+    return '\n'.join(lines) + '\n'
+
+
 def markdown(out: dict) -> str:
+    if out.get('round') == 3:
+        return markdown_round3(out)
     pct = lambda x: '—' if x is None else f'{x * 100:+.1f}%'
     num = lambda x: '—' if x is None else f'{x:.2f}'
     lines = [f"Sessions {out['sessions'][0]} to {out['sessions'][1]} · members with data {out['members_with_data']} · "

@@ -4,6 +4,14 @@ import {readFileSync} from 'node:fs';
 import {SOURCE_REGISTER,registerProblems,sourceById} from './sources.ts';
 import {verify,record,checksum} from './provenance.ts';
 import {parseCompanyFacts,asOf,provenanceFor} from './sec-companyfacts.ts';
+import {retryDelayMs} from './discovery.ts';
+
+test('provider retry-after pauses are respected and long waits end the bounded run',()=>{
+ assert.equal(retryDelayMs(0,429,3,15_000),15_000);
+ assert.equal(retryDelayMs(0,503,3,61_000),null);
+ assert.equal(retryDelayMs(0,400),null);
+ assert.equal(retryDelayMs(3,429),null);
+});
 
 test('the source register is consistent: every non-connected source states its blocker; no paid source is silently connected', () => {
   assert.deepEqual(registerProblems(), []);
@@ -38,10 +46,13 @@ test('provenance: tampered content, unregistered or blocked sources and impossib
 
 test('literature can only suggest hypotheses, never become a feature', () => {
   const lit = record({sourceId: 'openalex', sourceItemId: 'W1', originalUrl: 'https://openalex.org/W1', retrievedAt: '2026-11-13T00:00:00Z',
-    availableAt: '2025-01-01T00:00:00Z', eventDate: null, reliability: 'peer-reviewed', intendedUse: 'hypothesis-only', content: {title: 't'}});
+    availableAt: '2025-01-01T00:00:00Z', eventDate: null, reliability: 'secondary', intendedUse: 'hypothesis-only', content: {title: 't'}});
   const v = verify(lit, '2026-11-14T00:00:00Z');
   assert.equal(v.pointInTime, false);
   assert.ok(v.reasons.includes('LITERATURE_NEVER_A_FEATURE'));
+  const forged=verify(record({...lit,intendedUse:'point-in-time-feature'}),'2026-11-14T00:00:00Z');
+  assert.equal(forged.usable,false);assert.equal(forged.pointInTime,false);
+  assert.ok(verify(item({originalUrl:'https://untrusted.example/facts'})).reasons.includes('UNTRUSTED_SOURCE_URL'));
 });
 
 const facts = {cik: 320193, facts: {'us-gaap': {

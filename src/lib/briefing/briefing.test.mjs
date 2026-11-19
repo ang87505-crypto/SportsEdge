@@ -151,3 +151,23 @@ test('money: yesterday\'s slate is reported on its own, from settled entries wit
  const empty=buildBriefing({nowIso:'2026-11-12T19:00:00.000Z',props:propsInput(makeRaw({nowIso:'2026-11-12T19:00:00.000Z'})),ops:null,research:null});
  assert.match(briefingAnswer('money',empty,{range:'yesterday'}).text,/No PrizePicks virtual entry was made for yesterday's slate/);
 });
+
+test('Monday readiness: a shadow plan is not the supervised execute; only orders actually sent are', () => {
+  const MON = '2026-11-23T17:00:00.000Z';
+  const targets = {decisionId: 'd1', session: '2026-11-23', decisionAt: '2026-11-23T13:00:00Z', outcome: 'TARGETS', targets: ['OXY', 'MO'], reasons: [], recordedAt: '2026-11-23T13:00:04Z'};
+  const shadow = {runId: 'run-s', kind: 'execute', slot: '2026-11-23T15:45Z', attempt: 1, status: 'succeeded', startedAt: '2026-11-23T15:55:20Z', finishedAt: '2026-11-23T15:55:27Z', summary: 'SHADOW_PLAN_ONLY'};
+  const onlyShadow = mondayReadiness({nowIso: MON, ops: ops(), ownerSignedIn: true, ledger: ledger({decisions: [targets], runs: [shadow]})});
+  const ex = onlyShadow.items.find(i => i.id === 'execute');
+  assert.equal(ex.state, 'ON_THE_DAY');
+  assert.match(ex.detail, /Only 1 shadow plan\(s\).*not orders/);
+  assert.match(ex.detail, /branch release\/stock-paper-orders, kind execute/);
+  const sentIntent = {intentId: 'i1', symbol: 'OXY', side: 'buy', phase: 'BUY', attempt: 1, shares: 1, limitCents: 5816, status: 'open', brokerStatus: 'new',
+    filledQty: '0', filledAvgPrice: null, createdAt: '2026-11-23T14:45:00Z', updatedAt: '2026-11-23T14:45:01Z'};
+  const sent = mondayReadiness({nowIso: MON, ops: ops(), ownerSignedIn: true, ledger: ledger({decisions: [targets], runs: [shadow], intents: [sentIntent]})});
+  assert.equal(sent.items.find(i => i.id === 'execute').state, 'READY');
+  assert.equal(sent.items.find(i => i.id === 'fills').state, 'ON_THE_DAY', 'sent is not filled');
+  const hold = mondayReadiness({nowIso: MON, ops: ops(), ownerSignedIn: true, ledger: ledger({decisions: [{...targets, outcome: 'HOLD_NO_TARGETS', targets: []}]})});
+  assert.equal(hold.items.find(i => i.id === 'execute').state, 'BLOCKED');
+  assert.match(hold.items.find(i => i.id === 'execute').detail, /no order day/);
+  assert.match(sent.items.find(i => i.id === 'stop-start').detail, /every order .* filled/);
+});
