@@ -109,16 +109,46 @@ merged before that day's 09:00 UTC decision, so it no longer applies and must no
 - The decision comes from the Vercel 09:00 UTC kickoff, which waits for the 08:00 ET capture. GitHub's own 11:20 UTC schedule ran about 7 h late on Nov 10–11.
 - A scheduled session check-in at 14:38 UTC (7:38 AM MT) dispatches the execute at most once, and only if: the decision is `TARGETS`, the gate still shows the owner ARM, #102's head is unchanged, and the market is open. The owner's Stop/Start (before the close) stays a website action.
 
+### What happened on Monday Nov 16 (verified 2026-11-19 from workflow logs and the operations monitor)
+
+- **Decision:** the Vercel kickoff started the weekly decision at 09:16 UTC; it captured at 08:00 ET and recorded
+  **`TARGETS`** at 13:00:04 UTC (decision `7187321a…`, run 43838310547). 29 universe members were eligible after the
+  price cap; the rejected candidates and their reasons are stored in the decision's diagnostics.
+- **Owner ARM:** in place. The release gate read `STOCK_SUPERVISED_EXECUTE_REQUIRED`, which is only reached after the
+  owner Start and a clean account check.
+- **Supervised execute: did not happen.** No workflow run exists on `release/stock-paper-orders`. The step depended on a
+  scheduled Claude check-in at 14:38 UTC, and that session did not run it: the reminder was delivered three days late.
+  No one dispatched it by hand.
+- **On `main` (writes OFF):** the 17:28 UTC execute recorded a shadow plan (`SHADOW_PLAN_ONLY`, `posts:0`): buy 1 share
+  each of OXY, MO, SLB, BMY, CSX. No PAPER order was sent.
+- **Result:** the release gate still reads `STOCK_SUPERVISED_EXECUTE_REQUIRED` (monitor 2026-11-19 13:38 UTC). PR #102
+  is open, draft, unmerged, at `9e23e63`. No real fill exists, so there is no first-session evidence.
+
+**Lesson:** the execute dispatch must not depend on any AI assistant being available. From Nov 23 the **owner** dispatches
+it (a Claude check-in may remind, but it is never the only path).
+
+### Next session: Monday 2026-11-23 (first session of ISO week 48; Thanksgiving is Thursday Nov 26)
+
+- Nothing in the gate is date-bound for Nov 23. The release watcher's auto-merge window ends 2026-11-21 07:00 UTC, so
+  after a passing session the **owner** merges #102 (the operations monitor shows `STOCK_SUPERVISED_SESSION_VERIFIED`
+  when every receipt is present). Do not re-pin or extend anything to make the watcher merge it.
+- The Nov 16 decision must not be replayed. The controller refuses a decision from another session
+  (`NO_EXECUTABLE_DECISION_TODAY`), and the weekly bridge decides only on the first session of a week.
+- Verified 2026-11-19 on the pinned head `9e23e63` with a disposable PostgreSQL and a fake broker. All suites passed:
+  SQL contract, connection races, broker adapter (22), owner/auth/views (35), Python bridges, kickoff (4), controller
+  end to end (32), and release gates (13). Flags on that head are `paperOnly:true`, `brokerWritesEnabled:true`,
+  `realMoneyEnabled:false`. `main` passes the same suites with writes OFF.
+
 ### Steps on the session day
 
 | When (Mountain) | Who | What |
 |---|---|---|
 | Before 7:30 AM | automatic | Weekly decision at 6:00 AM MT (08:00 ET) records `TARGETS` (or HOLD; then no order day) |
 | Before 7:30 AM | owner | Open https://sports-edge-eta.vercel.app/stocks/paper-auto. If it is not already armed, press **Start** (it checks the account, then arms) |
-| After 7:30 AM | Claude (scheduled check-in) or owner | GitHub → Actions → *Recurring PAPER worker (manual)* → **Run workflow** → branch **`release/stock-paper-orders`**, kind **execute**, experiment `stock-v2-weekly-1`. Its log must show `posts` > 0; the Autopilot page then shows real paper orders and fills |
+| 7:31 AM–1:00 PM (after the 7:30 AM open, at least 1 h before the close) | **owner** (do not wait for any assistant) | First confirm the day's decision is `TARGETS`: GitHub → Actions → *Recurring PAPER weekly decision (manual)* → today's run → step *Record TARGETS…* shows `"outcome": "TARGETS"`. HOLD, MISSED or INPUT_REJECTED means no order day; stop here. Then GitHub → Actions → *Recurring PAPER worker (manual)* → **Run workflow** → branch **`release/stock-paper-orders`**, kind **execute**, experiment `stock-v2-weekly-1`, trigger `manual`. Run it **once**; never re-run an execute whose outcome is unknown. Its log must show `posts` > 0; the Autopilot page then shows real paper orders and fills |
 | After the fills, **before the 2:00 PM MT close** | owner | Press **Stop autopilot**, then **Start** (Start runs a fresh reconcile before re-arming). The gate needs the after-close mark to be captured *after* your restart, so a Stop/Start after the close cannot pass for that session (`scripts/paper-release-gates.mjs`, `STOCK_SAME_SESSION_CLOSE_REQUIRED`). |
 | After 2:00 PM close | automatic | Monitor (GitHub 1:35/2:35 PM, Vercel backup 3 PM hour) records the day's mark |
-| Then | automatic / Claude | The release watcher verifies every receipt on the pinned head and merges PR #102; production then sends PAPER orders on schedule |
+| After 3 PM | owner | GitHub → Actions → *Operations monitor* → Run workflow (branch `main`). `stockGate.reason` must read `STOCK_SUPERVISED_SESSION_VERIFIED`. Only then the owner reviews and merges PR #102 at exactly `9e23e63`. The watcher window has ended (2026-11-21), so nothing merges automatically |
 
 A shadow plan, a HOLD day, a green workflow or this document is not evidence for any step.
 

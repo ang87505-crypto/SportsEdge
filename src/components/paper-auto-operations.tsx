@@ -5,6 +5,7 @@ import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
 import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
+import {evaluateStockForward} from '@/lib/stocks/paper-auto-evaluation';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 import {paperRisk} from '@/lib/stocks/paper-risk';
 import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
@@ -271,6 +272,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <time dateTime={f.at}>{when(f.at)}</time></li>)}</ul>}
   </Panel>
 
+  <LearningEvidence l={l}/>
+
   {l.intents.length>0&&<Panel title="Orders" description="Whole-share limit orders on the paper account" flush>
    <div className="table-wrap"><table className="data-table">
     <thead><tr><th>When</th><th>Order</th><th>Status</th><th>Filled</th></tr></thead>
@@ -317,4 +320,24 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
    {l.gateEvents.length>0&&<><h3>On/off history</h3><ul className="quiet">{l.gateEvents.map((g,k)=><li key={k}>{when(g.at)}: {g.fromMode} → {g.toMode} ({g.reason}) by {g.actor}</li>)}</ul></>}
   </Details>
  </>;
+}
+
+/** Forward learning evidence from real PAPER fills only. Below the minimum sample it says so instead of a win rate. */
+function LearningEvidence({l}:{l:PaperAutoLedger}){
+ const e=evaluateStockForward(l,new Date().toISOString());
+ const pc=(x:number|null)=>x===null?'—':(x*100).toFixed(2)+'%';
+ const tone=e.verdict==='MEASURED'?'positive':e.verdict==='INTEGRITY_FAILED'?'warning':'neutral';
+ const states=Object.entries(e.sessions.states);
+ return <Panel title="Learning evidence" description="Completed trades from real PAPER fills, net of 10 bps per side. Plans, unfilled and rejected orders never count."
+  actions={<Badge tone={tone}>{e.verdict==='INSUFFICIENT_DATA'?'INSUFFICIENT DATA':e.verdict.replaceAll('_',' ')}</Badge>}>
+  <MetricGrid columns={4}>
+   <Metric label="Completed trades" value={String(e.trades.completed)} detail={`needs ${e.minimums.completedTrades}; ${e.trades.openLots} open`}/>
+   <Metric label="Clean sessions" value={String(e.sessions.clean)} detail={`needs ${e.minimums.cleanSessions}; ${e.sessions.targets} with targets`}/>
+   <Metric label="Win rate" value={e.trades.winRate===null?'INSUFFICIENT DATA':pc(e.trades.winRate)} detail={`${e.trades.winners} won, ${e.trades.losers} lost`}/>
+   <Metric label="Avg winner / loser" value={`${pc(e.trades.averageWinnerReturn)} / ${pc(e.trades.averageLoserReturn)}`} detail="net of estimated costs"/>
+  </MetricGrid>
+  <p className="quiet small-print">Orders: {e.orders.proposed} planned, {e.orders.submitted} sent, {e.orders.filled} filled, {e.orders.partiallyFilled} partly filled, {e.orders.rejected} rejected, {e.orders.canceledOrExpired} cancelled or expired unfilled, {e.orders.notSubmitted} not sent.
+   {states.length?` Sessions: ${states.map(([d,s])=>`${d} ${s.replaceAll('_',' ').toLowerCase()}`).join(', ')}.`:''} Prediction accuracy: not measurable (the weekly model records targets, not expected returns).</p>
+  {e.verdict==='INTEGRITY_FAILED'&&<Callout tone="warning" title="Evidence integrity check failed">{e.reasons.filter(r=>/LOOKAHEAD|UNMATCHED/.test(r)).join('; ')}</Callout>}
+ </Panel>;
 }
