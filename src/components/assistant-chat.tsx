@@ -4,11 +4,22 @@ import type {Card,Reply} from '@/lib/assistant/answer';
 import type {AssistantContext} from '@/lib/assistant/understand';
 import {currentOwnerAccess} from '@/lib/assistant/session';
 import {chatActionRequest} from '@/lib/assistant/actions';
+import {AssistantRequestGate} from '@/lib/assistant/request-gate';
+import type {ToolCall} from '@/lib/command/session';
 
-type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[]};
+type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[];sig?:string};
 type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
-const STARTERS=["Tonight's picks",'Stock results','Research results','Is everything running?'];
-const OPENING:Msg={role:'bot',text:'Ask about sports picks, stock paper accounts, research results, or automation.',suggestions:STARTERS};
+const TOPICS=[
+  {label:'Sports',question:"Tonight's picks"},
+  {label:'Watch Only',question:'How did our 60%+ tracked lines do yesterday?'},
+  {label:'Stocks',question:'Stock PAPER results'},
+  {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
+  {label:'Research',question:'Stock strategy research results'},
+  {label:'Systems',question:'Is everything running?'},
+  {label:'Help',question:'What commands can you follow?'}
+] as const;
+const STARTERS=TOPICS.map(t=>t.question);
+const OPENING:Msg={role:'bot',text:'Ask about sports, stocks, independent Kalshi research, or automation. Answers use saved records, not invented trades.',suggestions:STARTERS};
 const NO_ACCESS:Access={ownerAccess:false,ownerExpiresAt:null};
 
 /** Lets any button on the page ask the conversation a question (the homepage summary strip uses it). */
@@ -22,15 +33,16 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  const opening:Msg=starters?{role:'bot',text:intro??OPENING.text,suggestions:starters}:OPENING;
  const [msgs,setMsgs]=useState<Msg[]>([opening]);
  const [context,setContext]=useState<AssistantContext|null>(null);
+ const [lastCalls,setLastCalls]=useState<ToolCall[]>([]);
  const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
  const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
  const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
- const requestId=useRef(0);
+ const gate=useRef(new AssistantRequestGate());
  function applyAccess(a:Access){
   const valid=currentOwnerAccess(a).ownerAccess;
   if(!valid&&owner.current){
    // A reply authorized before logout must not resurrect private content afterward.
-   requestId.current++;setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);
+   gate.current.invalidate();setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);setLastCalls([]);
   }
   owner.current=valid;setAccess(valid?a:NO_ACCESS);
  }
@@ -64,33 +76,41 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
  },[]);
  async function send(raw:string){
   const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
-  if(!text||busy)return;
-  const id=++requestId.current;
+  // A ref blocks rapid double-submit synchronously; React's busy state is
+  // not updated until the next render. Never issue two assistant reads for one
+  // user action or let a stale response overwrite new conversation context.
+  if(!text)return;
+  const id=gate.current.start();
+  if(id===null)return;
   lastAsked.current=text;follow.current=true;
   setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
   try{
-   const res=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,context})});
-   const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null}|null;
-   if(id!==requestId.current)return;
+   // History and the previous validated tool calls let deterministic tools
+   // answer comparisons and follow-ups. Unverified assistant text is dropped
+   // by the server; no transcript is saved outside this browser tab.
+   const history=msgs.filter(m=>m.role==='user'||!!m.sig).slice(-20).map(m=>({role:m.role==='user'?'user' as const:'assistant' as const,text:m.text.slice(0,1500),...(m.sig?{sig:m.sig}:{})}));
+   const res=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history,session:{context,last:lastCalls}})});
+   const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null;session?:{context:AssistantContext|null;last:ToolCall[]};sig?:string}|null;
+   if(!gate.current.isCurrent(id))return;
    if(res.ok&&data?.reply){
     const valid=currentOwnerAccess(data).ownerAccess;
     applyAccess({ownerAccess:valid,ownerExpiresAt:valid?data.ownerExpiresAt!:null});setChecking(false);
     const r=data.reply;
-    if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);}
+    if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);setLastCalls([]);}
     else {
-     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private}].slice(-40));
-     setContext(r.context);
+     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private,sig:data.sig}].slice(-40));
+     setContext(data.session?.context??r.context);setLastCalls(data.session?.last??[]);
     }
    }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
-  }catch{if(id===requestId.current)setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
-  finally{if(id===requestId.current)setBusy(false);}
+  }catch{if(gate.current.isCurrent(id))setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
+  finally{if(gate.current.finish(id))setBusy(false);}
  }
  function submit(e:FormEvent){e.preventDefault();void send(input);}
- function reset(){requestId.current++;setBusy(false);setMsgs([opening]);setContext(null);}
+ function reset(){gate.current.invalidate();lastAsked.current='';setBusy(false);setMsgs([opening]);setContext(null);setLastCalls([]);}
  const last=msgs[msgs.length-1];
  return <div className="chat">
   <div className="chat-chips" role="group" aria-label="Chat topics">
-   {STARTERS.map((s,i)=><button key={s} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(s)}>{['Sports','Stocks','Research','All systems'][i]}</button>)}
+   {TOPICS.map(t=><button key={t.label} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
   </div>
   <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
   <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
@@ -108,11 +128,11 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
   </div>:null}
   <form className="chat-form" onSubmit={submit}>
    <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
-   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, research…"/>
+   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, Kalshi, research…"/>
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
-  <p className="quiet small-print">Answers use recorded evidence: SportsEdge matches your question to built-in topics and reads its own records; no external AI model is called. Chat cannot place bets or stock orders; it can only propose Pause or Stop for you to confirm. This conversation stays in this tab.</p>
+  <p className="quiet small-print">Use <a href="/paper-betting/watch">Watch Only</a> to track lines without wagering. Answers use recorded evidence and read-only tools. A hosted conversational model is optional and disabled until the owner explicitly configures its shared cost budget; the built-in planner works without one. Independent NOAA results are not Kalshi wins. Chat cannot place bets or stock orders; Pause/Stop proposals require a separate owner confirmation. Chat history stays in this browser tab.</p>
  </div>;
 }
 /**

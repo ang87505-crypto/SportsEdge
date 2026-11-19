@@ -35,12 +35,21 @@ test('slates are ET days and are planned only once the whole slate is visible',(
  assert.deepEqual(plan('2026-11-10T09:00:00Z',[...NOV10].reverse()).map(r=>[r.provider_event_id,r.selected]).sort(),rows.map(r=>[r.provider_event_id,r.selected]).sort());
 });
 
-test('a slate is never re-planned; late additions are recorded as not selected',()=>{
+test('late candidates stay eligible until existing selected games have claimed their slots',()=>{
  const rows=plan('2026-11-10T09:00:00Z').map(r=>({...r,planned_at:'2026-11-10T09:00:00Z'}));
  assert.deepEqual(plan('2026-11-10T15:00:00Z',NOV10,rows),[]);
  const added={id:'evtNOV10late99',commenceTime:'2026-11-11T03:30:00Z',homeTeam:'Golden State Warriors',awayTeam:'Houston Rockets'};
- const more=plan('2026-11-10T15:00:00Z',[...NOV10,added],rows);
- assert.deepEqual(more.map(r=>[r.provider_event_id,r.selected,r.reason]),[['evtNOV10late99',false,'added_after_plan']]);
+ // Both original selections are still unclaimed, so an open late-arriving game is not frozen
+ // as NOT_SELECTED before either original slot has a chance to become MISSED.
+ const waiting=planSlates({events:[added],existing:rows,captures:[],nowIso:'2026-11-10T15:00:00Z',policy:BUDGET_POLICY_V2});
+ assert.deepEqual(waiting,[]);
+ const selected=rows.filter(r=>r.selected);
+ const w=captureWindows(slateAnchor(selected[0],rows));
+ const paid=selected.map(r=>({provider_event_id:r.provider_event_id,capture_key:'primary',window_name:r.arm,
+  claimed_at:r.arm==='early'?w.earlyFrom:w.lateFrom,outcome:'stored',dfs_lines:4}));
+ const afterClaims=new Date(Date.parse(w.lateTo)+60_000).toISOString();
+ const finalized=planSlates({events:[added],existing:rows,captures:paid,nowIso:afterClaims,policy:BUDGET_POLICY_V2});
+ assert.deepEqual(finalized.map(r=>[r.provider_event_id,r.selected,r.reason]),[['evtNOV10late99',false,'added_after_plan']]);
 });
 
 test('planning mid-slate never selects a game that has started or is inside its last window',()=>{
@@ -182,4 +191,75 @@ test('a game that started without a capture never holds credits back from anothe
  const big={...BUDGET_POLICY_V2,dailyCredits:12,monthlyCredits:400};
  const r=dueCaptures({plans:[missed,b],captures:[empty],nowIso:'2026-11-11T00:30:00Z',policy:big,state:{...fresh,used24h:7,used30d:7}});
  assert.deepEqual(r.due.map(d=>[d.plan.provider_event_id,d.captureKey]),[[b.provider_event_id,'retry']]);
+});
+
+
+test('late-listed games replace only unspent MISSED slots; original plans remain immutable',()=>{
+ const original=plan('2026-11-10T09:00:00Z');
+ const selected=original.filter(p=>p.selected);
+ assert.equal(selected.length,2);
+ const oldWindow=captureWindows(slateAnchor(selected[0],original));
+ const now=new Date(Date.parse(oldWindow.lateTo)+60_000).toISOString();
+ const kept=selected.find(p=>p.arm==='early')??selected[0];
+ const claimedAt=kept.arm==='early'?oldWindow.earlyFrom:oldWindow.lateFrom;
+ const captures=[{provider_event_id:kept.provider_event_id,capture_key:'primary',window_name:kept.arm,
+  claimed_at:claimedAt,outcome:'stored',dfs_lines:12}];
+ const lateEvents=[
+  {id:'evtLATE000001',commenceTime:'2026-11-11T04:15:00Z',homeTeam:'Late Home 1',awayTeam:'Late Away 1'},
+  {id:'evtLATE000002',commenceTime:'2026-11-11T04:30:00Z',homeTeam:'Late Home 2',awayTeam:'Late Away 2'},
+  {id:'evtLATE000003',commenceTime:'2026-11-11T04:45:00Z',homeTeam:'Late Home 3',awayTeam:'Late Away 3'},
+ ];
+ const added=planSlates({events:lateEvents,existing:original,captures,nowIso:now,policy:BUDGET_POLICY_V2});
+ const replacement=added.filter(p=>p.selected);
+ assert.equal(replacement.length,1,JSON.stringify(added));
+ assert.match(replacement[0].reason,/^late_addition_\d+_anchor$/);
+ assert.equal(replacement[0].arm,kept.arm==='early'?'late':'early');
+ assert.equal(captureState(kept,captures,now,CFG,[...original,...added]),'CAPTURED');
+ const missed=selected.find(p=>p.provider_event_id!==kept.provider_event_id);
+ assert.equal(captureState(missed,captures,now,CFG,[...original,...added]),'MISSED');
+ const all=[...original,...added];
+ const replacementWindow=captureWindows(slateAnchor(replacement[0],all));
+ assert.ok(Date.parse(replacementWindow.lateTo)>Date.parse(now));
+ const captureAt=new Date(Date.parse(replacementWindow.lateFrom)+60_000).toISOString();
+ const due=dueCaptures({plans:all,captures,nowIso:captureAt,policy:BUDGET_POLICY_V2,state:fresh});
+ assert.deepEqual(due.due.map(d=>d.plan.provider_event_id),[replacement[0].provider_event_id],
+  'the missed original must not reserve credits or block its replacement');
+ assert.equal(original.filter(p=>p.selected).length,2,'the original frozen selections are not edited');
+ assert.equal(replacement.filter(p=>p.slate_date===original[0].slate_date).length,1);
+});
+
+test('two unspent missed selections can be replaced as a balanced new cohort, never above the two-game cap',()=>{
+ const original=plan('2026-11-10T09:00:00Z');
+ const selected=original.filter(p=>p.selected);
+ const oldWindow=captureWindows(slateAnchor(selected[0],original));
+ const now=new Date(Date.parse(oldWindow.lateTo)+60_000).toISOString();
+ const lateEvents=[
+  {id:'evtLATE100001',commenceTime:'2026-11-11T04:15:00Z',homeTeam:'Late Home 1',awayTeam:'Late Away 1'},
+  {id:'evtLATE100002',commenceTime:'2026-11-11T04:30:00Z',homeTeam:'Late Home 2',awayTeam:'Late Away 2'},
+  {id:'evtLATE100003',commenceTime:'2026-11-11T04:45:00Z',homeTeam:'Late Home 3',awayTeam:'Late Away 3'},
+ ];
+ const added=planSlates({events:lateEvents,existing:original,captures:[],nowIso:now,policy:BUDGET_POLICY_V2});
+ const replacement=added.filter(p=>p.selected);
+ assert.equal(replacement.length,2,JSON.stringify(added));
+ assert.deepEqual(replacement.map(p=>p.arm).sort(),['early','late']);
+ assert.equal(new Set(replacement.map(p=>p.reason.match(/^late_addition_(\d+)_/)?.[1])).size,1);
+ assert.equal(gamesPerSlate(BUDGET_POLICY_V2),2);
+ assert.ok(replacement.every(p=>Date.parse(p.commence_time)-Date.parse(now)>CFG.windows.late.toMin*60_000));
+ assert.equal(added.length,2,'the remaining open event stays eligible for a later replacement slot');
+});
+
+test('a paid no-lines attempt is not an unspent missed slot and cannot be replaced',()=>{
+ const original=plan('2026-11-10T09:00:00Z');
+ const selected=original.filter(p=>p.selected);
+ const oldWindow=captureWindows(slateAnchor(selected[0],original));
+ const now=new Date(Date.parse(oldWindow.lateTo)+60_000).toISOString();
+ const captures=selected.map(p=>({provider_event_id:p.provider_event_id,capture_key:'primary',window_name:p.arm,
+  claimed_at:p.arm==='early'?oldWindow.earlyFrom:oldWindow.lateFrom,outcome:'no_dfs_lines',dfs_lines:0}));
+ const lateEvents=[
+  {id:'evtLATE200001',commenceTime:'2026-11-11T04:15:00Z',homeTeam:'Late Home 1',awayTeam:'Late Away 1'},
+  {id:'evtLATE200002',commenceTime:'2026-11-11T04:30:00Z',homeTeam:'Late Home 2',awayTeam:'Late Away 2'},
+ ];
+ const added=planSlates({events:lateEvents,existing:original,captures,nowIso:now,policy:BUDGET_POLICY_V2});
+ assert.equal(added.filter(p=>p.selected).length,0);
+ assert.ok(added.every(p=>p.reason==='added_after_plan'));
 });

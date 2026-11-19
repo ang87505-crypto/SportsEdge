@@ -1,0 +1,82 @@
+# Research evaluations reuse stored forecasts and grades. Runs are immutable on research-data;
+# the next evaluation restores the last successful registry. No model or order changes.
+name: Research engine (AI 2.0)
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['NBA props paper cycle']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '47 17 * * *'
+  pull_request:
+    paths:
+      - 'src/lib/lab/engine/**'
+      - 'src/lib/server/research-engine-*'
+      - 'scripts/research-engine*'
+      - '.github/workflows/research-engine.yml'
+      - '.github/scripts/research-data-branch.sh'
+permissions:
+  contents: read
+concurrency:
+  group: research-data
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify research lifecycle, immutable publication and freshness (offline)
+        run: node --experimental-strip-types --no-warnings --test src/lib/lab/engine/*.test.mjs src/lib/server/research-engine-load.test.mjs scripts/data-branches.test.mjs
+  engine:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Check out append-only research-data
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Restore the last successful learning registry
+        run: node --experimental-strip-types scripts/research-engine-archive.ts restore --data research-data --state "$RUNNER_TEMP/engine"
+      - name: Diagnose, evaluate forward experiments and propose hypotheses (read-only)
+        id: evaluate
+        continue-on-error: true
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/research-engine.ts --registry research/engine/registry.json \
+            --out "$RUNNER_TEMP/engine" --state "$RUNNER_TEMP/engine" --sports-ledger --evaluate-forward | tee -a "$GITHUB_STEP_SUMMARY"
+          node -e "const r=require(process.argv[1]);const s=r.domains.sports;console.log(JSON.stringify({picks:s?.picks,quality:s?.qualityIssues,patterns:(s?.patterns??[]).map(p=>[p.id,p.n,p.effect,p.lower95,p.upper95,p.significant]),proposed:(s?.proposed??[]).map(h=>h.key),skipped:s?.skipped,forward:r.forward.map(f=>({id:f.id,to:f.to,changed:f.changed,reason:f.reason}))},null,1))" "$RUNNER_TEMP/engine/report.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Archive the evaluation and its verified registry
+        run: |
+          node --experimental-strip-types scripts/research-engine-archive.ts publish --data research-data --state "$RUNNER_TEMP/engine" \
+            --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --source-commit "$(git rev-parse HEAD)"
+          bash .github/scripts/research-data-branch.sh commit "learning evaluation $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+      - name: Surface evaluation failures after recording the receipt
+        if: steps.evaluate.outcome == 'failure'
+        run: exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research-engine-${{ github.run_id }}
+          path: ${{ runner.temp }}/engine/
+          if-no-files-found: ignore
+          retention-days: 30
