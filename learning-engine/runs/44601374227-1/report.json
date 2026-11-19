@@ -1,0 +1,313 @@
+{
+ "generatedBy": "scripts/research-engine.ts",
+ "runId": "d4304deace7bf645",
+ "at": "2026-11-19T19:44:22.440Z",
+ "limits": {
+  "maxNewHypothesesPerDomain": 2,
+  "maxRows": 20000,
+  "maxRuntimeMs": 300000,
+  "maxLedgerRequests": 80,
+  "maxForwardEvaluations": 5
+ },
+ "guarantees": [
+  "GET-only reads; no database writes; no provider, broker or AI calls",
+  "No model, pick, entry, stake, budget, schedule or order can change",
+  "Rejected ideas are never re-proposed; at most 2 new hypotheses per domain per run",
+  "READY_FOR_REVIEW waits for the owner; nothing is promoted"
+ ],
+ "domains": {
+  "sports": {
+   "inputFingerprint": "cf02f53cfb54ca8f7083141be57a827e8e6cc7579df5450357b26b9ce0c8f552",
+   "rows": 543,
+   "clean": 543,
+   "ledgerRequests": 21,
+   "qualityIssues": {},
+   "picks": {
+    "picks": 131,
+    "hits": 78,
+    "hitRate": 0.5954,
+    "lower95": 0.5098,
+    "upper95": 0.6756
+   },
+   "patterns": [
+    {
+     "id": "picks-overall",
+     "domain": "sports",
+     "description": "All recorded picks: stated confidence minus hit rate",
+     "n": 131,
+     "clusters": 20,
+     "effect": 0.0547,
+     "lower95": -0.0515,
+     "upper95": 0.167,
+     "significant": false,
+     "idea": "overall-recalibration"
+    },
+    {
+     "id": "picks-less",
+     "domain": "sports",
+     "description": "Less picks: stated confidence minus hit rate",
+     "n": 92,
+     "clusters": 20,
+     "effect": 0.0145,
+     "lower95": -0.0904,
+     "upper95": 0.131,
+     "significant": false,
+     "idea": null
+    },
+    {
+     "id": "picks-no-book-quote",
+     "domain": "sports",
+     "description": "Picks without a same-line sportsbook quote",
+     "n": 45,
+     "clusters": 11,
+     "effect": 0.1312,
+     "lower95": -0.0379,
+     "upper95": 0.3044,
+     "significant": false,
+     "idea": "market-anchor-when-books-missing"
+    }
+   ],
+   "proposed": [],
+   "skipped": []
+  }
+ },
+ "forward": [
+  {
+   "id": "props-learn-v1-shadow",
+   "from": "INSUFFICIENT_DATA",
+   "to": "INSUFFICIENT_DATA",
+   "changed": false,
+   "reason": "Forward sample below the registered minimums: observations 422/500, dates 8/14, clusters 15/50, decisions 49/100",
+   "details": {
+    "candidate": "props-learn-v1",
+    "baseline": "props-nb-minutes-rate-v1",
+    "pairs": 422,
+    "dates": 8,
+    "games": 15,
+    "candidateBrier": 0.2559687055661705,
+    "baselineBrier": 0.2553870464071936,
+    "interval": {
+     "lower95": -0.003011093262110606,
+     "upper95": 0.004269404851259068,
+     "games": 15
+    },
+    "failed": [
+     "min_lines",
+     "min_dates",
+     "min_games",
+     "min_decisions",
+     "brier_interval",
+     "log_loss"
+    ],
+    "refusedAfterLock": 0,
+    "invalidPredictions": 0,
+    "invalidGrades": 0,
+    "metadataConflicts": 0,
+    "unpaired": 139,
+    "ungraded": 34,
+    "latestCandidateAt": "2026-11-19T19:18:06.416079+00:00",
+    "stale": false
+   }
+  },
+  {
+   "id": "props-learn-v2-shadow",
+   "from": "INSUFFICIENT_DATA",
+   "to": "INSUFFICIENT_DATA",
+   "changed": false,
+   "reason": "Forward sample below the registered minimums: observations 169/500, dates 3/14, clusters 6/50, decisions 14/100",
+   "details": {
+    "candidate": "props-learn-v2",
+    "baseline": "props-nb-minutes-rate-v1",
+    "pairs": 169,
+    "dates": 3,
+    "games": 6,
+    "candidateBrier": 0.2653903579029312,
+    "baselineBrier": 0.26678919395925527,
+    "interval": {
+     "lower95": -0.004008686492283243,
+     "upper95": 0.0019000280122245406,
+     "games": 6
+    },
+    "failed": [
+     "min_lines",
+     "min_dates",
+     "min_games",
+     "min_decisions",
+     "brier_interval"
+    ],
+    "refusedAfterLock": 0,
+    "invalidPredictions": 496,
+    "invalidGrades": 0,
+    "metadataConflicts": 0,
+    "unpaired": 0,
+    "ungraded": 32,
+    "latestCandidateAt": "2026-11-19T19:18:06.416023+00:00",
+    "stale": false
+   }
+  }
+ ],
+ "applied": [],
+ "productionShadows": {
+  "added": [],
+  "ignored": [
+   {
+    "version": "props-learn-v1",
+    "reason": "already_tracked"
+   },
+   {
+    "version": "props-learn-v2",
+    "reason": "already_tracked"
+   }
+  ]
+ },
+ "status": "OK",
+ "failure": null,
+ "registryChanged": false,
+ "registrySummary": [
+  {
+   "id": "lab-sports-ablation-v1-recalibration",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective: helps in 2025-26 (Holm-significant), no clear effect on 2026-27 to date; forward lab tables not applied, so no forward evidence."
+  },
+  {
+   "id": "lab-sports-ablation-v1-role-minutes",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective small gain in 2025-26, none visible in 2026-27; forward lab not applied."
+  },
+  {
+   "id": "lab-sports-ablation-v1-matchup-rest",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective small gain in 2025-26, none in 2026-27; rest feature is mislabelled for ~22.5% of lines (calendar-rest fix pending owner review)."
+  },
+  {
+   "id": "lab-sports-ablation-v1-market",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "No sportsbook history exists; testable forward only once the lab tables are applied."
+  },
+  {
+   "id": "props-learn-v1-shadow",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "props-gap-shrink-v1",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "Prospective challenger in props research receipts; sample far below the gate."
+  },
+  {
+   "id": "lab-sports-challengers-v2-side-asym",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00043 (Holm p 0.003), fold 2 +0.00007 (CI -0.00042..+0.00056). Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-uncertainty",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00027 (p 0.002), fold 2 +0.00015. Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-line-gap",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00044 (p 0.003), fold 2 -0.00027 (CI -0.00075..+0.00021, p 0.52). Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-all-new",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00051 (p 0.003), fold 2 -0.00009. Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-injury-rotation",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Blocked: no licensed, timestamped pre-lock injury/rotation feed is collected (see research intake source register)."
+  },
+  {
+   "id": "daily-oc-losers5-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "Rejected 2026-11-09: none qualifies after costs."
+  },
+  {
+   "id": "momentum-quality-paper-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS gate: drawdown > 35%, Sharpe below SPY."
+  },
+  {
+   "id": "berkshire-13f-top5-paper-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS gate with the 45-day filing lag modelled."
+  },
+  {
+   "id": "daily-reversal5-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS 8 of 9 gates after costs (turnover ~224x/yr)."
+  },
+  {
+   "id": "daily-momentum5d-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS 8 of 9 gates after costs."
+  },
+  {
+   "id": "daily-spy-trend50-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS: below exposure-matched SPY."
+  },
+  {
+   "id": "spy-tom-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS: below exposure-matched SPY."
+  },
+  {
+   "id": "qmom-disclosure-follower-v1",
+   "domain": "stocks",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Forward only (no reliable historical holdings); 2 sessions recorded."
+  },
+  {
+   "id": "lab-stock-psychology-v1",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "No clear effect after Holm (2023+ holdout); frozen forward picks from 2026-11-16."
+  },
+  {
+   "id": "lab-stock-v3-riskadj",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "REJECTED"
+  },
+  {
+   "id": "lab-stock-v3-mom-lowvol",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "lab-stock-v3-core-satellite",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "props-learn-v2-shadow",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "NO_CLEAR_EFFECT"
+  }
+ ],
+ "runtimeMs": 2113
+}
