@@ -23,7 +23,9 @@ export function parseCsv(text:string):Record<string,string>[]{
 const iso=(s:string)=>{const m=/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+)?([+-]\d\d)(\d\d)$/.exec(s);
  return m?new Date(`${m[1]}${m[2]}:${m[3]}`).toISOString():new Date(s).toISOString();};
 const num=(s:string)=>s===''?null:Number(s);
-export type BoxRow={athlete:string;name:string;team:string;opponent:string;home:boolean;game:string;start:string;log:GameLog};
+export type BoxRow={athlete:string;name:string;team:string;opponent:string;home:boolean;game:string;start:string;log:GameLog;
+ /** The box score's stated did-not-play reason (e.g. "COACH'S DECISION", "LEFT ANKLE SPRAIN"); null when the player played. */
+ reason?:string|null};
 export function loadBoxCsv(path:string){
  const raw=readFileSync(path);
  const rows:BoxRow[]=[];
@@ -33,7 +35,7 @@ export function loadBoxCsv(path:string){
   const dnp=r.did_not_play==='true';
   const minutes=num(r.minutes);
   rows.push({athlete:r.athlete_id,name:r.athlete_display_name,team:r.team_abbreviation,opponent:r.opponent_team_abbreviation,
-   home:r.home_away==='home',game:r.game_id,start:iso(r.game_date_time),
+   home:r.home_away==='home',game:r.game_id,start:iso(r.game_date_time),reason:dnp?(r.reason||null):null,
    log:{gameStart:iso(r.game_date_time),didNotPlay:dnp,minutes:dnp?null:minutes,
     points:dnp?null:num(r.points),rebounds:dnp?null:num(r.rebounds),assists:dnp?null:num(r.assists),seasonType:'regular'}});
  }
