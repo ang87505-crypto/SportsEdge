@@ -38,19 +38,19 @@ export const SOURCE_REGISTER:SourceEntry[]=[
  {id:'sec-edgar-companyfacts',domain:'stocks',status:'connected',reliability:'regulatory',access:'data.sec.gov/api/xbrl/companyfacts/CIK##########.json with a declared User-Agent',
   rights:'US government public data',availabilityTime:"each fact's 'filed' date: a fundamental is usable only on or after the day its filing was accepted",
   usedFor:['point-in-time fundamentals (quality, value) for stock research'],cost:'free',
-  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 10/10 companies, 0 point-in-time leaks; manual/push only, no schedule)'},
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts; dated source checks under research-intake/runs on research-data'},
  {id:'qmom-holdings',domain:'stocks',status:'connected',reliability:'official',access:'Public fund holdings page; robots.txt crawl-delay 10',
   rights:'Public disclosure',availabilityTime:'retrieval time (no historical archive): forward-only',usedFor:['disclosed-holdings follower (forward)'],cost:'free',blocker:null,whereInCode:'analytics/research/qmom.py'},
  {id:'survivorship-free-constituents',domain:'stocks',status:'proposed',reliability:'licensed-provider',access:'Historical index membership with add/remove dates',
   rights:'Typically a paid licence',availabilityTime:'membership effective dates',usedFor:['removing survivorship bias from every stock backtest'],cost:'paid: needs explicit owner approval',
   blocker:'No free source with verified point-in-time membership identified; purchasing data needs owner approval.',whereInCode:null},
  // ------------------------------------------------------------ literature (both)
- {id:'openalex',domain:'both',status:'connected',reliability:'peer-reviewed',access:'api.openalex.org, no key, <= 10 requests/s',rights:'CC0 metadata',
+ {id:'openalex',domain:'both',status:'connected',reliability:'secondary',access:'api.openalex.org, basic keyless metadata requests only; 200 ms spacing and hard run budget; no deep paging',rights:'CC0 metadata; indexed publication does not verify peer review',
   availabilityTime:'publication date; literature never enters point-in-time features',usedFor:['hypothesis discovery'],cost:'free',
-  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 5/5 queries; hypothesis-only)'},
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts; quality-screened scholarly metadata, never model features'},
  {id:'arxiv',domain:'both',status:'connected',reliability:'secondary',access:'export.arxiv.org, 1 request per 3 s',rights:'Metadata CC0; e-prints not re-served',
   availabilityTime:'submission date; literature never enters point-in-time features',usedFor:['hypothesis discovery'],cost:'free',
-  blocker:null,whereInCode:'scripts/research-intake-collect.ts (verified: Actions run 43498666563, 3/3 queries; hypothesis-only)'},
+  blocker:null,whereInCode:'scripts/research-intake-collect.ts; dated preprint metadata only, never model features'},
 ];
 
 /** Consistency rules the register must satisfy (tested): nothing paid is connected without saying so, and every

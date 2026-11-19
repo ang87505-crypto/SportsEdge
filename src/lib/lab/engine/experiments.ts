@@ -75,6 +75,21 @@ export function register(reg:Registry,e:Experiment,at:string):Registry{
  return {...reg,experiments:[...reg.experiments,rec]};
 }
 
+/** Adopt an experiment from the reviewed seed (research/engine/registry.json) that a restored registry does not have yet,
+ * keeping the seed's own pre-registration history. Same refusals as register(): a duplicate id, an idea already rejected,
+ * or an idea already under test. Existing experiments are never overwritten from the seed; the restored state stays
+ * authoritative for them. */
+export function adopt(reg:Registry,e:Experiment):Registry{
+ validate(e);
+ if(reg.experiments.some(x=>x.id===e.id))throw new EngineError('DUPLICATE_ID');
+ const keys=new Set([e.hypothesisKey,...(e.alsoCovers??[])]);
+ const same=reg.experiments.filter(x=>[x.hypothesisKey,...(x.alsoCovers??[])].some(k=>keys.has(k)));
+ if(same.some(x=>x.status==='REJECTED'))throw new EngineError('IDEA_ALREADY_REJECTED');
+ if(same.some(x=>x.status!=='FAILED'))throw new EngineError('IDEA_ALREADY_UNDER_TEST');
+ if(!Array.isArray(e.history)||!e.history.length)throw new EngineError('SEED_HISTORY_REQUIRED');
+ return {...reg,experiments:[...reg.experiments,e]};
+}
+
 /** Move an experiment through its lifecycle. Idempotent per input: the same input fingerprint is processed once. */
 export function transition(reg:Registry,id:string,to:Status,reason:string,at:string,inputFingerprint:string|null,
  result?:Record<string,unknown>,disposition?:string):{registry:Registry;changed:boolean}{

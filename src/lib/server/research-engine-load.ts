@@ -5,11 +5,12 @@ import {ENGINE_INDEX,MAX_ENGINE_BYTES,engineJobs,engineRunPath,parseEngineIndex,
 import type {Registry} from '../lab/engine/experiments.ts';
 import type {Job} from '../lab/engine/view.ts';
 import {readSportsScorecard,type SportsScorecard} from '../lab/engine/scorecard.ts';
+import {readSportsDrift,type DriftReport} from '../lab/engine/drift.ts';
 
 export const ENGINE_PUBLIC_ROOT='https://raw.githubusercontent.com/ang87505-crypto/SportsEdge/research-data/';
 const CACHE_MS=60_000;
 export type EngineSnapshot={mode:'live'|'saved';at:string|null;checkedAt:string;stale:boolean;status:'OK'|'FAILED'|'UNAVAILABLE';
- registry:Registry;jobs:Job[];receipt:EngineReceipt|null;scorecard:SportsScorecard|null;detail:string};
+ registry:Registry;jobs:Job[];receipt:EngineReceipt|null;scorecard:SportsScorecard|null;drift:DriftReport|null;detail:string};
 let cache:{at:number;value:EngineSnapshot}|null=null;
 export function resetResearchEngineCache(){cache=null;}
 export async function loadResearchEngine(nowIso:string,fetcher:typeof fetch=fetch):Promise<EngineSnapshot>{
@@ -30,9 +31,10 @@ export async function loadResearchEngine(nowIso:string,fetcher:typeof fetch=fetc
   const scorecard=readSportsScorecard(report.domains?.sports?.scorecard);
   const stale=now-Date.parse(receipt.at)>48*3600_000;
   value={mode:'live',at:receipt.at,checkedAt:nowIso,stale,status:receipt.status,registry:verified.registry,jobs:engineJobs(receipts),receipt,scorecard:receipt.status==='OK'?scorecard:null,
+   drift:receipt.status==='OK'?readSportsDrift(report.domains?.sports?.drift):null,
    detail:receipt.status==='FAILED'?'The latest evaluation failed; its last accepted registry is shown.':stale?'No published evaluation within 48 hours.':'Latest published evaluation; experiments remain subject to their registered evidence gates.'};
  }catch{
-  value={mode:'saved',at:seedJobs.at(-1)?.at??null,checkedAt:nowIso,stale:true,status:'UNAVAILABLE',registry:seedRegistry as Registry,jobs:seedJobs,receipt:null,scorecard:null,
+  value={mode:'saved',at:seedJobs.at(-1)?.at??null,checkedAt:nowIso,stale:true,status:'UNAVAILABLE',registry:seedRegistry as Registry,jobs:seedJobs,receipt:null,scorecard:null,drift:null,
    detail:'Current published evaluations are unavailable. These are dated saved research records, not proof of a running learning job.'};
  }
  cache={at:now,value};return value;

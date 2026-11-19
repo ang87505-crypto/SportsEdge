@@ -20,7 +20,7 @@ export type Raw={
  predictions:{id:number;observation_id:number;model_version:string;status:string;reason:string;p_more:number|null;p_less:number|null;p_tie:number|null;mean:number|null;
   inputs?:Record<string,unknown>|null}[];
  picks:{id:number;prediction_id:number;status:string;side:'more'|'less'|null;reason:string;selection_version:string}[];
- results:{observation_id:number;revision:number;outcome:string;actual:number|null}[];
+ results:{observation_id:number;revision:number;outcome:string;actual:number|null;graded_at?:string}[];
  accounts:{id:number;slug:string;platform:Platform;selection_version?:string;initial_cents:number;stake_cents:number;max_entries_per_day:number}[];
  entries:{id:number;account_id:number;stake_cents:number;lock_at:string;created_at:string;payout_terms_version:string|null}[];
  legs:{entry_id:number;pick_id:number}[];

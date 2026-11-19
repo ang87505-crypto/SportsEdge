@@ -185,3 +185,94 @@ class Round2Tests(unittest.TestCase):
         self.assertEqual(set(out['verdicts']['vs_live']), set(bt.ROUND2) - {'momentum', 'steady'})
         self.assertIn('combined-nocap-full', out['verdicts']['vs_spy'])
         self.assertIn('vs_spy', bt.markdown(out))
+
+
+class Round3Tests(unittest.TestCase):
+    """Whole-share replay of the frozen hold-buffer challenger (docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md)."""
+
+    def _series(self, raw, adj=None, end=date(2026, 11, 30)):
+        days = [r['date'] for r in calendar_rows(end)]
+        o = [raw(i) for i in range(len(days))]
+        a = [adj(i) for i in range(len(days))] if adj else o
+        b = {'d': days, 'o': o, 'c': o, 'v': [5e6] * len(days), 'ao': a, 'ac': a}
+        uni = {'max_last_close': '95', 'securities': [{'symbol': 'AAA', 'sector': 'X', 'first_traded_on': '2015-01-02'}]}
+        sessions, series = bt.align({'sessions': days, 'bars': {'AAA': b}})
+        decisions = [i for i in range(bt.WINDOW, len(sessions)) if bt.is_decision(sessions, i, 'weekly')]
+        return sessions, series, uni, decisions, o
+
+    def test_whole_shares_buy_floor_of_ten_percent(self):
+        sessions, series, uni, ks, o = self._series(lambda i: 40.0 + 0.01 * i)
+        k = ks[0]
+        r = bt.replay(sessions, series, uni, bt.ROUND3[bt.CURRENT], start=sessions[k], end=sessions[k])
+        self.assertAlmostEqual(r['traded'], 2 * o[k], places=9, msg='floor($100 / ~$42.5) = 2 shares, not $100')
+        frac = bt.replay(sessions, series, uni, bt.ROUND3['current-fractional'], start=sessions[k], end=sessions[k])
+        self.assertAlmostEqual(frac['traded'], 100.0, places=9)
+        self.assertLess(r['avg_exposure'], frac['avg_exposure'])
+
+    def test_a_stock_above_the_budget_or_cap_is_not_bought(self):
+        sessions, series, uni, ks, _ = self._series(lambda i: 101.0 + 0.01 * i)
+        k = ks[0]
+        r = bt.replay(sessions, series, uni, bt.ROUND3[bt.CURRENT], start=sessions[k], end=sessions[-1])
+        self.assertEqual(r['traded'], 0.0, 'above the $95 cap: never eligible')
+
+    def test_a_split_is_not_a_trade(self):
+        # Raw price halves at index s (2-for-1); the all-adjusted series is continuous.
+        split = None
+        sessions0, *_ = self._series(lambda i: 80.0)
+        decisions = [i for i in range(bt.WINDOW, len(sessions0)) if bt.is_decision(sessions0, i, 'weekly')]
+        split = decisions[0] + 2
+        raw = lambda i: (70.0 + 0.01 * i) / (2 if i >= split else 1)
+        adj = lambda i: (70.0 + 0.01 * i) / 2
+        sessions, series, uni, ks, o = self._series(raw, adj)
+        r = bt.replay(sessions, series, uni, bt.ROUND3[bt.CURRENT], start=sessions[ks[0]], end=sessions[ks[1]])
+        self.assertAlmostEqual(r['traded'], 1 * o[ks[0]], places=9,
+                               msg='1 share at ~$72 becomes 2 after the split; the target at ~$36 is floor($100/$36) = 2, so no trade')
+        self.assertEqual(r['decisions'], 2)
+
+    def test_the_buffer_keeps_a_held_stock_ranked_six_to_ten_and_the_live_rules_sell_it(self):
+        sectors = {f'S{i}': f'X{i}' for i in range(12)}
+        scores = {f'S{i}': {'eligible': True, 'trend': True, 'momentum': 1.0 - i / 20, 'last_raw': 50.0} for i in range(12)}
+        held = {'S7'}
+        live = bt.select(scores, sectors, held, bt.ROUND3[bt.CURRENT], 95.0)
+        challenger = bt.select(scores, sectors, held, bt.ROUND3[bt.CHALLENGER], 95.0)
+        self.assertNotIn('S7', live)
+        self.assertIn('S7', challenger)
+        self.assertEqual(challenger, ['S7', 'S0', 'S1', 'S2', 'S3'])
+        self.assertNotIn('S11', bt.select(scores, sectors, {'S11'}, bt.ROUND3[bt.CHALLENGER], 95.0), 'rank 12 is outside the buffer')
+
+    def test_the_preregistered_round3_rule(self):
+        def row(dev, hold, dd, turn, s25):
+            return {'dev': {'sharpe': dev}, 'holdout': {'sharpe': hold, 'max_drawdown': dd}, 'turnover_per_year': turn,
+                    'full_at_25bps': {'sharpe': s25}}
+        base = row(0.5, 0.6, -0.11, 12.0, 0.45)
+        spy = {'dev': {'sharpe': 0.6}, 'holdout': {'sharpe': 1.3}}
+        out = lambda ch, m=spy: {'variants': {bt.CURRENT: base, bt.CHALLENGER: ch}, 'matched_spy': {bt.CHALLENGER: m}}
+        v = bt.verdicts_round3(out(row(0.6, 0.7, -0.12, 5.0, 0.55)))
+        self.assertEqual((v['verdict'], v['registry_status']), ('BEATS_CURRENT_BELOW_MATCHED_SPY', 'RUNNING'))
+        v = bt.verdicts_round3(out(row(0.7, 1.4, -0.12, 5.0, 0.55)))
+        self.assertEqual((v['verdict'], v['registry_status']), ('PROMISING', 'PROMISING'))
+        self.assertEqual(bt.verdicts_round3(out(row(0.6, 0.6, -0.12, 5.0, 0.55)))['verdict'], 'REJECTED', 'a tie is not better')
+        self.assertEqual(bt.verdicts_round3(out(row(0.6, 0.7, -0.17, 5.0, 0.55)))['verdict'], 'REJECTED', 'drawdown > 5 points worse')
+        self.assertEqual(bt.verdicts_round3(out(row(0.6, 0.7, -0.12, 13.0, 0.55)))['verdict'], 'REJECTED', 'more turnover')
+        self.assertEqual(bt.verdicts_round3(out(row(0.6, 0.7, -0.12, 5.0, 0.40)))['verdict'], 'REJECTED', 'fails at 25 bps')
+        self.assertEqual(bt.verdicts_round3(out(row(0.7, 1.4, -0.12, 5.0, 0.55), {}))['verdict'], 'BEATS_CURRENT_BELOW_MATCHED_SPY',
+                         'a missing benchmark is a failure of R3, never a pass')
+
+    def test_round3_runs_end_to_end_with_matched_spy(self):
+        data = fixture_data('2026-12-28')
+        data['bars']['SPY'] = dict(data['bars']['S10'])
+        out = bt.evaluate(data, universe() | {'max_last_close': '95', 'revision': 'fixture'}, end=data['sessions'][-1], round_=3)
+        self.assertEqual(out['round'], 3)
+        self.assertEqual(set(out['variants']), set(bt.ROUND3))
+        self.assertEqual(set(out['matched_spy']), {bt.CURRENT, bt.CHALLENGER})
+        for name in out['matched_spy']:
+            for p, m in out['matched_spy'][name].items():
+                self.assertAlmostEqual(m['weight'], out['variants'][name]['exposure_by_period'][p])
+        self.assertIn(out['verdicts']['verdict'], {'PROMISING', 'BEATS_CURRENT_BELOW_MATCHED_SPY', 'REJECTED'})
+        md = bt.markdown(out)
+        self.assertIn('Pre-registered verdict', md)
+        self.assertIn('SPY at challenger-holdrank10 exposure', md)
+
+    def test_rounds_one_and_two_are_unchanged_by_round_three(self):
+        self.assertEqual(bt.ROUND3['current-fractional'], bt.VARIANTS['momentum'])
+        self.assertEqual(bt.ROUND3['challenger-fractional'], bt.VARIANTS['momentum-buffer10'])
