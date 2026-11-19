@@ -115,7 +115,7 @@ async function EnginePanel(){
   {e.whyNoCandidate?<p className="home-panel-note"><strong>Why nothing qualifies yet:</strong> {e.whyNoCandidate}</p>:null}
   {e.forward.map(f=><div key={f.id}>
    <p className="small-print"><strong>Forward test: {f.candidate}</strong> vs {f.baseline} (frozen predictions before lock, production review gate) <Badge tone={ENGINE_TONE[f.status]}>{f.status.replaceAll('_',' ').toLowerCase()}</Badge></p>
-   <ul className="evidence-list">{f.progress.map(p=><li key={p.label}><span>{p.label}</span><span><strong>{p.have}</strong> / {p.need}</span></li>)}</ul>
+   <ul className="evidence-list">{f.progress.map(p=><li key={p.label}><span>{p.label}</span><span><strong>{p.have??'—'}</strong> / {p.need}</span></li>)}</ul>
   </div>)}
   {e.readyForReview.length?<ul className="evidence-list">{e.readyForReview.map(x=><li key={x.id}><span><strong>{x.id}</strong><br/><small className="quiet">{x.why}</small></span><Badge tone="positive">ready for review</Badge></li>)}</ul>:null}
   <Details title={`Still collecting evidence (${e.collecting.length})`}>

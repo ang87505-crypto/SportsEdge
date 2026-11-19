@@ -153,8 +153,8 @@ try{
     const rep=pair(e.forward!,ledger.preds,ledger.grades,now);
     const res=forwardResult(e.forward!,rep,now);
     const n=nextStatus(e,res);
-    const inFp=fingerprint({spec:e.forward,rows:rep.rows,stale:res.details.stale});
-    const t=transition(reg,e.id,n.to,n.reason,now,inFp,res.details,res.disposition);reg=t.registry;
+    const inFp=fingerprint({format:'forward-result-v2',spec:e.forward,rows:rep.rows,stale:res.details.stale});
+    const t=transition(reg,e.id,n.to,n.reason,now,inFp,{...res,...res.details},res.disposition);reg=t.registry;
     (report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:t.changed,reason:n.reason,details:res.details});
    }
   }
