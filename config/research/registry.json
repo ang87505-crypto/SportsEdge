@@ -233,7 +233,9 @@
     {
       "id": "holdrank10-wholeshare-2026-11-19",
       "strategy": "stock-weekly-holdrank10-wholeshare-v1",
-      "status": "registered",
+      "status": "complete",
+      "verdict": "BEATS_CURRENT_BELOW_MATCHED_SPY",
+      "result_ref": "run 44602976829; research/stock_challenger_holdrank10_20261119/results.json; docs/STOCK_CHALLENGER_HOLDRANK10_RESULTS_2026_11_19.md",
       "mode": "historical-exploratory",
       "prereg": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md"
     }

@@ -146,7 +146,8 @@ test('forward evaluation uses the production gate unchanged and has no write, or
 test('a restored registry adopts a newly seeded experiment once, keeps its pre-registration, and refuses a rejected idea', () => {
   const NEW = 'lab-stock-holdrank10-wholeshare';
   const seed = JSON.parse(readFileSync(new URL(SEED, ROOT), 'utf8'));
-  assert.equal(seed.experiments.find(e => e.id === NEW)?.status, 'PROPOSED', 'the challenger is pre-registered in the seed');
+  const seeded = seed.experiments.find(e => e.id === NEW);
+  assert.equal(seeded?.history[0].to, 'PROPOSED', 'the challenger was pre-registered in the seed before its result');
   const dir = tmp(), state = join(dir, 'state');
   execFileSync('mkdir', ['-p', state]);
   writeFileSync(join(state, 'registry.json'), JSON.stringify({...seed, experiments: seed.experiments.filter(e => e.id !== NEW)}));
@@ -154,8 +155,8 @@ test('a restored registry adopts a newly seeded experiment once, keeps its pre-r
   assert.equal(a.code, 0);
   assert.deepEqual(a.report.seed, {adopted: [NEW], refused: []});
   const got = a.reg.experiments.find(e => e.id === NEW);
-  assert.equal(got.status, 'PROPOSED');
-  assert.deepEqual(got.history, seed.experiments.find(e => e.id === NEW).history, 'seed history kept, nothing invented');
+  assert.equal(got.status, seeded.status);
+  assert.deepEqual(got.history, seeded.history, 'seed history kept, nothing invented');
   const b = run(dir, {state});
   assert.equal(b.summary.registryChanged, false, 'adopted once; a repeat run changes nothing');
   // An idea the restored state already rejected under another id is never re-adopted from the seed.
