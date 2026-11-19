@@ -15,7 +15,7 @@ export type ForwardSpec={kind:'ledger-models';candidate:string;baseline:string;m
 export type FrozenPrediction={key:string;eventId:string;date:string;stat:Stat;model:string;predictedAt:string;lockAt:string;p:Probabilities;recordedAt:string;dataCutoff:string};
 export type Grade={key:string;outcome:'more'|'less'|'tie';gradedAt:string};
 
-export type PairingReport={rows:EvaluationRow[];refusedAfterLock:number;invalidPredictions:number;invalidGrades:number;metadataConflicts:number;unpaired:number;ungraded:number;latestCandidateAt:string|null};
+export type PairingReport={rows:EvaluationRow[];refusedAfterLock:number;invalidPredictions:number;excludedBeforeRegistration:number;invalidGrades:number;metadataConflicts:number;unpaired:number;ungraded:number;latestCandidateAt:string|null};
 
 export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],nowIso:string):PairingReport{
  const now=Date.parse(nowIso);if(!Number.isFinite(now))throw Error('ENGINE_BAD_CLOCK');
@@ -26,14 +26,15 @@ export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],no
   const old=g.get(grade.key);if(!old||Date.parse(grade.gradedAt)>Date.parse(old.gradedAt))g.set(grade.key,grade);
  }
  const by=new Map<string,{c?:FrozenPrediction;b?:FrozenPrediction}>();
- let refusedAfterLock=0,invalidPredictions=0,metadataConflicts=0,latest:string|null=null;
+ let refusedAfterLock=0,invalidPredictions=0,excludedBeforeRegistration=0,metadataConflicts=0,latest:string|null=null;
  for(const p of preds){
   if(p.model!==spec.candidate&&p.model!==spec.baseline)continue;
   const predicted=Date.parse(p.predictedAt),lock=Date.parse(p.lockAt),recorded=Date.parse(p.recordedAt),cutoff=Date.parse(p.dataCutoff);
   if(!p.key||!p.eventId||!/^\d{4}-\d{2}-\d{2}$/.test(p.date)||!['points','rebounds','assists'].includes(p.stat)||
    ![predicted,lock,recorded,cutoff].every(Number.isFinite)||predicted>now||recorded>predicted||cutoff>predicted||!validProbabilities(p.p)){invalidPredictions++;continue;}
   if(!(predicted<lock)){refusedAfterLock++;continue;}
-  if(spec.notBefore&&(!Number.isFinite(Date.parse(spec.notBefore))||predicted<Date.parse(spec.notBefore))){invalidPredictions++;continue;}
+  if(spec.notBefore&&!Number.isFinite(Date.parse(spec.notBefore))){invalidPredictions++;continue;}
+  if(spec.notBefore&&predicted<Date.parse(spec.notBefore)){excludedBeforeRegistration++;continue;}
   const slot=by.get(p.key)??{};
   const k=p.model===spec.candidate?'c':'b';
   if(!slot[k]){                    // first frozen prediction wins; later revisions never replace it
@@ -50,7 +51,7 @@ export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],no
   if(Date.parse(grade.gradedAt)<=Date.parse(s.c.lockAt)){invalidGrades++;continue;}
   rows.push({key,eventId:s.c.eventId,date:s.c.date,stat:s.c.stat,baseline:s.b.p,candidate:s.c.p,outcome:grade.outcome});
  }
- return {rows,refusedAfterLock,invalidPredictions,invalidGrades,metadataConflicts,unpaired,ungraded,latestCandidateAt:latest};
+ return {rows,refusedAfterLock,invalidPredictions,excludedBeforeRegistration,invalidGrades,metadataConflicts,unpaired,ungraded,latestCandidateAt:latest};
 }
 
 /** Turn paired frozen predictions into an engine Result, using the production review gate unchanged. */
@@ -59,7 +60,7 @@ export function forwardResult(spec:ForwardSpec,report:PairingReport,nowIso:strin
  const ev=evaluateChallenger(report.rows,gate);
  const details={candidate:spec.candidate,baseline:spec.baseline,pairs:report.rows.length,dates:ev.dates,games:ev.games,
   candidateBrier:ev.candidate.brier,baselineBrier:ev.baseline.brier,interval:ev.interval,failed:ev.failed,
-  refusedAfterLock:report.refusedAfterLock,invalidPredictions:report.invalidPredictions,invalidGrades:report.invalidGrades,metadataConflicts:report.metadataConflicts,
+  refusedAfterLock:report.refusedAfterLock,invalidPredictions:report.invalidPredictions,excludedBeforeRegistration:report.excludedBeforeRegistration,invalidGrades:report.invalidGrades,metadataConflicts:report.metadataConflicts,
   unpaired:report.unpaired,ungraded:report.ungraded,latestCandidateAt:report.latestCandidateAt,stale};
  const base={evidence:'forward' as const,observations:report.rows.length,dates:ev.dates,clusters:ev.games,decisions:ev.candidate.decisions,details};
  if(stale)return {...base,disposition:'ERROR',reason:`STALE_CANDIDATE: no frozen ${spec.candidate} prediction within ${spec.maxStaleDays} days (latest ${report.latestCandidateAt??'none'}).`};

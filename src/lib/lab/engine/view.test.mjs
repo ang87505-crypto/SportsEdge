@@ -27,3 +27,12 @@ test('forward progress and job history come from the recorded files only', () =>
   assert.ok(v.jobs.every(j => j.status && j.run));
   assert.ok(v.sources.connected.includes('sec-edgar-companyfacts'), 'connected only after the verified collection run');
 });
+
+test('live detail-format results show actual paired counts; missing legacy decision counts remain unknown',()=>{
+ const copy=structuredClone(reg),e=copy.experiments.find(e=>e.id==='props-learn-v1-shadow');
+ e.result={pairs:422,dates:8,games:15};
+ assert.deepEqual(engineView(copy).forward.find(f=>f.id===e.id).progress.map(p=>p.have),[422,8,15,null]);
+ e.result={observations:422,dates:8,clusters:15,decisions:49};
+ assert.deepEqual(engineView(copy).forward.find(f=>f.id===e.id).progress.map(p=>p.have),[422,8,15,49]);
+ e.result=null;assert.ok(engineView(copy).forward.find(f=>f.id===e.id).progress.every(p=>p.have===null));
+});

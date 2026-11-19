@@ -30,3 +30,8 @@ test('invalid sample sizes cannot qualify, and malformed or premature grades can
  assert.equal(sportsQuality([row],at).issues[0].code,'INVALID_TIMESTAMP');
  assert.equal(sportsQuality([{...row,gradedAt:'2026-11-18T20:00:00Z'}],at).issues[0].code,'GRADE_BEFORE_LOCK');
 });
+
+test('valid predictions before a challenger registration are excluded without being called corrupt',()=>{
+ const r=pair({...spec,notBefore:'2026-11-18T17:00:00Z'},[base,candidate],[grade],at);
+ assert.equal(r.rows.length,0);assert.equal(r.excludedBeforeRegistration,2);assert.equal(r.invalidPredictions,0);
+});

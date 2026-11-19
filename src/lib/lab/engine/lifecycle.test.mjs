@@ -11,6 +11,7 @@ import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {pair,forwardResult} from './forward.ts';
 import {seeded} from '../stats.ts';
+import {fingerprint} from './experiments.ts';
 
 const ROOT = new URL('../../../../', import.meta.url);
 const SEED = 'research/engine/registry.json';
@@ -69,6 +70,21 @@ test('insufficient forward sample → INSUFFICIENT_DATA; nothing is proposed or 
   assert.equal(r.exp.status, 'INSUFFICIENT_DATA');
   assert.match(r.report.forward[0].reason, /below the registered minimums/);
   assert.equal(r.report.forward[0].details.pairs, 120);
+  assert.equal(r.exp.result.observations,120);
+  assert.equal(r.exp.result.clusters,60);
+  assert.equal(r.exp.result.decisions,120);
+});
+
+test('an old flat result is refreshed once into complete progress fields, then identical input is idempotent',()=>{
+ const f=fixture(120,'candidate'),a=run(tmp(),{fwd:f});
+ const rep=pair(a.exp.forward,f.predictions,f.grades,'2026-11-28T00:00:00Z');
+ a.exp.result=a.report.forward[0].details;
+ a.exp.history.at(-1).inputFingerprint=fingerprint({spec:a.exp.forward,rows:rep.rows,stale:false});
+ const dir=tmp(),path=join(dir,'legacy-registry.json');writeFileSync(path,JSON.stringify(a.reg));
+ const b=run(dir,{registry:path,fwd:f});assert.equal(b.summary.registryChanged,true);
+ assert.equal(b.exp.result.observations,120);assert.equal(b.exp.result.clusters,60);assert.equal(b.exp.result.decisions,120);
+ const c=run(dir,{registry:path,fwd:f});assert.equal(c.summary.registryChanged,false);
+ assert.equal(c.exp.history.length,b.exp.history.length);
 });
 
 test('challenger meeting the production gate → READY_FOR_REVIEW (owner review), and a repeat run on the same data changes nothing', () => {
