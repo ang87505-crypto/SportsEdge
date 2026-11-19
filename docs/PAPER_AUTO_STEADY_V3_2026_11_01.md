@@ -65,6 +65,9 @@ signal keeps the `stock-forward-signal-v1` format, with `variant.selection` set 
   - then makes one decision per registered experiment;
   - one experiment's failure never stops the other's decision, but the run still fails.
 - **Owner workflow:** passes both pairs, and the worker picks the right one.
+- **Backups (merged 2026-11-19):** the Vercel worker backups and the early-Monday decision kickoff send
+  `experiment: all`. Both workflows expand it to every listed experiment and skip one that isn't
+  registered or configured yet, so both strategies get the same backup coverage.
 
 **Autopilot page**
 - When two or more strategies are registered, a "Your strategies" table shows each one plus
