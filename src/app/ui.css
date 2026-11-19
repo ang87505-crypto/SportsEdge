@@ -294,3 +294,15 @@ label { display: grid; gap: 6px; color: var(--text-2); font-size: var(--fs-sm); 
 .metric-value.tone-text-positive, .data-table .tone-text-positive, .kv .tone-text-positive { color: var(--pos); }
 .metric-value.tone-text-negative, .data-table .tone-text-negative, .kv .tone-text-negative { color: var(--neg); }
 .metric-value.tone-text-warning, .data-table .tone-text-warning { color: var(--warn); }
+
+/* Touch targets (WCAG 2.5.8, 24 px): standalone text links (panel and footer actions) get a 24 px tall hit area.
+   Links inside running text are exempt and keep their inline layout. */
+.app-footer a,
+.home-panel-foot .text-link,
+.progress-record-foot .text-link,
+.button-row .text-link,
+.section-header-actions .text-link,
+.page-heading-actions .text-link,
+.panel-head-actions .text-link { display: inline-flex; align-items: center; min-height: 24px; }
+.check-label { min-height: 24px; }
+.check-label input[type="checkbox"] { width: 18px; height: 18px; margin: 3px; }

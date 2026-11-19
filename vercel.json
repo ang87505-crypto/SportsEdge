@@ -1,8 +1,127 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/internal/paper-auto/kickoff",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-settle-morning",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-settle-midday",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-collect-early",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-collect-late",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-13",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-15",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-17",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-19",
+      "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-21",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-23",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-01",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-14",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-16",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-18",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-20",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-22",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-00",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-tick-02",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/research-collect",
+      "schedule": "0 4 * * 2-6"
+    },
+    {
+      "path": "/api/internal/scheduler/ops-monitor",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-plan",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/daily-shadow-grade",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-early",
+      "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-midday",
+      "schedule": "0 16 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-execute-late",
+      "schedule": "0 18 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-monitor",
+      "schedule": "0 22 * * 1-5"
+    },
+    {
+      "path": "/api/internal/scheduler/props-learn-weekly",
+      "schedule": "0 16 * * 0"
+    }
+  ],
   "git": {
     "deploymentEnabled": {
-      "claude/**": false
+      "claude/**": false,
+      "ops-status": false,
+      "research-data": false,
+      "research/**": false,
+      "docs/**": false,
+      "audit/**": false
     }
   }
 }

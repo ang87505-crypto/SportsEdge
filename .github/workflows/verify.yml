@@ -38,7 +38,13 @@ jobs:
         run: node --experimental-strip-types --test src/lib/stocks/journal.test.mjs src/lib/stocks/journal-backup.test.mjs
       - name: Check stock PAPER dashboard diagnostic safety
         run: node --experimental-strip-types --test src/lib/stocks/alpaca-paper-ui-diagnostics.test.mjs src/components/alpaca-paper-ui-guard.test.mjs
+      - name: Constant-time bearer checks for token-protected internal routes
+        run: node --experimental-strip-types --test src/lib/server/bearer.test.mjs
       - name: Lint code
         run: npm run lint
       - name: Production build
         run: npm run build
+      - name: Owner sign-in HTTP flow (isolated synthetic key, no broker or database)
+        run: node scripts/owner-sign-in-smoke.mjs
+      - name: Shared assistant HTTP flow (isolated local server)
+        run: node scripts/assistant-http-smoke.mjs

@@ -1,0 +1,33 @@
+{
+  "id": "props-calibration-study-20261108-v1",
+  "registration": "The protocol, candidate parameters and evidence must be committed before forwardStartsAt; the Git commit provides the registration timestamp.",
+  "forwardStartsAt": "2026-11-08T19:00:00Z",
+  "baseline": "props-nb-minutes-rate-v1",
+  "candidate": "props-temperature-v2",
+  "hypothesis": "A fixed, per-stat temperature fitted on a chronological calibration window reduces the baseline's probability overconfidence on later games.",
+  "temperatureGrid": [1, 1.25, 1.5, 2, 3],
+  "dispersionFitThrough": "2025-12-31",
+  "calibrationFrom": "2026-01-01",
+  "calibrationThrough": "2026-01-31",
+  "historicalConfirmationFrom": "2026-02-01",
+  "selectionMetric": "Mean logarithmic loss within the calibration window, independently per stat; lower temperature wins exact ties.",
+  "historicalLimit": "Proxy thresholds, not archived DFS lines. The baseline's aggregate results on this season have already been inspected. This is retrospective confirmation, not a new untouched holdout or profit test.",
+  "forwardUnit": "First valid pre-lock observation per event, athlete, stat and exact line, deduplicated across platforms, within the displayed rolling 90-day window. Latest result revision; no ties or DNPs counted as directional losses. Distinct forward dates use America/New_York NBA slate dates.",
+  "forwardReviewGate": {
+    "minGradedLines": 500,
+    "minDates": 14,
+    "minGames": 50,
+    "minCandidateDecisions": 100,
+    "maxBrierDifferenceUpper95": -0.002,
+    "bootstrapReplicates": 1000,
+    "bootstrapSeed": 20261108,
+    "requireNoWorseLogLoss": true
+  },
+  "promotion": "Review only. No automatic model promotion, live wager, budget increase, or change to the frozen v1 ledger. Passing this probability-quality gate is not proof of profitability.",
+  "deferredHypotheses": ["Timestamped injury and starting-lineup inputs", "Playing-time and role-change forecasts", "Opponent, pace and rest adjustments"],
+  "sourceHashes": {
+    "player_box_2025.csv": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+    "player_box_2026.csv": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+  },
+  "references": ["https://proceedings.mlr.press/v70/guo17a.html", "https://github.com/sportsdataverse/sportsdataverse-data/releases/tag/espn_nba_player_boxscores"]
+}

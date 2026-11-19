@@ -9,6 +9,7 @@ import {AlpacaPaperFirstTestDraft} from '@/components/alpaca-paper-first-test-dr
 import {AlpacaPaperOneOrder} from '@/components/alpaca-paper-one-order';
 import {AlpacaPaperPerformanceEvidence} from '@/components/alpaca-paper-performance-evidence';
 import {isPaperSnapshot,type PaperSnapshot} from '@/lib/stocks/paper-snapshot';
+import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
 
 type ViewStatus='checking'|'login'|'ready'|'unconfigured'|'error';
 const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -52,7 +53,8 @@ export function AlpacaPaperDashboard() {
   async function signIn(e:FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if(working)return;
-    const ownerKey=ownerKeyRef.current?.value??'';
+    const ownerKey=ownerKeyInput(ownerKeyRef.current?.value??'');
+    if(!ownerKey){setMessage(OWNER_KEY_HINT);return;}
     if(ownerKeyRef.current)ownerKeyRef.current.value='';
     setWorking(true);setMessage('');
     try {
@@ -61,13 +63,8 @@ export function AlpacaPaperDashboard() {
         cache:'no-store',credentials:'same-origin',body:JSON.stringify({ownerKey})
       });
       if(!res.ok){
-        setMessage(res.status===401
-          ? 'This key does not match the owner key in this Preview deployment. If you edited the Vercel Preview variable, deploy again and paste that exact 64-character key. Do not use your Alpaca or diagnostic keys.'
-          : res.status===503
-            ? 'Owner access is not configured in this Preview build. Check the variable name, 64-character hex value and Preview/branch scope, then deploy again.'
-            : res.status===403
-              ? 'Preview sign-in was blocked by an origin check. Open the exact Vercel Preview site rather than another domain.'
-              : 'Owner access is temporarily unavailable. Check the protected Preview deployment.');
+        const data=await res.json().catch(()=>null) as {reason?:unknown}|null;
+        setMessage(ownerSignInError(res.status,data?.reason));
         return;
       }
       await refresh();
@@ -87,11 +84,11 @@ export function AlpacaPaperDashboard() {
         <div><h2>Owner access</h2><p>Balances, positions and order controls are private. Unlock with the separate SportsEdge dashboard owner key.</p></div>
       </div>
       {status==='checking'&&<p role="status" className="quiet">Checking whether this browser has owner access…</p>}
-      {status==='unconfigured'&&<div className="notice" role="status"><strong>Owner sign-in not set up yet.</strong> Add the separate dashboard owner key to the Preview environment in Vercel. Alpaca broker keys never belong in your browser.</div>}
+      {status==='unconfigured'&&<div className="notice" role="status"><strong>Owner sign-in not set up yet.</strong> Add the SportsEdge dashboard owner key to this deployment&apos;s environment in Vercel, then redeploy.</div>}
       {(status==='login'||status==='error')&&<form onSubmit={signIn} className="owner-form" autoComplete="off">
         <label>Private SportsEdge dashboard owner key
-          <input type="password" name="ownerKey" ref={ownerKeyRef} minLength={64} maxLength={64} autoComplete="off" spellCheck={false} required placeholder="64-character owner key"/>
-          <span className="field-hint">Not your Alpaca credentials, Vercel bypass or diagnostic token. Used for this request only and never saved in the browser.</span>
+          <input type="password" name="ownerKey" ref={ownerKeyRef} autoComplete="off" spellCheck={false} required placeholder="64-character SportsEdge owner key"/>
+          <span className="field-hint">{OWNER_KEY_HINT} Surrounding spaces are ignored. The key is never saved in the browser.</span>
         </label>
         <button className="button" type="submit" disabled={working}>{working?'Checking…':'Unlock paper dashboard'}</button>
       </form>}

@@ -30,7 +30,7 @@ export default function Stocks(){
    <PaperPortfolio view={paper}/>
    <Panel title="Autopilot" description="Weekly picks traded on the Alpaca paper account" className="automation-panel">
     <AutopilotSummary/>
-    <Link href="/stocks/alpaca#alpaca-staging-stop-title" className="estop-link"><span className="estop-icon" aria-hidden="true"/><span><strong>Emergency stop</strong><small>Owner-only staging STOP on the paper account page</small></span></Link>
+    <Link href="/stocks/paper-auto" className="estop-link"><span className="estop-icon" aria-hidden="true"/><span><strong>Stop stock autopilot</strong><small>Owner-only Stop on the recurring autopilot page</small></span></Link>
    </Panel>
   </div>
 

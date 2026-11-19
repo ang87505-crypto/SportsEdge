@@ -60,6 +60,19 @@ test('a second account that is not set up yet: manual runs fail, scheduled runs 
  assert.deepEqual([r.code,r.out.status,r.out.keyPair,r.out.brokerCalls],[1,'NOT_CONFIGURED',2,0]);
  r=run(['monitor','--experiment','stock-v3-steady-weekly-1'],{...SETTINGS,GITHUB_EVENT_NAME:'schedule'});
  assert.deepEqual([r.code,r.out.status],[0,'NOT_CONFIGURED_SKIP']);
+ r=run(['execute','--experiment','stock-v3-steady-weekly-1'],
+  {...SETTINGS,GITHUB_EVENT_NAME:'workflow_dispatch',SPORTSEDGE_WORKER_TRIGGER:'backup'});
+ assert.deepEqual([r.code,r.out.status],[0,'NOT_CONFIGURED_SKIP'],'a Vercel backup counts as scheduled');
  r=run(['resume','--experiment','stock-v3-steady-weekly-1'],{...SETTINGS,...OWNER});
  assert.deepEqual([r.code,r.out.status],[1,'NOT_CONFIGURED'],'owner actions never borrow the first account');
+});
+
+test('a Vercel backup dispatch counts as a scheduled run: owner commands refused, unknown triggers rejected',()=>{
+ const backup={GITHUB_EVENT_NAME:'workflow_dispatch',SPORTSEDGE_WORKER_TRIGGER:'backup'};
+ let r=run(['resume','--experiment','stock-v2-weekly-1'],{...SETTINGS,...OWNER,...backup});
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
+ r=run(['register','--experiment','stock-v2-weekly-1'],{...SETTINGS,...OWNER,...backup});
+ assert.deepEqual([r.code,r.out.status],[1,'OWNER_ACTION_NOT_SCHEDULABLE']);
+ r=run(['execute','--experiment','stock-v2-weekly-1'],{...SETTINGS,GITHUB_EVENT_NAME:'workflow_dispatch',SPORTSEDGE_WORKER_TRIGGER:'cron'});
+ assert.deepEqual([r.code,r.out.status],[2,'USAGE']);
 });

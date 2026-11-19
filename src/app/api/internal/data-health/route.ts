@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { isSupabaseConfigured, readSportsConnection } from "@/lib/server/supabase-admin";
+import { bearerMatches } from "@/lib/server/bearer";
 
 export async function GET(request: Request) {
   // Keep privileged health checks inaccessible to anonymous internet visitors.
-  const token = process.env.SPORTSEDGE_HEALTH_TOKEN;
-  const supplied = request.headers.get("authorization");
-  if (!token || !supplied || supplied !== `Bearer ${token}`) {
+  if (!bearerMatches(request.headers.get("authorization"), process.env.SPORTSEDGE_HEALTH_TOKEN)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (!isSupabaseConfigured()) {

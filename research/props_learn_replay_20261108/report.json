@@ -1,0 +1,140 @@
+{
+ "generatedBy": "scripts/props-learn-replay.ts",
+ "layer1": "props-nb-minutes-rate-v1",
+ "candidate": "props-learn (matchup terms only; no historical sportsbook data)",
+ "design": "Layer-1 priors from 2024-25; dispersion and learning weights fit on 2025-26 games through 2025-12-31; scored on 2026-01-01 onward against proxy lines. Paired game-level bootstrap (1,000 replicates, seed 20261108); negative Brier difference favours the learning layer.",
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+  }
+ ],
+ "train": {
+  "from": "2025-10-27",
+  "to": "2025-12-31",
+  "rows": 26379
+ },
+ "test": {
+  "from": "2026-01-01",
+  "to": "2026-04-13",
+  "rows": 45216
+ },
+ "leakage": {
+  "checked": 90588564,
+  "violations": 0
+ },
+ "dispersion": {
+  "points": 8.5613,
+  "rebounds": 24.6497,
+  "assists": 23.1022
+ },
+ "artifactSha256": "10e7eea1909872bc192390bce36fa819ed59457df1185163abf597ed11d7ddb2",
+ "byStat": {
+  "points": {
+   "n": 15072,
+   "layer1": {
+    "brier": 0.24803,
+    "logLoss": 0.6976,
+    "hitRate": 0.57418,
+    "decisions": 6853,
+    "decisionHitRate": 0.60937
+   },
+   "learn": {
+    "brier": 0.24263,
+    "logLoss": 0.6785,
+    "hitRate": 0.56986,
+    "decisions": 4230,
+    "decisionHitRate": 0.64681
+   },
+   "brierDifference95": {
+    "lower95": -0.00677,
+    "upper95": -0.00401,
+    "games": 739
+   },
+   "weights": {
+    "bias": -0.13474,
+    "stats_logit": 0.50343,
+    "books_logit": 0,
+    "books_present": 0,
+    "line_gap_books": 0,
+    "opp_allowed_ratio": 0.20169,
+    "home": 0.03838,
+    "rest_days": -0.00625,
+    "back_to_back": -0.02122
+   },
+   "lambda": 10
+  },
+  "rebounds": {
+   "n": 15072,
+   "layer1": {
+    "brier": 0.23749,
+    "logLoss": 0.66818,
+    "hitRate": 0.59455,
+    "decisions": 6885,
+    "decisionHitRate": 0.64851
+   },
+   "learn": {
+    "brier": 0.23539,
+    "logLoss": 0.66318,
+    "hitRate": 0.5982,
+    "decisions": 6795,
+    "decisionHitRate": 0.66122
+   },
+   "brierDifference95": {
+    "lower95": -0.0027,
+    "upper95": -0.00152,
+    "games": 739
+   },
+   "weights": {
+    "bias": -0.096,
+    "stats_logit": 0.87049,
+    "books_logit": 0,
+    "books_present": 0,
+    "line_gap_books": 0,
+    "opp_allowed_ratio": 1.53989,
+    "home": -0.02025,
+    "rest_days": 0.01871,
+    "back_to_back": -0.00253
+   },
+   "lambda": 1
+  },
+  "assists": {
+   "n": 15072,
+   "layer1": {
+    "brier": 0.23286,
+    "logLoss": 0.65788,
+    "hitRate": 0.60689,
+    "decisions": 7948,
+    "decisionHitRate": 0.65211
+   },
+   "learn": {
+    "brier": 0.2317,
+    "logLoss": 0.65523,
+    "hitRate": 0.61087,
+    "decisions": 7866,
+    "decisionHitRate": 0.6626
+   },
+   "brierDifference95": {
+    "lower95": -0.00169,
+    "upper95": -0.00062,
+    "games": 739
+   },
+   "weights": {
+    "bias": -0.15222,
+    "stats_logit": 0.82752,
+    "books_logit": 0,
+    "books_present": 0,
+    "line_gap_books": 0,
+    "opp_allowed_ratio": 0.28345,
+    "home": 0.07229,
+    "rest_days": -0.03245,
+    "back_to_back": 0.02425
+   },
+   "lambda": 10
+  }
+ }
+}

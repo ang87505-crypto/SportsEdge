@@ -12,16 +12,17 @@ import {NavIcon} from '@/components/nav-icon';
 import {realizedSeries,type RealizedPoint} from '@/lib/performance-series';
 import {american,dateTimeUtc,pct,usdCents} from '@/lib/format';
 
-export const metadata={title:'Paper Betting · SportsEdge',description:'Shared virtual-money NBA ledger: bankroll, open and settled bets, and realized performance.'};
+export const metadata={title:'Moneyline ledger · SportsEdge',description:'The earlier NBA moneyline virtual-money ledger: bankroll, open and settled bets, and realized performance.'};
 
 export default function Page(){
  return <>
-  <PageHeading title="Paper Betting" description="A shared virtual-money NBA ledger. A bet is recorded only when the model's fixed rules qualify it, and results settle against checked final scores."
-   action={<Link href="/sports" className="button button-secondary">Browse games</Link>}/>
+  <PageHeading title="Moneyline ledger (older test)" description="The earlier NBA game-winner paper test. A bet is recorded only when the model's fixed rules qualify it, and results settle against checked final scores. The daily PrizePicks test is now the main paper system."
+   action={<Link href="/paper-betting/props" className="button">Open PrizePicks</Link>}/>
   <div className="virtual-banner" role="note">
    <span className="virtual-banner-icon"><NavIcon name="shield" size={18}/></span>
    <div><strong>Virtual money only.</strong> No sportsbook account is connected and nothing on this page can place a real wager. Balances are research records.</div>
   </div>
+  <div className="callout tone-info" style={{marginBottom:12}}><span className="callout-bar" aria-hidden="true"/><div><strong className="callout-title">Looking for PrizePicks?</strong><div className="callout-body">Daily player-prop picks, entries and results have their own page and records. Nothing below includes them. <Link href="/paper-betting/props">Open PrizePicks</Link>.</div></div></div>
   <Suspense fallback={<Loading label="Loading the paper ledger"/>}><Ledger/></Suspense>
  </>;
 }

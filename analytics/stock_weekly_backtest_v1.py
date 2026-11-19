@@ -142,7 +142,9 @@ def select(scores: dict, sectors: dict, held: set, spec: dict, price_cap: float 
 # ---------------------------------------------------------------- replay
 
 def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, start: str, end: str,
-           cost_bps: float = COST_BPS):
+           cost_bps: float = COST_BPS, adjust=None):
+    """`adjust(scores, series, k)` (research overlays only; default None = the registered rules unchanged) may mark
+    members ineligible from information before session k."""
     sectors = {u['symbol']: u['sector'] for u in universe['securities']}
     members = [s for s in sorted(sectors) if s in series]
     cap = float(universe['max_last_close']) if 'max_last_close' in universe and spec.get('price_cap', True) else None
@@ -169,6 +171,8 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
                 x = score(series[s], k, spec['lookback'])
                 if x is not None and series[s]['ao'][k] is not None:
                     scores[s] = x
+            if adjust is not None:
+                scores = adjust(scores, series, k)
             held = {s for s, u in units.items() if u > 0}
             if not held <= set(scores):
                 rejected += 1  # live: HELD_SECURITY_SKIPPED rejects the decision; hold unchanged

@@ -1,0 +1,9 @@
+{
+  "version": "props-gap-shrink-v1",
+  "protocolId": "props-gap-shrink-20261112-v1",
+  "registeredAt": "2026-11-12T07:10:00Z",
+  "forwardStartsAt": "2026-11-12T12:00:00Z",
+  "rule": {"noShrinkBelow": 0.10, "fullShrinkAt": 0.30, "minKeep": 0.25},
+  "reviewGate": {"minGradedLines": 500, "minDates": 14, "minGames": 50, "maxBrierDifferenceUpper95": -0.002,
+    "bootstrapReplicates": 1000, "bootstrapSeed": 20261112}
+}

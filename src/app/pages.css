@@ -459,3 +459,142 @@
 .autopilot-summary-lines li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .strategies-table td:nth-child(2) { white-space: nowrap; }
 @media (max-width: 560px) { .strategies-table th, .strategies-table td { padding-left: 10px; padding-right: 10px; } }
+
+/* Shared paper automation overview. */
+.automation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; margin-top: 16px; }
+.automation-grid > * { min-width: 0; margin-top: 0 !important; }
+.automation-card-body { display: grid; gap: 18px; }
+.automation-state { display: grid; gap: 8px; justify-items: start; }
+.automation-state p { margin: 0; color: var(--text-2); }
+.automation-next-action { display: grid; gap: 5px; padding: 14px; background: var(--accent-soft); border-left: 2px solid var(--accent); border-radius: var(--r-sm); }
+.automation-next-action > span { font-size: var(--fs-sm); color: var(--text-2); }
+.automation-next-action strong { font-size: var(--fs-md); font-weight: 500; }
+.automation-facts { margin: 0; display: grid; }
+.automation-facts > div { display: grid; grid-template-columns: minmax(100px, .9fr) minmax(0, 1.3fr); gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+.automation-facts dt { color: var(--text-3); }
+.automation-facts dd { margin: 0; overflow-wrap: anywhere; }
+/* Monitor blockers carry file paths and run ids that cannot wrap at spaces (390 px overflow, 2026-11-12). */
+.ops-blockers { overflow-wrap: anywhere; }
+.automation-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.automation-guide h3 { margin: 0 0 8px; font-size: var(--fs-lg); }
+.automation-guide p { margin: 0; color: var(--text-2); }
+.autopilot-release-note { margin: 0; color: var(--text-2); }
+@media (max-width: 1000px) { .automation-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .automation-guide { grid-template-columns: 1fr; gap: 18px; } }
+
+/* NBA player props: daily cycle list and sub-headings */
+.props-schedule { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+.props-schedule li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2, transparent); }
+.props-schedule li span { display: grid; }
+.props-schedule small { color: var(--text-3); }
+.props-subhead { font-size: 0.95rem; margin: 0 0 8px; }
+
+/* NBA player props: owner controls, plain steps, today's picks, home card */
+.props-control-state { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.props-unlock { display: grid; gap: 10px; max-width: 420px; }
+.props-unlock p { margin: 0; }
+.props-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--text-2); }
+.props-steps code { font-size: 0.85em; }
+.props-status-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.props-status-line p { margin: 0; color: var(--text-2); }
+.props-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.props-picks li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); }
+.props-picks li span { display: grid; min-width: 0; }
+.props-picks small { color: var(--text-3); }
+.props-picks strong.prob { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.props-weights { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
+.props-why { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+.props-why-none { display: grid; gap: 4px; }
+.props-flag-row { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; justify-self: start; }
+
+/* Ask: the props assistant chat */
+.chat { display: grid; gap: 12px; max-width: 760px; }
+.chat-thread { display: grid; gap: 10px; min-height: 280px; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2, transparent); overflow-wrap: anywhere; }
+.chat-msg { max-width: 85%; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); }
+.chat-msg p { margin: 0; line-height: 1.5; }
+.chat-msg.user { justify-self: end; background: rgba(32, 201, 120, 0.14); border-color: rgba(32, 201, 120, 0.35); }
+.chat-msg.bot { justify-self: start; background: var(--surface-3, transparent); }
+.chat-msg.pending { opacity: 0.7; }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-chip { font: inherit; font-size: var(--fs-sm); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-3); background: transparent; color: var(--text); cursor: pointer; }
+.chat-chip:hover { border-color: var(--accent); }
+.chat-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.chat-form input { flex: 1 1 220px; min-width: 0; }
+.chat-card { margin: 8px 0 0; display: grid; gap: 6px; }
+.chat-card code { white-space: normal; }
+.chat-list { list-style: none; padding: 0; }
+.chat-list li { display: grid; padding: 6px 0; border-top: 1px solid var(--line); }
+.chat-list small { color: var(--text-3); }
+/* Chat cards: tables (model comparisons, stake breakdowns) and bar charts (calibration) inside a reply. */
+.chat-card-title { margin: 0; font-size: var(--fs-xs); color: var(--text-2); text-transform: uppercase; letter-spacing: .05em; }
+.chat-table-scroll { overflow-x: auto; max-width: 100%; }
+.chat-table { border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; min-width: 100%; }
+.chat-table th, .chat-table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.chat-table thead th { border-top: 0; color: var(--text-3); font-weight: 500; font-size: var(--fs-xs); white-space: nowrap; }
+.chat-table tbody th { font-weight: 500; }
+.chat-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.chat-bars li { display: grid; grid-template-columns: minmax(90px, 34%) minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: var(--fs-sm); }
+.chat-bar-label { color: var(--text-2); }
+.chat-bar-track { position: relative; height: 10px; border-radius: 999px; background: var(--line); }
+.chat-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent); }
+.chat-bar-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); }
+.chat-bar-value { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .chat-msg { max-width: 100%; } .chat-bars li { grid-template-columns: minmax(0, 1fr) auto; } .chat-bar-track { grid-column: 1 / -1; grid-row: 2; } }
+
+/* Overview briefing: Right now / Today / Results / Next / learning. */
+.briefing-health { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 8px; margin: 0 -8px 6px; border-radius: var(--r-md); }
+.briefing-health:hover { background: var(--hover); }
+.briefing-health strong { display: block; }
+.briefing-health small { display: block; color: var(--text-2); font-size: var(--fs-xs); margin-top: 2px; }
+.briefing-health .status-dot-v2 { margin-top: 6px; }
+.briefing-approvals { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 10px; overflow-wrap: anywhere; }
+.briefing-approvals ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.briefing-approvals li span { display: block; font-size: var(--fs-sm); }
+.briefing-approvals li small { display: block; color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+.briefing-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--warn); margin: 0 0 6px; }
+.briefing-grid { margin-bottom: 12px; }
+.briefing-list { list-style: none; margin: 0; padding: 0 8px 8px; }
+.briefing-list a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-md); font-size: var(--fs-sm); }
+.briefing-list a:hover { background: var(--hover); }
+.briefing-list time, .briefing-next time { color: var(--text-3); font-size: var(--fs-xs); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.briefing-next { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.briefing-next li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 0; border-top: 1px solid var(--line); font-size: var(--fs-sm); }
+.briefing-next li:first-child { border-top: 0; padding-top: 0; }
+.briefing-learning { margin-bottom: 12px; }
+.briefing-learning-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding-bottom: 12px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .briefing-learning-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .briefing-list a { grid-template-columns: auto minmax(0, 1fr); }
+  .briefing-list time { grid-column: 2; }
+}
+/* The owner's status comes first: reasons wrap instead of truncating, and on phones the section shortcuts
+   (already in the bottom navigation) give way so "Right now" is visible without scrolling. */
+.briefing-now .status-copy small { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-width: 720px) { .home-intro .home-sections { display: none; } }
+
+/* Chat-first command center (home): summary strip, conversation + status rail, then the briefing. */
+.command { display: grid; gap: 14px; }
+.command-head h1 { margin: 0 0 4px; }
+.command-head p { margin: 0; color: var(--text-2); max-width: 70ch; }
+.command-strip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.command-strip-item { all: unset; box-sizing: border-box; display: grid; gap: 3px; width: 100%; height: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); cursor: pointer; min-width: 0; }
+.command-strip-item:hover, .command-strip-item:focus-visible { border-color: var(--accent); outline: none; }
+.command-strip-label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+.command-strip-item strong { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.command-strip-item small { color: var(--text-2); font-size: var(--fs-xs); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.command-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 14px; align-items: start; }
+.command-chat .chat { max-width: none; }
+.command-chat .chat-thread { min-height: 360px; max-height: 70vh; overflow-y: auto; }
+.lab-page > * + * { margin-top: 12px; }
+@media (max-width: 1100px) { .command-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .command-main { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .command-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .command-chat .chat-thread { max-height: none; min-height: 240px; } }
+.lab-page .home-grid > *, .lab-page section, .lab-page .panel-body { min-width: 0; }
+.lab-page .chat-table-scroll { width: 100%; }
+.lab-page .evidence-list li { gap: 10px; }
+.lab-page .evidence-list li > span:first-child { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+.lab-page .evidence-list li > .badge { flex: 0 0 auto; }
+.lab-page { min-width: 0; } .lab-page > * { min-width: 0; max-width: 100%; }
+.predictions-table tr.quiet th, .predictions-table tr.quiet td { opacity: .6; }
+/* A status badge in a list may be long (data-driven text); it wraps inside the row instead of widening the page. */
+.evidence-list li > .badge { flex-shrink: 0; max-width: 60%; white-space: normal; text-align: right; }

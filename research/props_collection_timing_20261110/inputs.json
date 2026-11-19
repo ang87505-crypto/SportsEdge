@@ -1,0 +1,31 @@
+{
+ "note": "Inputs for scripts/props-collection-replay.ts. Tip-offs: ESPN public NBA scoreboard (site.api.espn.com, read-only), retrieved 2026-11-10 ~22:30 UTC. Receipts: the props worker's JSON line in GitHub Actions logs of ang87505-crypto/SportsEdge workflow props-daily.yml (run ids below). No secrets, no private endpoints.",
+ "slates": {
+  "2026-11-07": [["2026-11-07T22:00:00Z","DEN vs IND"],["2026-11-08T00:30:00Z","BKN @ ATL"],["2026-11-08T01:00:00Z","NY @ CLE"],["2026-11-08T01:00:00Z","WSH @ OKC"],["2026-11-08T01:30:00Z","ORL @ GS"],["2026-11-08T02:00:00Z","HOU @ PHX"],["2026-11-08T03:00:00Z","SA @ POR"]],
+  "2026-11-08": [["2026-11-08T20:30:00Z","PHI @ CHI"],["2026-11-08T23:00:00Z","LAL @ DET"],["2026-11-09T00:00:00Z","UTAH @ MIN"],["2026-11-09T00:30:00Z","BKN @ DAL"],["2026-11-09T01:00:00Z","BOS @ MIL"],["2026-11-09T02:00:00Z","NO @ LAC"],["2026-11-09T02:00:00Z","MIA @ SAC"]],
+  "2026-11-09": [["2026-11-10T00:00:00Z","LAL @ ATL"],["2026-11-10T00:00:00Z","CLE @ CHA"],["2026-11-10T00:00:00Z","WSH @ DET"],["2026-11-10T00:30:00Z","MEM @ TOR"],["2026-11-10T01:00:00Z","IND @ DAL"],["2026-11-10T01:30:00Z","DEN @ HOU"],["2026-11-10T02:00:00Z","SA @ PHX"],["2026-11-10T03:00:00Z","NO @ GS"]],
+  "2026-11-10": [["2026-11-11T00:30:00Z","MIL @ NY"],["2026-11-11T01:00:00Z","BOS @ PHI"],["2026-11-11T02:00:00Z","LAC @ PHX"],["2026-11-11T02:00:00Z","MIA @ UTAH"],["2026-11-11T03:00:00Z","ORL @ SAC"],["2026-11-11T04:00:00Z","OKC @ POR"]],
+  "2026-11-11": [["2026-11-12T00:00:00Z","WSH @ IND"],["2026-11-12T00:00:00Z","CLE @ NY"],["2026-11-12T00:00:00Z","BOS @ TOR"],["2026-11-12T01:00:00Z","SA @ CHI"],["2026-11-12T01:00:00Z","DEN @ MEM"],["2026-11-12T01:00:00Z","LAL @ MIL"],["2026-11-12T01:00:00Z","BKN @ NO"],["2026-11-12T02:00:00Z","ORL @ UTAH"],["2026-11-12T02:30:00Z","GS @ HOU"],["2026-11-12T03:00:00Z","OKC @ POR"]],
+  "2026-11-12": [["2026-11-13T00:00:00Z","TOR @ PHI"],["2026-11-13T00:00:00Z","DET @ WSH"],["2026-11-13T01:00:00Z","DAL @ MIN"],["2026-11-13T02:00:00Z","CHA @ PHX"]]
+ },
+ "collectRuns": [
+  {"gha":42404093295,"runId":3,"slot":"collect-manual (Nov 7)","started":"2026-11-07T19:00:51Z","delayMin":null,"policy":"props-budget-v1","credits":10,
+   "priced":[["DEN vs IND",37,26,11],["BKN @ ATL",37,27,10],["NY @ CLE",32,23,9]],"qualifyingPicks":24,"entries":{"prizepicks":3,"pick6":3},
+   "providerRemaining":{"before":500,"afterEachEvent":[497,494,491]}},
+  {"gha":42532179682,"runId":6,"slot":"collect-2026-11-08T19","started":"2026-11-08T22:50:03Z","delayMin":220,"policy":"props-budget-v2","credits":7,
+   "priced":[["UTAH @ MIN",38,28,10],["BKN @ DAL",40,33,7]],"qualifyingPicks":20,"entries":{"prizepicks":3,"pick6":0},
+   "providerRemaining":{"before":491,"afterEachEvent":[488,485]}},
+  {"gha":42546966254,"runId":7,"slot":"collect-2026-11-08T22","started":"2026-11-09T01:42:25Z","delayMin":212,"outcome":"BUDGET_EXHAUSTED","credits":0},
+  {"gha":42739655657,"runId":10,"slot":"collect-2026-11-09T19","started":"2026-11-10T02:00:07Z","delayMin":410,"policy":"props-budget-v2","credits":4,
+   "priced":[["NO @ GS",36,29,7]],"qualifyingPicks":10,"entries":{"prizepicks":0,"pick6":0},"noEntryReason":"TOO_FEW_DISTINCT_GAMES (one game priced)",
+   "providerRemaining":{"before":485,"afterEachEvent":[482]}},
+  {"gha":42753467042,"runId":11,"slot":"collect-2026-11-09T22","started":"2026-11-10T04:04:29Z","delayMin":354,"outcome":"BUDGET_EXHAUSTED","credits":0},
+  {"gha":42892767595,"runId":14,"slot":"collect-2026-11-10T19","started":"2026-11-10T20:11:29Z","delayMin":61,"trigger":"backup-dispatch","outcome":"BUDGET_EXHAUSTED","credits":0,
+   "budgetBefore":{"used24h":4,"used30d":22,"providerRemaining":482}}
+ ],
+ "settleDelaysMin": {"settle-2026-11-08T15":265,"settle-2026-11-09T09":634,"settle-2026-11-09T15":508,"settle-2026-11-10T09 (GitHub, after the Vercel backup at 73 min)":467,"settle-2026-11-10T15 (GitHub, after the Vercel backup at 68 min)":360},
+ "vercelBackupStartsMin": {"settle-2026-11-10T09":73,"settle-2026-11-10T15":68,"collect-2026-11-10T19":61},
+ "provider": {"plan":"used + remaining = 500 on every receipt (Starter plan size)","eventsListCharged":0,"eventOddsCharged":3,
+  "docs":"https://the-odds-api.com/liveapi/guides/v4/ (read 2026-11-10): events free; event odds = unique markets returned x regions; empty responses free; event markets = 1; historical event odds = 10 x markets x regions (paid plans); props refresh every 60 s pre-match",
+  "plans":[["Starter",0,500],["20K",30,20000],["100K",59,100000],["5M",119,5000000],["15M",249,15000000]]}
+}

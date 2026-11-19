@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {OWNER_COOKIE,OWNER_SESSION_SECONDS,secureTextEquals,issueOwnerSession,validOwnerSession,ownerSecret} from './alpaca-owner-session.ts';
+import {OWNER_COOKIE,OWNER_SESSION_SECONDS,secureTextEquals,issueOwnerSession,validOwnerSession,ownerSecret,ownerSecretProblem} from './alpaca-owner-session.ts';
 
 const key='0123456789abcdef'.repeat(4);
 const other='fedcba9876543210'.repeat(4);
@@ -11,10 +11,19 @@ test('owner-only key is independently configured, not the Alpaca API or diagnost
   try {
     delete process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY;
     assert.equal(ownerSecret(),null);
+    assert.equal(ownerSecretProblem(),'missing');
     process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY='not-a-secure-owner-key';
     assert.equal(ownerSecret(),null);
+    assert.equal(ownerSecretProblem(),'malformed');
     process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY=key;
     assert.equal(ownerSecret(),key);
+    assert.equal(ownerSecretProblem(),null);
+    // A trailing line break from a clipboard or dashboard paste is not part of the key.
+    process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY=' '+key+'\r\n';
+    assert.equal(ownerSecret(),key);
+    process.env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY='  \n';
+    assert.equal(ownerSecret(),null);
+    assert.equal(ownerSecretProblem(),'missing');
     assert.notEqual(OWNER_COOKIE,'SPORTSEDGE_ALPACA_PAPER_READ_TOKEN');
     assert.equal(OWNER_SESSION_SECONDS,1800);
   } finally {

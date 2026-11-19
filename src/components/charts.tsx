@@ -123,7 +123,9 @@ export function LineChart({series,height=240,yFormat:yF,xFormat:xF,ariaLabel,bas
 
 /** Reliability diagram: predicted probability vs observed frequency, with 95% Wilson intervals. */
 export type CalibrationBin={lower_bound:number;upper_bound:number;sample_size:number;mean_probability:number;observed_frequency:number;observed_frequency_wilson_95:number[]};
-export function CalibrationChart({bins,label}:{bins:CalibrationBin[];label:string}){
+/** Defaults keep the NBA moneyline wording; other callers pass their own axis and outcome labels. */
+export function CalibrationChart({bins,label,xTitle='Model probability for the home team',outcome='Home won',unit='games',observedLabel='Observed win rate (95% interval)'}:
+ {bins:CalibrationBin[];label:string;xTitle?:string;outcome?:string;unit?:string;observedLabel?:string}){
  const [ref,width]=useWidth<HTMLDivElement>();
  const [active,setActive]=useState<number|null>(null);
  const W=Math.max(width,1),H=Math.min(320,Math.max(220,W*0.62));
@@ -133,17 +135,17 @@ export function CalibrationChart({bins,label}:{bins:CalibrationBin[];label:strin
  const ticks=[0,0.25,0.5,0.75,1];
  const sel=active===null?null:bins[active];
  return <div className="calibration-chart" ref={ref}>
-  <Legend items={[{label:'Observed win rate (95% interval)',color:'var(--c1)'},{label:'Perfect calibration',color:'var(--c-ref)',dashed:true}]}/>
+  <Legend items={[{label:observedLabel,color:'var(--c1)'},{label:'Perfect calibration',color:'var(--c-ref)',dashed:true}]}/>
   <div className="line-chart-plot" style={{height:H}}>
    {width>0&&<svg width={W} height={H} role="img" aria-label={label}>
     {ticks.map(t=><g key={t}><line className="chart-grid" x1={M.left} x2={W-M.right} y1={sy(t)} y2={sy(t)}/><text className="chart-tick" x={M.left-8} y={sy(t)+4} textAnchor="end">{Math.round(t*100)}%</text><text className="chart-tick" x={sx(t)} y={H-16} textAnchor="middle">{Math.round(t*100)}%</text></g>)}
-    <text className="chart-axis-title" x={M.left+iw/2} y={H-2} textAnchor="middle">Model probability for the home team</text>
+    <text className="chart-axis-title" x={M.left+iw/2} y={H-2} textAnchor="middle">{xTitle}</text>
     <line className="chart-baseline" x1={sx(0)} y1={sy(0)} x2={sx(1)} y2={sy(1)}/>
     {bins.map((b,i)=>{
      const [lo,hi]=b.observed_frequency_wilson_95;
      const r=3+5*Math.sqrt(b.sample_size/maxN);
      return <g key={i} className="cal-point" style={{['--i' as string]:i}} onPointerEnter={()=>setActive(i)} onPointerLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} tabIndex={0} role="img"
-       aria-label={`Predicted ${(b.mean_probability*100).toFixed(1)}%, observed ${(b.observed_frequency*100).toFixed(1)}% across ${b.sample_size} games`}>
+       aria-label={`Predicted ${(b.mean_probability*100).toFixed(1)}%, observed ${(b.observed_frequency*100).toFixed(1)}% across ${b.sample_size} ${unit}`}>
       <line x1={sx(b.mean_probability)} x2={sx(b.mean_probability)} y1={sy(lo)} y2={sy(hi)} stroke="var(--c1)" strokeWidth={2} strokeLinecap="round" opacity={0.55}/>
       <circle cx={sx(b.mean_probability)} cy={sy(b.observed_frequency)} r={r} fill="var(--c1)" stroke="var(--surface)" strokeWidth={2}/>
       <rect x={sx(b.mean_probability)-14} y={M.top} width={28} height={ih} fill="transparent"/>
@@ -153,8 +155,8 @@ export function CalibrationChart({bins,label}:{bins:CalibrationBin[];label:strin
    {sel&&<div className="chart-tooltip" style={{left:Math.min(Math.max(sx(sel.mean_probability),90),W-90)}} role="status">
     <div className="chart-tooltip-x">Forecasts {Math.round(sel.lower_bound*100)}–{Math.round(sel.upper_bound*100)}%</div>
     <div className="chart-tooltip-row"><span>Mean forecast</span><strong>{(sel.mean_probability*100).toFixed(1)}%</strong></div>
-    <div className="chart-tooltip-row"><span>Home won</span><strong>{(sel.observed_frequency*100).toFixed(1)}%</strong></div>
-    <div className="chart-tooltip-row"><span>Games</span><strong>{sel.sample_size.toLocaleString()}</strong></div>
+    <div className="chart-tooltip-row"><span>{outcome}</span><strong>{(sel.observed_frequency*100).toFixed(1)}%</strong></div>
+    <div className="chart-tooltip-row"><span>{unit[0].toUpperCase()+unit.slice(1)}</span><strong>{sel.sample_size.toLocaleString()}</strong></div>
    </div>}
   </div>
  </div>;

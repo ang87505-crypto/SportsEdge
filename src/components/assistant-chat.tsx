@@ -1,0 +1,206 @@
+'use client';
+import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
+import type {Card,Reply} from '@/lib/assistant/answer';
+import type {AssistantContext} from '@/lib/assistant/understand';
+import {currentOwnerAccess} from '@/lib/assistant/session';
+import {chatActionRequest} from '@/lib/assistant/actions';
+import {AssistantRequestGate} from '@/lib/assistant/request-gate';
+import type {ToolCall} from '@/lib/command/session';
+
+type Msg={role:'user'|'bot';text:string;cards?:Card[];private?:boolean;suggestions?:string[];sig?:string};
+type Access={ownerAccess:boolean;ownerExpiresAt:number|null};
+const TOPICS=[
+  {label:'Sports',question:"Tonight's picks"},
+  {label:'Watch Only',question:'How did our 60%+ tracked lines do yesterday?'},
+  {label:'Stocks',question:'Stock PAPER results'},
+  {label:'Kalshi',question:'What has Kalshi weather research recorded?'},
+  {label:'Research',question:'Stock strategy research results'},
+  {label:'Systems',question:'Is everything running?'},
+  {label:'Help',question:'What commands can you follow?'}
+] as const;
+const STARTERS=TOPICS.map(t=>t.question);
+const OPENING:Msg={role:'bot',text:'Ask about sports, stocks, independent Kalshi research, or automation. Answers use saved records, not invented trades.',suggestions:STARTERS};
+const NO_ACCESS:Access={ownerAccess:false,ownerExpiresAt:null};
+
+/** Lets any button on the page ask the conversation a question (the homepage summary strip uses it). */
+export const ASK_EVENT='sportsedge:ask';
+export function AskButton({question,className,children}:{question:string;className?:string;children:ReactNode}){
+ return <button type="button" className={className} onClick={()=>window.dispatchEvent(new CustomEvent(ASK_EVENT,{detail:question}))}>{children}</button>;
+}
+
+/** One conversation. Private replies are ephemeral and hidden whenever owner access is uncertain. */
+export function AssistantChat({starters,intro}:{starters?:string[];intro?:string}={}){
+ const opening:Msg=starters?{role:'bot',text:intro??OPENING.text,suggestions:starters}:OPENING;
+ const [msgs,setMsgs]=useState<Msg[]>([opening]);
+ const [context,setContext]=useState<AssistantContext|null>(null);
+ const [lastCalls,setLastCalls]=useState<ToolCall[]>([]);
+ const [input,setInput]=useState(''),[busy,setBusy]=useState(false);
+ const [access,setAccess]=useState<Access>(NO_ACCESS),[checking,setChecking]=useState(true);
+ const end=useRef<HTMLDivElement>(null),lastAsked=useRef(''),follow=useRef(false),owner=useRef(false);
+ const gate=useRef(new AssistantRequestGate());
+ function applyAccess(a:Access){
+  const valid=currentOwnerAccess(a).ownerAccess;
+  if(!valid&&owner.current){
+   // A reply authorized before logout must not resurrect private content afterward.
+   gate.current.invalidate();setBusy(false);setMsgs(m=>m.filter(x=>!x.private));setContext(null);setLastCalls([]);
+  }
+  owner.current=valid;setAccess(valid?a:NO_ACCESS);
+ }
+ useEffect(()=>{
+  // Remove the old sports-only browser cache; private replies are never persisted.
+  try{sessionStorage.removeItem('sportsedge-assistant-v1');}catch{/* optional browser storage */}
+  let live=true;
+  async function check(){
+   if(document.visibilityState==='hidden')return;
+   setChecking(true);
+   try{const res=await fetch('/api/assistant',{cache:'no-store'});const a=await res.json();
+    if(live)applyAccess(res.ok&&typeof a.ownerAccess==='boolean'?a:NO_ACCESS);
+   }catch{if(live)applyAccess(NO_ACCESS);}
+   finally{if(live)setChecking(false);}
+  }
+  void check();
+  window.addEventListener('focus',check);document.addEventListener('visibilitychange',check);
+  return()=>{live=false;window.removeEventListener('focus',check);document.removeEventListener('visibilitychange',check);};
+ },[]);
+ useEffect(()=>{
+  if(!access.ownerAccess||!access.ownerExpiresAt)return;
+  const timer=setTimeout(()=>applyAccess(NO_ACCESS),Math.max(0,access.ownerExpiresAt-Date.now()));
+  return()=>clearTimeout(timer);
+ },[access.ownerAccess,access.ownerExpiresAt]);
+ useEffect(()=>{if(follow.current)end.current?.scrollIntoView({block:'nearest'});},[msgs,busy]);
+ const sendRef=useRef<(q:string)=>void>(()=>{});
+ useEffect(()=>{sendRef.current=q=>void send(q);});
+ useEffect(()=>{
+  const on=(e:Event)=>{const q=(e as CustomEvent<string>).detail;if(typeof q==='string')sendRef.current(q);};
+  window.addEventListener(ASK_EVENT,on);return()=>window.removeEventListener(ASK_EVENT,on);
+ },[]);
+ async function send(raw:string){
+  const text=(raw==='Try again'?lastAsked.current:raw).trim().slice(0,300);
+  // A ref blocks rapid double-submit synchronously; React's busy state is
+  // not updated until the next render. Never issue two assistant reads for one
+  // user action or let a stale response overwrite new conversation context.
+  if(!text)return;
+  const id=gate.current.start();
+  if(id===null)return;
+  lastAsked.current=text;follow.current=true;
+  setMsgs(m=>[...m,{role:'user' as const,text}].slice(-40));setInput('');setBusy(true);
+  try{
+   // History and the previous validated tool calls let deterministic tools
+   // answer comparisons and follow-ups. Unverified assistant text is dropped
+   // by the server; no transcript is saved outside this browser tab.
+   const history=msgs.filter(m=>m.role==='user'||!!m.sig).slice(-20).map(m=>({role:m.role==='user'?'user' as const:'assistant' as const,text:m.text.slice(0,1500),...(m.sig?{sig:m.sig}:{})}));
+   const res=await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,history,session:{context,last:lastCalls}})});
+   const data=await res.json().catch(()=>null) as {reply?:Reply;ownerAccess?:boolean;ownerExpiresAt?:number|null;session?:{context:AssistantContext|null;last:ToolCall[]};sig?:string}|null;
+   if(!gate.current.isCurrent(id))return;
+   if(res.ok&&data?.reply){
+    const valid=currentOwnerAccess(data).ownerAccess;
+    applyAccess({ownerAccess:valid,ownerExpiresAt:valid?data.ownerExpiresAt!:null});setChecking(false);
+    const r=data.reply;
+    if(r.private&&!valid){setMsgs(m=>[...m,{role:'bot',text:'Your owner session expired. Sign in on the Paper account page and ask again.'}]);setContext(null);setLastCalls([]);}
+    else {
+     setMsgs(m=>[...m.map((x,i)=>i===m.length-1?{...x,private:r.private}:x),{role:'bot' as const,text:r.text,cards:r.cards,suggestions:r.suggestions,private:r.private,sig:data.sig}].slice(-40));
+     setContext(data.session?.context??r.context);setLastCalls(data.session?.last??[]);
+    }
+   }else setMsgs(m=>[...m,{role:'bot',text:'Try a shorter question or choose a topic.',suggestions:STARTERS}]);
+  }catch{if(gate.current.isCurrent(id))setMsgs(m=>[...m,{role:'bot',text:'I cannot reach the server right now.',suggestions:['Try again']}]);}
+  finally{if(gate.current.finish(id))setBusy(false);}
+ }
+ function submit(e:FormEvent){e.preventDefault();void send(input);}
+ function reset(){gate.current.invalidate();lastAsked.current='';setBusy(false);setMsgs([opening]);setContext(null);setLastCalls([]);}
+ const last=msgs[msgs.length-1];
+ return <div className="chat">
+  <div className="chat-chips" role="group" aria-label="Chat topics">
+   {TOPICS.map(t=><button key={t.label} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
+  </div>
+  <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
+  <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
+   {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
+    {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
+     <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
+     {m.cards?.map((c,j)=><ChatCard key={j} card={c} owner={access.ownerAccess&&!checking}/>)}
+    </>}
+   </div>)}
+   {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
+   <div ref={end}/>
+  </div>
+  {!busy&&last?.role==='bot'&&last.suggestions?.length?<div className="chat-chips" role="group" aria-label="Suggestions">
+   {last.suggestions.map(s=><button key={s} type="button" className="chat-chip" onClick={()=>void send(s)}>{s}</button>)}
+  </div>:null}
+  <form className="chat-form" onSubmit={submit}>
+   <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
+   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, Kalshi, research…"/>
+   <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
+   <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
+  </form>
+  <p className="quiet small-print">Use <a href="/paper-betting/watch">Watch Only</a> to track lines without wagering. Answers use recorded evidence and read-only tools. A hosted conversational model is optional and disabled until the owner explicitly configures its shared cost budget; the built-in planner works without one. Independent NOAA results are not Kalshi wins. Chat cannot place bets or stock orders; Pause/Stop proposals require a separate owner confirmation. Chat history stays in this browser tab.</p>
+ </div>;
+}
+/**
+ * Owner control proposal. The button sends only the allowlisted request for this action id to the existing owner
+ * endpoint, which re-checks the session, validates and records the change; the reply shown is that endpoint's.
+ */
+function ActionCard({card,owner}:{card:Extract<Card,{kind:'action'}>;owner:boolean}){
+ const [state,setState]=useState<'idle'|'working'|'done'|'failed'|'cancelled'>('idle');
+ const [note,setNote]=useState('');
+ async function confirm(){
+  const req=chatActionRequest(card.action,card.experimentId);
+  if(!req||!owner||state!=='idle')return;
+  setState('working');
+  try{
+   const res=await fetch(req.endpoint,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(req.body)});
+   const d=await res.json().catch(()=>null) as {status?:string;code?:string}|null;
+   if(res.status===401){setState('failed');setNote('Your owner session expired. Nothing was changed. Sign in and ask again.');return;}
+   if(!res.ok){setState('failed');setNote(d?.status==='outcome_unknown'?'The database did not confirm the change. Check the status page; retrying is safe.':`Not changed${d?.code?` (${d.code})`:d?.status?` (${d.status})`:''}.`);return;}
+   // Read the state back from the same owner endpoint: the receipt is what the server now reports.
+   let now='';
+   try{
+    const g=await fetch(req.endpoint,{cache:'no-store',credentials:'same-origin'});const x=await g.json();
+    now=req.endpoint.includes('props')?x?.control?.state??'':(x?.experiments?.find((e:{experimentId?:string})=>e.experimentId===card.experimentId)?.status?.gateMode??'');
+   }catch{now='';}
+   setState('done');setNote(`Done. The server recorded the change${now?`; it now reports ${String(now).toLowerCase()}`:''}.`);
+  }catch{setState('failed');setNote('The request did not complete. Check the status page; retrying is safe.');}
+ }
+ return <div className="chat-card">
+  <p><strong>{card.label}</strong>{card.from?<> · now {card.from.toLowerCase()} → {card.to.toLowerCase()}</>:null}</p>
+  <p className="quiet small-print">{card.effect}</p>
+  {state==='idle'||state==='working'?<div className="button-row">
+   <button type="button" className="button" disabled={!owner||state==='working'} onClick={()=>void confirm()}>{state==='working'?'Applying…':'Confirm'}</button>
+   <button type="button" className="button button-secondary" disabled={state==='working'} onClick={()=>{setState('cancelled');setNote('Cancelled. Nothing was changed.');}}>Cancel</button>
+  </div>:<p role="status" className={state==='done'?'tone-text-positive':state==='failed'?'tone-text-warning':'quiet'}>{note}</p>}
+  {!owner&&state==='idle'&&<p className="quiet small-print">Owner sign-in is needed to confirm.</p>}
+ </div>;
+}
+
+function ChatCard({card,owner}:{card:Card;owner:boolean}){
+ const [copied,setCopied]=useState(false);
+ if(card.kind==='action')return <ActionCard card={card} owner={owner}/>;
+ if(card.kind==='links')return <div className="chat-chips">{card.items.map(it=><a key={it.href} className="chat-chip" href={it.href}>{it.label}</a>)}</div>;
+ if(card.kind==='facts')return <dl className="chat-card">{card.items.map(it=><div key={it.label} className="mb-3"><dt>{it.label}</dt><dd><strong>{it.value}</strong>{it.detail&&<p className="quiet small-print">{it.detail}</p>}</dd></div>)}</dl>;
+ if(card.kind==='lineup'){
+  async function copy(){try{await navigator.clipboard.writeText(card.kind==='lineup'?card.text:'');setCopied(true);}catch{setCopied(false);}}
+  return <div className="chat-card"><code>{card.text}</code><button type="button" className="button button-secondary" onClick={()=>void copy()}>{copied?'Copied':'Copy lineup'}</button></div>;
+ }
+ if(card.kind==='table')return <div className="chat-card chat-table-wrap">
+  <p className="chat-card-title">{card.title}</p>
+  <div className="chat-table-scroll"><table className="chat-table">
+   <thead><tr>{card.columns.map(c=><th key={c} scope="col">{c}</th>)}</tr></thead>
+   <tbody>{card.rows.map((r,i)=><tr key={i}>{r.map((c,j)=>j===0?<th key={j} scope="row">{c}</th>:<td key={j}>{c}</td>)}</tr>)}</tbody>
+  </table></div>
+ </div>;
+ if(card.kind==='bars'){
+  const max=Math.max(1e-9,...card.items.map(i=>Math.max(i.value,i.marker??0)));
+  return <div className="chat-card">
+   <p className="chat-card-title">{card.title}</p>
+   <ul className="chat-bars">{card.items.map(it=><li key={it.label}>
+    <span className="chat-bar-label">{it.label}</span>
+    <span className="chat-bar-track" aria-hidden="true">
+     <span className="chat-bar-fill" style={{width:`${(it.value/max)*100}%`}}/>
+     {typeof it.marker==='number'&&<span className="chat-bar-marker" style={{left:`${(it.marker/max)*100}%`}} title="Stated confidence"/>}
+    </span>
+    <span className="chat-bar-value">{it.display}</span>
+   </li>)}</ul>
+   {card.items.some(i=>typeof i.marker==='number')&&<p className="quiet small-print">Bar: observed. Tick: stated confidence.</p>}
+  </div>;
+ }
+ return <ul className="chat-card chat-list">{card.items.map(it=><li key={it.id}><strong>{it.text}</strong><small>{it.detail}</small></li>)}</ul>;
+}

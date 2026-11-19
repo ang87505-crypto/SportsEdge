@@ -1,0 +1,1030 @@
+{
+ "generatedBy": "scripts/props-role-eval.ts",
+ "candidate": "props-nb-role-minutes-v1",
+ "baseline": "props-nb-minutes-rate-v1",
+ "role": {
+  "recentGames": 3,
+  "minShift": 6
+ },
+ "protocol": [
+  "research/props_cal_v1_20261110/protocol.json",
+  "research/props_cal_v1_20261110/amendment-1.json"
+ ],
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+   "regularSeasonRows": 32610
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89",
+   "regularSeasonRows": 32221
+  },
+  {
+   "file": "player_box_2027.csv",
+   "sha256": "b941ba23f8d19977c272a9b398ef9f4f32d64491f28648d9e170c782527fcf2f",
+   "regularSeasonRows": 3936
+  }
+ ],
+ "attemptedVariants": [
+  {
+   "id": "props-cal-v1",
+   "status": "withdrawn before any run (duplicates props-temperature-v2)"
+  },
+  {
+   "id": "props-nb-role-minutes-v1",
+   "status": "evaluated once, parameters fixed in amendment-1"
+  }
+ ],
+ "exploratory": {
+  "label": "2025-26, previously inspected; not confirmation",
+  "window": [
+   "2025-10-27",
+   "2026-04-13"
+  ],
+  "lines": 71595,
+  "leakage": {
+   "checked": 181177128,
+   "violations": 0
+  },
+  "byStat": {
+   "points": {
+    "lines": 23865,
+    "games": 1189,
+    "roleShiftLines": 3191,
+    "byModel": {
+     "layer1": {
+      "n": 23865,
+      "brier": 0.24677,
+      "logLoss": 0.6945
+     },
+     "role": {
+      "n": 23865,
+      "brier": 0.24763,
+      "logLoss": 0.69688
+     },
+     "b1": {
+      "n": 23865,
+      "brier": 0.24946,
+      "logLoss": 0.69602
+     },
+     "b2": {
+      "n": 23865,
+      "brier": 0.2639,
+      "logLoss": 0.75756
+     },
+     "b3": {
+      "n": 23865,
+      "brier": 0.25004,
+      "logLoss": 0.69327
+     }
+    },
+    "roleVsLayer1": {
+     "difference": 0.000859,
+     "lower95": 0.000275,
+     "upper95": 0.001469,
+     "games": 1189
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 3191,
+     "layer1": 0.24044,
+     "role": 0.24687,
+     "interval": {
+      "difference": 0.006427,
+      "lower95": 0.001929,
+      "upper95": 0.011152,
+      "games": 1066
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.002694,
+      "lower95": 0.001005,
+      "upper95": 0.004339,
+      "games": 1189
+     },
+     "b2": {
+      "difference": 0.017136,
+      "lower95": 0.014535,
+      "upper95": 0.019771,
+      "games": 1189
+     },
+     "b3": {
+      "difference": 0.003276,
+      "lower95": 0.000873,
+      "upper95": 0.00542,
+      "games": 1189
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 130,
+       "meanPredicted": 0.1627,
+       "observedMore": 0.2692
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 3358,
+       "meanPredicted": 0.3019,
+       "observedMore": 0.324
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 6178,
+       "meanPredicted": 0.4024,
+       "observedMore": 0.4238
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 6054,
+       "meanPredicted": 0.4972,
+       "observedMore": 0.5033
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 3909,
+       "meanPredicted": 0.5963,
+       "observedMore": 0.5574
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 2765,
+       "meanPredicted": 0.717,
+       "observedMore": 0.5913
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 1471,
+       "meanPredicted": 0.8837,
+       "observedMore": 0.6485
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 355,
+       "meanPredicted": 0.1577,
+       "observedMore": 0.2648
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 3635,
+       "meanPredicted": 0.2971,
+       "observedMore": 0.3444
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 5871,
+       "meanPredicted": 0.4022,
+       "observedMore": 0.4257
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 5626,
+       "meanPredicted": 0.4974,
+       "observedMore": 0.4979
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 3849,
+       "meanPredicted": 0.5967,
+       "observedMore": 0.549
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 2876,
+       "meanPredicted": 0.7183,
+       "observedMore": 0.5956
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 1653,
+       "meanPredicted": 0.8814,
+       "observedMore": 0.6558
+      }
+     ]
+    }
+   },
+   "rebounds": {
+    "lines": 23865,
+    "games": 1189,
+    "roleShiftLines": 3191,
+    "byModel": {
+     "layer1": {
+      "n": 23865,
+      "brier": 0.23603,
+      "logLoss": 0.66496
+     },
+     "role": {
+      "n": 23865,
+      "brier": 0.23656,
+      "logLoss": 0.6665
+     },
+     "b1": {
+      "n": 23865,
+      "brier": 0.24179,
+      "logLoss": 0.67726
+     },
+     "b2": {
+      "n": 23865,
+      "brier": 0.24252,
+      "logLoss": 0.68203
+     },
+     "b3": {
+      "n": 23865,
+      "brier": 0.24627,
+      "logLoss": 0.68563
+     }
+    },
+    "roleVsLayer1": {
+     "difference": 0.000526,
+     "lower95": -0.000046,
+     "upper95": 0.001094,
+     "games": 1189
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 3191,
+     "layer1": 0.23513,
+     "role": 0.23906,
+     "interval": {
+      "difference": 0.003932,
+      "lower95": -0.000291,
+      "upper95": 0.008121,
+      "games": 1066
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.005756,
+      "lower95": 0.004211,
+      "upper95": 0.007146,
+      "games": 1189
+     },
+     "b2": {
+      "difference": 0.006487,
+      "lower95": 0.004764,
+      "upper95": 0.008212,
+      "games": 1189
+     },
+     "b3": {
+      "difference": 0.010241,
+      "lower95": 0.008605,
+      "upper95": 0.011932,
+      "games": 1189
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 240,
+       "meanPredicted": 0.1685,
+       "observedMore": 0.1625
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 4266,
+       "meanPredicted": 0.2971,
+       "observedMore": 0.2778
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 6320,
+       "meanPredicted": 0.4019,
+       "observedMore": 0.3922
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 6488,
+       "meanPredicted": 0.4977,
+       "observedMore": 0.4906
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 4074,
+       "meanPredicted": 0.5942,
+       "observedMore": 0.5513
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 2073,
+       "meanPredicted": 0.7065,
+       "observedMore": 0.6078
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 404,
+       "meanPredicted": 0.8509,
+       "observedMore": 0.7005
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 506,
+       "meanPredicted": 0.1608,
+       "observedMore": 0.2036
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 4426,
+       "meanPredicted": 0.2944,
+       "observedMore": 0.291
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 6012,
+       "meanPredicted": 0.4018,
+       "observedMore": 0.3955
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 6079,
+       "meanPredicted": 0.4981,
+       "observedMore": 0.4869
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 4019,
+       "meanPredicted": 0.5946,
+       "observedMore": 0.5417
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 2296,
+       "meanPredicted": 0.7093,
+       "observedMore": 0.6098
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 527,
+       "meanPredicted": 0.8536,
+       "observedMore": 0.7002
+      }
+     ]
+    }
+   },
+   "assists": {
+    "lines": 23865,
+    "games": 1189,
+    "roleShiftLines": 3191,
+    "byModel": {
+     "layer1": {
+      "n": 23865,
+      "brier": 0.23141,
+      "logLoss": 0.65455
+     },
+     "role": {
+      "n": 23865,
+      "brier": 0.23128,
+      "logLoss": 0.65446
+     },
+     "b1": {
+      "n": 23865,
+      "brier": 0.2369,
+      "logLoss": 0.66875
+     },
+     "b2": {
+      "n": 23865,
+      "brier": 0.23697,
+      "logLoss": 0.67117
+     },
+     "b3": {
+      "n": 23865,
+      "brier": 0.2402,
+      "logLoss": 0.67319
+     }
+    },
+    "roleVsLayer1": {
+     "difference": -0.000134,
+     "lower95": -0.000564,
+     "upper95": 0.000365,
+     "games": 1189
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 3191,
+     "layer1": 0.23151,
+     "role": 0.23051,
+     "interval": {
+      "difference": -0.001,
+      "lower95": -0.00425,
+      "upper95": 0.002149,
+      "games": 1066
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.005488,
+      "lower95": 0.003913,
+      "upper95": 0.007013,
+      "games": 1189
+     },
+     "b2": {
+      "difference": 0.005559,
+      "lower95": 0.003746,
+      "upper95": 0.007314,
+      "games": 1189
+     },
+     "b3": {
+      "difference": 0.008788,
+      "lower95": 0.007214,
+      "upper95": 0.010252,
+      "games": 1189
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 698,
+       "meanPredicted": 0.1652,
+       "observedMore": 0.1533
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 6119,
+       "meanPredicted": 0.2887,
+       "observedMore": 0.2956
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 6685,
+       "meanPredicted": 0.4001,
+       "observedMore": 0.3985
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 5373,
+       "meanPredicted": 0.4969,
+       "observedMore": 0.4737
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 3133,
+       "meanPredicted": 0.5948,
+       "observedMore": 0.5515
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 1763,
+       "meanPredicted": 0.6997,
+       "observedMore": 0.616
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 94,
+       "meanPredicted": 0.8232,
+       "observedMore": 0.6809
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 953,
+       "meanPredicted": 0.1617,
+       "observedMore": 0.1836
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 6104,
+       "meanPredicted": 0.2875,
+       "observedMore": 0.2973
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 6404,
+       "meanPredicted": 0.4002,
+       "observedMore": 0.3971
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 5219,
+       "meanPredicted": 0.4969,
+       "observedMore": 0.4756
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 3143,
+       "meanPredicted": 0.5947,
+       "observedMore": 0.5469
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 1890,
+       "meanPredicted": 0.703,
+       "observedMore": 0.6153
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 152,
+       "meanPredicted": 0.8342,
+       "observedMore": 0.6974
+      }
+     ]
+    }
+   }
+  }
+ },
+ "holdout": {
+  "label": "2026-27 so far; unseen by any earlier fit or choice",
+  "window": [
+   "2026-10-25",
+   "2026-11-09"
+  ],
+  "lines": 5427,
+  "leakage": {
+   "checked": 3136034,
+   "violations": 0
+  },
+  "productionArtifact": "src/data/props/model_v1.json",
+  "byStat": {
+   "points": {
+    "lines": 1809,
+    "games": 104,
+    "roleShiftLines": 138,
+    "byModel": {
+     "layer1": {
+      "n": 1809,
+      "brier": 0.23245,
+      "logLoss": 0.65979
+     },
+     "role": {
+      "n": 1809,
+      "brier": 0.23306,
+      "logLoss": 0.66106
+     },
+     "b1": {
+      "n": 1809,
+      "brier": 0.24613,
+      "logLoss": 0.69046
+     },
+     "b2": {
+      "n": 1809,
+      "brier": 0.24613,
+      "logLoss": 0.69046
+     },
+     "b3": {
+      "n": 1809,
+      "brier": 0.24935,
+      "logLoss": 0.69203
+     }
+    },
+    "roleVsLayer1": {
+     "difference": 0.000607,
+     "lower95": -0.000698,
+     "upper95": 0.001992,
+     "games": 104
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 138,
+     "layer1": 0.2282,
+     "role": 0.23617,
+     "interval": {
+      "difference": 0.007962,
+      "lower95": -0.009241,
+      "upper95": 0.026371,
+      "games": 49
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.013685,
+      "lower95": 0.006369,
+      "upper95": 0.021266,
+      "games": 104
+     },
+     "b2": {
+      "difference": 0.013685,
+      "lower95": 0.006369,
+      "upper95": 0.021266,
+      "games": 104
+     },
+     "b3": {
+      "difference": 0.016898,
+      "lower95": 0.010032,
+      "upper95": 0.024999,
+      "games": 104
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 20,
+       "meanPredicted": 0.1587,
+       "observedMore": 0.15
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 239,
+       "meanPredicted": 0.2926,
+       "observedMore": 0.2803
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 434,
+       "meanPredicted": 0.4053,
+       "observedMore": 0.3825
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 437,
+       "meanPredicted": 0.4991,
+       "observedMore": 0.4622
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 325,
+       "meanPredicted": 0.5987,
+       "observedMore": 0.5662
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 251,
+       "meanPredicted": 0.7192,
+       "observedMore": 0.6255
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 103,
+       "meanPredicted": 0.869,
+       "observedMore": 0.7961
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 24,
+       "meanPredicted": 0.16,
+       "observedMore": 0.125
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 246,
+       "meanPredicted": 0.2919,
+       "observedMore": 0.2927
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 437,
+       "meanPredicted": 0.4058,
+       "observedMore": 0.3799
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 407,
+       "meanPredicted": 0.4989,
+       "observedMore": 0.4619
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 320,
+       "meanPredicted": 0.5999,
+       "observedMore": 0.575
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 264,
+       "meanPredicted": 0.7217,
+       "observedMore": 0.6098
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 111,
+       "meanPredicted": 0.8669,
+       "observedMore": 0.7838
+      }
+     ]
+    }
+   },
+   "rebounds": {
+    "lines": 1809,
+    "games": 104,
+    "roleShiftLines": 138,
+    "byModel": {
+     "layer1": {
+      "n": 1809,
+      "brier": 0.23226,
+      "logLoss": 0.65666
+     },
+     "role": {
+      "n": 1809,
+      "brier": 0.23226,
+      "logLoss": 0.6567
+     },
+     "b1": {
+      "n": 1809,
+      "brier": 0.24316,
+      "logLoss": 0.68145
+     },
+     "b2": {
+      "n": 1809,
+      "brier": 0.24316,
+      "logLoss": 0.68145
+     },
+     "b3": {
+      "n": 1809,
+      "brier": 0.24448,
+      "logLoss": 0.68241
+     }
+    },
+    "roleVsLayer1": {
+     "difference": -0.000001,
+     "lower95": -0.001096,
+     "upper95": 0.001155,
+     "games": 104
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 138,
+     "layer1": 0.23239,
+     "role": 0.23238,
+     "interval": {
+      "difference": -0.000011,
+      "lower95": -0.014809,
+      "upper95": 0.016084,
+      "games": 49
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.010896,
+      "lower95": 0.004924,
+      "upper95": 0.016585,
+      "games": 104
+     },
+     "b2": {
+      "difference": 0.010896,
+      "lower95": 0.004924,
+      "upper95": 0.016585,
+      "games": 104
+     },
+     "b3": {
+      "difference": 0.012214,
+      "lower95": 0.005093,
+      "upper95": 0.018673,
+      "games": 104
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 70,
+       "meanPredicted": 0.1525,
+       "observedMore": 0.1143
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 462,
+       "meanPredicted": 0.2906,
+       "observedMore": 0.3247
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 502,
+       "meanPredicted": 0.3978,
+       "observedMore": 0.4044
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 384,
+       "meanPredicted": 0.4972,
+       "observedMore": 0.4635
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 228,
+       "meanPredicted": 0.5971,
+       "observedMore": 0.5614
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 130,
+       "meanPredicted": 0.7032,
+       "observedMore": 0.6154
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 33,
+       "meanPredicted": 0.8538,
+       "observedMore": 0.7879
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 79,
+       "meanPredicted": 0.1495,
+       "observedMore": 0.1013
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 458,
+       "meanPredicted": 0.2893,
+       "observedMore": 0.3297
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 478,
+       "meanPredicted": 0.3983,
+       "observedMore": 0.4038
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 381,
+       "meanPredicted": 0.4964,
+       "observedMore": 0.4619
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 233,
+       "meanPredicted": 0.5963,
+       "observedMore": 0.5536
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 146,
+       "meanPredicted": 0.7057,
+       "observedMore": 0.6096
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 34,
+       "meanPredicted": 0.8576,
+       "observedMore": 0.7941
+      }
+     ]
+    }
+   },
+   "assists": {
+    "lines": 1809,
+    "games": 104,
+    "roleShiftLines": 138,
+    "byModel": {
+     "layer1": {
+      "n": 1809,
+      "brier": 0.22504,
+      "logLoss": 0.64025
+     },
+     "role": {
+      "n": 1809,
+      "brier": 0.22508,
+      "logLoss": 0.64051
+     },
+     "b1": {
+      "n": 1809,
+      "brier": 0.24366,
+      "logLoss": 0.68906
+     },
+     "b2": {
+      "n": 1809,
+      "brier": 0.24366,
+      "logLoss": 0.68906
+     },
+     "b3": {
+      "n": 1809,
+      "brier": 0.24438,
+      "logLoss": 0.68202
+     }
+    },
+    "roleVsLayer1": {
+     "difference": 0.00004,
+     "lower95": -0.000895,
+     "upper95": 0.001012,
+     "games": 104
+    },
+    "roleVsLayer1OnShiftedLines": {
+     "n": 138,
+     "layer1": 0.24499,
+     "role": 0.24551,
+     "interval": {
+      "difference": 0.00052,
+      "lower95": -0.014828,
+      "upper95": 0.014381,
+      "games": 49
+     }
+    },
+    "baselinesVsLayer1": {
+     "b1": {
+      "difference": 0.018622,
+      "lower95": 0.012028,
+      "upper95": 0.025794,
+      "games": 104
+     },
+     "b2": {
+      "difference": 0.018622,
+      "lower95": 0.012028,
+      "upper95": 0.025794,
+      "games": 104
+     },
+     "b3": {
+      "difference": 0.019344,
+      "lower95": 0.012571,
+      "upper95": 0.026125,
+      "games": 104
+     }
+    },
+    "calibration": {
+     "layer1": [
+      {
+       "band": "0-0.20",
+       "n": 103,
+       "meanPredicted": 0.155,
+       "observedMore": 0.1456
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 435,
+       "meanPredicted": 0.2842,
+       "observedMore": 0.2851
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 466,
+       "meanPredicted": 0.3995,
+       "observedMore": 0.4099
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 413,
+       "meanPredicted": 0.4991,
+       "observedMore": 0.4625
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 205,
+       "meanPredicted": 0.5987,
+       "observedMore": 0.5415
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 170,
+       "meanPredicted": 0.7089,
+       "observedMore": 0.6529
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 17,
+       "meanPredicted": 0.825,
+       "observedMore": 0.7647
+      }
+     ],
+     "role": [
+      {
+       "band": "0-0.20",
+       "n": 105,
+       "meanPredicted": 0.1521,
+       "observedMore": 0.1524
+      },
+      {
+       "band": "0.2-0.35",
+       "n": 437,
+       "meanPredicted": 0.2847,
+       "observedMore": 0.2792
+      },
+      {
+       "band": "0.35-0.45",
+       "n": 459,
+       "meanPredicted": 0.4001,
+       "observedMore": 0.4096
+      },
+      {
+       "band": "0.45-0.55",
+       "n": 396,
+       "meanPredicted": 0.4992,
+       "observedMore": 0.4672
+      },
+      {
+       "band": "0.55-0.65",
+       "n": 215,
+       "meanPredicted": 0.5961,
+       "observedMore": 0.5395
+      },
+      {
+       "band": "0.65-0.80",
+       "n": 178,
+       "meanPredicted": 0.7101,
+       "observedMore": 0.6404
+      },
+      {
+       "band": "0.8-1.00",
+       "n": 19,
+       "meanPredicted": 0.8261,
+       "observedMore": 0.7895
+      }
+     ]
+    }
+   }
+  }
+ },
+ "verdict": "NO IMPROVEMENT ON HOLDOUT",
+ "limitations": [
+  "Proxy lines, not PrizePicks lines; probability quality only, no returns.",
+  "Only players who played are scored (PrizePicks voids DNPs); players need 3 earlier played games this season.",
+  "Early-season holdout: few games per player, wide intervals.",
+  "Lines of the same game are correlated; intervals resample whole games."
+ ]
+}

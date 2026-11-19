@@ -1,0 +1,35 @@
+{
+ "modelVersion": "props-nb-role-minutes-v1",
+ "status": "challenger (offline/shadow evaluation only; not registered in the live loop; never promoted by this change)",
+ "baseModelVersion": "props-nb-minutes-rate-v1",
+ "baseArtifact": "src/data/props/model_v1.json",
+ "baseArtifactSha256": "22bf3a78e45b51b2af7f5960da149417b3ae83fc9a4e61e2ccadce650519bfed",
+ "params": {
+  "version": "props-nb-role-minutes-v1",
+  "minMinutesForRate": 6,
+  "minCurrentGames": 3,
+  "maxGapDays": 21,
+  "minutesHalfLife": 4,
+  "rateHalfLife": 8,
+  "maxGames": 20,
+  "priorStrengthMinutes": 120,
+  "priorMinMinutes": 300,
+  "maxMinutes": 53,
+  "leagueRate": {
+   "points": 0.479043,
+   "rebounds": 0.18132,
+   "assists": 0.110791
+  },
+  "dispersion": {
+   "points": 8.5368,
+   "rebounds": 23.6532,
+   "assists": 24.2905
+  },
+  "roleChange": {
+   "recentGames": 3,
+   "minShift": 6
+  }
+ },
+ "priors": "same as the base artifact",
+ "rules": "research/props_cal_v1_20261110/amendment-1.json"
+}

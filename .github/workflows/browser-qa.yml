@@ -3,6 +3,12 @@ name: Browser UX and responsive QA
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "local = isolated build (default); production = read-only page loads against the live site with real data"
+        type: choice
+        options: [local, production]
+        default: local
 
 permissions:
   contents: read
@@ -14,7 +20,8 @@ jobs:
     timeout-minutes: 12
     env:
       SPORTSEDGE_PAPER_RUNS_ENABLED: "false"
-      BASE_URL: http://127.0.0.1:3100
+      BASE_URL: ${{ inputs.target == 'production' && 'https://sports-edge-eta.vercel.app' || 'http://127.0.0.1:3100' }}
+      SMOKE_TARGET: ${{ inputs.target == 'production' && 'production' || 'local' }}
       BROWSER_QA_OUTPUT: artifacts/browser-qa
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +32,10 @@ jobs:
           node-version: "24"
           cache: npm
       - name: Install locked dependencies
+        if: env.SMOKE_TARGET != 'production'
         run: npm ci
       - name: Build isolated production website
+        if: env.SMOKE_TARGET != 'production'
         run: npm run build
       - name: Check headless Chrome availability
         run: |
@@ -38,6 +47,7 @@ jobs:
           fi
           printf 'CHROME_BIN=%s\n' "$browser" >> "$GITHUB_ENV"
       - name: Start local read-only website
+        if: env.SMOKE_TARGET != 'production'
         run: |
           npm run start -- --port 3100 > /tmp/sportsedge-local-next.log 2>&1 &
           echo $! > /tmp/sportsedge-local-next.pid

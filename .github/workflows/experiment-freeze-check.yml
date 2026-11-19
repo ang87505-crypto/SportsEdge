@@ -1,0 +1,51 @@
+name: Experiment freeze check (read-only)
+# Sunday freeze and Monday go/no-go evidence in one run. Manual dispatch only; no schedule, no secrets, no writes.
+# Fails on: frozen-file or setting drift, production not serving main's head, or PR #102 moved off its pinned head.
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: Manifest to verify against (committed path)
+        default: docs/experiments/manifest-2026-11-13-candidate.json
+        required: true
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Verify the experiment manifest
+        id: manifest
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+        run: |
+          set -uo pipefail
+          case "$MANIFEST" in docs/experiments/*.json) ;; *) echo "manifest must be under docs/experiments/" >&2; exit 2;; esac
+          out=$(node --experimental-strip-types scripts/experiment-manifest.mjs verify "$MANIFEST" 2>/dev/null); code=$?
+          echo "$out"
+          { echo '## Experiment freeze check'; echo; echo '```'; echo "$out"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+      - name: Production serves main's head; PR #102 is still pinned
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PINNED: 9e23e6305eb04bc20ea7e393bd2c49da4bd2a811
+        run: |
+          set -euo pipefail
+          deployed=$(curl -fsS --max-time 20 https://sports-edge-eta.vercel.app/api/version | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).commitSha??''))")
+          main=$(gh api repos/${{ github.repository }}/commits/main --jq .sha)
+          pr=$(gh api repos/${{ github.repository }}/pulls/102 --jq '.head.sha + " " + .state + " merged=" + (.merged|tostring)')
+          echo "production=$deployed main=$main pr102=$pr"
+          { echo; echo "production \`$deployed\` · main \`$main\` · PR #102 \`$pr\`"; } >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          [ "$deployed" = "$main" ] || { echo "::error::production is not serving main's head"; fail=1; }
+          case "$pr" in "$PINNED open merged=false") ;; *) echo "::error::PR #102 is not open at its pinned head"; fail=1;; esac
+          exit $fail

@@ -1,0 +1,25 @@
+{
+ "id": "props-cal-v1",
+ "committedBefore": "any 2026-27 holdout evaluation of this challenger",
+ "kind": "versioned challenger to the current props stats model (props-nb-minutes-rate-v1); shadow/offline only, never promoted by this change",
+ "whyThisImprovement": "Calibration. The 2026-11-08 replay's learning layer put weight 0.50 on the stats model's points logit, i.e. the stats model is overconfident; the active model has no calibration of its own. Minutes uncertainty is already in the stats model's variance (rate^2 * sdMinutes^2), so it is not re-added. The existing learning challenger bundles calibration with matchup terms; this tests whether calibration alone explains its gain.",
+ "model": "Per-stat Platt map on the stats model: logit P(More|no tie) = a_stat + b_stat * logit(stats P(More|no tie)); P(tie) carried unchanged. Expressed as a LearnArtifact with only 'bias' and 'stats_logit' weights (all other features fixed at zero), scored by the existing predictLearn.",
+ "primary": "V2: map fit on the whole 2025-26 regular season (2025-10-21 .. 2026-04-13), layer 1 with 2024-25 priors and dispersion fit through 2025-12-31 (the existing replay pipeline), lambda chosen by the existing time-ordered validation.",
+ "comparisons": [
+  "V1: same map fit on 2025-26 through 2025-12-31 only",
+  "V3: the existing matchup learning layer (props-learn design) refit on 2025-26 through 2025-12-31, market terms zero",
+  "B1: Poisson with the mean of the last 10 played games",
+  "B2: Poisson with the season-to-date mean",
+  "B3: share of the last 10 played games over the line, shrunk 50/50 toward 0.5"
+ ],
+ "fitDataLabel": "2025-26 was inspected in earlier research (2026-11-07/08); results on it are exploratory, not confirmation.",
+ "holdout": {
+  "data": "SportsDataverse ESPN player_box_2027.csv (2026-27 regular season so far), pinned by SHA-256 in the report; never used for fitting or choosing anything",
+  "layer1": "the production artifact src/data/props/model_v1.json exactly as the live worker scores (priors and dispersion frozen 2026-11-07)",
+  "lines": "PROXY lines: floor(median of the last 10 played games) + 0.5, from earlier games only",
+  "scope": "players who played (PrizePicks voids DNPs); at least 3 earlier played games this season"
+ },
+ "metrics": ["Brier (binary, no ties at half-point lines)", "log loss", "calibration by probability band (0-0.2, 0.2-0.35, 0.35-0.45, 0.45-0.55, 0.55-0.65, 0.65-0.8, 0.8-1)", "coverage (scored share)", "paired game-level bootstrap 95% interval of the Brier difference vs layer 1 (1,000 replicates, seed 20261110)", "by stat"],
+ "verdict": "Improves on the holdout only if the primary variant's Brier upper 95% bound vs layer 1 is below 0 on at least two of three stats and it is not worse than V3 on any stat by more than 0.002. Otherwise: no improvement. Either way nothing is promoted; the live promotion gate is unchanged.",
+ "realLines": "Captured PrizePicks/Pick6 lines are evaluated separately (read-only ledger audit in GitHub Actions): stats model vs props-cal-v1 vs timestamp-matched no-vig sportsbook probabilities at the exact same line; deduplicated across platforms by event|player|stat|line; game-level intervals. This sample is small and reported as descriptive only."
+}

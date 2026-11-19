@@ -8,6 +8,7 @@ on:
       - 'src/lib/server/alpaca-paper-reader.test.mjs'
       - 'src/lib/server/alpaca-owner-session.ts'
       - 'src/lib/server/alpaca-owner-session.test.mjs'
+      - 'src/lib/owner-sign-in*'
       - 'src/app/api/internal/alpaca-paper/session/route.ts'
       - 'src/app/api/internal/alpaca-paper/view/route.ts'
       - 'src/components/alpaca-paper-dashboard.tsx'
@@ -25,4 +26,4 @@ jobs:
         with:
           node-version: '24'
       - name: Verify paper endpoint fixed host, read-only and schema fails closed
-        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reader.test.mjs src/lib/server/alpaca-owner-session.test.mjs
+        run: node --experimental-strip-types --test src/lib/server/alpaca-paper-reader.test.mjs src/lib/server/alpaca-owner-session.test.mjs src/lib/owner-sign-in.test.mjs
