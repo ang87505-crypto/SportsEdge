@@ -5,6 +5,7 @@ import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
 import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
+import {evaluateStockForward,type FunnelStage} from '@/lib/stocks/paper-auto-evaluation';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 import {paperRisk} from '@/lib/stocks/paper-risk';
 import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
@@ -271,6 +272,8 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
      <time dateTime={f.at}>{when(f.at)}</time></li>)}</ul>}
   </Panel>
 
+  <LearningEvidence l={l}/>
+
   {l.intents.length>0&&<Panel title="Orders" description="Whole-share limit orders on the paper account" flush>
    <div className="table-wrap"><table className="data-table">
     <thead><tr><th>When</th><th>Order</th><th>Status</th><th>Filled</th></tr></thead>
@@ -317,4 +320,36 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
    {l.gateEvents.length>0&&<><h3>On/off history</h3><ul className="quiet">{l.gateEvents.map((g,k)=><li key={k}>{when(g.at)}: {g.fromMode} → {g.toMode} ({g.reason}) by {g.actor}</li>)}</ul></>}
   </Details>
  </>;
+}
+
+const FUNNEL_LABEL:Record<FunnelStage,string>={NO_TARGETS:'No targets',NOT_EXECUTED:'No execute ran',
+ SHADOW_ONLY:'Shadow plan only — no order',ORDERS_UNFILLED:'Orders sent, none filled',FILLED_OPEN:'Filled, still held',REALIZED:'Realized'};
+
+/** Forward learning evidence from real PAPER fills only. Below the minimum sample it says so instead of a win rate. */
+function LearningEvidence({l}:{l:PaperAutoLedger}){
+ const e=evaluateStockForward(l,new Date().toISOString());
+ const pc=(x:number|null)=>x===null?'—':(x*100).toFixed(2)+'%';
+ const tone=e.verdict==='MEASURED'?'positive':e.verdict==='INTEGRITY_FAILED'?'warning':'neutral';
+ const states=Object.entries(e.sessions.states);
+ return <Panel title="Learning evidence" description="Completed trades from real PAPER fills, net of 10 bps per side. Plans, unfilled and rejected orders never count."
+  actions={<Badge tone={tone}>{e.verdict==='INSUFFICIENT_DATA'?'INSUFFICIENT DATA':e.verdict.replaceAll('_',' ')}</Badge>}>
+  <MetricGrid columns={4}>
+   <Metric label="Completed trades" value={String(e.trades.completed)} detail={`needs ${e.minimums.completedTrades}; ${e.trades.openLots} open`}/>
+   <Metric label="Clean sessions" value={String(e.sessions.clean)} detail={`needs ${e.minimums.cleanSessions}; ${e.sessions.targets} with targets`}/>
+   <Metric label="Win rate" value={e.trades.winRate===null?'INSUFFICIENT DATA':pc(e.trades.winRate)} detail={`${e.trades.winners} won, ${e.trades.losers} lost`}/>
+   <Metric label="Avg winner / loser" value={`${pc(e.trades.averageWinnerReturn)} / ${pc(e.trades.averageLoserReturn)}`} detail="net of estimated costs"/>
+  </MetricGrid>
+  <p className="quiet small-print">Orders: {e.orders.proposed} planned, {e.orders.submitted} sent, {e.orders.filled} filled, {e.orders.partiallyFilled} partly filled, {e.orders.rejected} rejected, {e.orders.canceledOrExpired} cancelled or expired unfilled, {e.orders.notSubmitted} not sent.
+   {states.length?` Sessions: ${states.map(([d,s])=>`${d} ${s.replaceAll('_',' ').toLowerCase()}`).join(', ')}.`:''} Prediction accuracy: not measurable (the weekly model records targets, not expected returns).</p>
+  {e.sessions.funnel.length>0&&<div className="table-wrap"><table className="data-table">
+   <caption className="quiet small-print">Each decision, stage by stage. A shadow plan is not an order; an order is not a fill; a fill is not a result until it is sold.</caption>
+   <thead><tr><th>Session</th><th>Decision</th><th>Shadow plans</th><th>Orders sent</th><th>Filled</th><th>Realized (net)</th><th>Stage</th></tr></thead>
+   <tbody>{e.sessions.funnel.slice(-8).reverse().map(f=><tr key={f.session}>
+    <td>{f.session}</td><td>{f.outcome==='TARGETS'?`${f.targets} targets`:f.outcome.replaceAll('_',' ').toLowerCase()}</td>
+    <td>{f.shadowPlans}</td><td>{f.ordersSent}</td><td>{f.ordersFilled}{f.filledShares?` (${f.filledShares} sh)`:''}</td>
+    <td>{f.realizedTrades?`${f.realizedTrades} · $${(f.realizedNetPnlCents/100).toFixed(2)}`:'—'}</td>
+    <td>{FUNNEL_LABEL[f.stage]}</td></tr>)}</tbody>
+  </table></div>}
+  {e.verdict==='INTEGRITY_FAILED'&&<Callout tone="warning" title="Evidence integrity check failed">{e.reasons.filter(r=>/LOOKAHEAD|UNMATCHED/.test(r)).join('; ')}</Callout>}
+ </Panel>;
 }

@@ -14,7 +14,7 @@
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
 import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync} from 'node:fs';
-import {fingerprint,register,transition,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
+import {adopt,EngineError,fingerprint,register,transition,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
 import {nextStatus,type Result} from '../src/lib/lab/engine/evaluate.ts';
 import {pair,forwardResult,type FrozenPrediction,type Grade} from '../src/lib/lab/engine/forward.ts';
@@ -129,6 +129,18 @@ const before=fingerprint(reg);
 let status='OK',failure:string|null=null;
 
 try{
+ // A restored registry (--state) is authoritative for the experiments it has. Experiments added to the reviewed seed
+ // after that state was first published are adopted once, with their pre-registration history; never overwritten.
+ if(regIn!==opt('registry')&&opt('registry')){
+  const seed:Registry=JSON.parse(readFileSync(opt('registry')!,'utf8'));
+  const adopted:string[]=[],refused:{id:string;code:string}[]=[];
+  for(const e of seed.experiments){
+   if(reg.experiments.some(x=>x.id===e.id))continue;
+   try{reg=adopt(reg,e);adopted.push(e.id);}
+   catch(err){if(!(err instanceof EngineError))throw err;refused.push({id:e.id,code:err.code});}
+  }
+  report.seed={adopted,refused};
+ }
  let ledger:Ledger|null=null;
  if(flag('sports-ledger'))ledger=await readLedger();
  else if(opt('sports-rows')){
