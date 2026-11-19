@@ -1223,6 +1223,68 @@
      "inputFingerprint": "b158efbda5c33efde8eff082b8c5523bf32244e711ac07a50d718a696e7eab4c"
     }
    ]
+  },
+  {
+   "id": "lab-stock-holdrank10-wholeshare",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:rank-hold-buffer-whole-shares",
+   "hypothesis": "Keeping a held stock while it ranks in the momentum top 10 (frozen hold buffer) beats the live weekly rules on the $1,000 whole-share account after costs, and beats SPY held at the same exposure.",
+   "dataDependencies": [
+    "Alpaca SIP daily bars, raw and all-adjusted (read-only)",
+    "config/paper-auto/universe-large-cap-v1.json revision large-cap-v1-2026-11-09"
+   ],
+   "frozen": {
+    "features": [
+     "mom252-skip21",
+     "trend200",
+     "holdrank10"
+    ],
+    "parameters": {
+     "HOLD_RANK_MAX": 10,
+     "picks": 5,
+     "perSector": 2,
+     "weightPerPick": 0.1,
+     "maxLastClose": 95,
+     "execution": "whole shares, floor(10% of equity / open)",
+     "costBpsJudged": 10,
+     "costBpsRobustness": 25,
+     "dev": "2017-01-01..2022-12-31",
+     "holdout": "2023-01-01..2026-11-18"
+    }
+   },
+   "dataCutoff": "2026-11-18T21:00:00Z",
+   "codeFingerprint": "93ab33ed2725793e94f23b5922c1909952181596a4cf17ce9b66c6057f36719c",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
+    "secondary": [
+     "holdout max drawdown",
+     "turnover per year",
+     "full-period Sharpe at 25 bps",
+     "Sharpe vs SPY at the strategy's realized exposure"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 bps per side judged; 25 bps robustness",
+   "decisionRule": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md: R1 Sharpe above the live rules in dev AND holdout, holdout drawdown within 5 points, lower turnover; R2 full Sharpe above at 25 bps; R3 Sharpe above SPY at its own exposure in dev AND holdout. R1+R2+R3 PROMISING; R1+R2 only RUNNING (forward only); otherwise REJECTED.",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
+   "source": "existing",
+   "registeredAt": "2026-11-19T21:30:00Z",
+   "history": [
+    {
+     "at": "2026-11-19T21:30:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md); zero fitted parameters",
+     "inputFingerprint": null
+    }
+   ]
   }
  ]
 }

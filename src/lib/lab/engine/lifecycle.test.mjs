@@ -142,3 +142,28 @@ test('forward evaluation uses the production gate unchanged and has no write, or
   const r = forwardResult(SPEC, pair(SPEC, fixture(700, 'candidate').predictions, fixture(700, 'candidate').grades,'2026-11-28T00:00:00Z'), '2026-11-28T00:00:00Z');
   assert.equal(r.disposition, 'PROMISING', 'a qualifying result is only PROMISING; the lifecycle turns it into READY_FOR_REVIEW, never live');
 });
+
+test('a restored registry adopts a newly seeded experiment once, keeps its pre-registration, and refuses a rejected idea', () => {
+  const NEW = 'lab-stock-holdrank10-wholeshare';
+  const seed = JSON.parse(readFileSync(new URL(SEED, ROOT), 'utf8'));
+  assert.equal(seed.experiments.find(e => e.id === NEW)?.status, 'PROPOSED', 'the challenger is pre-registered in the seed');
+  const dir = tmp(), state = join(dir, 'state');
+  execFileSync('mkdir', ['-p', state]);
+  writeFileSync(join(state, 'registry.json'), JSON.stringify({...seed, experiments: seed.experiments.filter(e => e.id !== NEW)}));
+  const a = run(dir, {state});
+  assert.equal(a.code, 0);
+  assert.deepEqual(a.report.seed, {adopted: [NEW], refused: []});
+  const got = a.reg.experiments.find(e => e.id === NEW);
+  assert.equal(got.status, 'PROPOSED');
+  assert.deepEqual(got.history, seed.experiments.find(e => e.id === NEW).history, 'seed history kept, nothing invented');
+  const b = run(dir, {state});
+  assert.equal(b.summary.registryChanged, false, 'adopted once; a repeat run changes nothing');
+  // An idea the restored state already rejected under another id is never re-adopted from the seed.
+  const dir2 = tmp(), state2 = join(dir2, 'state');
+  execFileSync('mkdir', ['-p', state2]);
+  const rejected = {...seed.experiments.find(e => e.id === NEW), id: 'older-rejected-copy', status: 'REJECTED'};
+  writeFileSync(join(state2, 'registry.json'), JSON.stringify({...seed, experiments: [...seed.experiments.filter(e => e.id !== NEW), rejected]}));
+  const c = run(dir2, {state: state2});
+  assert.deepEqual(c.report.seed.refused, [{id: NEW, code: 'IDEA_ALREADY_REJECTED'}]);
+  assert.equal(c.reg.experiments.some(e => e.id === NEW), false);
+});
