@@ -1,7 +1,6 @@
 import type {NextRequest} from 'next/server';
 import {createHash,createHmac} from 'node:crypto';
-import {readFile} from 'node:fs/promises';
-import {join} from 'node:path';
+import {loadResearchEngine} from '@/lib/server/research-engine-load';
 import {handleSiteAssistant,sitePorts} from '@/lib/server/site-assistant-handler';
 import {handleCommand} from '@/lib/server/command-handler';
 import {cachedPropsRaw} from '@/lib/server/assistant-handler';
@@ -32,8 +31,7 @@ export async function POST(req:NextRequest){
    ops:()=>site.ops?site.ops(nowIso):Promise.resolve(null),research:()=>site.research(nowIso),lab:()=>site.lab?site.lab(nowIso):Promise.resolve(null),
    accounts:()=>site.accounts(),
    watch:()=>propsConfigured?loadPropsResearch(propsStore(),nowIso):Promise.resolve(null),
-   // Learning-engine records ship with the AI 2.0 research work; until deployed, the files are absent and the tool says so.
-   engine:async()=>{try{const [registry,jobs]=await Promise.all(['registry','jobs'].map(async f=>JSON.parse(await readFile(join(process.cwd(),'research/engine',f+'.json'),'utf8'))));return {registry,jobs};}catch{return null;}}},
+   engine:async()=>{const e=await loadResearchEngine(nowIso);return e.mode==='live'&&!e.stale&&e.status==='OK'?{registry:e.registry,jobs:e.jobs}:null;}},
   async legacy(message,context){
    const r=await handleSiteAssistant({contentType:'application/json',text:async()=>JSON.stringify({message:message.slice(0,300),context})},env,nowIso,site);
    const b=await r.json().catch(()=>null) as {reply?:Reply}|null;

@@ -1,9 +1,10 @@
 // Learning worker: pure planning helpers and the safety-brake wiring. Synthetic TEST-ONLY data, fake store.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nextVersion,retireVersions,trainDecision,forwardTrainingRows,evaluationRows,reviewLines,brakePicks,applySafetyBrake}
+import {nextVersion,retireVersions,trainDecision,forwardTrainingRows,evaluationRows,reviewLines,brakePicks,applySafetyBrake,runTrain}
  from './props-learn-worker.ts';
-import {FEATURES,MARKET_FEATURES} from '../props/learn.ts';
+import {FEATURES,MARKET_FEATURES,artifactSha256} from '../props/learn.ts';
+import {STATS} from '../props/contract.ts';
 
 test('versions count up from the highest existing one',()=>{
  assert.equal(nextVersion([]),'props-learn-v1');
@@ -22,6 +23,32 @@ test('a challenger that is worse on held-out data is dropped',()=>{
  assert.equal(trainDecision(0.24,0.25),'shadow');
  assert.equal(trainDecision(0.25,0.25),'shadow');
  assert.equal(trainDecision(0.2501,0.25),'drop');
+});
+
+test('full shadow capacity preserves frozen experiments before reading training data or writing a replacement',async()=>{
+ const artifacts=[1,2,3].map(i=>{
+  const version='props-learn-v'+i,artifact={modelVersion:version,features:[...FEATURES],weights:Object.fromEntries(STATS.map(s=>[s,FEATURES.map(()=>0)]))};
+  return {version,artifact,sha256:artifactSha256(artifact)};
+ });
+ const reads=[],writes=[];
+ const store={select:async(table)=>{reads.push(table);
+  if(table==='props_model_control')return [{active_model_version:'props-nb-minutes-rate-v1',learning_enabled:true,auto_switch_enabled:false}];
+  if(table==='props_model_events')return artifacts.map((a,i)=>({id:i+1,version:a.version,event:'shadow_start'}));
+  if(table==='props_model_artifacts')return artifacts;
+  throw Error('training inputs should not be read at capacity');
+ },insert:async(...args)=>{writes.push(args);return [];},rpc:async()=>{throw Error('no action expected');}};
+ const r=await runTrain({store,now:()=> '2026-11-19T17:00:00Z',historical:[]});
+ assert.equal(r.status,'SKIPPED_SHADOW_CAPACITY');assert.equal(r.shadowing.length,3);assert.deepEqual(writes,[]);
+ assert.ok(!reads.includes('props_observations'));
+});
+
+test('a free shadow slot still permits a normal synthetic training run',async()=>{
+ const writes=[];
+ const store={select:async(table)=>table==='props_model_control'?[{active_model_version:'props-nb-minutes-rate-v1',learning_enabled:true,auto_switch_enabled:false}]:[],
+  insert:async(...args)=>{writes.push(args);return [];},rpc:async()=>{throw Error('no action expected');}};
+ const r=await runTrain({store,now:()=> '2026-11-19T17:00:00Z',historical:[]});
+ assert.equal(r.status,'SHADOWING');assert.equal(r.version,'props-learn-v1');
+ assert.equal(writes.filter(([table])=>table==='props_model_artifacts').length,1);
 });
 
 const P=(more,tie=0)=>({pMore:more,pLess:1-more-tie,pTie:tie});

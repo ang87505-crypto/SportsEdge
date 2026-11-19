@@ -14,4 +14,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/client.test.mjs
+      - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs scripts/kalshi-independent-weather-collect.test.mjs
