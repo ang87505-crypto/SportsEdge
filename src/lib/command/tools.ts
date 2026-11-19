@@ -34,7 +34,7 @@ export type CommandPorts={nowIso:string;ownerAccess:boolean;ownerExpiresAt?:numb
  sports:()=>Promise<Raw|null>;ops:()=>Promise<OpsView|null>;research:()=>Promise<ResearchView|null>;lab:()=>Promise<LabView|null>;
  /** Owner-only; never invoked unless the request carries a validated owner session. */
  accounts:()=>Promise<StockAccounts>;
- /** AI 2.0 learning engine registry and job history (research/engine/*.json); null until that work is deployed. */
+ /** Current successful published learning registry/history; null when missing, failed or stale. */
  engine?:()=>Promise<{registry:unknown;jobs:unknown}|null>;
  /** Existing bounded 90-day, pre-lock source ledger; never a provider query. */
  watch?:()=>Promise<ResearchRaw|null>};
@@ -211,7 +211,7 @@ TOOLS.push({name:'research_experiments',access:'public',input_schema:obj({status
  async run(i,p){
   const e=p.engine?await p.engine().catch(()=>null):null;
   const list=e?parseEngineRegistry(e.registry):null;
-  if(!list)return {ok:false,data:null,cards:[],sources:[{label:'AI Learning Lab',href:'/lab'}],error:'The learning-engine registry is not connected here (it ships with the AI 2.0 research work, not yet deployed).'};
+  if(!list)return {ok:false,data:null,cards:[],sources:[{label:'AI Learning Lab',href:'/lab'}],error:'A current successful learning-engine evaluation is not connected here. Open the lab for source status and dated saved research; unavailable does not mean zero experiments.'};
   const f=String(i.status??'all');
   const sel=list.filter(x=>f==='all'?true:f==='active'?!['REJECTED','READY_FOR_REVIEW'].includes(x.status):f==='rejected'?x.status==='REJECTED':x.status==='READY_FOR_REVIEW');
   const counts=Object.fromEntries(ENGINE_STATUSES.map(s=>[s,list.filter(x=>x.status===s).length]));

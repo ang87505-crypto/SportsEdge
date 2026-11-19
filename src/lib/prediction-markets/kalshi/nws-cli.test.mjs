@@ -11,7 +11,7 @@ const text=[
  '...................................','',
  '...THE CENTRAL PARK NY CLIMATE SUMMARY FOR NOVEMBER 13 2026...','',
  'CLIMATE NORMAL PERIOD 1991 TO 2020','','WEATHER ITEM OBSERVED TIME RECORD YEAR NORMAL',
- 'TEMPERATURE (F)',' TODAY','   MAXIMUM         52   1211 AM  73  1931',
+ 'TEMPERATURE (F)',' YESTERDAY','   MAXIMUM         52   1211 AM  73  1931',
  '   MINIMUM         38    923 AM  23  2019','   AVERAGE         45',
  'PRECIPITATION (IN)',' TODAY            0.26',
  'THE CENTRAL PARK NY CLIMATE NORMALS FOR TOMORROW',
@@ -44,6 +44,18 @@ test('next-day NWS CLI full report is preliminary station evidence, never market
  assert.equal(g.source,'NWS_CLI_PRELIMINARY_NOT_KALSHI_SETTLEMENT');
  assert.equal(g.brier,null,'no trained probability, no invented Brier');
  assert.equal(g.forecastId,f.id);
+});
+test('accepts the actual next-morning CLINYC YESTERDAY temperature heading',()=>{
+ const c=parseCentralParkCli(text,at);
+ assert.equal(c.reportDate,'2026-11-13');
+ assert.equal(c.observedHighF,52);
+});
+test('retains compatibility with CLINYC TODAY temperature heading',()=>{
+ const legacy=text.replace(' YESTERDAY\n',' TODAY\n');
+ assert.notEqual(legacy,text);
+ assert.match(legacy,/TEMPERATURE \(F\)\n TODAY\n/);
+ const c=parseCentralParkCli(legacy,at);
+ assert.equal(c.observedHighF,52);
 });
 test('real fixed NWS URL only, no Kalshi data sources',async()=>{
  let calls=0;

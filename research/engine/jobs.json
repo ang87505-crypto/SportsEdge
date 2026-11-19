@@ -1,0 +1,23 @@
+[
+ {
+  "at": "2026-11-13",
+  "job": "research-engine (preflight step)",
+  "run": "43489932456",
+  "status": "OK",
+  "summary": "271 clean graded lines, 76 picks from 10 games; no significant pattern; 0 hypotheses proposed"
+ },
+ {
+  "at": "2026-11-13T20:06:09Z",
+  "job": "research-engine --evaluate-forward (preflight step)",
+  "run": "43498350141",
+  "status": "OK",
+  "summary": "props-learn-v1 vs active model: 144 paired frozen lines, 3 dates, 5 games -> INSUFFICIENT_DATA; 0 hypotheses proposed"
+ },
+ {
+  "at": "2026-11-13T20:08:04Z",
+  "job": "research-intake collect",
+  "run": "43498666563",
+  "status": "OK",
+  "summary": "SEC company facts 10/10 (0 point-in-time leaks), OpenAlex 5/5, arXiv 3/3; 72 hypothesis-only leads; dataset e9b1e1f6d2b1d2ee"
+ }
+]

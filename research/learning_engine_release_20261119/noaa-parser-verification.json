@@ -1,0 +1,44 @@
+{
+  "schema": "sportsedge-noaa-parser-verification-v1",
+  "verifiedAt": "2026-11-19T18:28:38.947Z",
+  "kind": "REAL_GOVERNMENT_RECORDS_NOT_SYNTHETIC_NOT_KALSHI_SETTLEMENT",
+  "parserSha256": "9e7f165e780f32c9f900a910a4db26ed918086edbddaeb9a71bb3ad692931810",
+  "frozenForecast": {
+    "repository": "ang87505-crypto/SportsEdge",
+    "commit": "6b4380f4232920339c84b2e25741d9e0f2fd6682",
+    "path": "kalshi-independent/nyc-weather/forecasts/2026-11-18.json",
+    "id": "ab5d52a9212b65ad86e808a16be00b73e62ee91dee92542380df6c3601c540fa",
+    "capturedAt": "2026-11-17T09:11:29.334Z",
+    "forecastIssuedAt": "2026-11-17T06:32:09+00:00",
+    "targetLocalDate": "2026-11-18"
+  },
+  "observation": {
+    "id": "f975ca05ab53959be371b6270ee5a658f4621bf010474b74a89524603945dc4c",
+    "schemaVersion": "nws-central-park-cli-preliminary-v1",
+    "source": "NWS_CLINYC_NEXT_MORNING_PRELIMINARY",
+    "station": "KNYC_CENTRAL_PARK",
+    "reportDate": "2026-11-18",
+    "issuedAt": "2026-11-19T06:46:00.000Z",
+    "fetchedAt": "2026-11-19T18:28:38.947Z",
+    "observedHighF": 64,
+    "sourceDigest": "501ce157240d948275beee27a2b9d675014a685db28da32da88195cdcf34e338",
+    "sourceUrl": "https://tgftp.nws.noaa.gov/data/raw/cd/cdus41.kokx.cli.nyc.txt",
+    "dayDefinition": "LOCAL_STANDARD_TIME_UTC_MINUS_5",
+    "status": "PRELIMINARY_NWS_DAILY_NOT_NCEI_CERTIFIED_NOT_KALSHI_SETTLEMENT",
+    "rawProductText": "CDUS41 KOKX 190646\nCLINYC\n\nCLIMATE REPORT \nNATIONAL WEATHER SERVICE NEW YORK, NY\n146 AM EST THU NOV 19 2026\n\n...................................\n\n...THE CENTRAL PARK NY CLIMATE SUMMARY FOR NOVEMBER 18 2026...\n\nCLIMATE NORMAL PERIOD 1991 TO 2020\nCLIMATE RECORD PERIOD 1869 TO 2026\n\n\nWEATHER ITEM   OBSERVED TIME   RECORD YEAR NORMAL DEPARTURE LAST      \n                VALUE   (LST)  VALUE       VALUE  FROM      YEAR     \n                                                  NORMAL           \n...................................................................\nTEMPERATURE (F)                                                          \n YESTERDAY                                                           \n  MAXIMUM         64    248 PM  73    1921  53     11       45       \n                                      1928                           \n  MINIMUM         46    714 AM  18    1936  41      5       37       \n  AVERAGE         55                        47      8       41     \n\nPRECIPITATION (IN)                                                    \n  YESTERDAY        0.00          1.24 1911   0.11  -0.11     0.00     \n  MONTH TO DATE    2.84                      2.07   0.77     0.75     \n  SINCE SEP 1     10.37                     10.76  -0.39     7.59     \n  SINCE JAN 1     41.72                     43.63  -1.91    34.85     \n\nSNOWFALL (IN)                                                              \n  YESTERDAY        0.0           2.0  1873   0.0    0.0      0.0      \n  MONTH TO DATE    0.0                       0.2   -0.2       T       \n  SINCE SEP 1      0.0                       0.3   -0.3       T       \n  SINCE JUL 1      0.0                       0.3   -0.3       T       \n  SNOW DEPTH       0                                                 \n\nDEGREE DAYS                                                           \n HEATING                                                              \n  YESTERDAY       10                        18     -8       24        \n  MONTH TO DATE  197                       275    -78      284        \n  SINCE SEP 1    426                       547   -121      507        \n  SINCE JUL 1    426                       548   -122      508        \n\n COOLING                                                              \n  YESTERDAY        0                         0      0        0        \n  MONTH TO DATE    2                         0      2        0        \n  SINCE SEP 1    167                       181    -14      208        \n  SINCE JAN 1   1269                      1221     48     1277        \n...................................................................\n\n\nWIND (MPH)                                                            \n  HIGHEST WIND SPEED     9   HIGHEST WIND DIRECTION     W (280)       \n  HIGHEST GUST SPEED    17   HIGHEST GUST DIRECTION     W (260)       \n  AVERAGE WIND SPEED     4.1                                        \n\n\nSKY COVER                                                             \n  AVERAGE SKY COVER 0.0                                                 \n\n\nWEATHER CONDITIONS                                                    \nTHE FOLLOWING WEATHER WAS RECORDED YESTERDAY.                         \n  NO SIGNIFICANT WEATHER WAS OBSERVED.                                  \n\n\nRELATIVE HUMIDITY (PERCENT)\n HIGHEST    63           700 AM                                      \n LOWEST     23           300 PM                                      \n AVERAGE    43                                                        \n\n..........................................................\n\n\nTHE CENTRAL PARK NY CLIMATE NORMALS FOR TODAY\n                         NORMAL    RECORD    YEAR                     \n MAXIMUM TEMPERATURE (F)   53        72      1921                      \n MINIMUM TEMPERATURE (F)   41        18      1936                      \n\n\nSUNRISE AND SUNSET                                                    \nNOVEMBER 19 2026......SUNRISE   647 AM EST   SUNSET   435 PM EST     \nNOVEMBER 20 2026......SUNRISE   649 AM EST   SUNSET   434 PM EST     \n\n\n-  INDICATES NEGATIVE NUMBERS.\nR  INDICATES RECORD WAS SET OR TIED.\nMM INDICATES DATA IS MISSING.\nT  INDICATES TRACE AMOUNT.\n\n\n\n\n$$\n\n\n"
+  },
+  "grade": {
+    "id": "bd3625917abf78610db1b3d3f73b9f23ceb04123f8cb37fbcf3f6d7e49ffc0ae",
+    "forecastId": "ab5d52a9212b65ad86e808a16be00b73e62ee91dee92542380df6c3601c540fa",
+    "cliId": "f975ca05ab53959be371b6270ee5a658f4621bf010474b74a89524603945dc4c",
+    "date": "2026-11-18",
+    "observedHighF": 64,
+    "forecastHighF": 60,
+    "absoluteErrorF": 4,
+    "hitIndependentBand": true,
+    "forecastBandProbabilityPpm": null,
+    "brier": null,
+    "source": "NWS_CLI_PRELIMINARY_NOT_KALSHI_SETTLEMENT"
+  },
+  "productionArchiveChanged": false
+}

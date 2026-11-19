@@ -146,6 +146,11 @@ export async function runTrain(d:LearnDeps){
   if(recent.length)return {status:'SKIPPED_RECENT_TRAIN',version:recent[0].version,trainedAt:recent[0].at};
  }
  const active=await loadActiveModel(d.store);
+ // Preserve frozen challengers until a slot is available. At two funded games/day, a 50-game
+ // forward gate needs at least 25 game days; replacing a model after three weekly trains loses
+ // its evidence before it can qualify. Evaluation/owner retirement can free a slot.
+ if(active.shadows.length>=MAX_SHADOWING)return {status:'SKIPPED_SHADOW_CAPACITY',
+  shadowing:active.shadows.map(s=>s.version),reason:'Existing challengers retain their forward evidence until a shadow slot is available'};
  const [lines,teamRows]=await Promise.all([loadForwardLines(d.store,ago(now,180)),loadTeamRows(d.store,ago(now,275))]);
  // Hold out the newest 14 days of forward lines and the newest 20% of history to check the challenger.
  const cut=ago(now,14);
