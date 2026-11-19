@@ -84,3 +84,19 @@ test('scoring: paired game bootstrap is deterministic and resamples games; calib
   assert.equal(c.calibrationInTheLarge, 0.2, 'over-predicts More by 20 points');
   assert.equal(c.ece, 0.2);
 });
+
+test('the registry proposal is valid, new (no tested or rejected idea repeated), and its result maps to RUNNING, never promotion', async () => {
+  const {readFileSync} = await import('node:fs');
+  const {register} = await import('../lab/engine/experiments.ts');
+  const {nextStatus} = await import('../lab/engine/evaluate.ts');
+  const root = new URL('../../../', import.meta.url);
+  const seed = JSON.parse(readFileSync(new URL('research/engine/registry.json', root), 'utf8'));
+  const {entry} = JSON.parse(readFileSync(new URL('research/props_availability_v1_20261119/registry-proposal.json', root), 'utf8'));
+  const [r] = JSON.parse(readFileSync(new URL('research/props_availability_v1_20261119/registry-result.json', root), 'utf8'));
+  const reg = register(seed, {...entry, history: []}, entry.registeredAt);
+  const e = reg.experiments.find(x => x.id === entry.id);
+  assert.equal(e.status, 'PROPOSED');
+  for (const tested of ['sports:minutes-uncertainty-shrinkage', 'sports:short-history-shrinkage', 'sports:role-minutes-adjustment', 'sports:injury-rotation-availability'])
+    assert.notEqual(entry.hypothesisKey, tested);
+  assert.equal(nextStatus(e, r.result).to, 'RUNNING');
+});
