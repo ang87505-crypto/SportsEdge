@@ -96,3 +96,33 @@ test('measured only after the minimum sample of real completed trades and clean 
   assert.equal(e.verdict, 'MEASURED');
   assert.ok(e.trades.winRate > 0 && e.trades.winRate < 1);
 });
+
+const run = (session, summary, over = {}) => ({runId: 'run-' + String(++n).padStart(32, '0'), kind: 'execute', slot: session + 'T15:45Z', attempt: 1,
+  status: 'succeeded', startedAt: session + 'T15:55:20Z', finishedAt: session + 'T15:55:27Z', summary, ...over});
+
+test('funnel: Nov 16 as it happened (TARGETS, a shadow plan on main, no orders) is SHADOW_ONLY, never a fill or a result', () => {
+  const l = ledger({decisions: [{...decision('2026-11-16'), targets: ['OXY', 'MO', 'SLB', 'BMY', 'CSX']}],
+    runs: [run('2026-11-16', 'SHADOW_PLAN_ONLY'), run('2026-11-16', 'SHADOW_PLAN_ONLY', {startedAt: '2026-11-16T18:38:40Z', finishedAt: '2026-11-16T18:38:47Z'})]});
+  const [f] = evaluateStockForward(l, '2026-11-19T12:00:00Z').sessions.funnel;
+  assert.deepEqual(f, {session: '2026-11-16', outcome: 'TARGETS', targets: 5, shadowPlans: 2, executeRuns: 2, ordersSent: 0, ordersFilled: 0,
+    filledShares: 0, realizedTrades: 0, realizedNetPnlCents: 0, stage: 'SHADOW_ONLY'});
+});
+
+test('funnel: targets -> sent -> filled -> realized stay separate stages', () => {
+  const decisions = [decision('2026-11-23'), decision('2026-11-30'), decision('2026-12-07', 'HOLD_NO_TARGETS'), decision('2026-12-14')];
+  const intents = [
+    intent('OXY', 'buy', '2026-11-23', 'filled', 1, 50), intent('MO', 'buy', '2026-11-23', 'rejected', 0, null),
+    intent('OXY', 'sell', '2026-11-30', 'filled', 1, 52), intent('SLB', 'buy', '2026-11-30', 'filled', 2, 40),
+    intent('BMY', 'buy', '2026-12-14', 'open', 0, null)];
+  const runs = [run('2026-11-23', 'ORDERS_COMPLETE'), run('2026-11-30', 'ORDERS_COMPLETE'), run('2026-12-14', 'ORDERS_WORKING')];
+  const f = Object.fromEntries(evaluateStockForward(ledger({decisions, intents, runs}), '2026-12-15T00:00:00Z').sessions.funnel.map(x => [x.session, x]));
+  assert.equal(f['2026-11-23'].stage, 'REALIZED');
+  assert.deepEqual([f['2026-11-23'].ordersSent, f['2026-11-23'].ordersFilled, f['2026-11-23'].realizedTrades], [2, 1, 1]);
+  assert.ok(f['2026-11-23'].realizedNetPnlCents > 0 && f['2026-11-23'].realizedNetPnlCents < 200, 'net of 10 bps per side');
+  assert.equal(f['2026-11-30'].stage, 'FILLED_OPEN', 'SLB is held, not yet a result');
+  assert.equal(f['2026-11-30'].filledShares, 3);
+  assert.equal(f['2026-12-07'].stage, 'NO_TARGETS');
+  assert.equal(f['2026-12-14'].stage, 'ORDERS_UNFILLED');
+  const none = evaluateStockForward(ledger({decisions: [decision('2026-11-23')]}), '2026-11-24T00:00:00Z').sessions.funnel[0];
+  assert.equal(none.stage, 'NOT_EXECUTED');
+});

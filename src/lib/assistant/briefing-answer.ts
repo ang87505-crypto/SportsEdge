@@ -92,5 +92,5 @@ export function briefingAnswer(topic:BriefingTopic,b:Briefing,extra:{readiness?:
  const mark={READY:'✔',NOT_YET:'…',BLOCKED:'✖',ON_THE_DAY:'◷',OWNER_ONLY:'🔒'} as const;
  const text=[r.verdict,r.items.map(i=>`${mark[i.state]} ${i.label}: ${i.detail}`).join('\n'),
   '✔ ready · … not yet · ✖ blocked · ◷ verified on the day · 🔒 owner sign-in needed. PR #102 stays unmerged until every item passes with real receipts.'].join('\n\n');
- return reply(topic,text,[links([{label:'Stock autopilot',href:'/stocks/paper-auto'},{label:'Session checklist',href:'https://github.com/ang87505-crypto/SportsEdge/blob/main/docs/AUTOMATION_OPERATIONS_2026_11_10.md#first-supervised-stock-paper-session-needs-the-owner'}])],{},r.items.some(i=>i.state!=='OWNER_ONLY'&&['account','arm','check','protections','decision','fills'].includes(i.id)));
+ return reply(topic,text,[links([{label:'Stock autopilot',href:'/stocks/paper-auto'},{label:'Session checklist',href:'https://github.com/ang87505-crypto/SportsEdge/blob/main/docs/AUTOMATION_OPERATIONS_2026_11_10.md#first-supervised-stock-paper-session-needs-the-owner'}])],{},r.items.some(i=>i.state!=='OWNER_ONLY'&&['account','arm','check','protections','decision','execute','fills'].includes(i.id)));
 }
