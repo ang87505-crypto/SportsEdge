@@ -1,5 +1,5 @@
 # Historical replay of the weekly PAPER strategies (research only; docs/STOCK_WEEKLY_BACKTEST_PLAN_2026_11_01.md;
-# round 3: docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md).
+# round 3: docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md; round 4: docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md).
 # Manual dispatch only, never scheduled. Read-only market-data GETs with the first paper account's keys;
 # no orders, no database, no account data. Results are printed to the log and the run summary.
 name: Stock weekly backtest (research, manual)
@@ -11,10 +11,10 @@ on:
         required: true
         type: string
       round:
-        description: Pre-registered round (1 = ranking variants, 2 = account-size limits, 3 = hold-buffer challenger, whole shares)
+        description: Pre-registered round (1 = ranking variants, 2 = account-size limits, 3 = hold-buffer challenger, whole shares, 4 = cash-aware sizing challenger)
         required: true
         type: choice
-        options: ['1', '2', '3']
+        options: ['1', '2', '3', '4']
         default: '1'
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Validate input
-        run: '[[ "$END" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ && "$ROUND" =~ ^[123]$ ]] || { echo "invalid input"; exit 2; }'
+        run: '[[ "$END" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ && "$ROUND" =~ ^[1234]$ ]] || { echo "invalid input"; exit 2; }'
       - name: Download daily bars, raw and adjusted, 2016 onward (read-only)
         env:
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
