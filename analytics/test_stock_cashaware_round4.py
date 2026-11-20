@@ -159,3 +159,21 @@ class EndToEnd(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RecordedResult(unittest.TestCase):
+    """The committed run output (run 44822315095) must keep re-deriving its pre-registered verdict."""
+
+    def test_recorded_round4_result_reproduces_its_verdict(self):
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / 'research' / 'stock_challenger_cashaware_20261120' / 'results.json'
+        out = json.loads(path.read_text(encoding='utf-8'))
+        self.assertEqual(out['round'], 4)
+        self.assertEqual(out['end'], '2026-11-18')
+        self.assertEqual(bt.verdicts_round4(out), out['verdicts'])
+        self.assertEqual(out['verdicts']['verdict'], 'FAILS')
+        v = out['variants']
+        self.assertAlmostEqual(v[bt.CURRENT]['dev']['sharpe'], 0.449, places=3, msg='round 3 integrity')
+        self.assertAlmostEqual(v['holdrank10']['full_at_25bps']['sharpe'], 0.574, places=3, msg='round 3 integrity')
+        self.assertIn('Pre-registered verdict', bt.markdown(out))
