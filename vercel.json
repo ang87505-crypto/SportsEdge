@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/internal/kalshi-paper/tick",
-      "schedule": "35 4 * * *"
+      "schedule": "35 3 * * *"
     },
     {
       "path": "/api/internal/paper-auto/kickoff",
