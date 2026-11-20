@@ -42,6 +42,23 @@ class FillReplay(unittest.TestCase):
         self.assertGreater(max(f['fill_weight']), 0)
         self.assertGreater(f['spy_traded'], 0)
 
+    def test_no_money_is_created_flat_prices_and_zero_costs_keep_equity_constant(self):
+        days = [r['date'] for r in calendar_rows(date(2026, 11, 30))]
+        flat = lambda p: {'d': days, 'o': [p] * len(days), 'c': [p] * len(days), 'v': [5e6] * len(days),
+                          'ao': [p] * len(days), 'ac': [p] * len(days)}
+        uni = {'max_last_close': '95', 'securities': [{'symbol': 'AAA', 'sector': 'X', 'first_traded_on': '2015-01-02'}]}
+        sessions, series = bt.align({'sessions': days, 'bars': {'AAA': flat(30.0), 'SPY': flat(25.0)}})
+        # A flat stock has zero momentum (never picked), so the fill holds SPY in the whole 50% headroom every week.
+        r = ic.replay_fill(sessions, series, uni, ic.CURRENT_SPEC, start=bt.DEV[0], end=sessions[-1], cost_bps=0.0)
+        self.assertGreater(max(r['fill_weight']), 0.49)
+        for _, v in r['curve']:
+            self.assertAlmostEqual(v, bt.STARTING, places=9)
+        costly = ic.replay_fill(sessions, series, uni, ic.CURRENT_SPEC, start=bt.DEV[0], end=sessions[-1], cost_bps=10.0)
+        end_value = costly['curve'][-1][1]
+        self.assertLessEqual(end_value, bt.STARTING - 500.0 * 10 / 1e4 + 1e-9, 'costs never create money')
+        self.assertGreater(end_value, bt.STARTING - 500.0 * 10 / 1e4 - 0.01,
+                           'after the first purchase only cent-sized re-targeting trades pay fees')
+
     def test_whole_spy_shares_are_unaffordable_at_1000_dollars_with_an_expensive_spy(self):
         _, sessions, series, uni = with_spy(600.0)
         whole = ic.replay_fill(sessions, series, uni, ic.CURRENT_SPEC, start=bt.DEV[0], end=sessions[-1], whole=True)

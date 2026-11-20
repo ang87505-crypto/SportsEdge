@@ -100,7 +100,9 @@ def replay_fill(sessions: list, series: dict, universe: dict, spec: dict, *, sta
                 if whole:
                     target = math.floor(target / spy_raw + 1e-9) * spy_raw
                 delta = target - spy_val
-                vcash -= delta + abs(delta) * cost_bps / 1e4
+                # vcash already counts the old SPY holding as cash (it funded sleeve buys), so holding `target` of SPY
+                # costs the whole target, plus fees on the traded difference only.
+                vcash -= target + abs(delta) * cost_bps / 1e4
                 spy_traded += abs(delta)
                 spy_units = target / spy_adj
                 cash = vcash
