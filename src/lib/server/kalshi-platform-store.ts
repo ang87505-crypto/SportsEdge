@@ -31,7 +31,7 @@ export function kalshiPlatformStore(env:Readonly<Record<string,string|undefined>
   try{response=await fetcher(base+'/rest/v1/'+path,{method,redirect:'error',credentials:'omit',cache:'no-store',
    signal:AbortSignal.timeout(10_000),headers:{apikey:key,...(key.startsWith('eyJ')?{Authorization:'Bearer '+key}:{}),
     Accept:'application/json','Content-Type':'application/json',
-    ...(!path.startsWith('rpc/')&&method==='POST'?{Prefer:'resolution=ignore-duplicates,return=minimal'}:{})},
+    ...(method==='GET'?{Prefer:'count=exact'}:!path.startsWith('rpc/')?{Prefer:'resolution=ignore-duplicates,return=minimal'}:{})},
    ...(body===undefined?{}:{body:JSON.stringify(body)})});}
   catch{throw new KalshiStoreError('OUTCOME_UNKNOWN',method==='POST');}
   if(Number(response.headers.get('content-length'))>4_000_000)throw new KalshiStoreError('REPLY_TOO_LARGE',method==='POST');
@@ -48,7 +48,17 @@ export function kalshiPlatformStore(env:Readonly<Record<string,string|undefined>
    throw new KalshiStoreError(code,method==='POST'&&response.status>=500);
   }
   if(!text)return null;
-  try{return JSON.parse(text) as unknown;}catch{throw new KalshiStoreError('BAD_REPLY',method==='POST');}
+  let data:unknown;try{data=JSON.parse(text);}catch{throw new KalshiStoreError('BAD_REPLY',method==='POST');}
+  if(method==='GET'){
+   // Hosted PostgREST may cap rows below our requested limit. Never mistake a
+   // clipped history for a complete account/evidence read.
+   const count=response.headers.get('content-range')?.match(/\/(\d+)$/)?.[1];
+   const requested=Number(new URLSearchParams(path.split('?')[1]).get('limit')??1000);
+   if(count===undefined||!Array.isArray(data)||!Number.isSafeInteger(Number(count))||
+    !Number.isSafeInteger(requested)||requested<1||data.length<Math.min(Number(count),requested))
+    throw new KalshiStoreError('INCOMPLETE_READ');
+  }
+  return data;
  }
  return {
   async select<T>(table:string,query:string){

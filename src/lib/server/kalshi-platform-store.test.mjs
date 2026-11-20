@@ -31,3 +31,13 @@ test('database refusals expose only a bounded code, never raw SQL or key-bearing
  const s=kalshiPlatformStore(env,async()=>new Response(JSON.stringify({message:'KALSHI_DEMO_DAILY_LIMIT private '+env.SUPABASE_SECRET_KEY}),{status:400}));
  await assert.rejects(s.rpc('kalshi_begin_run',{}),e=>e.code==='KALSHI_DEMO_DAILY_LIMIT'&&!e.outcomeUnknown&&!e.message.includes(env.SUPABASE_SECRET_KEY));
 });
+test('a hosted row cap cannot silently truncate an order history, while deliberate latest-row queries remain valid',async()=>{
+ const s=kalshiPlatformStore(env,async(_url,opts)=>{
+  assert.equal(opts.headers.Prefer,'count=exact');
+  return new Response('[{"id":1}]',{headers:{'content-range':'0-0/1200'}});
+ });
+ await assert.rejects(s.select('kalshi_demo_receipts','select=*&order=id.asc&limit=1501'),/INCOMPLETE_READ/);
+ assert.deepEqual(await s.select('kalshi_demo_receipts','select=*&order=id.desc&limit=1'),[{id:1}]);
+ const empty=kalshiPlatformStore(env,async()=>new Response('[]',{headers:{'content-range':'*/0'}}));
+ assert.deepEqual(await empty.select('kalshi_demo_receipts','select=*&limit=1501'),[]);
+});

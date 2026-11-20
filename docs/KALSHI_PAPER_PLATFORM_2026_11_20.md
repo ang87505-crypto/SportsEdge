@@ -16,7 +16,7 @@ This milestone implements the private paper workspace, durable worker, independe
 
 The app reuses the production server’s `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `CRON_SECRET`. The store pins the known general app host, uses explicit table/RPC allowlists and bounded responses, and never retries an uncertain write. No new research key or paid provider is required. Optional `KALSHI_SUPABASE_URL` / `KALSHI_SUPABASE_SECRET_KEY` overrides must point to that same project.
 
-Immutable tables retain evidence, contract forecasts, research grades, fixture revisions, demo intents, receipts and account snapshots. Original record JSON is retained as text to preserve pre-existing order-sensitive hashes. Job leases and fixture revision checks serialize duplicate work. Cache imports are bounded and partial catch-up cannot produce a selected-subset model. Database clocks reject late forward forecasts and stale lease completions.
+Immutable tables retain evidence, contract forecasts, research grades, fixture revisions, demo intents, receipts and account snapshots. Original record JSON is retained as text to preserve pre-existing order-sensitive hashes. Job leases and fixture revision checks serialize duplicate work. Cache imports are bounded and partial catch-up cannot produce a selected-subset model. Database clocks reject late forward forecasts and stale lease completions. Exact row counts detect a hosted PostgREST cap rather than accepting a silently truncated history.
 
 ## Demo execution contract
 
@@ -27,6 +27,12 @@ Every possible POST has a durable unique intent and saved decision/market/book/r
 Start verifies the demo account, working orders, existing holdings and prior unresolved intents. Stop disarms first and attempts to cancel only this system’s working orders. Reconciliation continues for earlier attempts while stopped, while the model is waiting for history, and after a weather-source failure. Official demo settlements are matched to saved market rules and appended separately from NWS grades; corrections during the configured three-day review window preserve earlier receipts. Broker-reported cash/portfolio value are never inferred from synthetic data.
 
 A **Run one demo order test** action can test a connection before the 30-day minimum. It buys one YES demo contract at the available ask, at most $0.99 plus fees, and records `SMOKE`; it is excluded from model evidence. Normal `MODEL` orders require a reproduced frozen training digest, a complete verified strike partition, fresh valid books, available size and at least $0.03 estimated edge after conservative fees and one cent of slippage.
+
+## First real research run
+
+The shared worker completed against the authorized hosted database using a Supabase-connector verification transport, with a repository-pinned source fetch. It stored the November 21 forecast at `2026-11-20T22:00:42.142453Z` (3:00 PM MST November 20), archive ref `e789e4852d838bf6d15ff55fe49724e122b1c757`. Its two training pairs were both horizon matched; the forecast correctly remained `AWAITING_VERIFIED_HISTORY`, with null probabilities, no research grades yet and zero demo attempts. Demo control remained `STOPPED`. Earlier verification attempts retained their failure receipts, including a bounded partial archive catch-up.
+
+This verifies actual source import, model construction, forward persistence and the private read model. It is distinct from invoking the deployed HTTP cron: the browser’s manual Vercel scheduler requires its own sign-in, and the first scheduled HTTP run must be checked separately. Owner account setup is not required for independent research.
 
 ## Connected test: owner setup when ready
 
@@ -43,9 +49,9 @@ Engineering can be completed before these account steps. At the last independent
 Local verification completed before publication:
 
 - Native PostgreSQL 18.7: private grants/RLS, immutable records, leases, real forward clocks, fixture revision/prefix preservation, demo Stop/health renewal, duplicate/concurrent intents, receipt digests and daily limits. Business checks run as `service_role`. The dedicated CI workflow repeats this on PostgreSQL 17, matching hosted major version.
-- Kalshi/model/server/navigation/collector/evaluation suite: 154 tests passed. Entire JavaScript suite: 1,041 passed, 47 skipped, zero failed. The focused server suite was rerun after the final account-health change: 33 passed.
+- Kalshi/model/server/navigation/collector/evaluation suite: 155 tests passed after adding hosted row-cap detection. Final full JavaScript run: 1,042 passed, 47 skipped, zero failed. Exact CI checks are recorded on the PR.
 - TypeScript and production build passed. ESLint has no errors; six existing warnings remain. Owner sign-in HTTP smoke covers real Kalshi read/write/scheduler authentication boundaries, and the existing assistant HTTP smoke passes.
-- Local Chromium launch is blocked by executor Unix-socket restrictions. The existing GitHub browser workflow now checks the Kalshi route at all five viewport widths and a separate client-only owner fixture at 320/390/1440, including blocked order controls, a partial-fill table and offline action. CI results/artifacts are the browser acceptance evidence.
+- Local Chromium launch is blocked by executor Unix-socket restrictions. The GitHub browser workflow passed all 56 route/viewport combinations, including the Kalshi mobile/desktop route, plus a separate client-only owner fixture at 320/390/1440 with blocked order controls, a partial-fill table and offline action. All 14 runnable PR-head checks passed; the live-only monitor job was intentionally skipped. PostgreSQL 17 CI also passed.
 - Hosted read-only verification confirms schema version `kalshi-paper-platform-v1`, ten RLS-enabled private tables, service-only check RPC and demo state `STOPPED`. Deployment, actual scheduler invocation and exchange connection must each be checked separately; synthetic tests are not evidence of a live run.
 
 Useful commands:
