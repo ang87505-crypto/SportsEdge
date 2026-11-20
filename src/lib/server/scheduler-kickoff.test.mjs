@@ -95,7 +95,7 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  assert.deepEqual(kinds,['execute','execute','execute','monitor']);
  for(const [name,s] of stock){
   assert.deepEqual(Object.keys(s.inputs).sort(),['experiment','kind','trigger'],name);
-  assert.equal(s.inputs.experiment,'stock-v2-weekly-1');assert.equal(s.inputs.trigger,'backup');
+  assert.equal(s.inputs.experiment,'all','every listed experiment (the worker matrix expands it)');assert.equal(s.inputs.trigger,'backup');
   assert.deepEqual(s.weekdaysUtc,[1,2,3,4,5],name);
   // Vercel Hobby fires somewhere inside the hour: [h:00, h:59].
   const first=s.hourUtc*60,last=first+59;
@@ -108,7 +108,7 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  const calls=[];
  const r=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-16T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal(r.status,202);
- assert.deepEqual(calls[0].body,{ref:'main',inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}});
+ assert.deepEqual(calls[0].body,{ref:'main',inputs:{kind:'execute',experiment:'all',trigger:'backup'}});
  assert.match(calls[0].url,/paper-auto-worker\.yml\/dispatches$/);
  const saturday=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-14T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal((await saturday.json()).reason,'outside_slot_hour');

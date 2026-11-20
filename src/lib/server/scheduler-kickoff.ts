@@ -45,13 +45,13 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  // Stock PAPER worker backups (weekdays). Execute hours sit inside 09:30 ET + 30 min to 16:00 ET - 20 min in both
  // offsets; the controller re-checks the exchange session, the owner gate and the same-day decision itself.
  'stock-execute-early':{hourUtc:15,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-execute-midday':{hourUtc:16,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-execute-late':{hourUtc:18,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-monitor':{hourUtc:22,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'monitor',experiment:'all',trigger:'backup'}},
  'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
  'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };

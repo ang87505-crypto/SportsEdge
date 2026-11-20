@@ -28,7 +28,7 @@ export async function handlePaperKickoff(req:Request,env:Env,deps:Deps):Promise<
   // The bridge retains its exact 08:00 decision rule. Late kickoffs never catch up.
   if(minutes<3*60||minutes>=7*60+45)return json({status:'skipped',reason:'outside_early_window',session:date});
   workflow='paper-auto-decision-weekly.yml';
-  inputs={experiment:'stock-v2-weekly-1',session:date,initial:'false'};
+  inputs={experiment:'all',session:date,initial:'false'};
  }else if(date==='2026-11-08'&&minutes>=3*60&&minutes<11*60){
   // One-time owner-requested release validation. No collect/backfill, odds credits,
   // control change, or schedule enablement. Settlement still respects the ledger's
