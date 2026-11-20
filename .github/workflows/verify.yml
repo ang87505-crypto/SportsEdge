@@ -48,6 +48,8 @@ jobs:
         run: node --experimental-strip-types --test src/lib/server/research-engine-load.test.mjs
       - name: Cent sizing, research quality and durable intake memory (offline)
         run: node --experimental-strip-types --test src/lib/lab/confidence-sizing.test.mjs src/lib/research/quality.test.mjs scripts/research-intake-archive.test.mjs src/lib/server/research-intake-load.test.mjs
+      - name: Forward penny ledger, schema readiness and reproducible setup
+        run: node --experimental-strip-types --test src/lib/lab/penny-paper.test.mjs src/lib/server/penny-paper-worker.test.mjs src/lib/server/forward-study-readiness.test.mjs scripts/build-forward-study-setup.test.mjs
       - name: Lint code
         run: npm run lint
       - name: Production build
