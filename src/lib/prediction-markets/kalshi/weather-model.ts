@@ -24,6 +24,27 @@ export function centralParkStandardDate(iso:string):string{
  if(!Number.isFinite(t))throw Error('WEATHER_INVALID_TIME');
  return new Date(t-5*3600_000).toISOString().slice(0,10);
 }
+/** Registered minimum of independently observed forecast/outcome pairs before any probability is issued. */
+export const MIN_TRAINING_DAYS=30;
+/**
+ * Shared as-of admission gate: every row must be an NWS forecast paired with a Central Park
+ * observation, strictly before the target day, observed before asOf, forecast before observed,
+ * and forecast captured no later than its own climate day. Duplicate days are refused.
+ */
+export function validateTrainingAsOf(training:readonly WeatherTrainingDay[],targetLocalDate:string,asOf:string):WeatherTrainingDay[]{
+ const seen=new Set<string>();
+ for(const r of training){
+  if(r.forecastSource!=='NWS'||!['OFFICIAL_CENTRAL_PARK','NWS_CLI_PRELIMINARY_CENTRAL_PARK'].includes(r.observationSource)||
+   !date(r.localDate)||!time(r.forecastAvailableAt)||!time(r.observedAvailableAt)||
+   !finite(r.forecastHighF)||!finite(r.observedHighF)||
+   r.localDate>=targetLocalDate||Date.parse(r.observedAvailableAt)>=Date.parse(asOf)||
+   Date.parse(r.forecastAvailableAt)>=Date.parse(r.observedAvailableAt)||
+   centralParkStandardDate(r.forecastAvailableAt)>r.localDate)
+   throw Error('WEATHER_ASOF_OR_SOURCE_VIOLATION');
+  if(seen.has(r.localDate))throw Error('WEATHER_DUPLICATE_DAY');seen.add(r.localDate);
+ }
+ return [...training];
+}
 /** Strictly retrospective, smoothed empirical error distribution; never counts future data. */
 export function estimateStationTemperatureRange(x:{
  forecastHighF:number;rangeMinF:number;rangeMaxF:number;
@@ -33,19 +54,8 @@ export function estimateStationTemperatureRange(x:{
   x.rangeMinF>x.rangeMaxF||!date(x.targetLocalDate)||!time(x.asOf))
   throw Error('WEATHER_INVALID_TARGET');
  if(x.targetLocalDate<=centralParkStandardDate(x.asOf))throw Error('WEATHER_TARGET_NOT_FUTURE');
- const seen=new Set<string>();const residuals:number[]=[];
- for(const r of x.training){
-  if(r.forecastSource!=='NWS'||!['OFFICIAL_CENTRAL_PARK','NWS_CLI_PRELIMINARY_CENTRAL_PARK'].includes(r.observationSource)||
-   !date(r.localDate)||!time(r.forecastAvailableAt)||!time(r.observedAvailableAt)||
-   !finite(r.forecastHighF)||!finite(r.observedHighF)||
-   r.localDate>=x.targetLocalDate||Date.parse(r.observedAvailableAt)>=Date.parse(x.asOf)||
-   Date.parse(r.forecastAvailableAt)>=Date.parse(r.observedAvailableAt)||
-   centralParkStandardDate(r.forecastAvailableAt)>r.localDate)
-   throw Error('WEATHER_ASOF_OR_SOURCE_VIOLATION');
-  if(seen.has(r.localDate))throw Error('WEATHER_DUPLICATE_DAY');seen.add(r.localDate);
-  residuals.push(r.observedHighF-r.forecastHighF);
- }
- if(residuals.length<30)throw Error('WEATHER_INSUFFICIENT_DAYS');
+ const residuals=validateTrainingAsOf(x.training,x.targetLocalDate,x.asOf).map(r=>r.observedHighF-r.forecastHighF);
+ if(residuals.length<MIN_TRAINING_DAYS)throw Error('WEATHER_INSUFFICIENT_DAYS');
  // One-sided Laplace smoothing prevents false certainty from a small error distribution.
  const wins=residuals.filter(e=>x.forecastHighF+e>=x.rangeMinF&&x.forecastHighF+e<=x.rangeMaxF).length;
  const probabilityPpm=Math.round(1_000_000*(wins+1)/(residuals.length+2));

@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'src/lib/prediction-markets/kalshi/**'
+      - 'scripts/kalshi-weather-contract-eval*'
       - '.github/workflows/kalshi-k0-verify.yml'
 permissions:
   contents: read
@@ -14,4 +15,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs scripts/kalshi-independent-weather-collect.test.mjs
+      - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs scripts/kalshi-independent-weather-collect.test.mjs scripts/kalshi-weather-contract-eval.test.mjs
