@@ -1,0 +1,73 @@
+{
+ "note": "PROPOSAL ONLY. Not applied: the shared learning registry is owned elsewhere. Apply with scripts/research-engine.ts register path or by adding the entry to research/engine/registry.json, then --result result.json.",
+ "entry": {
+  "id": "lab-sports-availability-v1",
+  "domain": "sports",
+  "hypothesisKey": "sports:recent-stated-absence-availability",
+  "hypothesis": "Players whose team box scores record a stated (non-coaching) absence in the team's last 5 games have more uncertain and lower minutes than the baseline assumes; widening and lowering their minutes distribution improves Brier and log loss of NBA player-prop probabilities.",
+  "dataDependencies": [
+   "SportsDataverse ESPN player box scores (pinned): stated DNP reasons from earlier games only",
+   "No pre-game injury report (not collected; NBA.com Terms exclude gambling/fantasy use)"
+  ],
+  "frozen": {
+   "features": [
+    "availability category from the team's last 5 earlier box scores"
+   ],
+   "parameters": {
+    "RETURNING": {
+     "m": 0.9881,
+     "s": 0.1575
+    },
+    "RECENT": {
+     "m": 0.9758,
+     "s": 0.1574
+    }
+   }
+  },
+  "dataCutoff": "2026-11-19T05:00:00Z",
+  "codeFingerprint": "311375291788743d182ea15c6a8a1c1b6dc236c62b057489a894a387312fcff6",
+  "datasetFingerprints": [
+   {
+    "name": "player_box_2025.csv",
+    "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+   },
+   {
+    "name": "player_box_2026.csv",
+    "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+   },
+   {
+    "name": "player_box_2027.csv",
+    "sha256": "f3c5d6cf0d0d58ebf5a17916820922058ea29cd762aff6147c88fa34daa7a848"
+   }
+  ],
+  "metrics": {
+   "primary": "brier",
+   "secondary": [
+    "logLoss",
+    "ece",
+    "calibration-in-the-large"
+   ]
+  },
+  "sampleRequirements": {
+   "minObservations": 150,
+   "minClusters": 30
+  },
+  "baseline": "props-nb-minutes-rate-v1",
+  "costAssumptions": null,
+  "decisionRule": "research/props_availability_v1_20261119/protocol.json: adjusted holdout lines; IMPROVES if game-bootstrap Brier upper95 < 0 and log-loss difference < 0; WORSE if lower95 > 0; otherwise NO_CLEAR_EFFECT; INSUFFICIENT_DATA below 150 lines or 30 games.",
+  "status": "PROPOSED",
+  "result": null,
+  "disposition": null,
+  "source": "existing",
+  "registeredAt": "2026-11-19T23:48:33Z",
+  "history": [
+   {
+    "at": "2026-11-19T23:48:33Z",
+    "from": null,
+    "to": "PROPOSED",
+    "reason": "pre-registered in commit 9c02129 before any fit or holdout (docs/PROPS_CHALLENGER_AVAILABILITY_PREREG_2026_11_19.md)",
+    "inputFingerprint": null
+   }
+  ]
+ }
+}
