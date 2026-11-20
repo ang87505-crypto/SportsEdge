@@ -16,7 +16,7 @@ const rawCli=[
  'CLIMATE NORMAL PERIOD 1991 TO 2020','','TEMPERATURE (F)',' TODAY',
  ' MAXIMUM         49   1200 PM  74  2001',' MINIMUM         38    923 AM  23  2019',
  'PRECIPITATION (IN)',' TODAY 0.00','$$',''].join('\n');
-function fakeFetcher(counter,cli=rawCli){
+function fakeFetcher(counter,cli=rawCli,forecastAt=at){
  return async(url,init)=>{
   counter.push(url);
   assert.equal(init.method,'GET');
@@ -25,13 +25,13 @@ function fakeFetcher(counter,cli=rawCli){
   if(url===NWS_CENTRAL_PARK_POINT)return new Response(JSON.stringify({
    properties:{forecastHourly:fURL}}),{headers:{'content-type':'application/geo+json'}});
   if(url===fURL){
-   const first=Date.parse(at)+3600_000;
+   const first=Date.parse(forecastAt)+3600_000;
    const periods=Array.from({length:48},(_,i)=>({
     startTime:new Date(first+i*3600_000).toISOString(),
     endTime:new Date(first+(i+1)*3600_000).toISOString(),
     temperature:46+i%5,temperatureUnit:'F'
    }));
-   return new Response(JSON.stringify({properties:{updateTime:'2026-11-13T19:00:00Z',periods}}),{
+   return new Response(JSON.stringify({properties:{updateTime:new Date(Date.parse(forecastAt)-2*3600_000).toISOString(),periods}}),{
     headers:{'content-type':'application/geo+json'}});
   }
   if(url===NYC_CLI_SOURCE)return new Response(cli,{headers:{'content-type':'text/plain'}});
@@ -93,5 +93,17 @@ test('bad config fails before making outbound requests',async()=>{
   await assert.rejects(collectIndependentWeather({phase:'forecast',root,userAgent:'',
    now:()=>at,fetcher:fakeFetcher(calls)}),/INVALID_CONFIG/);
   assert.equal(calls.length,0);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+test('an outcome collected before the next forecast enters its history at the real receipt time',async()=>{
+ const root=temp();try{
+  await collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>at,fetcher:fakeFetcher([])});
+  await collectIndependentWeather({phase:'outcome',root,userAgent:agent,now:()=>outcomeAt,fetcher:fakeFetcher([])});
+  const later='2026-11-15T12:00:01Z';
+  const next=await collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>later,fetcher:fakeFetcher([],rawCli,later)});
+  const saved=JSON.parse(readFileSync(next.file,'utf8'));
+  assert.equal(saved.historicalTrainingDays,1);assert.equal(saved.capturedAt,later);
+  assert.equal(saved.estimatedBandProbabilityPpm,null,'one pair cannot bypass the minimum');
+  assert.equal(saved.targetLocalDate,'2026-11-16');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
