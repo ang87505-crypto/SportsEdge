@@ -39,6 +39,14 @@ jobs:
           node --experimental-strip-types --test src/lib/prediction-markets/kalshi/nws.test.mjs src/lib/prediction-markets/kalshi/nws-cli.test.mjs src/lib/prediction-markets/kalshi/weather-memory.test.mjs scripts/kalshi-independent-weather-collect.test.mjs
       - name: Check out existing append-only research-data branch
         run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Collect an available prior outcome before freezing the next forecast
+        id: prior_outcome
+        if: env.PHASE == 'forecast'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/kalshi-independent-weather-collect.ts outcome research-data
+      - name: Report prior-outcome availability separately
+        if: env.PHASE == 'forecast'
+        run: echo "Prior outcome before forecast = ${{ steps.prior_outcome.outcome }}. A missing report is not a graded outcome." >> "$GITHUB_STEP_SUMMARY"
       - name: Archive one independently-sourced forecast or preliminary daily station outcome
         run: node --experimental-strip-types scripts/kalshi-independent-weather-collect.ts "$PHASE" research-data
       - name: Commit only new independent NOAA memory records

@@ -46,13 +46,20 @@ try{
  assert.equal(signedIn.status,503);
  assert.equal((await signedIn.json()).status,'paper_auto_not_configured',
   'the cookie passes authentication before the deliberately disconnected data layer');
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper')).status,401,'Kalshi owner data is private');
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper',{headers:{Cookie:hint.split(';')[0]}})).status,401,'Kalshi hint alone cannot authenticate');
+ const kalshi=await fetch(base+'/api/internal/kalshi-paper',{headers:{Cookie:cookie}});
+ assert.equal(kalshi.status,503,'signed-in Kalshi request reaches the deliberately disconnected store');
+ assert.equal((await kalshi.json()).code,'KALSHI_STORE_NOT_CONFIGURED');
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper',{method:'POST',headers:{Cookie:cookie,Origin:'https://other.example','Content-Type':'application/json'},body:'{"action":"start-demo"}'})).status,403,'cross-origin Kalshi write is refused');
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper/tick',{headers:{Cookie:cookie}})).status,401,'owner cookie is not a scheduler token');
  const tampered=cookie.slice(0,-1)+(cookie.at(-1)==='a'?'b':'a');
  assert.equal((await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:tampered}})).status,401);
  const signOut=await fetch(base+'/api/internal/alpaca-paper/session',{method:'DELETE',headers:{Origin:origin,Cookie:cookie}});
  assert.equal(signOut.status,200);
  const cleared=signOut.headers.getSetCookie();
  assert.ok(['__Host-sportsedge-alpaca-owner=','__Host-sportsedge-owner-hint='].every(n=>cleared.some(c=>c.startsWith(n)&&c.includes('Max-Age=0'))),'logout clears session and hint');
- console.log('OWNER_SIGN_IN_HTTP_PASS: padded key, wrong key, origin, signed cookie, owner hint (not a credential), protected route, tampering and logout');
+ console.log('OWNER_SIGN_IN_HTTP_PASS: padded key, wrong key, origin, signed cookie, owner hint (not a credential), protected routes including Kalshi data/write/scheduler boundaries, tampering and logout');
 }finally{
  if(child.exitCode===null){child.kill('SIGTERM');await once(child,'exit');}
 }

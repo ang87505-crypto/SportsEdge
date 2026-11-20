@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/internal/kalshi-paper/tick",
+      "schedule": "35 3 * * *"
+    },
+    {
       "path": "/api/internal/paper-auto/kickoff",
       "schedule": "0 9 * * *"
     },

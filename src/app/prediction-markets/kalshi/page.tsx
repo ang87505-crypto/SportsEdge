@@ -3,13 +3,14 @@ import {Suspense} from 'react';
 import {connection} from 'next/server';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
+import {KalshiPaperPanel} from '@/components/kalshi-paper-panel';
 
 /**
  * Only independent archived NOAA weather data is read from the research-data branch.
- * NO Kalshi API calls, credentials, orders, market previews or account data.
+ * Public panels read NOAA only. The separate owner panel reads private paper records.
  */
 export const metadata={title:'Prediction markets research · SportsEdge',
- description:'Kalshi integration research status; no live collection or real-money trading.'};
+ description:'Independent weather research, private paper records and demo readiness. Production trading is disabled.'};
 
 async function IndependentWeatherPanels(){
  // Read current time only at request time, never while Cache Components prerenders.
@@ -71,29 +72,31 @@ async function IndependentWeatherPanels(){
 }
 export default function PredictionMarketsKalshiPage(){
  return <>
-  <PageHeading title="Prediction markets research"
-   description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
+  <PageHeading title="Kalshi research and paper"
+   description="Follow independent weather forecasts, paper-system checks and your separate exchange demo account."
    action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
-  <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
-   No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
+  <div className="virtual-banner" role="note"><strong>Research and demo only.</strong> Production exchange access is disabled.
+   Demo connection status and any mock-fund orders appear in the owner workspace.</div>
+  <KalshiPaperPanel/>
   <Suspense fallback={<Panel title="Independent NOAA weather memory">
     <p>Checking stored public weather research; no Kalshi API request is made.</p>
    </Panel>}>
     <IndependentWeatherPanels/>
   </Suspense>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
-   <p>The K0 research scaffold is integrated on main: offline market normalization, hypothetical fee-aware paper forecasts, strict settlement checks and evaluation are implemented. The scheduled collector currently archives independent NOAA forecasts only. It does not fetch Kalshi quotes. Exchange-data ingestion, storage and use in this software remain disabled pending written authorization for this specific research use.</p>
+   <p>The platform records independent NOAA research and offers a separate owner-controlled demo connection. The public weather panels use no exchange data. Production exchange-data access remains disabled pending authorization for the intended use.</p>
    <KeyValues items={[
     ['Market data','Code-only; live access disabled pending rights review'],
     ['First research categories','NYC weather and US CPI, offline research only'],
     ['Independent weather replay','Chronological NWS forecasts vs verified station highs; no market input'],
     ['Independent CPI source','BLS CPI-U current published series; release vintages not reconstructed'],
     ['Independent forecast source','NWS hourly grid API; not the official station result'],
-    ['Trading','Disabled — no credentials or trade endpoint'],
-    ['Kalshi market-data schedule','None; exchange collection is disabled'],
+    ['Production trading','Disabled'],
+    ['Demo trading','Requires separate credentials, reviewed access and owner Start'],
+    ['Paper worker','Daily research updates; model demo orders only while armed and eligible'],
     ['Independent NOAA schedule','Active; government-source research only'],
     ['Profitability','Unmeasured; no proven edge'],
-    ['New Mexico eligibility','Sports contracts contested; not approved for real-money use']
+    ['Initial demo scope','NYC daily high temperature only']
    ]}/>
   </Panel>
   <Panel title="What must happen before activation" className="mt-12">
