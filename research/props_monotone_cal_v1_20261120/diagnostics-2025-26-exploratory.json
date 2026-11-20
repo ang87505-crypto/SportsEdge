@@ -1,0 +1,212 @@
+{
+ "generatedBy": "scripts/props-monotone-cal-eval.ts diagnose",
+ "status": "EXPLORATORY: 2025-26 was inspected by earlier studies; this motivated the hypothesis and is not evidence",
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7"
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89"
+  }
+ ],
+ "window": "2026-01-01 to season end",
+ "leakage": {
+  "checked": 880704,
+  "violations": 0
+ },
+ "lines": 45216,
+ "byBandAndDirection": {
+  "0.50-0.60 Less": {
+   "lines": 12309,
+   "meanConfidence": 0.550674,
+   "hitRate": 0.551141,
+   "gap": -0.000468
+  },
+  "0.50-0.60 More": {
+   "lines": 9297,
+   "meanConfidence": 0.545691,
+   "hitRate": 0.516511,
+   "gap": 0.02918
+  },
+  "0.60-0.70 Less": {
+   "lines": 10018,
+   "meanConfidence": 0.645619,
+   "hitRate": 0.637053,
+   "gap": 0.008566
+  },
+  "0.60-0.70 More": {
+   "lines": 5261,
+   "meanConfidence": 0.644351,
+   "hitRate": 0.577457,
+   "gap": 0.066894
+  },
+  "0.70-0.80 Less": {
+   "lines": 4198,
+   "meanConfidence": 0.739244,
+   "hitRate": 0.722725,
+   "gap": 0.016519
+  },
+  "0.70-0.80 More": {
+   "lines": 2209,
+   "meanConfidence": 0.743681,
+   "hitRate": 0.62019,
+   "gap": 0.12349
+  },
+  "0.80-0.90 Less": {
+   "lines": 576,
+   "meanConfidence": 0.828664,
+   "hitRate": 0.803819,
+   "gap": 0.024845
+  },
+  "0.80-0.90 More": {
+   "lines": 870,
+   "meanConfidence": 0.840542,
+   "hitRate": 0.651724,
+   "gap": 0.188818
+  },
+  "0.90+ Less": {
+   "lines": 19,
+   "meanConfidence": 0.915121,
+   "hitRate": 0.842105,
+   "gap": 0.073016
+  },
+  "0.90+ More": {
+   "lines": 459,
+   "meanConfidence": 0.937937,
+   "hitRate": 0.666667,
+   "gap": 0.271271
+  }
+ },
+ "byLineDistanceZ": {
+  "a <0.25": {
+   "lines": 22349,
+   "meanConfidence": 0.563296,
+   "hitRate": 0.556535,
+   "gap": 0.006761
+  },
+  "b 0.25-0.5": {
+   "lines": 13893,
+   "meanConfidence": 0.631582,
+   "hitRate": 0.609732,
+   "gap": 0.021851
+  },
+  "c 0.5-0.75": {
+   "lines": 6193,
+   "meanConfidence": 0.71463,
+   "hitRate": 0.637494,
+   "gap": 0.077136
+  },
+  "d 0.75-1": {
+   "lines": 1938,
+   "meanConfidence": 0.802558,
+   "hitRate": 0.676987,
+   "gap": 0.125571
+  },
+  "e >=1": {
+   "lines": 843,
+   "meanConfidence": 0.91003,
+   "hitRate": 0.70344,
+   "gap": 0.20659
+  }
+ },
+ "byExpectedMinutes": {
+  "a <15": {
+   "lines": 6516,
+   "meanConfidence": 0.662886,
+   "hitRate": 0.560773,
+   "gap": 0.102112
+  },
+  "b 15-25": {
+   "lines": 18711,
+   "meanConfidence": 0.62575,
+   "hitRate": 0.596387,
+   "gap": 0.029363
+  },
+  "c 25-32": {
+   "lines": 13707,
+   "meanConfidence": 0.60744,
+   "hitRate": 0.598016,
+   "gap": 0.009425
+  },
+  "d 32+": {
+   "lines": 6282,
+   "meanConfidence": 0.598205,
+   "hitRate": 0.597262,
+   "gap": 0.000943
+  }
+ },
+ "byHistoryGames": {
+  "a 3-5": {
+   "lines": 993,
+   "meanConfidence": 0.694674,
+   "hitRate": 0.592145,
+   "gap": 0.102529
+  },
+  "b 6-10": {
+   "lines": 1659,
+   "meanConfidence": 0.669515,
+   "hitRate": 0.560579,
+   "gap": 0.108936
+  },
+  "c 11-20": {
+   "lines": 42564,
+   "meanConfidence": 0.61816,
+   "hitRate": 0.593083,
+   "gap": 0.025076
+  }
+ },
+ "byMinutesCv": {
+  "a <0.08": {
+   "lines": 1920,
+   "meanConfidence": 0.605661,
+   "hitRate": 0.6,
+   "gap": 0.005661
+  },
+  "b 0.08-0.12": {
+   "lines": 5562,
+   "meanConfidence": 0.602876,
+   "hitRate": 0.604279,
+   "gap": -0.001403
+  },
+  "c 0.12-0.18": {
+   "lines": 11079,
+   "meanConfidence": 0.610703,
+   "hitRate": 0.591028,
+   "gap": 0.019675
+  },
+  "d 0.18-0.28": {
+   "lines": 13521,
+   "meanConfidence": 0.618328,
+   "hitRate": 0.596554,
+   "gap": 0.021775
+  },
+  "e >=0.28": {
+   "lines": 13134,
+   "meanConfidence": 0.644848,
+   "hitRate": 0.581316,
+   "gap": 0.063532
+  }
+ },
+ "byStat": {
+  "assists": {
+   "lines": 15072,
+   "meanConfidence": 0.624889,
+   "hitRate": 0.606887,
+   "gap": 0.018002
+  },
+  "points": {
+   "lines": 15072,
+   "meanConfidence": 0.628044,
+   "hitRate": 0.574177,
+   "gap": 0.053866
+  },
+  "rebounds": {
+   "lines": 15072,
+   "meanConfidence": 0.612241,
+   "hitRate": 0.594546,
+   "gap": 0.017695
+  }
+ }
+}
