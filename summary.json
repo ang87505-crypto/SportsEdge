@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 7,
+    "sessions": 8,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": -0.02729567296666635
+    "totalReturn": -0.041818672966666415
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 7,
+    "sessions": 8,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": -0.01586571833333328
+    "totalReturn": -0.03226638500000012
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-19T10:29:20Z",
+  "forwardAt": "2026-11-20T04:43:54Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "CRM": 0.2,
-      "INTU": 0.2,
-      "NKE": 0.2,
-      "NOW": 0.2,
+      "CVS": 0.2,
+      "FCX": 0.2,
+      "MPC": 0.2,
+      "NEM": 0.2,
       "UNH": 0.2
      },
-     "sessions": 7,
+     "sessions": 8,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.10703093033333277
+     "totalReturn": -0.14447768849999953
     },
     "historical": {
      "asLive": {
@@ -150,15 +150,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
+      "AVGO": 0.2,
       "CHTR": 0.2,
-      "COP": 0.2,
-      "COST": 0.2,
+      "DIS": 0.2,
       "ORLY": 0.2,
-      "REGN": 0.2
+      "TJX": 0.2
      },
-     "sessions": 7,
+     "sessions": 8,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.08302988866666638
+     "totalReturn": -0.10283894516666636
     },
     "historical": {
      "asLive": {
@@ -203,7 +203,7 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 7,
+     "sessions": 8,
      "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": 0.0
     },
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-19T10:29:18Z",
- "generatedAt": "2026-11-19T10:29:23Z",
+ "forwardAt": "2026-11-20T04:43:44Z",
+ "generatedAt": "2026-11-20T04:44:07Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -480,8 +480,8 @@
     "failed": [],
     "items": 1
    },
-   "lastSuccessAt": "2026-11-19T10:29:17Z",
-   "retrievedAt": "2026-11-19T10:29:17Z",
+   "lastSuccessAt": "2026-11-20T04:43:43Z",
+   "retrievedAt": "2026-11-20T04:43:43Z",
    "status": "OK"
   },
   {
@@ -500,8 +500,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-19T10:29:17Z",
-   "retrievedAt": "2026-11-19T10:29:17Z",
+   "lastSuccessAt": "2026-11-20T04:43:43Z",
+   "retrievedAt": "2026-11-20T04:43:43Z",
    "status": "OK"
   },
   {
