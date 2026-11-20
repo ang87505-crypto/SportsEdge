@@ -160,3 +160,27 @@ class EndToEnd(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RecordedResult(unittest.TestCase):
+    """The committed round-5 output (run 44828158320) must keep its recorded findings."""
+
+    def test_recorded_round5_findings(self):
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / 'research' / 'stock_idle_cash_20261120' / 'results.json'
+        out = json.loads(path.read_text(encoding='utf-8'))
+        rows, spy50 = out['rows'], out['benchmarks']['spy-50']
+        self.assertEqual(out['end'], '2026-11-18')
+        self.assertAlmostEqual(rows['current']['dev']['sharpe'], 0.449, places=3, msg='round 3 integrity')
+        for name in ('current+spy-fill', 'holdrank10+spy-fill'):
+            self.assertLessEqual(rows[name]['full']['avg_invested'], ic.CAP + 0.005, 'the fill respects the gross cap')
+            for p in ('holdout', 'full'):
+                self.assertLess(rows[name][p]['sharpe'], spy50[p]['sharpe'], f'{name} is below SPY 50% in {p}')
+        self.assertLess(rows['current+spy-fill']['dev']['sharpe'], spy50['dev']['sharpe'])
+        # Recorded as found: holdrank10 + fill is marginally ABOVE SPY 50% in development (0.640 vs 0.628).
+        self.assertGreater(rows['holdrank10+spy-fill']['dev']['sharpe'], spy50['dev']['sharpe'])
+        self.assertEqual(out['whole_share_check']['weeks_whole_fill_held_any_spy'], 0)
+        self.assertEqual(rows['current+spy-fill-whole']['full'], rows['current']['full'])
+        self.assertGreater(rows['core-satellite-v3']['full']['avg_invested'], 0.99, 'policy B raises gross to ~100%')
+        self.assertIn('DESCRIPTIVE', ic.markdown(out))
