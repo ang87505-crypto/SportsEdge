@@ -18,7 +18,13 @@ export function forwardSetupSql(){
   parts.map(p=>" SELECT count(*) INTO present FROM unnest(ARRAY["+p.names.map(n=>"'public."+n+"'").join(',')+"]::text[]) n WHERE to_regclass(n) IS NOT NULL;\n"+
    ' IF present=0 THEN EXECUTE $'+p.group+'_ddl$\n'+body(p.file)+'\n$'+p.group+'_ddl$;\n'+
    ' ELSIF present<>'+p.names.length+" THEN RAISE EXCEPTION 'PARTIAL_"+p.group.toUpperCase()+"_SCHEMA: inspect before proceeding'; END IF;\n").join('')+
-  'END $forward_setup$;\nNOTIFY pgrst, \'reload schema\';\nCOMMIT;\n';
+  'END $forward_setup$;\n'+
+  'DO $study_grants$ DECLARE t text; BEGIN\n'+
+  " FOREACH t IN ARRAY ARRAY['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes','props_penny_cohorts','props_penny_entries','props_penny_settlements'] LOOP\n"+
+  " EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t);\n"+
+  " EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated,service_role',t);\n"+
+  " EXECUTE format('GRANT SELECT,INSERT ON public.%I TO service_role',t); END LOOP;\n"+
+  'END $study_grants$;\nNOTIFY pgrst, \'reload schema\';\nCOMMIT;\n';
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const i=process.argv.indexOf('--out');if(i<0||!process.argv[i+1])throw Error('SETUP_MISSING_OUT');

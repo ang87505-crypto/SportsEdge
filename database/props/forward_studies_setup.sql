@@ -137,11 +137,11 @@ CREATE VIEW public.props_lab_prediction_tampering WITH (security_invoker=true) A
 DO $$ DECLARE t text; BEGIN
  FOREACH t IN ARRAY ARRAY['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes'] LOOP
   EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t);
-  EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated',t);
+  EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated,service_role',t);
   EXECUTE format('GRANT SELECT,INSERT ON public.%I TO service_role',t);
   EXECUTE format('CREATE TRIGGER props_append_only BEFORE UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.props_immutable()',t);
  END LOOP;
- REVOKE ALL ON public.props_lab_prediction_tampering FROM PUBLIC,anon,authenticated;
+ REVOKE ALL ON public.props_lab_prediction_tampering FROM PUBLIC,anon,authenticated,service_role;
  GRANT SELECT ON public.props_lab_prediction_tampering TO service_role;
  REVOKE ALL ON FUNCTION public.props_lab_check_frozen() FROM PUBLIC,anon,authenticated;
  REVOKE ALL ON FUNCTION public.props_lab_check_stake() FROM PUBLIC,anon,authenticated;
@@ -301,5 +301,11 @@ END $$;
 $penny_ddl$;
  ELSIF present<>4 THEN RAISE EXCEPTION 'PARTIAL_PENNY_SCHEMA: inspect before proceeding'; END IF;
 END $forward_setup$;
+DO $study_grants$ DECLARE t text; BEGIN
+ FOREACH t IN ARRAY ARRAY['props_lab_experiments','props_lab_events','props_lab_predictions','props_lab_flags','props_lab_reports','props_lab_stakes','props_penny_cohorts','props_penny_entries','props_penny_settlements'] LOOP
+ EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t);
+ EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated,service_role',t);
+ EXECUTE format('GRANT SELECT,INSERT ON public.%I TO service_role',t); END LOOP;
+END $study_grants$;
 NOTIFY pgrst, 'reload schema';
 COMMIT;
