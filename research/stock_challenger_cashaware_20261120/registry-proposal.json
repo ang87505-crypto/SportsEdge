@@ -1,0 +1,80 @@
+{
+ "id": "lab-stock-cashaware-wholeshare",
+ "domain": "stocks",
+ "hypothesisKey": "stocks:cash-aware-whole-share-sizing",
+ "hypothesis": "Nearest-share sizing within the existing 15% name and 50% gross caps, with a 5-15% no-trade band for continuing picks, on the unchanged live momentum selection, raises capital utilization and beats the live floor sizing after costs on the $1,000 whole-share account, and beats SPY held at the same exposure.",
+ "dataDependencies": [
+  "Alpaca SIP daily bars, raw and all-adjusted (read-only)",
+  "config/paper-auto/universe-large-cap-v1.json revision large-cap-v1-2026-11-09"
+ ],
+ "frozen": {
+  "features": [
+   "mom252-skip21",
+   "trend200"
+  ],
+  "parameters": {
+   "picks": 5,
+   "perSector": 2,
+   "weightPerPick": 0.1,
+   "nameCap": 0.15,
+   "grossCap": 0.5,
+   "band": [
+    0.05,
+    0.15
+   ],
+   "rounding": "round_half_up",
+   "maxLastClose": 95,
+   "costBpsJudged": 10,
+   "costBpsRobustness": 25,
+   "dev": "2017-01-01..2022-12-31",
+   "holdout": "2023-01-01..2026-11-18",
+   "forwardStart": "2026-11-19",
+   "minForwardWeeks": 26
+  }
+ },
+ "dataCutoff": "2026-11-18T21:00:00Z",
+ "codeFingerprint": "fd6b1f0b9a5e966aa20a12eff6516e2d5549da46e32e106f1806dd2ffecb499d",
+ "metrics": {
+  "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
+  "secondary": [
+   "holdout invested share",
+   "holdout max drawdown",
+   "turnover per average equity",
+   "full-period Sharpe at 25 bps",
+   "Sharpe vs SPY at the strategy's realized exposure",
+   "paired weekly block bootstrap"
+  ]
+ },
+ "sampleRequirements": {
+  "minObservations": 26,
+  "minWeeks": 26
+ },
+ "baseline": "stock-v2-weekly-1",
+ "costAssumptions": "10 bps per side judged; 25 bps robustness",
+ "decisionRule": "docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md: R0 holdout invested >= current + 5 pts; R1 Sharpe above live in dev AND holdout, holdout drawdown within 5 points, turnover per average equity not higher; R2 full Sharpe above at 25 bps; R3 Sharpe above SPY at its own exposure in dev AND holdout. R0-R3 QUALIFIES_FOR_FORWARD_TEST; R0-R2 only BEATS_CURRENT_BELOW_MATCHED_SPY (RUNNING forward only); otherwise FAILS (REJECTED).",
+ "status": "REJECTED",
+ "result": {
+  "evidence": "retrospective",
+  "disposition": "REJECTED",
+  "observations": 203,
+  "weeks": 203,
+  "reason": "Pre-registered verdict FAILS (run 44822315095, exploratory, whole shares, 10 bps). R0 pass: holdout invested 46.5% vs 39.0%. R1 fail: dev Sharpe 0.443 vs 0.449, turnover per average equity 8.6x vs 7.2x. R2 fail: full Sharpe at 25 bps 0.30 vs 0.40. R3 fail: dev 0.44 vs 0.63, holdout 0.48 vs 1.27 (SPY at 46% exposure). Paired weekly bootstrap vs current: Sharpe difference 0.00 [-0.16, +0.15] full period."
+ },
+ "registeredAt": "2026-11-20T21:39:45Z",
+ "history": [
+  {
+   "at": "2026-11-20T21:39:45Z",
+   "from": null,
+   "to": "PROPOSED",
+   "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md); zero fitted parameters"
+  },
+  {
+   "at": "2026-11-20T21:42:15Z",
+   "from": "PROPOSED",
+   "to": "REJECTED",
+   "reason": "Pre-registered verdict FAILS (run 44822315095)."
+  }
+ ],
+ "applied": false,
+ "note": "Proposal only. The shared learning registry (research/engine/registry.json, config/research/registry.json) is owned by Codex and is not edited in this PR."
+}
