@@ -1,0 +1,343 @@
+{
+  "schemaVersion": "kalshi-weather-contract-archive-eval-v1",
+  "asOf": "2026-11-20T19:00:00Z",
+  "archiveRef": "e789e4852d838bf6d15ff55fe49724e122b1c757",
+  "archive": {
+    "files": [
+      {
+        "path": "kalshi-independent/nyc-weather/cli-daily-preliminary/2026-11-18.json",
+        "sha256": "f97c3b86bd0231d25f6d8ba7180c1ad23842b4bebd1c54622fb4adf872133122"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/cli-daily-preliminary/2026-11-19.json",
+        "sha256": "7b241e8eb76ca195e343ebc71aba7a0798221dcbab34648d9408d510b77a8a54"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-15.json",
+        "sha256": "a2523baefa4cde918dee0096df5f495e148230b74a109d5e395271a9e42367d8"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-16.json",
+        "sha256": "86c38c106b017a2c3c3e3d4c8a739aaad3bb71ac65c50362619b713518e4673b"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-17.json",
+        "sha256": "fdb19af1282145507aa4faff1b4ac6097b0a464f106b38dad97734201b78d52e"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-18.json",
+        "sha256": "0d6ff05f87d27a682e807a71ff763550708fda6571a0000fac9f9f927a182dc4"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-19.json",
+        "sha256": "9d5b80d9a23b5f2f60faedf6d9ffb403cccca9877ef12c74caffe632a60724d5"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-20.json",
+        "sha256": "a262805845694c3ccd646d4be5c356f1abf2e03db77b1420d0042fb2344278e5"
+      },
+      {
+        "path": "kalshi-independent/nyc-weather/forecasts/2026-11-21.json",
+        "sha256": "7d2f46a12ef9ed393f003b6a4f014e9ca33d70bae70d30ae88ad92a9795b86e1"
+      }
+    ],
+    "aggregateSha256": "3c56651dc55c53f36b56cc4075a916fb498599438718659a70158183b5e76552"
+  },
+  "networkRequests": 0,
+  "kalshiDataUsed": false,
+  "contractSpec": {
+    "series": "KXHIGHNY",
+    "station": "KNYC_CENTRAL_PARK",
+    "climateReport": "NWS_CLINYC",
+    "sourceAgencyOrder": [
+      "THE_WEATHER_COMPANY",
+      "NATIONAL_WEATHER_SERVICE"
+    ],
+    "reportRule": "FIRST_OFFICIAL_NON_PRELIMINARY_REPORT",
+    "dayDefinition": "LOCAL_STANDARD_TIME_UTC_MINUS_5",
+    "unit": "WHOLE_DEGREE_FAHRENHEIT",
+    "minimumTickMicros": 10000,
+    "settlementValueMicros": 1000000,
+    "expirationTimeEt": "10:00",
+    "takerFeeMultiplier": 1,
+    "makerFeeMultiplier": 0,
+    "feeScheduleEffective": "2026-07-07",
+    "verifiedOn": "2026-11-20"
+  },
+  "forecasts": [
+    {
+      "targetLocalDate": "2026-11-15",
+      "capturedAt": "2026-11-14T10:19:35.897Z",
+      "forecastIssuedAt": "2026-11-14T07:03:15+00:00",
+      "leadHours": 18.673,
+      "forecastHighF": 50,
+      "observedHighF": null,
+      "outcomeFetchedAt": null
+    },
+    {
+      "targetLocalDate": "2026-11-16",
+      "capturedAt": "2026-11-15T07:49:49.704Z",
+      "forecastIssuedAt": "2026-11-15T06:55:12+00:00",
+      "leadHours": 21.17,
+      "forecastHighF": 52,
+      "observedHighF": null,
+      "outcomeFetchedAt": null
+    },
+    {
+      "targetLocalDate": "2026-11-17",
+      "capturedAt": "2026-11-16T07:57:29.218Z",
+      "forecastIssuedAt": "2026-11-16T06:27:53+00:00",
+      "leadHours": 21.042,
+      "forecastHighF": 57,
+      "observedHighF": null,
+      "outcomeFetchedAt": null
+    },
+    {
+      "targetLocalDate": "2026-11-18",
+      "capturedAt": "2026-11-17T09:11:29.334Z",
+      "forecastIssuedAt": "2026-11-17T06:32:09+00:00",
+      "leadHours": 19.809,
+      "forecastHighF": 60,
+      "observedHighF": 64,
+      "outcomeFetchedAt": "2026-11-19T19:41:58.458Z"
+    },
+    {
+      "targetLocalDate": "2026-11-19",
+      "capturedAt": "2026-11-18T08:30:16.813Z",
+      "forecastIssuedAt": "2026-11-18T06:25:49+00:00",
+      "leadHours": 20.495,
+      "forecastHighF": 61,
+      "observedHighF": 64,
+      "outcomeFetchedAt": "2026-11-20T17:51:44.637Z"
+    },
+    {
+      "targetLocalDate": "2026-11-20",
+      "capturedAt": "2026-11-19T08:45:24.475Z",
+      "forecastIssuedAt": "2026-11-19T06:21:36+00:00",
+      "leadHours": 20.243,
+      "forecastHighF": 64,
+      "observedHighF": null,
+      "outcomeFetchedAt": null
+    },
+    {
+      "targetLocalDate": "2026-11-21",
+      "capturedAt": "2026-11-20T08:30:48.176Z",
+      "forecastIssuedAt": "2026-11-20T06:32:09+00:00",
+      "leadHours": 20.487,
+      "forecastHighF": 60,
+      "observedHighF": null,
+      "outcomeFetchedAt": null
+    }
+  ],
+  "blockers": {
+    "asOf": "2026-11-20T19:00:00Z",
+    "minTrainingDays": 30,
+    "pairedDays": [
+      "2026-11-18",
+      "2026-11-19"
+    ],
+    "missingOutcomesPastLatestEndpoint": [
+      "2026-11-15",
+      "2026-11-16",
+      "2026-11-17"
+    ],
+    "outcomesPending": [
+      "2026-11-20",
+      "2026-11-21"
+    ],
+    "missingForecasts": [],
+    "outcomesWithoutForecast": [],
+    "trainingShortfall": 28,
+    "earliestThirtiethPairTargetDate": "2026-12-17",
+    "earliestFirstModelForecastCaptureDate": "2026-12-19",
+    "codes": [
+      "INSUFFICIENT_TRAINING_PAIRS",
+      "OUTCOMES_MISSED_BY_COLLECTOR",
+      "OUTCOMES_PENDING"
+    ]
+  },
+  "evaluation": {
+    "schemaVersion": "kalshi-weather-contract-eval-v1",
+    "challengerModelId": "nws-empirical-error-pmf-v1-research",
+    "status": "BLOCKED_INSUFFICIENT_HISTORY",
+    "inputDays": 2,
+    "skippedSameDay": 0,
+    "skippedInsufficientHistory": 2,
+    "holdoutDays": 0,
+    "minTrainingDays": 30,
+    "minHoldoutDaysForReview": 50,
+    "models": {
+      "challenger": {
+        "meanContractBrier": null,
+        "meanEventBrier": null,
+        "meanLogLoss": null,
+        "meanRankedProbabilityScore": null,
+        "meanAbsCoherenceGapPpm": null
+      },
+      "climatology": {
+        "meanContractBrier": null,
+        "meanEventBrier": null,
+        "meanLogLoss": null,
+        "meanRankedProbabilityScore": null,
+        "meanAbsCoherenceGapPpm": null
+      },
+      "v0PerBin": {
+        "meanContractBrier": null,
+        "meanEventBrier": null,
+        "meanLogLoss": null,
+        "meanRankedProbabilityScore": null,
+        "meanAbsCoherenceGapPpm": null
+      }
+    },
+    "paired": {
+      "challengerVsClimatology": {
+        "n": 0,
+        "meanEventBrierDelta": null,
+        "daysChallengerBetter": 0
+      },
+      "challengerVsV0PerBin": {
+        "n": 0,
+        "meanEventBrierDelta": null,
+        "daysChallengerBetter": 0
+      }
+    },
+    "reliability": [
+      {
+        "lo": 0,
+        "hi": 0.2,
+        "n": 0,
+        "meanPredicted": null,
+        "observedFrequency": null
+      },
+      {
+        "lo": 0.2,
+        "hi": 0.4,
+        "n": 0,
+        "meanPredicted": null,
+        "observedFrequency": null
+      },
+      {
+        "lo": 0.4,
+        "hi": 0.6,
+        "n": 0,
+        "meanPredicted": null,
+        "observedFrequency": null
+      },
+      {
+        "lo": 0.6,
+        "hi": 0.8,
+        "n": 0,
+        "meanPredicted": null,
+        "observedFrequency": null
+      },
+      {
+        "lo": 0.8,
+        "hi": 1,
+        "n": 0,
+        "meanPredicted": null,
+        "observedFrequency": null
+      }
+    ],
+    "intervalCoverage80": null,
+    "promotionEligible": false,
+    "rows": [],
+    "caveat": "Independent ladder, not Kalshi listings. Outcomes are preliminary NWS CLI reports, not Kalshi settlements. No prices, fees or fills are involved, so no edge or profit is measured. A better score than baselines on this ladder is a prerequisite for review, not a promotion."
+  },
+  "latestContractForecast": {
+    "id": "5b6e0a84b0fe130ce43840767dd733b7735f5e90dfbfb4f142d1f8214a66e67c",
+    "schemaVersion": "kalshi-weather-contract-forecast-v1",
+    "modelId": "nws-empirical-error-pmf-v1-research",
+    "status": "AWAITING_VERIFIED_HISTORY",
+    "blocker": "WEATHER_INSUFFICIENT_DAYS",
+    "input": {
+      "schemaVersion": "kalshi-weather-forecast-input-v1",
+      "station": "KNYC_CENTRAL_PARK",
+      "targetLocalDate": "2026-11-21",
+      "forecastHighF": 60,
+      "forecastIssuedAt": "2026-11-20T06:32:09+00:00",
+      "forecastAvailableAt": "2026-11-20T08:30:48.176Z",
+      "forecastSource": "NWS_HOURLY_GRID",
+      "sourceDigest": "3d2ef3d39dfbf3ec7355bc00e9845cbc015560b9bfc5d5adf280b11a459aa41d"
+    },
+    "asOf": "2026-11-20T08:30:48.176Z",
+    "leadHours": 20.486617777777777,
+    "trainingDays": 1,
+    "horizonMatchedDays": 1,
+    "trainingDigest": null,
+    "distribution": null,
+    "contracts": [
+      {
+        "strike": {
+          "kind": "below",
+          "thresholdF": 56
+        },
+        "range": {
+          "minF": null,
+          "maxF": 55
+        },
+        "probabilityYesPpm": null
+      },
+      {
+        "strike": {
+          "kind": "between",
+          "lowerF": 56,
+          "upperF": 57
+        },
+        "range": {
+          "minF": 56,
+          "maxF": 57
+        },
+        "probabilityYesPpm": null
+      },
+      {
+        "strike": {
+          "kind": "between",
+          "lowerF": 58,
+          "upperF": 59
+        },
+        "range": {
+          "minF": 58,
+          "maxF": 59
+        },
+        "probabilityYesPpm": null
+      },
+      {
+        "strike": {
+          "kind": "between",
+          "lowerF": 60,
+          "upperF": 61
+        },
+        "range": {
+          "minF": 60,
+          "maxF": 61
+        },
+        "probabilityYesPpm": null
+      },
+      {
+        "strike": {
+          "kind": "between",
+          "lowerF": 62,
+          "upperF": 63
+        },
+        "range": {
+          "minF": 62,
+          "maxF": 63
+        },
+        "probabilityYesPpm": null
+      },
+      {
+        "strike": {
+          "kind": "above",
+          "thresholdF": 63
+        },
+        "range": {
+          "minF": 64,
+          "maxF": null
+        },
+        "probabilityYesPpm": null
+      }
+    ],
+    "marketDataUsed": false,
+    "caveat": "Independent NWS-forecast research distribution for the KNYC climate-day high. Not calibrated against market prices, not a Kalshi settlement, quote or order. Training outcomes are preliminary NWS CLI reports; Kalshi settles on the first non-preliminary report from The Weather Company, then NWS."
+  }
+}
