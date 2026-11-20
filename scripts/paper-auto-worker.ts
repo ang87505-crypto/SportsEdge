@@ -8,8 +8,8 @@
  *            | resume  (a fresh reconcile, then the database's own resume against that exact run)
  *     Owner kinds need SPORTSEDGE_PAPER_AUTO_OWNER_REF and never run from a schedule.
  * Scheduler-triggered runs are refused before any network call while the release
- * manifest is OFF. Broker writes stay OFF in source, so an execute run with the
- * checked-in manifest records a shadow plan and never reserves or sends an order.
+ * manifest is OFF. Broker writes follow the reviewed PAPER release manifest;
+ * an execute still needs the owner gate, clean broker state and a valid same-day decision.
  * Output is one JSON line without credentials. Exit 1 when the owner must act.
  */
 import {readFileSync,writeFileSync} from 'node:fs';
