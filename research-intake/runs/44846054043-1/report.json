@@ -1,0 +1,621 @@
+{
+ "generatedBy": "scripts/research-intake-collect.ts",
+ "retrievedAt": "2026-11-21T00:47:06.988Z",
+ "datasetVersion": "0fcdf3bd8a11738a7879a02b09e4f8f4132a58b8a37be26db1565c57352993d1",
+ "diff": {
+  "added": [
+   "openalex:https://openalex.org/W7236532374",
+   "openalex:https://openalex.org/W7211908081",
+   "openalex:https://openalex.org/W7235624470",
+   "openalex:https://openalex.org/W7235949946",
+   "openalex:https://openalex.org/W7223173877",
+   "openalex:https://openalex.org/W7224087446",
+   "openalex:https://openalex.org/W7222536905",
+   "openalex:https://openalex.org/W4393240819",
+   "openalex:https://openalex.org/W7236116088",
+   "openalex:https://openalex.org/W7235761394",
+   "openalex:https://openalex.org/W7222991663",
+   "openalex:https://openalex.org/W7222992390",
+   "openalex:https://openalex.org/W7236609445",
+   "openalex:https://openalex.org/W7236077637",
+   "openalex:https://openalex.org/W7235413555",
+   "arxiv:https://arxiv.org/abs/2611.26624v1",
+   "arxiv:https://arxiv.org/abs/2611.26619v1",
+   "arxiv:https://arxiv.org/abs/2611.26615v1",
+   "arxiv:https://arxiv.org/abs/2611.26605v1",
+   "arxiv:https://arxiv.org/abs/2611.26602v1",
+   "arxiv:https://arxiv.org/abs/2611.26592v1",
+   "arxiv:https://arxiv.org/abs/2611.26583v1",
+   "arxiv:https://arxiv.org/abs/2611.26582v1",
+   "arxiv:https://arxiv.org/abs/2611.26576v1",
+   "arxiv:https://arxiv.org/abs/2611.26574v1",
+   "arxiv:https://arxiv.org/abs/2611.26623v1",
+   "arxiv:https://arxiv.org/abs/2611.26612v1",
+   "arxiv:https://arxiv.org/abs/2611.26606v1",
+   "arxiv:https://arxiv.org/abs/2611.26591v1",
+   "arxiv:https://arxiv.org/abs/2611.26580v1",
+   "arxiv:https://arxiv.org/abs/2611.26579v1",
+   "arxiv:https://arxiv.org/abs/2611.26570v1",
+   "arxiv:https://arxiv.org/abs/2611.26568v1",
+   "arxiv:https://arxiv.org/abs/2611.26557v1",
+   "arxiv:https://arxiv.org/abs/2611.26626v1",
+   "arxiv:https://arxiv.org/abs/2611.26614v1",
+   "arxiv:https://arxiv.org/abs/2611.26604v1",
+   "arxiv:https://arxiv.org/abs/2611.26596v1",
+   "arxiv:https://arxiv.org/abs/2611.26561v1",
+   "arxiv:https://arxiv.org/abs/2611.26527v1",
+   "arxiv:https://arxiv.org/abs/2611.26516v1",
+   "arxiv:https://arxiv.org/abs/2611.26511v1",
+   "arxiv:https://arxiv.org/abs/2611.26491v1"
+  ],
+  "changed": [
+   "CIK0000019617",
+   "openalex:https://openalex.org/W7223709838",
+   "openalex:https://openalex.org/W7223997155",
+   "openalex:https://openalex.org/W7223606619",
+   "openalex:https://openalex.org/W1591529992",
+   "openalex:https://openalex.org/W7204499783",
+   "openalex:https://openalex.org/W7225830756",
+   "openalex:https://openalex.org/W7225989538",
+   "openalex:https://openalex.org/W7225801578",
+   "openalex:https://openalex.org/W7225077182",
+   "openalex:https://openalex.org/W7223176251",
+   "openalex:https://openalex.org/W7235474735",
+   "openalex:https://openalex.org/W7235576137",
+   "openalex:https://openalex.org/W7235789833",
+   "openalex:https://openalex.org/W4394843326",
+   "openalex:https://openalex.org/W7235246912"
+  ],
+  "unchanged": [
+   "CIK0000320193",
+   "CIK0000789019",
+   "CIK0001045810",
+   "CIK0002115436",
+   "CIK0000200406",
+   "CIK0000080424",
+   "CIK0000021344",
+   "CIK0000104169",
+   "CIK0000018230",
+   "openalex:https://openalex.org/W7223474494",
+   "openalex:https://openalex.org/W7221369130",
+   "openalex:https://openalex.org/W7223379443",
+   "openalex:https://openalex.org/W7213300938",
+   "openalex:https://openalex.org/W7234242792",
+   "openalex:https://openalex.org/W7227419190",
+   "openalex:https://openalex.org/W7220220094",
+   "openalex:https://openalex.org/W7226025973",
+   "openalex:https://openalex.org/W7226005156",
+   "openalex:https://openalex.org/W7225993798",
+   "openalex:https://openalex.org/W7226934208",
+   "openalex:https://openalex.org/W7226044375",
+   "openalex:https://openalex.org/W7225296002",
+   "openalex:https://openalex.org/W7225399811",
+   "openalex:https://openalex.org/W7223052495",
+   "openalex:https://openalex.org/W7222852310",
+   "openalex:https://openalex.org/W7234739890",
+   "openalex:https://openalex.org/W7233548601",
+   "openalex:https://openalex.org/W7235691824"
+  ],
+  "duplicateDataset": false
+ },
+ "requests": 19,
+ "budget": 40,
+ "sources": {
+  "sec-edgar-companyfacts": {
+   "attempted": 10,
+   "succeeded": 10,
+   "failures": [],
+   "connected": "VERIFIED_THIS_RUN"
+  },
+  "openalex": {
+   "attempted": 5,
+   "succeeded": 5,
+   "failures": [],
+   "connected": "VERIFIED_THIS_RUN"
+  },
+  "arxiv": {
+   "attempted": 3,
+   "succeeded": 3,
+   "failures": [],
+   "connected": "VERIFIED_THIS_RUN"
+  }
+ },
+ "survivorship": "The ticker list is a CURRENT list chosen for verification; it is not survivorship-free and must not be treated as a research universe.",
+ "sec": [
+  {
+   "ticker": "AAPL",
+   "cik": "0000320193",
+   "rawChecksum": "536e8bee446d6463",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1361,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1361,
+    "dropped": 47,
+    "byTag": {
+     "Assets": 144,
+     "Liabilities": 142,
+     "NetCashProvidedByUsedInOperatingActivities": 134,
+     "NetIncomeLoss": 319,
+     "OperatingIncomeLoss": 231,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 120,
+     "Revenues": 11,
+     "StockholdersEquity": 260
+    },
+    "periodsWithMultipleFilings": 316,
+    "latestFiled": "2026-11-03",
+    "latestFiledAgeDays": 18,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "MSFT",
+   "cik": "0000789019",
+   "rawChecksum": "985d42de4569d154",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1388,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1388,
+    "dropped": 74,
+    "byTag": {
+     "Assets": 138,
+     "Liabilities": 130,
+     "NetCashProvidedByUsedInOperatingActivities": 169,
+     "NetIncomeLoss": 317,
+     "OperatingIncomeLoss": 263,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 133,
+     "Revenues": 31,
+     "StockholdersEquity": 207
+    },
+    "periodsWithMultipleFilings": 344,
+    "latestFiled": "2026-10-28",
+    "latestFiledAgeDays": 24,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "NVDA",
+   "cik": "0001045810",
+   "rawChecksum": "c8d2deb79257bf63",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1475,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1475,
+    "dropped": 5,
+    "byTag": {
+     "Assets": 138,
+     "Liabilities": 86,
+     "NetCashProvidedByUsedInOperatingActivities": 161,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 225,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 28,
+     "Revenues": 280,
+     "StockholdersEquity": 248
+    },
+    "periodsWithMultipleFilings": 355,
+    "latestFiled": "2026-08-26",
+    "latestFiledAgeDays": 87,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "JPM",
+   "cik": "0000019617",
+   "rawChecksum": "33fb3720233ea9b8",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1034,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 1034,
+    "dropped": 48,
+    "byTag": {
+     "Assets": 203,
+     "Liabilities": 143,
+     "NetCashProvidedByUsedInOperatingActivities": 159,
+     "NetIncomeLoss": 231,
+     "Revenues": 111,
+     "StockholdersEquity": 187
+    },
+    "periodsWithMultipleFilings": 307,
+    "latestFiled": "2026-11-03",
+    "latestFiledAgeDays": 18,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "XOM",
+   "cik": "0002115436",
+   "rawChecksum": "94b21a95979a76ea",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 32,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 32,
+    "dropped": 0,
+    "byTag": {
+     "Assets": 4,
+     "Liabilities": 4,
+     "NetCashProvidedByUsedInOperatingActivities": 4,
+     "NetIncomeLoss": 8,
+     "Revenues": 8,
+     "StockholdersEquity": 4
+    },
+    "periodsWithMultipleFilings": 11,
+    "latestFiled": "2026-11-02",
+    "latestFiledAgeDays": 19,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "JNJ",
+   "cik": "0000200406",
+   "rawChecksum": "7d03f3a804777f55",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 940,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 940,
+    "dropped": 0,
+    "byTag": {
+     "Assets": 145,
+     "Liabilities": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 157,
+     "NetIncomeLoss": 274,
+     "OperatingIncomeLoss": 52,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 132,
+     "Revenues": 18,
+     "StockholdersEquity": 22
+    },
+    "periodsWithMultipleFilings": 230,
+    "latestFiled": "2026-10-21",
+    "latestFiledAgeDays": 31,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "PG",
+   "cik": "0000080424",
+   "rawChecksum": "f18d52da31bf6334",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1221,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 1221,
+    "dropped": 133,
+    "byTag": {
+     "Assets": 156,
+     "Liabilities": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 158,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 322,
+     "Revenues": 136
+    },
+    "periodsWithMultipleFilings": 278,
+    "latestFiled": "2026-10-22",
+    "latestFiledAgeDays": 30,
+    "missingCoreTags": [
+     "StockholdersEquity"
+    ],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "KO",
+   "cik": "0000021344",
+   "rawChecksum": "0547cd4fedfcf8be",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 995,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 995,
+    "dropped": 59,
+    "byTag": {
+     "Assets": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 147,
+     "NetIncomeLoss": 229,
+     "OperatingIncomeLoss": 229,
+     "Revenues": 108,
+     "StockholdersEquity": 142
+    },
+    "periodsWithMultipleFilings": 271,
+    "latestFiled": "2026-10-28",
+    "latestFiledAgeDays": 24,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "WMT",
+   "cik": "0000104169",
+   "rawChecksum": "bbcfd671c4535bc2",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1508,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 35
+   },
+   "quality": {
+    "facts": 1508,
+    "dropped": 10,
+    "byTag": {
+     "Assets": 207,
+     "NetCashProvidedByUsedInOperatingActivities": 157,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 229,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 120,
+     "Revenues": 293,
+     "StockholdersEquity": 193
+    },
+    "periodsWithMultipleFilings": 445,
+    "latestFiled": "2026-08-28",
+    "latestFiledAgeDays": 85,
+    "missingCoreTags": [],
+    "stale": false
+   }
+  },
+  {
+   "ticker": "CAT",
+   "cik": "0000018230",
+   "rawChecksum": "350be4305f0959a7",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 969,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 969,
+    "dropped": 70,
+    "byTag": {
+     "Assets": 150,
+     "Liabilities": 146,
+     "NetCashProvidedByUsedInOperatingActivities": 85,
+     "NetIncomeLoss": 42,
+     "OperatingIncomeLoss": 229,
+     "Revenues": 317
+    },
+    "periodsWithMultipleFilings": 224,
+    "latestFiled": "2026-11-04",
+    "latestFiledAgeDays": 17,
+    "missingCoreTags": [
+     "StockholdersEquity"
+    ],
+    "stale": false
+   }
+  }
+ ],
+ "literature": {
+  "leads": 77,
+  "duplicatesRemoved": 3,
+  "overCapExcluded": 0,
+  "suspectedInjection": 0,
+  "reviewQueue": 4,
+  "quarantined": 73,
+  "policy": {
+   "version": "research-quality-v1",
+   "maxRetrievalAgeHours": 72,
+   "minMatchedTerms": 2,
+   "maxLeadsPerRun": 80,
+   "reviewRequired": true
+  },
+  "allHypothesisOnly": true
+ },
+ "requestLog": [
+  {
+   "url": "https://www.sec.gov/files/company_tickers.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 399
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 175
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 35
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 33
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000019617.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 34
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0002115436.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 37
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000200406.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 40
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000080424.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 42
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000021344.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 300
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000104169.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 33
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000018230.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 197
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 200,
+   "attempt": 0,
+   "ms": 447
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 200,
+   "attempt": 0,
+   "ms": 253
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 200,
+   "attempt": 0,
+   "ms": 255
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 200,
+   "attempt": 0,
+   "ms": 305
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 200,
+   "attempt": 0,
+   "ms": 263
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 475
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 283
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 400
+  }
+ ]
+}
