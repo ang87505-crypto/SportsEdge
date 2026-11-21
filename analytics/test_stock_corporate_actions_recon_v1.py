@@ -311,3 +311,41 @@ class LiveRulesAndTiming(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RecordedRealRun(unittest.TestCase):
+    """Locks the committed derived results of the real run (research/stock_corporate_actions_20261121) to the exact
+    bars dataset PR #199 audited, and checks the file's own accounting. It reads results; it is not a fixture."""
+    PATH = 'research/stock_corporate_actions_20261121/reconciliation.json'
+
+    def setUp(self):
+        import os
+        if not os.path.exists(self.PATH):
+            self.skipTest('recorded run not present')
+        with open(self.PATH, encoding='utf-8') as fh:
+            self.r = json.load(fh)
+
+    def test_same_dataset_as_the_data_quality_audit(self):
+        with open('research/stock_data_quality_20261120/audit.json', encoding='utf-8') as fh:
+            audit = json.load(fh)
+        self.assertEqual(self.r['dataset_sha256'], audit['dataset_sha256'])
+        self.assertEqual(self.r['version'], ca.VERSION)
+
+    def test_counts_add_up_and_no_year_is_silently_assumed(self):
+        rec = self.r['records']
+        self.assertEqual(sum(rec['by_status'].values()), rec['records_in_universe'])
+        self.assertEqual(sum(rec['by_kind_and_status'].values()), rec['records_in_universe'])
+        self.assertEqual(self.r['chunks']['complete'], self.r['chunks']['total'])
+        for y, v in self.r['coverage_by_year'].items():
+            self.assertEqual(v['status'] == 'COVERED', v['fetch_complete'] and (v['explained_share'] is None or
+                                                                                 v['explained_share'] >= ca.COVERAGE_MIN), y)
+        for name, d in self.r['decisions'].items():
+            self.assertEqual(d['same_picks'] + d['different_picks'], d['reconciled'], name)
+            self.assertEqual(d['reconciled'] + d['evidence_missing'], d['decisions'], name)
+            self.assertEqual(sum(d['cause'].values()), d['different_picks'], name)
+
+    def test_every_flagged_case_has_a_record_based_finding(self):
+        found = {(c['symbol'], c['date']): c['finding'] for c in self.r['cases']}
+        self.assertEqual(set(found), set(ca.CASES))
+        self.assertTrue(all(f.startswith(('UNSUPPORTED_RECORD', 'ONLY_SUPPORTED', 'NO_RECORD', 'EVIDENCE_MISSING'))
+                            for f in found.values()))
