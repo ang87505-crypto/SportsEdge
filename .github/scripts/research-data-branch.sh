@@ -31,6 +31,7 @@ case "$1" in
     if git rev-parse -q --verify HEAD >/dev/null; then
       changed=$(git diff --cached --name-status HEAD | awk '$1 != "A" {print $2}' | grep -v -E '^(reports/LATEST\.md|summary\.json|manifest\.jsonl|items\.jsonl|runs\.jsonl|learning-engine/index\.jsonl|research-intake/index\.jsonl|lab/stock-forward-ledger\.jsonl)$' || true)
       if [ -n "$changed" ]; then echo "APPEND_ONLY_VIOLATION: $changed"; exit 1; fi
+      # Frozen weekly lab picks are appended once per decision week; earlier frozen rows must stay byte-identical.
       for f in manifest.jsonl items.jsonl runs.jsonl learning-engine/index.jsonl research-intake/index.jsonl lab/stock-forward-ledger.jsonl; do
         if git cat-file -e "HEAD:$f" 2>/dev/null; then
           old=$(git show "HEAD:$f" | wc -c); new=$(wc -c < "$f")

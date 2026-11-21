@@ -4,7 +4,7 @@ Evidence snapshot: 2026-11-21T21:24:02.817Z. User-facing date: Saturday, Novembe
 
 ## Decision
 
-Integration audit completed. Keep the release held: the existing hosted lab is present, but the complete new forward-study readiness check is unverified, previews have no study database connection, and production research collection is failing at archive publication. No merge, migration, release flag, model, stake, schedule, credential or trading control was changed by this audit.
+Integration audit completed. Keep the release held: the existing hosted lab is present, but the complete new forward-study readiness check is unverified, previews have no study database connection, and production research collection is failing at archive publication. No merge into main, migration, release flag, model, stake, schedule, credential or trading control was changed by this audit.
 
 ## Pinned integration matrix
 
@@ -13,6 +13,7 @@ Integration audit completed. Keep the release held: the existing hosted lab is p
 | Production main | `1c6f05d94899e3d34f5a3a0cc7ff0c6b997f5f56` (#197) | Vercel production READY; live `/api/version` returns this exact SHA and `production` | Operational warnings below prevent a blanket healthy verdict |
 | Draft #200 | `42fe0bcaec5d06f049f0943914a8cd99cca4aad4`, based on main | 11 successful check runs, 3 intentional main-only skips; Vercel success; preview version matches; no inline review threads | Verify all ten study relations and service-role access in the active database, then owner release approval |
 | Draft #202 | `54311297cdf850c661c01523bbb3d209712c3975`, targets #200 | All 7 check runs successful; Vercel success; preview version matches; no inline review threads | Review as a stacked follow-up, preserving #200's source pin |
+| Draft #203 | `2f83b395c7b6feae490e7a74f92da4630de1bb11`, targets main | Claude's Day 1 research audit and the shared two-line archive repair | This verification PR is stacked on #203; it does not add a second archive fix |
 | #200 source dependencies | #192 `30db05c21d92903ae1ceb4ed472d2b58c417662e`; #195 `c25e4838c426ee55f72c5dda620871a94614a172`; #199 `1b97cfd4ffb5688ab5d40f5de4095ebbb696fac4` | Source pins and changed-file lists match the integration runbook | These are overlapping source branches; do not merge them independently as additional copies of the integrated work |
 | #202 source dependency | #201 `aa9ef7016a3b4ff2e1b9cbaae37edc7cf099f574` | Reconciliation follow-up retains the earlier immutable findings; shadow-writer blob is identical to #200 | Research validity belongs to Claude's independent review |
 | Existing NBA lab | Six lab relations present in `vfyzbliksooljxrlfadp` | Today's main-branch read-only preflight reports schema APPLIED, 864 predictions, 96 flags, 15 stakes, zero tampered forecasts | This preflight does not inspect the four new penny relations or prove new shadow privileges |
@@ -23,10 +24,16 @@ Integration audit completed. Keep the release held: the existing hosted lab is p
 ## Production job findings
 
 1. **Research archive publication fails.** Run [44891899827](https://github.com/ang87505-crypto/SportsEdge/actions/runs/44891899827) passed 100 synthetic research tests and completed source collection and forward calculations, then failed with `APPEND_ONLY_VIOLATION: lab/stock-forward-ledger.jsonl`. The earlier manual run [44867479053](https://github.com/ang87505-crypto/SportsEdge/actions/runs/44867479053) also failed. A successful computation does not mean those records were published.
-2. **The producer really appends.** `analytics/research/cli.py`, `cmd_lab_forward`, opens that ledger in append mode and writes newly frozen rows. The archive helper omitted this one file from both its modification allowlist and its byte-prefix checks. This audit adds it to both lists. Prior bytes still must match exactly and truncation still fails; snapshots remain immutable.
+2. **The producer really appends.** `analytics/research/cli.py`, `cmd_lab_forward`, opens that ledger in append mode and writes newly frozen rows. The archive helper omitted this one file from both its modification allowlist and its byte-prefix checks. Claude's #203 adds it to both lists. This follow-up retains that exact script and runs its existing regression automatically in CI. Prior bytes still must match exactly and truncation still fails; snapshots remain immutable.
 3. **The release watcher expired safely.** Run [44881513105](https://github.com/ang87505-crypto/SportsEdge/actions/runs/44881513105) reports props #99 ALREADY_MERGED, stock #102 EXPIRED_REVIEW_REQUIRED, then its retirement job succeeded. The terminal failure is an approval-window boundary, not evidence of a failed broker order. Do not extend the window or reactivate the watcher as a routine repair.
 4. **Monitor success is not an all-clear.** The [21:08 UTC monitor](https://github.com/ang87505-crypto/SportsEdge/actions/runs/44949931746) reports ATTENTION: props research MISSED_SLOT, capture tick MISSED_SLOT, learning RAN_LATE, research collector FAILING, research evaluation PENDING_FIRST_RUN, release watcher RETIRED, plus a SEC source problem and the missing supervised stock session. The later 21:17 UTC preflight and capture run completed, but do not retroactively erase missed slots.
 5. **QMOM input quality needs research review.** The failed nightly collector's source step reported QMOM PARSE_FAILED, SEC OK and zero new filings. The archive repair does not claim to repair the QMOM parser or validate a strategy.
+
+## Coordination with Claude
+
+Claude published [draft #203](https://github.com/ang87505-crypto/SportsEdge/pull/203) during this audit and independently identified the same archive defect. This PR uses #203 as its base and inherits that repair and its existing regression, avoiding duplicate implementation. The only added files/changes relative to #203 are this integration report and a dedicated read-only CI job running the existing data-branch guard tests. The initially duplicated implementation and test file were removed from the final tree.
+
+Claude's source-archive audit counts three valid Kalshi pairs (Nov 18–20), while the older hosted-worker receipt records two. Those timestamps and evidence layers differ; the older receipt must not be presented as the current archive count. Model admission remains blocked at 3/30 in Claude's audit, with earliest target Dec 17 if every later pair arrives. This is research evidence, not exchange connection or profitability.
 
 ## Frozen NBA and budget baseline
 
@@ -60,19 +67,19 @@ Independently read the existing final-head GitHub checks and job logs:
 - Both preview `/lab` responses are HTTP 200; their penny panels explicitly say the deployment is not connected.
 - Main has 154 check-run records in the inspected two-page snapshot: 116 success, 35 skipped, 3 failures. These include recurring operational runs and are not 154 independent regression tests. Do not describe production as all-green.
 
-The archive repair adds seven meaningful local-Git integration tests: valid ledger append, changed historical prefix plus append, truncation, deletion, existing run-log append, immutable snapshot rewrite, and no-change replay. Each uses a disposable bare remote and synthetic rows. These tests are picked up by the existing deterministic Python CI suite. The current PR's exact-head check runs are the authority for this repair's execution results; there is no fresh local test claim because this session's executor is unavailable.
+The shared repair has five existing data-branch tests, including the stock-ledger append/rewrite/truncation regression. Inspection of the existing verification workflows found no automatic execution of `scripts/data-branches.test.mjs`. This follow-up adds a dedicated `Data branch publication guards` job to Verify SportsEdge, with contents:read, no service credentials, no dependency installation and no provider network calls. It runs the existing tests against disposable local Git remotes instead of introducing duplicate tests. Exact-head GitHub check runs are the authority for the execution result; there is no fresh local command claim because this session's executor is unavailable.
 
-Reproduce the focused tests with `python -m unittest analytics.research.test_data_branch -v`. Run `python -m unittest discover -s analytics -p 'test_*.py' -v` for the existing full analytics gate. No provider requests or account credentials are needed for these tests.
+Reproduce the focused tests with `node --test scripts/data-branches.test.mjs`. The existing full Python analytics and website/browser checks continue to run. No provider requests or account credentials are needed for the guard tests.
 
 ## Release sequence and rollback
 
-1. Independently review this narrow archive repair and its CI. After owner-approved merge, run the existing collector and require a real successful archive-push receipt. Do not replay lost data as if it was saved earlier. Freeze any new Monday research rows at their actual future capture time.
+1. Independently review the shared #203 archive repair and this CI follow-up. After owner-approved merge, run the existing collector and require a real successful archive-push receipt. Do not replay lost data as if it was saved earlier. Freeze any new Monday research rows at their actual future capture time.
 2. Verify the active ten-table study setup and intended privileges. Keep #200 and #202 draft until these checks and owner approval are complete.
 3. Review #202 on top of the frozen #200 head. A release should combine/rebase the reviewed changes coherently and rerun affected checks; do not treat independent merges of overlapping source branches as required dependencies.
 4. Verify the exact new production SHA and future worker receipts after any approved release. A no-eligible-entry result is valid; historical backfills cannot establish forward evidence.
 5. Keep Kalshi demo/live activation separate. Keep stock #102 held for its supervised session and renewed owner review.
 
-Rollback of this archive repair is a normal reviewed revert of the helper's two-line change. It does not remove historical records. Do not delete or rewrite the research-data branch or change production controls to hide an archive failure. Database/schema rollback is not applicable to this PR.
+This follow-up can be reverted to remove the added CI job/report, without changing the shared #203 archive repair. Reverting #203's two-line helper change separately would restore the old publication refusal; it would not remove historical records. Do not delete or rewrite the research-data branch or change production controls to hide an archive failure. Database/schema rollback is not applicable to this PR.
 
 ## Claude handoff
 
