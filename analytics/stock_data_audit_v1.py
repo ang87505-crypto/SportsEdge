@@ -29,13 +29,20 @@ DIVIDEND_MAX_STEP = 0.10     # adjusted/raw ratio steps below 10% (and not split
 STEP_NOISE = 0.001           # vendor adjusted prices are rounded: ratio jitter up to ~0.05%/day is not an event
 STEP_WINDOW = 5              # an event is a PERSISTENT step: median of the next 5 ratios vs the previous 5
 COMMON_SPLITS = sorted({a / b for a in range(1, 21) for b in range(1, 21) if a != b and max(a, b) <= 20 and min(a, b) <= 4})
-EXTREME_DAILY = 0.40         # |adjusted close-to-close| above 40% is reported for review
+EXTREME_DAILY = 0.25         # |adjusted close-to-close| above 25% is listed for review (possible unadjusted spin-off)
 LEAKAGE_SAMPLES = 24
 
 
 def _ratio(b: dict, i: int):
     raw, adj = b['c'][i], b['ac'][i]
     return adj / raw if raw and adj and raw > 0 and adj > 0 else None
+
+
+def is_integer_split(r: float, tolerance: float = SPLIT_TOLERANCE, largest: int = 100) -> bool:
+    """Large forward or reverse splits (e.g. 25-for-1, 50-for-1, 1-for-20): r or 1/r within 2% of an integer 2..100."""
+    x = r if r >= 1 else 1 / r
+    n = round(x)
+    return 2 <= n <= largest and abs(x / n - 1) <= tolerance
 
 
 def classify_step(prev: float, cur: float) -> str | None:
@@ -46,7 +53,7 @@ def classify_step(prev: float, cur: float) -> str | None:
     r = cur / prev
     if abs(r - 1) < STEP_NOISE:
         return None
-    if any(abs(r / s - 1) <= SPLIT_TOLERANCE for s in COMMON_SPLITS):
+    if any(abs(r / s - 1) <= SPLIT_TOLERANCE for s in COMMON_SPLITS) or is_integer_split(r):
         return 'split'
     if 1 < r <= 1 + DIVIDEND_MAX_STEP:
         return 'dividend'

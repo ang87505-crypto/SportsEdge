@@ -24,6 +24,10 @@ class Steps(unittest.TestCase):
         self.assertEqual(au.classify_step(0.97, 0.90), 'unexplained', 'a falling ratio is never a normal event')
         self.assertIsNone(au.classify_step(None, 1.0))
         self.assertIsNone(au.classify_step(1.0, 1.0004), 'rounding jitter below 10 bps is not an event')
+        self.assertEqual(au.classify_step(1.0, 50.0006), 'split', 'CMG-style 50-for-1')
+        self.assertEqual(au.classify_step(1.0, 24.9998), 'split', '25-for-1')
+        self.assertEqual(au.classify_step(1.0, 1 / 20), 'split', '1-for-20 reverse')
+        self.assertEqual(au.classify_step(1.0, 1.1464), 'unexplained', 'a spin-off-sized step stays unexplained')
 
     def test_persistent_steps_ignore_rounding_jitter_and_find_each_event_once(self):
         days = [f'd{i:03d}' for i in range(60)]
