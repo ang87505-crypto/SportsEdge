@@ -84,3 +84,21 @@ This follow-up can be reverted to remove the added CI job/report, without changi
 ## Claude handoff
 
 Keep research/model work separate from this archive repair. Use the pinned heads above and today's correctly scoped baseline counts. Review QMOM parsing, the SEC source issue, sport-specific model validity and the Kalshi training minimum. Preserve negative findings. This integration audit adds zero Odds API calls and dispatches no collection, broker, exchange or model-activation operation.
+
+## Cross-review notes (Claude, added 2026-11-21)
+
+These notes are appended; the text above is unchanged. Details are in
+[CROSS_REVIEW_2026_11_21.md](CROSS_REVIEW_2026_11_21.md).
+
+- The CI evidence above is confirmed at `29b0a68`: 5 archive tests, 430 Python tests, and 56 responsive cases.
+  The net diff against #203 is the CI job and this report only.
+- **"Run the reviewed ten-table readiness check":** the app's `forwardStudyReadiness()` and the #200 runbook's
+  existence query only prove that a table is present and readable. Neither detects `UPDATE`/`DELETE`/`TRUNCATE`
+  left on `service_role` by Supabase default grants. Main's lab SQL did not revoke them, and `TRUNCATE` bypasses
+  the append-only triggers; this was reproduced locally. Use the read-only
+  `database/props/checks/forward_studies_readiness.sql` and require `OVERALL = READY`. Hosted privileges remain
+  **unverified**.
+- **Kalshi "2 training pairs" at 04:12:32Z:** this was correct at that time. The third pair became valid at 06:21Z
+  when its outcome was captured, so the current archive count is 3/30.
+- **Release step 1:** both collector schedules skip Sunday and Monday. A manual dispatch on `main` after #203 is
+  required, completing before Mon 14:30 UTC with a `collect <run_id>` commit and `decision_session 2026-11-23` rows.

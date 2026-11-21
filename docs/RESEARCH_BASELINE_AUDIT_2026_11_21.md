@@ -105,3 +105,21 @@ window ended (`EXPIRED_REVIEW_REQUIRED`); its retire job succeeded.
   - Python research 100/100
   - EPL 5/5
   - Stock weekly v2: pass
+
+## 6. Cross-review corrections (added 2026-11-21, later the same day)
+
+The original text above is kept unchanged as recorded. These notes correct how it should be read. Details are in
+[CROSS_REVIEW_2026_11_21.md](CROSS_REVIEW_2026_11_21.md).
+
+- **D1, "Fixed in this PR":** this is a source-level fix only. Production archive publication is **not repaired**
+  until #203 is merged, a Research collect run on `main` succeeds, `research-data` receives its `collect <run_id>`
+  commit, and the ledger shows the new frozen rows.
+- **E5, week-48 gap:** this is conditional, not certain. If a successful run publishes before Mon 2026-11-23
+  14:30 UTC, week 48 is a genuine pre-open freeze (`data_through` 2026-11-20). Only if none does is it recorded as
+  missing, never backfilled.
+- **Kalshi count reconciliation:** hosted platform receipts (tick `tick-2026-11-21T04:00`, read 04:12:32Z) report
+  **2** training pairs. That was correct at the time, because the third pair (target 11-20) became valid only when
+  its CLINYC outcome was captured at 2026-11-21 06:21Z. The current archive count is **3/30**, with 27 remaining
+  and earliest admission target 2026-12-17. The minimum is unchanged.
+- **E1 pairing:** #200 pairs each `props-nb-monotone-cal-v1` row to the exact stored baseline prediction ID, not
+  only the same line. The gate stays `REVIEW_GATE`.
