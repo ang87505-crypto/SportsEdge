@@ -273,10 +273,14 @@ class LiveRulesAndTiming(unittest.TestCase):
                             'alias_of': {'SYNOLD': ['SYNA', DAYS[200]]}, 'page_sha256': ['x'],
                             'pages': [{'corporate_actions': {'cash_dividends': [
                                 {'id': 'old1', 'symbol': 'SYNOLD', 'rate': 0.4, 'ex_date': DAYS[100]},
-                                {'id': 'old2', 'symbol': 'SYNOLD', 'rate': 0.4, 'ex_date': DAYS[250]}]}}]}]}
+                                {'id': 'old2', 'symbol': 'SYNOLD', 'rate': 0.4, 'ex_date': DAYS[250]}],
+                                'spin_offs': [{'id': 'sp', 'source_symbol': 'SYNOLD', 'new_symbol': 'SYNX',
+                                               'source_rate': 1, 'new_rate': 1, 'ex_date': DAYS[200]}]}}]}]}
         rows, _ = ca.flatten(arch)
-        self.assertEqual([(r['row']['symbol'], r['date'], r['row']['alias_from']) for r in rows],
-                         [('SYNA', DAYS[100], 'SYNOLD')], 'mapped before the change; dropped after it')
+        got = [(r['kind'], r['row'].get('symbol') or r['row'].get('source_symbol'), r['date'], r['row']['alias_from'])
+               for r in rows]
+        self.assertEqual(got, [('cash_dividends', 'SYNA', DAYS[100], 'SYNOLD'), ('spin_offs', 'SYNA', DAYS[200], 'SYNOLD')],
+                         'mapped up to and including the change date; dropped after it')
 
     def test_same_day_dividends_are_compared_as_their_sum(self):
         a = synthetic_symbol(DAYS, 50, 0.001, {100: ('div', 0.9, True)})

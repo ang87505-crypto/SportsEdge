@@ -124,9 +124,10 @@ def record_date(r: dict) -> str | None:
 def flatten(archive: dict) -> tuple[list[dict], list[dict]]:
     """(rows, chunks): every record of every COMPLETE chunk once, as {kind, row, date}; chunk status kept.
     Alias chunks hold records filed under a member's FORMER ticker (from the archive's own name_changes records):
-    a record dated before the change has that ticker replaced by the member's current one, as the live bridge
-    would have seen it under the ticker in use at the time; a record on or after the change is left out (the
-    member's own chunks cover it)."""
+    a record dated on or before the change has that ticker replaced by the member's current one, as the live
+    bridge would have seen it under the ticker in use at the time (a distribution can share the change date, as
+    UTX's did); a record after the change is left out (the member's own chunks cover it). A record listed under
+    both tickers on the change date is NOT merged here: for dividends it shows up as a same-day sum mismatch."""
     from .stock_forward_bridge_v1 import SYMBOL_FIELDS
     seen, rows = set(), []
     for c in archive['chunks']:
@@ -141,7 +142,7 @@ def flatten(archive: dict) -> tuple[list[dict], list[dict]]:
                     if alias:
                         when = record_date(r)
                         old, (new, until) = next(iter(alias.items()))
-                        if when is None or when >= until:
+                        if when is None or when > until:
                             continue
                         r = {k: (new if k in SYMBOL_FIELDS and v == old else v) for k, v in r.items()}
                         r['alias_from'] = old
