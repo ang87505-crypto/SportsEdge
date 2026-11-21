@@ -1,0 +1,625 @@
+{
+ "version": "stock-data-audit-v1",
+ "dataset_sha256": "28609ff371bc6997b6abe6c6b1612d4ed94f7a6020c22c713d321cd557610948",
+ "feed": "sip",
+ "asof": "2026-11-19",
+ "sessions": [
+  "2016-01-04",
+  "2026-11-19"
+ ],
+ "session_count": 2737,
+ "symbols": 136,
+ "symbols_with_gaps": 0,
+ "total_gap_sessions": 0,
+ "symbols_with_bad_prices": 0,
+ "inferred_events": {
+  "dividend": 5045,
+  "split": 30,
+  "unexplained": 4
+ },
+ "symbols_with_unexplained_steps": [
+  "DHR",
+  "EXC",
+  "GE",
+  "HON"
+ ],
+ "flagged": {
+  "AMD": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2016-04-22",
+     "adjusted_return": 0.5229007633587786
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "CHTR": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2026-04-24",
+     "adjusted_return": -0.25498386963355113
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "COP": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-24",
+     "adjusted_return": 0.2518134715025906
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "CRM": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-08-26",
+     "adjusted_return": 0.2604716981132076
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "DHR": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [],
+   "unexplained": [
+    {
+     "date": "2023-10-03",
+     "ratio_step": 1.1463829804602508
+    }
+   ],
+   "not_in_calendar": 0
+  },
+  "EOG": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-09",
+     "adjusted_return": -0.32024390243902434
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "EXC": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [],
+   "unexplained": [
+    {
+     "date": "2022-02-02",
+     "ratio_step": 1.4054349552970873
+    }
+   ],
+   "not_in_calendar": 0
+  },
+  "FCX": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-24",
+     "adjusted_return": 0.29700000000000015
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "GE": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [],
+   "unexplained": [
+    {
+     "date": "2023-01-03",
+     "ratio_step": 1.284842906392393
+    }
+   ],
+   "not_in_calendar": 0
+  },
+  "HON": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [],
+   "unexplained": [
+    {
+     "date": "2026-06-30",
+     "ratio_step": 0.9539757195353249
+    }
+   ],
+   "not_in_calendar": 0
+  },
+  "IBM": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2026-07-14",
+     "adjusted_return": -0.25207911104899017
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "INTC": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2024-08-02",
+     "adjusted_return": -0.2608243851749221
+    },
+    {
+     "date": "2026-10-30",
+     "adjusted_return": -0.28576083414793085
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "META": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2022-02-03",
+     "adjusted_return": -0.2639244858410952
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "MPC": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-12",
+     "adjusted_return": -0.2702702702702703
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "NFLX": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2022-04-20",
+     "adjusted_return": -0.35111876075731496
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "NOW": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2026-10-29",
+     "adjusted_return": -0.2694997668687138
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "NVDA": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2016-11-11",
+     "adjusted_return": 0.2976548406494286
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "ORCL": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2025-09-10",
+     "adjusted_return": 0.3595241098078781
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "OXY": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-09",
+     "adjusted_return": -0.5202646815550042
+    },
+    {
+     "date": "2020-03-13",
+     "adjusted_return": 0.4319757365684578
+    },
+    {
+     "date": "2020-06-05",
+     "adjusted_return": 0.3370319001386963
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "RTX": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-04-03",
+     "adjusted_return": -0.7097189299017947
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "SLB": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-09",
+     "adjusted_return": -0.2743105950653121
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "SPG": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2020-03-16",
+     "adjusted_return": -0.26716346916124944
+    },
+    {
+     "date": "2020-11-09",
+     "adjusted_return": 0.2785034314810715
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  },
+  "WMB": {
+   "gaps_inside_range": 0,
+   "nonpositive_or_missing": 0,
+   "extreme_moves": [
+    {
+     "date": "2016-01-14",
+     "adjusted_return": 0.343852728468113
+    },
+    {
+     "date": "2016-02-08",
+     "adjusted_return": -0.3481760217414027
+    }
+   ],
+   "unexplained": [],
+   "not_in_calendar": 0
+  }
+ },
+ "universe": {
+  "members": 135,
+  "members_without_data": [],
+  "members_starting_after_data_start": [],
+  "members_ending_before_data_end": [],
+  "distinct_first_traded_on": {
+   "2015-01-02": 135
+  },
+  "sectors": {
+   "Communication Services": 9,
+   "Consumer Discretionary": 14,
+   "Consumer Staples": 11,
+   "Energy": 10,
+   "Financials": 17,
+   "Health Care": 17,
+   "Industrials": 18,
+   "Information Technology": 20,
+   "Materials": 6,
+   "Real Estate": 6,
+   "Utilities": 7
+  },
+  "revision": "large-cap-v1-2026-11-09",
+  "survivorship": "Every member is a 2026 survivor; no delisted or removed company can appear in any historical week. first_traded_on is a declared lower bound, not a membership or listing date.",
+  "classification": "GICS sector names, assigned by the maintainer from public company descriptions; not licensed GICS data"
+ },
+ "leakage": {
+  "checked": 24,
+  "mismatches": 0,
+  "decisions": [
+   {
+    "session": "2017-01-09",
+    "picks": [
+     "AMD",
+     "FCX",
+     "AMAT",
+     "NUE",
+     "WMB"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2017-06-05",
+    "picks": [
+     "AMD",
+     "MU",
+     "CSX",
+     "MS",
+     "BAC"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2017-10-30",
+    "picks": [
+     "MU",
+     "CSX",
+     "AMAT",
+     "PGR",
+     "BAC"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2018-03-26",
+    "picks": [
+     "MU",
+     "FCX",
+     "PGR",
+     "AMAT",
+     "BAC"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2018-08-20",
+    "picks": [
+     "COP",
+     "MPC",
+     "CSX",
+     "CSCO",
+     "NKE"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2019-01-14",
+    "picks": [
+     "AMD",
+     "MRK",
+     "O",
+     "EXC",
+     "PFE"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2019-06-10",
+    "picks": [
+     "AMD",
+     "QCOM",
+     "SBUX",
+     "CMCSA",
+     "AEP"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2019-11-04",
+    "picks": [
+     "AMD",
+     "AMAT",
+     "SBUX",
+     "SO",
+     "PLD"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2020-03-30",
+    "picks": [
+     "AMD",
+     "NEM",
+     "TMUS",
+     "GILD"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2020-08-24",
+    "picks": [
+     "AMD",
+     "NEM",
+     "ABBV",
+     "FCX",
+     "AMAT"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2021-01-19",
+    "picks": [
+     "AMD",
+     "FCX",
+     "NEM",
+     "PGR",
+     "MU"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2021-06-14",
+    "picks": [
+     "FCX",
+     "GM",
+     "SCHW",
+     "MS",
+     "GE"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2021-11-08",
+    "picks": [
+     "OXY",
+     "COP",
+     "WFC",
+     "SCHW",
+     "F"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2022-04-04",
+    "picks": [
+     "OXY",
+     "XOM",
+     "EXC",
+     "FCX",
+     "PFE"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2022-08-29",
+    "picks": [
+     "OXY",
+     "WMB",
+     "EXC",
+     "GIS",
+     "MRK"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2023-01-23",
+    "picks": [
+     "OXY",
+     "SLB",
+     "GILD",
+     "GIS",
+     "TJX"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2023-06-20",
+    "picks": [
+     "TJX",
+     "GILD",
+     "MDLZ",
+     "MS",
+     "CSCO"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2023-11-13",
+    "picks": [
+     "CMCSA",
+     "INTC",
+     "TJX",
+     "CSCO",
+     "WMB"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2024-04-08",
+    "picks": [
+     "WFC",
+     "SCHW",
+     "CSX",
+     "WMB",
+     "WMT"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2024-09-03",
+    "picks": [
+     "C",
+     "T",
+     "BAC",
+     "CMG",
+     "SO"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2025-01-27",
+    "picks": [
+     "WMT",
+     "KMI",
+     "WMB",
+     "GM",
+     "WFC"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2025-06-23",
+    "picks": [
+     "T",
+     "KMI",
+     "WMB",
+     "CSCO",
+     "MO"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2025-11-17",
+    "picks": [
+     "NEM",
+     "CVS",
+     "INTC",
+     "EXC",
+     "CSCO"
+    ],
+    "same_when_truncated": true
+   },
+   {
+    "session": "2026-04-13",
+    "picks": [
+     "INTC",
+     "FCX",
+     "GM",
+     "OXY",
+     "SLB"
+    ],
+    "same_when_truncated": true
+   }
+  ]
+ },
+ "not_checkable_from_this_data": [
+  "historical index or universe membership (needs licensed point-in-time constituents)",
+  "delisted, acquired or bankrupt companies (absent from a survivor list and from this file)",
+  "point-in-time sector classification (labels are current; GICS changed in 2018 and 2023)",
+  "point-in-time fundamentals (not in this file; see the SEC point-in-time audit)",
+  "live corporate-action decisions (the live bridge uses raw bars plus Alpaca actions; this file has vendor-adjusted series)"
+ ]
+}

@@ -55,3 +55,13 @@ jobs:
           path: ${{ runner.temp }}/results.*
           if-no-files-found: ignore
           retention-days: 30
+      # Data-quality audit and forward-window report (docs/STOCK_DATA_QUALITY_AUDIT_2026_11_20.md): no network, no writes
+      # outside the runner; prints JSON between markers for the run log.
+      - name: Data-quality audit and forward report (no network)
+        if: always()
+        run: |
+          [ -f "$RUNNER_TEMP/bars.json.gz" ] || { echo "no bars downloaded; audit skipped"; exit 0; }
+          python -m analytics.stock_data_audit_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/audit.json"
+          python -m analytics.stock_forward_protocol_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/forward.json"
+          echo "AUDIT_JSON_BEGIN"; python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),separators=(',',':')))" "$RUNNER_TEMP/audit.json"; echo "AUDIT_JSON_END"
+          echo "FORWARD_JSON_BEGIN"; python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),separators=(',',':')))" "$RUNNER_TEMP/forward.json"; echo "FORWARD_JSON_END"
