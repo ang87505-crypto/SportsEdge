@@ -218,3 +218,16 @@ test('weekly learning backup: Sunday 16 UTC only, kind=weekly trigger=backup, sk
   fetcher:fetcher([],{runs:[{created_at:'2026-11-15T10:31:00Z',status:'completed',conclusion:'success'}]})});
  assert.equal((await done.json()).reason,'already_succeeded_since_slot');
 });
+
+
+test('hourly Vercel backups cover the EARLY window for every anchor tip 17:00-04:00 UTC when GitHub drops its schedule',async()=>{
+ const {captureWindows}=await import('../props/capture-plan.ts');
+ const hours=Object.values(SCHEDULER_SLOTS).filter(s=>s.tick).map(s=>s.hourUtc);
+ const MAX_DELAY=75*60_000;
+ for(let m=17*60;m<=28*60;m+=1){
+  const tip=new Date(Date.UTC(2026,10,10,0,m)).toISOString();const w=captureWindows(tip);
+  const from=Date.parse(w.earlyFrom),to=Date.parse(w.earlyTo);
+  const covered=hours.some(h=>{for(let d=-1;d<=1;d++){const s=Date.UTC(2026,10,10+d,h);if(s>=from&&s+MAX_DELAY<=to)return true;}return false;});
+  assert.ok(covered,'no backup is guaranteed inside the EARLY window for anchor tip '+tip);
+ }
+});

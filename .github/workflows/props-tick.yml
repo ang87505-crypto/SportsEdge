@@ -9,7 +9,7 @@
 name: NBA props capture tick
 on:
   schedule:
-    - cron: '7,37 11-23 * * *'
+    - cron: '7,37 9-23 * * *'
     - cron: '7,37 0-4 * * *'
   workflow_dispatch:
     inputs:
