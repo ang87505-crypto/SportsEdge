@@ -12,7 +12,8 @@ import type {Stat} from '../../props/contract.ts';
 import type {Result} from './evaluate.ts';
 
 export type ForwardSpec={kind:'ledger-models';candidate:string;baseline:string;maxStaleDays:number;notBefore?:string};
-export type FrozenPrediction={key:string;eventId:string;date:string;stat:Stat;model:string;predictedAt:string;lockAt:string;p:Probabilities;recordedAt:string;dataCutoff:string};
+export type FrozenPrediction={key:string;eventId:string;date:string;stat:Stat;model:string;predictedAt:string;lockAt:string;p:Probabilities;recordedAt:string;dataCutoff:string;
+ predictionId?:number;observationId?:number;baselinePredictionId?:number;artifactSha256?:string;baselineArtifactSha256?:string};
 export type Grade={key:string;outcome:'more'|'less'|'tie';gradedAt:string};
 
 export type PairingReport={rows:EvaluationRow[];refusedAfterLock:number;invalidPredictions:number;excludedBeforeRegistration:number;invalidGrades:number;metadataConflicts:number;unpaired:number;ungraded:number;latestCandidateAt:string|null};
@@ -25,7 +26,7 @@ export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],no
   if(!grade.key||!['more','less','tie'].includes(grade.outcome)||!Number.isFinite(Date.parse(grade.gradedAt))||Date.parse(grade.gradedAt)>now){invalidGrades++;continue;}
   const old=g.get(grade.key);if(!old||Date.parse(grade.gradedAt)>Date.parse(old.gradedAt))g.set(grade.key,grade);
  }
- const by=new Map<string,{c?:FrozenPrediction;b?:FrozenPrediction}>();
+ const by=new Map<string,{c?:FrozenPrediction;b?:FrozenPrediction}>(),validBaselines=new Map<number,FrozenPrediction>();
  let refusedAfterLock=0,invalidPredictions=0,excludedBeforeRegistration=0,metadataConflicts=0,latest:string|null=null;
  for(const p of preds){
   if(p.model!==spec.candidate&&p.model!==spec.baseline)continue;
@@ -35,6 +36,7 @@ export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],no
   if(!(predicted<lock)){refusedAfterLock++;continue;}
   if(spec.notBefore&&!Number.isFinite(Date.parse(spec.notBefore))){invalidPredictions++;continue;}
   if(spec.notBefore&&predicted<Date.parse(spec.notBefore)){excludedBeforeRegistration++;continue;}
+  if(p.model===spec.baseline&&p.predictionId!==undefined)validBaselines.set(p.predictionId,p);
   const slot=by.get(p.key)??{};
   const k=p.model===spec.candidate?'c':'b';
   if(!slot[k]){                    // first frozen prediction wins; later revisions never replace it
@@ -45,6 +47,14 @@ export function pair(spec:ForwardSpec,preds:FrozenPrediction[],grades:Grade[],no
  }
  const rows:EvaluationRow[]=[];let unpaired=0,ungraded=0;
  for(const [key,s] of [...by.entries()].sort((a,b)=>a[0].localeCompare(b[0]))){
+  // A deterministic recalibration is paired to the exact baseline it used, rather than another capture/platform.
+  if(s.c?.baselinePredictionId!==undefined){
+   const exact=validBaselines.get(s.c.baselinePredictionId);
+   if(!exact||exact.key!==key||exact.observationId!==s.c.observationId||Date.parse(exact.predictedAt)>Date.parse(s.c.predictedAt)){
+    metadataConflicts++;continue;
+   }
+   s.b=exact;
+  }
   if(!s.c||!s.b){unpaired++;continue;}
   if(s.c.eventId!==s.b.eventId||s.c.date!==s.b.date||s.c.stat!==s.b.stat||Date.parse(s.c.lockAt)!==Date.parse(s.b.lockAt)){metadataConflicts++;continue;}
   const grade=g.get(key);if(!grade){ungraded++;continue;}

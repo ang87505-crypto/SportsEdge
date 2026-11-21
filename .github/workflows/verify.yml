@@ -43,11 +43,13 @@ jobs:
       - name: AI 2.0 learning engine tests (registry, diagnostics, evaluation, isolation)
         run: node --experimental-strip-types --test src/lib/lab/engine/*.test.mjs
       - name: AI 2.0 research intake tests (source register, provenance, SEC company facts)
-        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs
+        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs src/lib/research/sec-pit-v2.test.mjs src/lib/research/sec-intake-v2.test.mjs
       - name: Published learning evidence reader (offline)
         run: node --experimental-strip-types --test src/lib/server/research-engine-load.test.mjs
       - name: Cent sizing, research quality and durable intake memory (offline)
         run: node --experimental-strip-types --test src/lib/lab/confidence-sizing.test.mjs src/lib/research/quality.test.mjs scripts/research-intake-archive.test.mjs src/lib/server/research-intake-load.test.mjs
+      - name: Forward penny ledger, schema readiness and reproducible setup
+        run: node --experimental-strip-types --test src/lib/lab/penny-paper.test.mjs src/lib/server/penny-paper-worker.test.mjs src/lib/server/forward-study-readiness.test.mjs scripts/build-forward-study-setup.test.mjs
       - name: Lint code
         run: npm run lint
       - name: Production build

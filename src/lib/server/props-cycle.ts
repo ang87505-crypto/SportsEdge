@@ -22,6 +22,7 @@ import {gradeLine,decidePick,decidePickV2,buildEntries,explainNoEntries,settleEn
 import {matchupFeatures} from '../props/features.ts';
 import {predictLearn} from '../props/learn.ts';
 import {loadActiveModel,type ActiveModel} from './props-active-model.ts';
+import {recordMonotoneShadows} from './props-monotone-shadow.ts';
 import {loadTeamRows} from './props-learn-data.ts';
 import {checkSafetyBrake} from './props-learn-worker.ts';
 import {MODEL_VERSION,SELECTION_VERSION,SELECTION_VERSION_V2,NORMALIZER_VERSION,OBSERVATION_RULES,PLATFORMS,SPORTSBOOKS,type Platform,type Stat} from '../props/contract.ts';
@@ -363,7 +364,14 @@ export async function predictAndPick(d:CycleDeps,runId:number,observed:{obs:ObsR
   pickRows.push({prediction_id:target.id,run_id:runId,selection_version:out.selectionVersion,status:dec.status,side:dec.side,reason:dec.reason});
  }
  for(const part of chunk(pickRows,200))await d.store.insert('props_picks',part,{onConflict:'prediction_id,selection_version',ignoreDuplicates:true});
- return {out,views,fallback};
+ // Only newly saved baseline rows are shadowed; historical rows are never backfilled. This model cannot choose picks.
+ const saved=new Map(preds.map(p=>[p.observation_id,p.id]));
+ const monotoneShadow=await recordMonotoneShadows(d,runId,predRows.flatMap(r=>{
+  const id=saved.get(Number(r.observation_id));return id===undefined?[]:[{id,observationId:Number(r.observation_id),
+   status:String(r.status),athleteId:r.athlete_id as string|null,pMore:r.p_more as number|null,pLess:r.p_less as number|null,
+   pTie:r.p_tie as number|null,mean:r.mean as number|null,dataCutoff:String(r.data_cutoff)}];
+ }),observed.map(({obs})=>({id:obs.id,stat:obs.stat,lockAt:obs.lock_at})));
+ return {out:{...out,monotoneShadow},views,fallback};
 }
 
 export async function recordEntries(d:CycleDeps,runId:number,selectionVersion:string){

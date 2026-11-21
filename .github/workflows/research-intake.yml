@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: '24'
       - name: Intake tests before any credential is provided
-        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs
+        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs src/lib/research/sec-pit-v2.test.mjs src/lib/research/sec-intake-v2.test.mjs
       - name: Collect (read-only, budgeted)
         env:
           SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
