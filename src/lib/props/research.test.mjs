@@ -57,6 +57,25 @@ test('future timestamps, post-lock forecasts, invalid probabilities and outcomes
  const r=raw(fixture());r.nowIso='2026-11-09T10:00:00Z';r.results=[final(1,'more',10)];
  assert.equal(buildResearch(r,artifact).baseline.n,0);
 });
+test('research rankings and forward scores reject forecasts before the line database receipt',()=>{
+ for(const recorded_at of ['2026-11-08T19:14:00Z','2026-11-08T19:21:00Z']){
+  const f=fixture(1,{recorded_at}),r=raw(f);
+  const current=buildResearch(r,artifact);
+  assert.equal(current.rankings.baseline.length,0);assert.equal(current.rankings.candidate.length,0);
+  assert.equal(current.progress.invalid,1);
+  r.nowIso='2026-11-09T10:00:00Z';r.results=[final(1)];
+  const completed=buildResearch(r,artifact);
+  assert.equal(completed.baseline.n,0);assert.equal(completed.candidate.n,0);assert.equal(completed.progress.invalid,1);
+  assert.equal(completed.review.promotionEnabled,false);assert.deepEqual(completed.review.gate,artifact.reviewGate);
+ }
+});
+test('a forecast at the same recorded clock remains eligible under the unchanged review gate',()=>{
+ const f=fixture();f.o.recorded_at=f.p.predicted_at;
+ const r=raw(f);assert.equal(buildResearch(r,artifact).rankings.baseline.length,1);
+ r.nowIso='2026-11-09T10:00:00Z';r.results=[final(1)];
+ const v=buildResearch(r,artifact);assert.equal(v.baseline.n,1);assert.equal(v.progress.invalid,0);
+ assert.deepEqual(v.review.gate,artifact.reviewGate);assert.equal(v.review.promotionEnabled,false);
+});
 test('identical platform lines and refreshed quotes count once using the first archived prediction',()=>{
  const first=fixture(),duplicate=fixture(2,{platform:'pick6',provider_event_id:first.o.provider_event_id,player_name:first.o.player_name});
  duplicate.p.athlete_id=first.p.athlete_id;duplicate.p.p_more=0.79;duplicate.p.p_less=0.21;
