@@ -343,10 +343,20 @@ def reconcile_records(rows: list[dict], sessions: list[str], series: dict, membe
             unexplained.append({'symbol': s, 'date': sessions[j], 'vendor_ratio_step': step,
                                 'inferred': classify_step(1.0, step), 'status': 'STEP_WITHOUT_RECORD',
                                 'adjusted_day_return': day_return(ser['ac'], j), 'raw_day_return': day_return(ser['c'], j)})
+    # Which side of an unsupported action a member is on (e.g. the ACQUIRER of a merger keeps its own shares, yet
+    # the live bridge skips it all the same). Counted per record, by the field the member appears in.
+    from .stock_forward_bridge_v1 import SYMBOL_FIELDS
+    roles = Counter()
+    for r in rows:
+        if r['kind'] in SUPPORTED_ACTIONS:
+            continue
+        for f in SYMBOL_FIELDS:
+            if r['row'].get(f) in members:
+                roles[f'{r["kind"]}:{f}'] += 1
     by_status = Counter()
     for (k, st), n in statuses.items():
         by_status[st] += n
-    return {'records_in_universe': sum(statuses.values()),
+    return {'records_in_universe': sum(statuses.values()), 'unsupported_member_roles': dict(sorted(roles.items())),
             'by_kind_and_status': {f'{k}:{st}': n for (k, st), n in sorted(statuses.items())},
             'by_status': dict(sorted(by_status.items())),
             'not_consistent_or_unsupported': listed, 'listed_total': len(listed),
@@ -390,7 +400,8 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
     held_a = {n: set() for n in specs}
     out = {n: {'decisions': 0, 'evidence_missing': 0, 'reconciled': 0, 'same_picks': 0, 'different_picks': 0,
                'backtest_frozen': 0, 'live_frozen': 0, 'live_rejected': [], 'differences': [], 'symbols_differing': Counter(),
-               'live_skip_reasons': Counter(), 'cause': Counter(), 'holdings': [], 'pairs': []} for n in specs}
+               'live_skip_reasons': Counter(), 'live_skip_kinds': Counter(), 'cause': Counter(), 'holdings': [],
+               'pairs': []} for n in specs}
     for k in range(bt.WINDOW, len(sessions)):
         if sessions[k] < start or sessions[k] > end:
             continue
@@ -425,6 +436,7 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
                     scores_b[s] = x
             for s, why in skipped.items():
                 o['live_skip_reasons'][why.split(':')[0]] += 1
+                o['live_skip_kinds'][':'.join(why.split(':')[:2])] += 1
             held = held_a[name]
             if held <= set(scores_b):
                 picks_b = set(bt.select(scores_b, sectors, held, spec, cap))
@@ -459,6 +471,7 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
     for o in out.values():
         o['symbols_differing'] = dict(o['symbols_differing'].most_common())
         o['live_skip_reasons'] = dict(o['live_skip_reasons'])
+        o['live_skip_kinds'] = dict(o['live_skip_kinds'].most_common())
         o['cause'] = dict(o['cause'])
         o['divergence_return'] = divergence_return(o.pop('pairs'), nxt, series, unresolved_days or {})
     return out
