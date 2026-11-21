@@ -17,6 +17,7 @@ export type WatchRow={
  recordedAt:string;providerUpdatedAt:string;predictedAt:string|null;lockAt:string;date:string;
  modelVersion:string|null;side:'more'|'less'|null;probability:number|null;
  tieProbability:number|null;outcome:WatchOutcome;actual:number|null;gradedAt:string|null;
+ gradeRevision:number|null;gradeOutcome:string|null;
  isUnique:boolean;status:'scored'|'unscorable';source:'the_odds_api';
 };
 export type WatchTotals={
@@ -77,7 +78,7 @@ export function watchOnlyLedger(r:ResearchRaw,asOf=r.nowIso){
    p.p_more!==null&&p.p_less!==null&&p.p_tie!==null&&
    validProbabilities({pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)})&&
    valid(time(p.predicted_at))&&valid(time(p.data_cutoff))&&
-   time(p.predicted_at)<=now&&time(p.predicted_at)>=ingested&&
+   time(p.predicted_at)<=now&&time(p.predicted_at)>=recorded&&
    time(p.predicted_at)<lock-OBSERVATION_RULES.lockBufferMs&&
    time(p.data_cutoff)<=time(p.predicted_at));
   const more=validForecast?Number(p!.p_more):null,less=validForecast?Number(p!.p_less):null;
@@ -101,6 +102,7 @@ export function watchOnlyLedger(r:ResearchRaw,asOf=r.nowIso){
    modelVersion:validForecast?p!.model_version:null,side,probability,
    tieProbability:validForecast?Number(p!.p_tie):null,outcome,
    actual:correctGrade?actual:null,gradedAt:correctGrade?grade!.graded_at:null,
+   gradeRevision:correctGrade?grade!.revision:null,gradeOutcome:correctGrade?grade!.outcome:null,
    isUnique,status:validForecast?'scored':'unscorable',source:'the_odds_api'});
  }
  rows.sort((a,b)=>b.lockAt.localeCompare(a.lockAt)||a.player.localeCompare(b.player)||a.line-b.line||a.platform.localeCompare(b.platform));
