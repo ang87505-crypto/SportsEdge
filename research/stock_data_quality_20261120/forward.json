@@ -1,0 +1,80 @@
+{
+ "version": "stock-forward-protocol-v1",
+ "window": [
+  "2026-11-19",
+  "2026-11-19"
+ ],
+ "sessions": 1,
+ "min_weeks": 26,
+ "rules_frozen": {
+  "current": {
+   "model": "momentum",
+   "cadence": "weekly",
+   "buffer": 0,
+   "lookback": 252,
+   "whole_shares": true
+  },
+  "holdrank10": {
+   "model": "momentum",
+   "cadence": "weekly",
+   "buffer": 10,
+   "lookback": 252,
+   "whole_shares": true
+  }
+ },
+ "strategies": {
+  "current": {
+   "sessions": 1,
+   "decisions": 0,
+   "rejected_decisions": 0,
+   "cash_blocked": 0,
+   "traded": 0.0,
+   "costs_10bps": 0.0,
+   "turnover_per_avg_equity": 0.0,
+   "at_25bps": {
+    "sessions": 1
+   },
+   "weeks": 0
+  },
+  "holdrank10": {
+   "sessions": 1,
+   "decisions": 0,
+   "rejected_decisions": 0,
+   "cash_blocked": 0,
+   "traded": 0.0,
+   "costs_10bps": 0.0,
+   "turnover_per_avg_equity": 0.0,
+   "at_25bps": {
+    "sessions": 1
+   },
+   "weeks": 0
+  }
+ },
+ "benchmarks": {
+  "spy-50": {
+   "sessions": 1
+  },
+  "spy-100": {
+   "sessions": 1
+  },
+  "spy-matched-current": {
+   "sessions": 1,
+   "weight": 0.0
+  },
+  "spy-matched-holdrank10": {
+   "sessions": 1,
+   "weight": 0.0
+  }
+ },
+ "provenance": {
+  "dataset_sha256": "28609ff371bc6997b6abe6c6b1612d4ed94f7a6020c22c713d321cd557610948",
+  "feed": "sip",
+  "asof": "2026-11-19",
+  "universe_revision": "large-cap-v1-2026-11-09",
+  "members_missing_window_bars": {},
+  "spy_missing_window_bars": 0
+ },
+ "weeks": 0,
+ "status": "INSUFFICIENT_FORWARD_WEEKS",
+ "statement": null
+}

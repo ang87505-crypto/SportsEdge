@@ -136,3 +136,25 @@ class Forward(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RecordedAudit(unittest.TestCase):
+    """The committed audit of the real bars file (run 44852266554) must keep its recorded findings."""
+
+    def test_recorded_findings(self):
+        import json
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1] / 'research' / 'stock_data_quality_20261120'
+        a = json.loads((root / 'audit.json').read_text(encoding='utf-8'))
+        self.assertEqual(a['dataset_sha256'], '28609ff371bc6997b6abe6c6b1612d4ed94f7a6020c22c713d321cd557610948')
+        self.assertEqual((a['symbols'], a['symbols_with_gaps'], a['symbols_with_bad_prices']), (136, 0, 0))
+        self.assertEqual((a['leakage']['checked'], a['leakage']['mismatches']), (24, 0))
+        self.assertEqual(a['symbols_with_unexplained_steps'], ['DHR', 'EXC', 'GE', 'HON'])
+        self.assertEqual(a['inferred_events']['split'], 30)
+        self.assertEqual(a['universe']['distinct_first_traded_on'], {'2015-01-02': 135})
+        rtx = a['flagged']['RTX']['extreme_moves']
+        self.assertEqual(rtx[0]['date'], '2020-04-03')
+        self.assertLess(rtx[0]['adjusted_return'], -0.70)
+        f = json.loads((root / 'forward.json').read_text(encoding='utf-8'))
+        self.assertEqual(f['status'], 'INSUFFICIENT_FORWARD_WEEKS')
+        self.assertEqual(f['provenance']['dataset_sha256'], a['dataset_sha256'])

@@ -43,7 +43,7 @@ jobs:
       - name: AI 2.0 learning engine tests (registry, diagnostics, evaluation, isolation)
         run: node --experimental-strip-types --test src/lib/lab/engine/*.test.mjs
       - name: AI 2.0 research intake tests (source register, provenance, SEC company facts)
-        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs
+        run: node --experimental-strip-types --test src/lib/research/intake-v2.test.mjs src/lib/research/collect.test.mjs src/lib/research/sec-pit-v2.test.mjs
       - name: Published learning evidence reader (offline)
         run: node --experimental-strip-types --test src/lib/server/research-engine-load.test.mjs
       - name: Cent sizing, research quality and durable intake memory (offline)
