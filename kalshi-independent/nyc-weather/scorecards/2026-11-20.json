@@ -1,0 +1,19 @@
+{
+  "id": "245861cd5c491bb3049b0edf454e4c654d75efe8ba343fa5f9745c132ea693a4",
+  "schemaVersion": "independent-weather-forward-scorecard-v1",
+  "source": "INDEPENDENT_NWS_GRID_VS_PRELIMINARY_KNYC_CLIMATE",
+  "status": "INSUFFICIENT_HISTORY",
+  "evaluatedDays": 3,
+  "modelScoredDays": 0,
+  "meanAbsoluteErrorF": 3.666667,
+  "independentBandHitRate": 0.666667,
+  "modelBrier": null,
+  "firstDate": "2026-11-18",
+  "lastDate": "2026-11-20",
+  "dates": [
+    "2026-11-18",
+    "2026-11-19",
+    "2026-11-20"
+  ],
+  "warning": "Independent forward weather research only. NWS grid forecasts are not station highs; NWS daily CLI observations are preliminary and not NCEI-certified or verified Kalshi settlements. A 5F band hit is NOT a bet win or profit; market prices, fees, and forward evidence of a market edge are entirely absent."
+}
