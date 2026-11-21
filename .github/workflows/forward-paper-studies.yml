@@ -5,6 +5,13 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Check database read access, or explicitly record the existing paper studies
+        type: choice
+        options: [preflight, record]
+        default: preflight
+        required: true
   schedule:
     - cron: '37 17 * * *'
   pull_request:
@@ -32,10 +39,37 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --no-warnings --test src/lib/lab/penny-paper.test.mjs src/lib/server/penny-paper-worker.test.mjs src/lib/server/forward-study-readiness.test.mjs src/lib/server/lab-sports-worker.test.mjs scripts/build-forward-study-setup.test.mjs
+      - run: node --experimental-strip-types --no-warnings --test src/lib/lab/penny-paper.test.mjs src/lib/server/penny-paper-worker.test.mjs src/lib/server/forward-study-readiness.test.mjs src/lib/server/lab-sports-worker.test.mjs scripts/build-forward-study-setup.test.mjs scripts/forward-paper-studies.test.mjs
+  preflight:
+    name: Read-only study database preflight
+    needs: test
+    if: >-
+      github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+      (inputs.mode == 'preflight' || inputs.mode == '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Check all ten required study tables without recording or settling
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/forward-paper-studies.ts --readiness-only | tee -a "$GITHUB_STEP_SUMMARY"
   record:
     needs: test
-    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.mode == 'record') ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
