@@ -1,0 +1,31 @@
+{
+  "schema": "sportsedge-kalshi-worker-verification-v1",
+  "verified_at": "2026-11-21T04:12:32.275047Z",
+  "verification_method": "Read-only hosted database query; no worker dispatch or order action",
+  "production_commit": "1c6f05d94899e3d34f5a3a0cc7ff0c6b997f5f56",
+  "run": {
+    "slot": "tick-2026-11-21T04:00",
+    "status": "COMPLETED",
+    "started_at": "2026-11-21T04:04:36.395633Z",
+    "finished_at": "2026-11-21T04:04:38.695908Z",
+    "summary": {
+      "graded": 0,
+      "archiveRef": "92035420d29e2a3c4f16b3cbef8ff98af71c699f",
+      "demoStatus": "STOPPED",
+      "modelStatus": "AWAITING_VERIFIED_HISTORY",
+      "latestTarget": "2026-11-21",
+      "modelBlocker": "WEATHER_INSUFFICIENT_DAYS",
+      "trainingPairs": 2,
+      "forecastCreated": false,
+      "importedEvidence": 0
+    }
+  },
+  "demo_control": "STOPPED",
+  "demo_attempts": 0,
+  "interpretation": "The deployed tick worker completed. The existing target forecast was preserved; no duplicate forecast was created.",
+  "limits": [
+    "A worker receipt does not verify demo credentials, fills, profitability or model calibration.",
+    "No request-level Vercel log correlation is claimed; the application-log query returned no matching records.",
+    "The earlier owner-transport run is a separate receipt."
+  ]
+}

@@ -80,6 +80,11 @@ HTTP cron receipt. The scheduled worker is nominally 8:35 PM MST; inspect a dura
 deployed schedule verified. At the `2026-11-21T03:49:03Z` read, no new scheduled run had been recorded, demo remained
 `STOPPED`, and demo attempts were zero. Do not infer a failed schedule from an empty early scheduling window.
 
+**Subsequent verification:** a hosted tick receipt completed at `2026-11-21T04:04:38.695908Z` (9:04 PM MST November 20),
+confirmed by a read-only query at `04:12:32Z`. It preserved the existing forecast, reported two training pairs and
+kept demo STOPPED with zero attempts. See the [dated follow-up](RECONCILIATION_INTEGRATION_2026_11_21.md#kalshi-first-deployed-tick-receipt)
+and saved receipt. The scheduled-worker wait is resolved; exchange connection and model readiness remain separate.
+
 Demo connection still needs the owner setup and access review in
 [`KALSHI_PAPER_PLATFORM_2026_11_20.md`](KALSHI_PAPER_PLATFORM_2026_11_20.md). The connected one-contract test, model
 readiness and real-money execution remain different stages. No credentials were read or changed here.
