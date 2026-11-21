@@ -122,16 +122,29 @@ def record_date(r: dict) -> str | None:
 
 
 def flatten(archive: dict) -> tuple[list[dict], list[dict]]:
-    """(rows, chunks): every record of every COMPLETE chunk once, as {kind, row, date}; chunk status kept."""
+    """(rows, chunks): every record of every COMPLETE chunk once, as {kind, row, date}; chunk status kept.
+    Alias chunks hold records filed under a member's FORMER ticker (from the archive's own name_changes records):
+    a record dated before the change has that ticker replaced by the member's current one, as the live bridge
+    would have seen it under the ticker in use at the time; a record on or after the change is left out (the
+    member's own chunks cover it)."""
+    from .stock_forward_bridge_v1 import SYMBOL_FIELDS
     seen, rows = set(), []
     for c in archive['chunks']:
         if not c.get('complete'):
             continue
+        alias = c.get('alias_of') or {}
         for page in c['pages']:
             for kind, items in (page.get('corporate_actions') or {}).items():
                 for r in items if isinstance(items, list) else []:
                     if not isinstance(r, dict):
                         continue
+                    if alias:
+                        when = record_date(r)
+                        old, (new, until) = next(iter(alias.items()))
+                        if when is None or when >= until:
+                            continue
+                        r = {k: (new if k in SYMBOL_FIELDS and v == old else v) for k, v in r.items()}
+                        r['alias_from'] = old
                     key = (kind, json.dumps(r, sort_keys=True))
                     if key in seen:
                         continue
@@ -235,19 +248,40 @@ def reconcile_records(rows: list[dict], sessions: list[str], series: dict, membe
     ratios = {s: ratio_series(series[s]) for s in series}
     statuses, listed = Counter(), []
     record_days = defaultdict(set)
+    # Several cash dividends on one ex-date (e.g. a regular plus a variable dividend) are one adjustment for the
+    # vendor: compare their SUM. The live bridge treats such a pair as AMBIGUOUS and skips the member.
+    items, groups = [], {}
     for r in rows:
-        kind, row, when = r['kind'], r['row'], r['date']
-        syms = sorted(touched(row) & members)
-        if not syms or when is None:
+        syms = sorted(touched(r['row']) & members)
+        if not syms or r['date'] is None:
             continue
+        row = r['row']
         primary = row.get('symbol') if isinstance(row.get('symbol'), str) and row.get('symbol') in members else syms[0]
+        if r['kind'] == 'cash_dividends':
+            key = (primary, r['date'])
+            if key in groups:
+                g = groups[key]
+                g['count'] += 1
+                try:
+                    g['row']['rate'] = str(float(g['row']['rate']) + float(row.get('rate')))
+                except (TypeError, ValueError):
+                    g['row']['rate'] = None
+                continue
+            g = groups[key] = {'kind': 'cash_dividends', 'row': dict(row), 'date': r['date'], 'syms': syms,
+                               'primary': primary, 'count': 1}
+            items.append(g)
+        else:
+            items.append({'kind': r['kind'], 'row': row, 'date': r['date'], 'syms': syms, 'primary': primary, 'count': 1})
+    for it in items:
+        kind, row, when, syms, primary = it['kind'], it['row'], it['date'], it['syms'], it['primary']
         j = pos.get(when)
         if j is None and when <= sessions[-1] and when >= sessions[0]:
             j = bisect.bisect_left(sessions, when)  # a non-session effective date takes effect at the next session
         for s in syms:
             if j is not None:
                 record_days[s].add(j)
-        entry = {'kind': kind, 'symbol': primary, 'touched': syms, 'date': when, 'id': row.get('id')}
+        entry = {'kind': kind, 'symbol': primary, 'touched': syms, 'date': when, 'id': row.get('id'),
+                 'records_same_day': it['count'], 'alias_from': row.get('alias_from')}
         if j is None or primary not in series:
             status = 'OUTSIDE_BARS'
         else:
@@ -344,7 +378,7 @@ def window_years(sessions: list[str], k: int) -> set[str]:
 
 
 def compare_decisions(rows: list[dict], sessions: list[str], series: dict, universe: dict, years: dict,
-                      start: str, end: str) -> dict:
+                      start: str, end: str, unresolved_days: dict | None = None) -> dict:
     sectors = {u['symbol']: u['sector'] for u in universe['securities']}
     members = [s for s in sorted(sectors) if s in series]
     cap = float(universe['max_last_close']) if 'max_last_close' in universe else None
@@ -355,7 +389,7 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
     held_a = {n: set() for n in specs}
     out = {n: {'decisions': 0, 'evidence_missing': 0, 'reconciled': 0, 'same_picks': 0, 'different_picks': 0,
                'backtest_frozen': 0, 'live_frozen': 0, 'live_rejected': [], 'differences': [], 'symbols_differing': Counter(),
-               'live_skip_reasons': Counter(), 'holdings': []} for n in specs}
+               'live_skip_reasons': Counter(), 'cause': Counter(), 'holdings': [], 'pairs': []} for n in specs}
     for k in range(bt.WINDOW, len(sessions)):
         if sessions[k] < start or sessions[k] > end:
             continue
@@ -400,6 +434,14 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
                     o['live_rejected'].append({'session': sessions[k], 'held_but_skipped': sorted(held - set(scores_b)),
                                                'backtest_rebalanced_to': sorted(picks_a)})
             o['reconciled'] += 1
+            o['pairs'].append((k, picks_a, picks_b))
+            if picks_a != picks_b:
+                # Attribution: the bridge's skip rule alone (vendor scores, skipped members removed, same freeze rule)
+                # versus the price treatment (raw closes plus supported records instead of vendor adjustment).
+                allowed = {s: x for s, x in scores_a.items() if s not in skipped}
+                skip_only = set(bt.select(allowed, sectors, held, spec, cap)) if held <= set(allowed) else set(held)
+                o['cause']['skip_rule' if skip_only == picks_b else 'price_treatment' if skip_only == picks_a
+                           else 'both'] += 1
             if picks_a == picks_b:
                 o['same_picks'] += 1
             else:
@@ -411,10 +453,36 @@ def compare_decisions(rows: list[dict], sessions: list[str], series: dict, unive
                                              'live_only': sorted(picks_b - picks_a),
                                              'live_skipped_in_window': sorted(s for s in diff if s in skipped)})
             held_a[name] = picks_a
+    ks = [k for k in range(bt.WINDOW, len(sessions)) if start <= sessions[k] <= end and bt.is_decision(sessions, k, 'weekly')]
+    nxt = {k: (ks[i + 1] if i + 1 < len(ks) else None) for i, k in enumerate(ks)}
     for o in out.values():
         o['symbols_differing'] = dict(o['symbols_differing'].most_common())
         o['live_skip_reasons'] = dict(o['live_skip_reasons'])
+        o['cause'] = dict(o['cause'])
+        o['divergence_return'] = divergence_return(o.pop('pairs'), nxt, series, unresolved_days or {})
     return out
+
+
+def divergence_return(pairs, nxt: dict, series: dict, unresolved_days: dict) -> dict:
+    """One-week return gap, open to next decision's open, between the backtest's picks and the live-rule picks at
+    10% each, valued on the backtest's own vendor-adjusted opens. Weeks where any involved stock has an unresolved
+    event (or a missing open) are excluded and counted, never filled in. Positive: backtest picks did better."""
+    diffs, excluded = [], 0
+    for k, a, b in pairs:
+        if a == b:
+            continue
+        j = nxt.get(k)
+        names = a | b
+        if j is None or any(series[s]['ao'][k] is None or series[s]['ao'][j] is None for s in names) or \
+                any(any(k < d <= j for d in unresolved_days.get(s, ())) for s in names):
+            excluded += 1
+            continue
+        r = lambda S: sum(bt.WEIGHT * (series[s]['ao'][j] / series[s]['ao'][k] - 1) for s in S)
+        diffs.append(r(a) - r(b))
+    return {'weeks_measured': len(diffs), 'weeks_excluded_unresolved_or_missing': excluded,
+            'sum_of_weekly_gaps': sum(diffs), 'mean_weekly_gap': fmean(diffs) if diffs else None,
+            'backtest_better_weeks': sum(1 for d in diffs if d > 0), 'live_better_weeks': sum(1 for d in diffs if d < 0),
+            'basis': 'vendor-adjusted opens (the backtest convention); 10% per pick; not a portfolio replay'}
 
 
 def booked_returns(events: list[dict], sessions: list[str], holdings: list[tuple[int, list[str]]]) -> dict:
@@ -425,8 +493,11 @@ def booked_returns(events: list[dict], sessions: list[str], holdings: list[tuple
     for i, (k, picks) in enumerate(holdings):
         nxt = holdings[i + 1][0] if i + 1 < len(holdings) else len(sessions) - 1
         spans.append((k, nxt, set(picks)))
-    hits = []
+    hits, done = [], set()
     for e in events:
+        if (e['symbol'], e['date']) in done:
+            continue
+        done.add((e['symbol'], e['date']))
         j = pos.get(e['date'])
         if j is None:
             continue
@@ -491,7 +562,13 @@ def reconcile(data: dict, universe: dict, archive: dict, *, start: str = bt.DEV[
     rows, chunks = flatten(archive)
     years = coverage(rows, chunks, sessions, series)
     recs = reconcile_records(rows, sessions, series, members)
-    decisions = compare_decisions(rows, sessions, series, universe, years, start, end)
+    pos = {d: i for i, d in enumerate(sessions)}
+    unresolved_days = defaultdict(set)
+    for e in recs['not_consistent_or_unsupported'] + recs['steps_without_record']:
+        if e['status'] != 'OUTSIDE_BARS' and e['date'] in pos:
+            for sym in e.get('touched') or [e['symbol']]:
+                unresolved_days[sym].add(pos[e['date']])
+    decisions = compare_decisions(rows, sessions, series, universe, years, start, end, unresolved_days)
     for e in recs['not_consistent_or_unsupported'] + recs['steps_without_record']:
         e['year_evidence'] = years.get(e['date'][:4], {}).get('status', 'EVIDENCE_MISSING')
     unresolved = [e for e in recs['not_consistent_or_unsupported'] if e['status'] not in ('OUTSIDE_BARS',)] + \
@@ -542,7 +619,27 @@ def fetch(source, symbols: list[str], start: str, end: str, group: int = 40) -> 
             except Rejected as e:
                 c.update(complete=False, pages=[], page_sha256=[], error=e.reasons[:5])
             chunks.append(c)
+    # Former tickers, from the name_changes records just archived: request each one up to its change date.
+    members = set(symbols)
+    aliases = {}
+    for r, _ in ((r, k) for c in chunks if c['complete'] for p in c['pages']
+                 for k, rs in (p.get('corporate_actions') or {}).items() if k == 'name_changes' for r in rs):
+        old, new, when = r.get('old_symbol'), r.get('new_symbol'), record_date(r)
+        if new in members and isinstance(old, str) and old not in members and when:
+            aliases[old] = (new, min(when, aliases.get(old, (new, when))[1]))
+    for old, (new, until) in sorted(aliases.items()):
+        for y in range(int(start[:4]), int(until[:4]) + 1):
+            lo, hi = max(start, f'{y}-01-01'), min(end, f'{y}-12-31', until)
+            c = {'start': lo, 'end': hi, 'symbols': [old], 'alias_of': {old: [new, until]}}
+            try:
+                pages = source.paged(DATA, '/v1/corporate-actions', {'symbols': old, 'start': lo, 'end': hi, 'limit': 1000})
+                c.update(complete=True, pages=pages, page_sha256=[sha256(p) for p in pages],
+                         retrieved_at=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'))
+            except Rejected as e:
+                c.update(complete=False, pages=[], page_sha256=[], error=e.reasons[:5])
+            chunks.append(c)
     return {'version': ARCHIVE_VERSION, 'endpoint': '/v1/corporate-actions', 'start': start, 'end': end,
+            'aliases': {k: list(v) for k, v in sorted(aliases.items())},
             'retrieved_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'), 'chunks': chunks,
             'note': 'Alpaca corporate-action records as returned; coverage is not attested by the provider.'}
 

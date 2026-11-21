@@ -224,6 +224,8 @@ class LiveRulesAndTiming(unittest.TestCase):
         # SYNC is held when its spin-off enters the window: the live bridge rejects those decisions outright
         # (HELD_SECURITY_SKIPPED) while the backtest keeps rebalancing on the vendor-adjusted series.
         self.assertGreater(d['live_frozen'], 0)
+        self.assertTrue(set(d['cause']) <= {'skip_rule', 'price_treatment', 'both'})
+        self.assertIn('divergence_return', d)
         self.assertTrue(all(r['held_but_skipped'] == ['SYNC'] for r in d['live_rejected']))
         # Steady stocks ranks SYNC differently; the hold-buffer variant too. At least one strategy must show either a
         # rejection or a pick difference involving SYNC; none may silently treat the spin-off as an ordinary day.
@@ -265,6 +267,35 @@ class LiveRulesAndTiming(unittest.TestCase):
         self.assertEqual(bought_on_event_day['held_through_unresolved_events'], 0, 'bought at that open, after the gap')
         sold_at_next_open = ca.booked_returns(ev, DAYS, [(445, ['SYNC']), (450, ['SYNA'])])
         self.assertEqual(sold_at_next_open['held_through_unresolved_events'], 1, 'held through the overnight gap')
+
+    def test_former_ticker_records_count_only_before_the_name_change(self):
+        arch = {'chunks': [{'start': '2019-01-01', 'end': '2019-12-31', 'symbols': ['SYNOLD'], 'complete': True,
+                            'alias_of': {'SYNOLD': ['SYNA', DAYS[200]]}, 'page_sha256': ['x'],
+                            'pages': [{'corporate_actions': {'cash_dividends': [
+                                {'id': 'old1', 'symbol': 'SYNOLD', 'rate': 0.4, 'ex_date': DAYS[100]},
+                                {'id': 'old2', 'symbol': 'SYNOLD', 'rate': 0.4, 'ex_date': DAYS[250]}]}}]}]}
+        rows, _ = ca.flatten(arch)
+        self.assertEqual([(r['row']['symbol'], r['date'], r['row']['alias_from']) for r in rows],
+                         [('SYNA', DAYS[100], 'SYNOLD')], 'mapped before the change; dropped after it')
+
+    def test_same_day_dividends_are_compared_as_their_sum(self):
+        a = synthetic_symbol(DAYS, 50, 0.001, {100: ('div', 0.9, True)})
+        rows = [{'kind': 'cash_dividends', 'row': {'id': f'd{i}', 'symbol': 'SYNA', 'rate': r, 'ex_date': DAYS[100]},
+                 'date': DAYS[100]} for i, r in enumerate((0.5, 0.4))]
+        s, ser = bt.align({'sessions': DAYS, 'bars': {'SYNA': a}})
+        r = ca.reconcile_records(rows, s, ser, {'SYNA'})
+        self.assertEqual(r['by_status'], {'CONSISTENT': 1})
+
+    def test_divergence_return_excludes_unresolved_weeks_and_never_fills_them(self):
+        data, _ = fixture()
+        ser = bt.align(data)[1]
+        pairs = [(300, {'SYNA'}, {'SYNB'}), (310, {'SYNA'}, {'SYNC'}), (320, {'SYNA'}, {'SYNA'})]
+        nxt = {300: 305, 310: 315, 320: 325}
+        out = ca.divergence_return(pairs, nxt, ser, {'SYNC': {312}})
+        self.assertEqual(out['weeks_measured'], 1)
+        self.assertEqual(out['weeks_excluded_unresolved_or_missing'], 1)
+        r = lambda s: bt.WEIGHT * (ser[s]['ao'][305] / ser[s]['ao'][300] - 1)
+        self.assertAlmostEqual(out['sum_of_weekly_gaps'], r('SYNA') - r('SYNB'), places=12)
 
     def test_reconciliation_is_deterministic(self):
         data, arch = fixture()
