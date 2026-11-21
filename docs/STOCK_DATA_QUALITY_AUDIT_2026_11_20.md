@@ -1,5 +1,10 @@
 # Stock data quality and historical accuracy audit (2026-11-20)
 
+**Historical snapshot.** Corporate-action explanations below were preliminary. See the
+[dated integration notes](RECONCILIATION_INTEGRATION_2026_11_21.md#reading-the-earlier-audits-correctly) for provider-record
+reconciliation, primary-source checks and limits on claims about corrected strategy results. Original data and
+recorded results are preserved.
+
 **Research only.** Nothing here changes the live paper strategy, allocation limits, bankroll, broker controls, the
 Nov 23 supervised session, or any collector or provider access. No order was sent and no model was activated.
 
