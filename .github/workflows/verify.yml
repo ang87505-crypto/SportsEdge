@@ -10,6 +10,20 @@ permissions:
   contents: read
 
 jobs:
+  archive:
+    name: Data branch publication guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify append-only research and operations publication (local Git, no network)
+        run: node --test scripts/data-branches.test.mjs
+
   python:
     name: Python statistics and audit tests
     runs-on: ubuntu-latest
