@@ -10,6 +10,7 @@ watcher or demo/live change was made. No provider request or credit was used.
 | Archive verification | #204 | `29b0a6890a71483f85701b80687a07e8bb5eb3b5` | #203 |
 | Forward-study integration | #200 | `42fe0bcaec5d06f049f0943914a8cd99cca4aad4` | `main` `1c6f05d` |
 | Reconciliation follow-up | #202 | `54311297cdf850c661c01523bbb3d209712c3975` | #200 |
+| Read-only study preflight (reviewed in section 7) | #206 | `c6870b4a8795740536ca52bf1628a11352affdd4` | #202 |
 
 ## 1. #204 against #203
 
@@ -104,16 +105,8 @@ Rollback: revert the commit.
 
 #204 is optional for the Monday deadline. Only #203 is needed for the collector to publish.
 
-**Forward-study chain (#200 → #202): BLOCKED on owner database verification. No research-integrity blocker.**
-
-1. In project `vfyzbliksooljxrlfadp`, run `database/props/checks/forward_studies_readiness.sql` (read-only) and save
-   the output.
-2. If not `READY`, apply the unchanged
-   [pinned bundle](https://github.com/ang87505-crypto/SportsEdge/blob/42fe0bcaec5d06f049f0943914a8cd99cca4aad4/database/props/forward_studies_setup.sql),
-   then re-run the check and require `OVERALL = READY`. A `PARTIAL_*` refusal means stop and review.
-3. Owner approval, then merge #200.
-4. Retarget #202 to `main`, re-run CI, then merge.
-5. Dispatch **Forward paper studies** on `main` and require `readiness.state = READY`.
+**Forward-study chain (#200 → #202 → #206): BLOCKED on owner database verification. No research-integrity or
+code blocker; #206 PASS (section 7).** The release order is in section 6.
 
 Do not merge #192, #195, #199 or #201 separately; they are imported. Keep this release after the Nov 23 session.
 
@@ -153,11 +146,74 @@ backfill.
 This research run reads market data only and is independent of the supervised stock session. The Nov 23 PAPER
 session requirements, STOP controls and #102 are unchanged.
 
-## 6. Owner actions
+## 6. Consolidated owner actions and merge order (supersedes the earlier list)
 
-1. Approve and merge #203, then dispatch Research collect on `main` and check the three receipts before
-   Mon 14:30 UTC.
-2. Run the read-only readiness SQL on `vfyzbliksooljxrlfadp`. Apply the pinned bundle only if needed and only with
-   approval, then require `READY` before releasing #200 → #202.
-3. Run the Nov 23 supervised stock session per the existing checklist (unchanged).
-4. Optionally decide E4 (one free NOAA request for certified Kalshi outcomes).
+**A. Archive chain: before Mon 2026-11-23 14:30 UTC (7:30 AM MST).**
+
+1. Approve and merge #203 into `main`. This is the only merge the Monday freeze needs.
+2. Dispatch **Research collect (nightly)** on `main`.
+3. Require the three receipts in section 5.
+4. When convenient, retarget #204 to `main` and merge it, then do the same for #205. Re-check CI after each retarget.
+
+**B. Nov 23 supervised stock session.** Unchanged: follow the existing checklist, keep STOP controls, and leave #102
+alone until its gate passes.
+
+**C. Forward-study chain: after the Nov 23 session.**
+
+1. In the SQL editor of `vfyzbliksooljxrlfadp`, run the read-only
+   `database/props/checks/forward_studies_readiness.sql` and save the output. This is the only check that covers grants,
+   RLS, append-only triggers and penny sequences.
+2. Only if it is not `READY`, and with approval, apply the unchanged
+   [pinned bundle](https://github.com/ang87505-crypto/SportsEdge/blob/42fe0bcaec5d06f049f0943914a8cd99cca4aad4/database/props/forward_studies_setup.sql).
+   Re-run the check and require `OVERALL = READY`. A `PARTIAL_*` refusal means stop and review.
+3. Land #200, #202 and #206 on `main` as **one** release. The recommended way is to:
+   - merge #206 into #202's branch;
+   - then #202 into #200's branch;
+   - re-run CI on #200's final head, then merge #200.
+
+   Why: the `Forward paper studies` workflow is not on `main` yet. #200 adds it with the old guard, under which a
+   manual dispatch, the 17:37 UTC schedule and every successful capture all **record**. #206 is what makes manual
+   dispatch default to preflight. Merging #200 alone would start recording before any preflight could run.
+   Merging #200 also starts the monotone shadow on the next capture, which is the intended forward-test start.
+4. Immediately dispatch **Forward paper studies** on `main` with the default **preflight**. Require
+   `status = READY`, `mode = preflight`, the expected host and the merged commit.
+5. Confirm the first scheduled or follow-up **record** receipt, then the first monotone-shadow rows on a later real
+   capture. Only those future records count as forward evidence. Gates stay unchanged.
+
+**D. Optional.** Decide E4 (one free NOAA request for certified Kalshi outcomes).
+
+## 7. #206 review: read-only study preflight (PASS)
+
+Head `c6870b4` was confirmed current. It is one commit on top of #202 and touches four files: the workflow, the CLI,
+its test and the study doc. It changes nothing under `src/`.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Manual dispatch defaults to preflight; recording needs explicit `record` | **Pass** | Choice input with `default: preflight`. The preflight job runs on `mode == 'preflight' \|\| ''`, the record job on `mode == 'record'`. The test evaluates the actual `if:` expressions for 11 contexts. |
+| Preflight is bounded GET only, covers all ten tables and columns, and cannot write | **Pass** | `--readiness-only` returns after `forwardStudyReadiness()`, which runs 10 `select=<cols>&limit=1` GETs with at most 3 bounded read retries each. Freeze, stake, settle and report tasks are in the record branch only. The test intercepts `fetch`: exactly the 10 tables, `GET`, no body, `limit=1`, no `labFreeze`/`pennyFreeze`/`pennySettle` keys. No promotion path exists in this script. |
+| Bad arguments and the older database are refused before any request; access failures stay distinct | **Pass** | Any argument list other than `[]` or `['--readiness-only']` gives `INVALID_ARGUMENTS`, exit 2, zero calls. The host must equal `vfyzbliksooljxrlfadp.supabase.co` before `propsStore()`: `WRONG_PROJECT`, zero calls. HTTP 404 means `NOT_MIGRATED`. `42501`/401/403 mean `UNAVAILABLE`, with "Check access…" advice and no apply-the-migration advice. |
+| Credentials only after tests, only on main, exact commit | **Pass** | Both hosted jobs `needs: test`. Secrets appear only in the step env of `preflight` and `record`, never in `test`. Preflight checks out `ref: ${{ github.sha }}` with `persist-credentials: false`. Both jobs require `github.ref == 'refs/heads/main'`. |
+| Schedule and successful follow-ups keep recording; failed upstream, PRs and non-main branches run nothing | **Pass** | `schedule` and `workflow_run` success both record. Failure, cancelled, `pull_request` and non-main dispatch skip both jobs. The upstream workflows (`props-daily.yml`, `props-tick.yml`) have only `schedule` and `workflow_dispatch` triggers, so fork-PR runs cannot reach `workflow_run`. |
+| A GET-only READY is described accurately, and the doc points to #205 | **Pass** | `FORWARD_PAPER_STUDIES_2026_11_19.md` says READY "proves the required table reads, not write privileges, a completed study run or qualifying forward evidence". It links the #205 SQL pinned at `0b8d2df` (correct path) as the separate grants/RLS/trigger/sequence check that must also pass before activation. |
+
+**Exact-head CI** (`c6870b4`; every job log is for that SHA):
+
+- `test` job 136996607104: `tests 24, pass 24, fail 0`, including the 8 new CLI and workflow cases.
+- Python job 136996606841: `Ran 470 tests … OK`.
+- Browser job 136996606866: "Checked 56 responsive route/viewport combinations; 0 failures".
+- Lint/build, provider-contract, isolated build, replay and Vercel all succeeded.
+- `Read-only study database preflight` and `record` were skipped on the PR, as intended.
+
+All recorded figures are confirmed. Not re-run locally: no change or failure justified it.
+
+**Non-blocking observations** (no change requested):
+
+- (i) A select naming a missing *column* returns PostgreSQL `42703`, which is classified `UNAVAILABLE` ("check
+  access") rather than `NOT_MIGRATED`. This is conservative, because it never recommends applying a migration on
+  ambiguous evidence, but it labels a schema mismatch as an access issue. Read the per-table `code`.
+- (ii) Pre-existing: the `record` job checks out `ref: main` while `test` ran on `github.sha`. If `main` moves in
+  between, recording runs code that test did not cover. #206 did not introduce this and left it unchanged.
+- (iii) The hosted preflight can only run on `main`, so it confirms readiness after release. The pre-merge gate is the
+  #205 SQL check (step C1).
+
+No defect requires a follow-up branch. Hosted privileges remain **unverified**.
