@@ -11,6 +11,7 @@ import {PropsStoreError} from './props-store.ts';
 import {predictLine,type GameLog,type ModelParams} from '../props/model.ts';
 import {matchupFeatures,type TeamGameRow} from '../props/features.ts';
 import {teamAbbr} from '../props/identity.ts';
+import {playerKey} from '../props/identity.ts';
 import {decidePick,legResult} from '../props/rules.ts';
 import {MODEL_VERSION,type Stat} from '../props/contract.ts';
 import {SPORTS_ABLATION,SPORTS_ABLATION_SPEC} from '../lab/sports/spec.ts';
@@ -53,10 +54,10 @@ export function verifyLabArtifact(s:StoredLabArtifact):boolean{
 
 /** Register the experiment once (idempotent); NOT_MIGRATED when the lab tables do not exist yet. */
 async function ensureRegistered(d:LabDeps):Promise<'OK'|'NOT_MIGRATED'|'SPEC_CONFLICT'>{
- let rows:{spec_sha256:string}[];
- try{rows=await d.store.select<{spec_sha256:string}>('props_lab_experiments','select=spec_sha256&id=eq.'+EXP);}
+ let rows:{spec_sha256:string;artifact_sha256:string}[];
+ try{rows=await d.store.select<{spec_sha256:string;artifact_sha256:string}>('props_lab_experiments','select=spec_sha256,artifact_sha256&id=eq.'+EXP);}
  catch(e){if(e instanceof PropsStoreError&&/^(DB_42P01|STORE_HTTP_404|DB_PGRST\w*|PGRST)/.test(e.code))return 'NOT_MIGRATED';throw e;}
- if(rows.length)return rows[0].spec_sha256===SPORTS_ABLATION.sha256?'OK':'SPEC_CONFLICT';
+ if(rows.length)return rows[0].spec_sha256===SPORTS_ABLATION.sha256&&rows[0].artifact_sha256===d.lab.artifactSha256?'OK':'SPEC_CONFLICT';
  await d.store.insert('props_lab_experiments',[{id:EXP,spec_sha256:SPORTS_ABLATION.sha256,artifact_sha256:d.lab.artifactSha256,spec:SPORTS_ABLATION_SPEC}],
   {onConflict:'id',ignoreDuplicates:true});
  await d.store.insert('props_lab_events',[{experiment_id:EXP,event:'registered',actor:'system:lab',
@@ -92,9 +93,13 @@ export async function runFreeze(d:LabDeps){
   '&lock_at=gt.'+q(new Date(nowMs+LOCK_MARGIN_MS).toISOString())+'&ingested_at=gte.'+q(new Date(nowMs-36*3600_000).toISOString())+'&order=id.asc'))
   .filter(o=>Date.parse(o.ingested_at)>=Date.parse(SPORTS_ABLATION_SPEC.forwardStartsAt));
  if(!obs.length)return {status:'OK',frozen:0,flagged:0,lines:0};
- const done=new Set((await byIds<{observation_id:number}>(d.store,'props_lab_predictions','observation_id','observation_id',obs.map(o=>o.id),
-  '&experiment_id=eq.'+EXP)).map(r=>Number(r.observation_id)));
- const todo=obs.filter(o=>!done.has(o.id));
+ const done=new Map<number,Set<string>>();
+ for(const r of await byIds<{observation_id:number;variant_id:string}>(d.store,'props_lab_predictions','observation_id,variant_id','observation_id',obs.map(o=>o.id),'&experiment_id=eq.'+EXP)){
+  const variants=done.get(Number(r.observation_id))??new Set<string>();variants.add(r.variant_id);done.set(Number(r.observation_id),variants);
+ }
+ const flagsDone=new Set((await byIds<{observation_id:number}>(d.store,'props_lab_flags','observation_id','observation_id',obs.map(o=>o.id),
+  '&experiment_id=eq.'+EXP+'&rules_version=eq.'+RISK_RULES_V1.version)).map(r=>Number(r.observation_id)));
+ const todo=obs.filter(o=>!flagsDone.has(o.id)||SPORTS_ABLATION_SPEC.variants.some(v=>!done.get(o.id)?.has(v.id)));
  if(!todo.length)return {status:'OK',frozen:0,flagged:0,lines:obs.length,alreadyFrozen:done.size};
  const preds=await byIds<Pred>(d.store,'props_predictions','id,observation_id,athlete_id,p_more,p_less,p_tie,mean,inputs','observation_id',todo.map(o=>o.id),
   '&model_version=eq.'+MODEL_VERSION+'&status=eq.scored');
@@ -126,6 +131,7 @@ export async function runFreeze(d:LabDeps){
   const base={pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)};
   const input:SportsLabInput={base,role:role.status==='scored'?{pMore:role.pMore,pLess:role.pLess,pTie:role.pTie}:null,matchup,booksPMore:books.get(o.id)??null};
   for(const v of SPORTS_ABLATION_SPEC.variants){
+   if(done.get(o.id)?.has(v.id))continue;
    const out=predictVariant(d.lab.artifact.variants[v.id],o.stat,input);if(!out)continue;
    labRows.push({experiment_id:EXP,spec_sha256:SPORTS_ABLATION.sha256,variant_id:v.id,observation_id:o.id,p_more:out.pMore,p_less:out.pLess,p_tie:out.pTie,
     data_cutoff:cutoff,inputs:v.id==='combined'?{matchup,books:input.booksPMore,roleExpMinutes:role.status==='scored'?role.inputs.expMinutes:null}:{}});
@@ -135,7 +141,7 @@ export async function runFreeze(d:LabDeps){
     lastPlayed:typeof p.inputs.lastPlayed==='string'?p.inputs.lastPlayed:null,cutoff},
    roleExpMinutes:role.status==='scored'?role.inputs.expMinutes:null,booksPMore:input.booksPMore,sameGamePicks:perGame.get(o.provider_event_id)??0,
    calibration:d.lab.calibrationTable});
-  flagRows.push({experiment_id:EXP,observation_id:o.id,rules_version:RISK_RULES_V1.version,flags,data_cutoff:cutoff,
+  if(!flagsDone.has(o.id))flagRows.push({experiment_id:EXP,observation_id:o.id,rules_version:RISK_RULES_V1.version,flags,data_cutoff:cutoff,
    inputs:{games:num(p.inputs.games),expMinutes:num(p.inputs.expMinutes),sdMinutes:num(p.inputs.sdMinutes),books:input.booksPMore}});
  }
  let frozen=0,flagged=0,refused=0;
@@ -229,13 +235,17 @@ async function realCalibration(store:PropsStore,nowIso:string,selection:string){
   '&decided_at=gte.'+q(new Date(Date.parse(nowIso)-120*DAY).toISOString())+'&order=id.asc',20);
  if(!picks.length)return calibrationBins([]);
  const preds=await byIds<PredRow>(store,'props_predictions','id,observation_id,p_more,p_less,p_tie','id',picks.map(p=>p.prediction_id));
+ const observations=await byIds<Pick<Obs,'id'|'provider_event_id'|'player_name'|'stat'|'line'>>(store,'props_observations','id,provider_event_id,player_name,stat,line','id',preds.map(p=>p.observation_id));
+ const obsOf=new Map(observations.map(o=>[Number(o.id),o])),seen=new Set<string>();
  const results=await byIds<{observation_id:number;revision:number;outcome:string;graded_at:string}>(store,'props_line_results','observation_id,revision,outcome,graded_at',
   'observation_id',preds.map(p=>p.observation_id));
  const latestR=new Map<number,{revision:number;outcome:string;graded_at:string}>();
  for(const r of results){if(Date.parse(r.graded_at)>=Date.parse(nowIso))continue;const p=latestR.get(Number(r.observation_id));if(!p||r.revision>p.revision)latestR.set(Number(r.observation_id),r);}
  const predOf=new Map(preds.map(p=>[Number(p.id),p]));
  return calibrationBins(picks.flatMap(k=>{const p=predOf.get(Number(k.prediction_id)),r=p?latestR.get(Number(p.observation_id)):undefined;
-  if(!p||!r||!k.side||(r.outcome!=='more'&&r.outcome!=='less'))return [];
+  const o=p?obsOf.get(Number(p.observation_id)):undefined;
+  if(!p||!r||!o||!k.side||(r.outcome!=='more'&&r.outcome!=='less'))return [];
+  const key=[o.provider_event_id,playerKey(o.player_name),o.stat,Number(o.line)].join('|');if(seen.has(key))return [];seen.add(key);
   return [{probability:k.side==='more'?Number(p.p_more):Number(p.p_less),correct:r.outcome===k.side}];}));
 }
 

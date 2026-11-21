@@ -9,6 +9,8 @@ import {loadResearchEngine} from '@/lib/server/research-engine-load';
 import type {SportsScorecard,ProbabilitySummary} from '@/lib/lab/engine/scorecard';
 import {PENNY_EXAMPLES,PENNY_POLICY} from '@/lib/lab/confidence-sizing';
 import {loadResearchIntake} from '@/lib/server/research-intake-load';
+import {loadPennyPaper} from '@/lib/server/penny-paper-load';
+import {PENNY_PAPER_POLICY} from '@/lib/lab/penny-paper';
 
 export const metadata={title:'AI Learning Lab | SportsEdge',description:'What the SportsEdge models have measurably learned, what is still a hypothesis, and what is being tested.'};
 
@@ -71,7 +73,7 @@ export default async function LabPage(){
    <Details title="Penny-per-percentage-point sizing proposal">
     <p className="home-panel-note">One cent for each complete percentage point above break-even. This table uses a hypothetical even-money payout with a 50% break-even point. For a multi-leg entry, use the whole-entry probability and its recorded payout, not one leg&apos;s confidence.</p>
     <Table head={['Probability','Proposed virtual stake']} rows={PENNY_EXAMPLES.map(x=>[`${x.percent}%`,money(x.stakeCents)])}/>
-    <p className="home-panel-note">Preview only: {PENNY_POLICY.version}. The current paper database requires a fixed account stake of at least $1. Cent-sized variable entries need a separate versioned cohort and a database migration; they have not been activated. Higher stated confidence can be wrong, so calibration and payout checks remain necessary.</p>
+    <p className="home-panel-note">Reference mapping: {PENNY_POLICY.version}. The separate penny paper study below shows its actual setup state and frozen virtual amounts. Existing paper accounts keep their fixed stakes. Higher stated confidence can be wrong; these amounts do not establish calibrated probabilities.</p>
    </Details>
    {v.staking.retro?.folds.map(f=><div key={f.label} style={{marginBottom:12}}>
     <p className="chat-card-title">{f.label.replace(/^fold\d-/,'')} · {f.comparison.entries} entries, same for every method</p>
@@ -80,6 +82,8 @@ export default async function LabPage(){
    </div>)}
    <p className="home-panel-note">{v.staking.forward?`Forward: ${v.staking.forward.settled} settled, ${v.staking.forward.pending} pending. `+v.staking.forward.verdicts.map(x=>`${METHOD_TEXT[x.method].split(':')[0]} ${x.verdict.replaceAll('_',' ')}`).join(' · '):'Forward shadow stakes: none settled yet.'} No method is called better than flat until {v.staking.gate.minSettledEntries} settled forward entries over {v.staking.gate.minDates} dates show a Holm-adjusted improvement. Retrospective rows use proxy lines.</p>
   </Panel>
+
+  <PennyPaperPanel/>
 
   <div className="home-grid">
    <Panel title="Promotion status">
@@ -103,6 +107,32 @@ export default async function LabPage(){
    <p className="quiet small-print">Spec {v.specSha256.slice(0,12)}… · artifact {v.artifactSha256.slice(0,12)}… · Ask about any of this on the <Link href="/">home page</Link>.</p>
   </Details>
  </div>;
+}
+
+async function PennyPaperPanel(){
+ const snapshot=await loadPennyPaper(),s=snapshot.summary;
+ const label={not_migrated:'Database setup required',not_configured:'Not connected in this deployment',awaiting_registration:'Awaiting first worker registration',ready:'Forward virtual study',unavailable:'Study records unavailable'}[snapshot.state];
+ return <Panel title="Penny paper study" description="Separate virtual accounts: probability-sized entries versus the same entries at a flat $0.10." actions={<Evidence kind="simulated"/>}>
+  <Callout tone={snapshot.state==='ready'?'info':'warning'} title={label}>
+   {s?`Registered ${snapshot.cohort!.registered_at}. ${s.entries} frozen entries; ${s.settled} graded; ${s.pending} pending. `:
+    snapshot.state==='not_migrated'?'The study tables are missing. No cent-sized stakes have been recorded. ':snapshot.state==='awaiting_registration'?'Tables exist; collection begins when the worker registers this new cohort. ':'Current records are unavailable. '}
+   Stakes use the recorded model estimates for the complete two-pick entry, with a fixed 2% dependence haircut. These estimates are uncalibrated; the haircut is a research assumption. Nothing is promoted from this study.
+  </Callout>
+  {s?<>
+   <Table head={['Virtual account','Available','Reserved on open entries','Realized profit','Total staked','Max daily exposure']} rows={[
+    ['Probability-sized',money(s.variable.availableCents),money(s.variable.openStakeCents),money(s.variable.realizedProfitCents),money(s.variable.totalStakedCents),money(s.variable.maxDailyExposureCents)],
+    ['Flat $0.10 reference',money(s.reference.availableCents),money(s.reference.openStakeCents),money(s.reference.realizedProfitCents),money(s.reference.totalStakedCents),money(s.reference.maxDailyExposureCents)]
+   ]}/>
+   <Details title="Latest frozen penny entries">
+    <Table head={['Source entry','Whole-entry estimate','Penny stake','Flat reference','Current result','Penny profit']} rows={s.recent.map(e=>[
+     '#'+e.source_entry_id,e.probability_ppm===null?'Unknown':pct(e.probability_ppm/1_000_000),money(e.stake_cents),money(e.reference_stake_cents),
+     e.settlement?`${e.settlement.outcome.replaceAll('_',' ')} · revision ${e.settlement.revision}`:e.stake_cents?'Pending':e.reason.toLowerCase().replaceAll('_',' '),
+     e.settlement?.profit_cents===null||!e.settlement?'—':money(e.settlement.profit_cents)
+    ])}/>
+   </Details>
+  </>:<p className="home-panel-note">Setup: <a href="https://github.com/ang87505-crypto/SportsEdge/blob/main/database/props/forward_studies_setup.sql" target="_blank" rel="noreferrer">reviewable database setup</a>. Missing evidence is shown as unavailable.</p>}
+  <p className="home-panel-note">Policy {PENNY_PAPER_POLICY.id}. Each virtual account starts at $500; variable stake cap $0.50; daily exposure cap $15. Only future entries from the registration onward can enter. Unknown payouts and same-game dependence produce no stake. Fractional-cent returns round down under this virtual experiment&apos;s rule. Calibration and payout assumptions can outweigh a higher stated confidence.</p>
+ </Panel>;
 }
 
 const ENGINE_TONE:Record<string,Tone>={RUNNING:'info',PROPOSED:'neutral',INSUFFICIENT_DATA:'warning',PROMISING:'positive',FAILED:'negative',READY_FOR_REVIEW:'positive',REJECTED:'negative'};

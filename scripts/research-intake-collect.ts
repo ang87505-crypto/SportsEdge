@@ -10,6 +10,7 @@
 import {writeFileSync,mkdirSync,readFileSync,existsSync} from 'node:fs';
 import {parseCompanyFacts,provenanceFor} from '../src/lib/research/sec-companyfacts.ts';
 import {parseTickerMap,validatePointInTime,qualityReport,datasetVersion,diffManifest} from '../src/lib/research/collect.ts';
+import {secIntakeV2} from '../src/lib/research/sec-intake-v2.ts';
 import {planRequests,parseOpenAlex,parseArxiv,retryDelayMs,memoryKeys} from '../src/lib/research/discovery.ts';
 import {checksum,record,verify} from '../src/lib/research/provenance.ts';
 import {sourceById} from '../src/lib/research/sources.ts';
@@ -70,11 +71,12 @@ if(tickers.length){
     const v=verify(prov,now);
     const pit=validatePointInTime(facts,today,['2020-01-02','2022-06-30','2024-03-15','2025-11-14',today]);
     const quality=qualityReport(facts,dropped,today);
+    const v2=secIntakeV2(body,cik,today,['2020-01-02','2022-06-30','2024-03-15','2025-11-14',today]);
     const factsChecksum=checksum(facts);
     manifest.push({id:'CIK'+cik,checksum:prov.checksumSha256});
     writeFileSync(`${out}/sec-companyfacts/CIK${cik}.json`,JSON.stringify({ticker:t,cik,source:'sec-edgar-companyfacts',retrievedAt:now,
-     rawChecksumSha256:prov.checksumSha256,factsChecksumSha256:factsChecksum,availableAt:prov.availableAt,facts})+'\n');
-    secReport.push({ticker:t,cik,rawChecksum:prov.checksumSha256.slice(0,16),provenance:v,pointInTime:pit,quality});
+     rawChecksumSha256:prov.checksumSha256,factsChecksumSha256:factsChecksum,availableAt:prov.availableAt,facts,v2:v2.archive})+'\n');
+    secReport.push({ticker:t,cik,rawChecksum:prov.checksumSha256.slice(0,16),provenance:v,pointInTime:pit,quality,v2:v2.diagnostics});
     if(facts.length&&pit.ok&&v.usable&&!quality.stale)st.succeeded++;else st.failures.push(t+': '+(facts.length?'validation failed or stale filing metadata':'no facts'));
    }catch(e){st.failures.push(t+': '+(e as Error).message);}
   }
