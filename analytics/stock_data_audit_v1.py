@@ -26,6 +26,8 @@ from . import stock_weekly_backtest_v1 as bt
 
 SPLIT_TOLERANCE = 0.02       # a ratio step within 2% of a common split ratio is split-like
 DIVIDEND_MAX_STEP = 0.10     # adjusted/raw ratio steps below 10% (and not split-like) are dividend-like
+STEP_NOISE = 0.001           # vendor adjusted prices are rounded: ratio jitter up to ~0.05%/day is not an event
+STEP_WINDOW = 5              # an event is a PERSISTENT step: median of the next 5 ratios vs the previous 5
 COMMON_SPLITS = sorted({a / b for a in range(1, 21) for b in range(1, 21) if a != b and max(a, b) <= 20 and min(a, b) <= 4})
 EXTREME_DAILY = 0.40         # |adjusted close-to-close| above 40% is reported for review
 LEAKAGE_SAMPLES = 24
@@ -42,7 +44,7 @@ def classify_step(prev: float, cur: float) -> str | None:
     if prev is None or cur is None or prev <= 0 or cur <= 0:
         return None
     r = cur / prev
-    if abs(r - 1) < 1e-6:
+    if abs(r - 1) < STEP_NOISE:
         return None
     if any(abs(r / s - 1) <= SPLIT_TOLERANCE for s in COMMON_SPLITS):
         return 'split'
@@ -66,13 +68,40 @@ def audit_symbol(sym: str, b: dict, sessions: list[str]) -> dict:
         a0, a1 = b['ac'][j - 1], b['ac'][j]
         if a0 and a1 and a0 > 0 and abs(a1 / a0 - 1) > EXTREME_DAILY:
             out['extreme_moves'].append({'date': b['d'][j], 'adjusted_return': a1 / a0 - 1})
-        kind = classify_step(_ratio(b, j - 1), _ratio(b, j))
+    for j, step in persistent_steps(b):
+        kind = classify_step(1.0, step)
         if kind:
             out['events'][kind] += 1
             if kind == 'unexplained':
-                out['unexplained'].append({'date': b['d'][j], 'ratio_step': _ratio(b, j) / _ratio(b, j - 1)})
+                out['unexplained'].append({'date': b['d'][j], 'ratio_step': step})
     out['events'] = dict(out['events'])
     return out
+
+
+def persistent_steps(b: dict, window: int = STEP_WINDOW) -> list[tuple[int, float]]:
+    """Persistent changes in the adjusted/raw ratio: at bar j, median(ratio[j:j+w]) / median(ratio[j-w:j]). Days whose
+    step exceeds STEP_NOISE are grouped into runs, and each run is reported once, at its largest step. Rounding jitter
+    (which reverts) does not produce a persistent step; a dividend, split or spin-off does."""
+    from statistics import median
+    ratios = [_ratio(b, j) for j in range(len(b['d']))]
+    raw: list[tuple[int, float]] = []
+    for j in range(window, len(ratios) - window + 1):
+        pre = [x for x in ratios[j - window:j] if x is not None]
+        post = [x for x in ratios[j:j + window] if x is not None]
+        if len(pre) < window // 2 + 1 or len(post) < window // 2 + 1:
+            continue
+        step = median(post) / median(pre)
+        if abs(step - 1) >= STEP_NOISE:
+            raw.append((j, step))
+    events, run = [], []
+    for j, step in raw:
+        if run and j != run[-1][0] + 1:
+            events.append(max(run, key=lambda x: abs(math.log(x[1]))))
+            run = []
+        run.append((j, step))
+    if run:
+        events.append(max(run, key=lambda x: abs(math.log(x[1]))))
+    return events
 
 
 def audit_universe(universe: dict, data: dict) -> dict:

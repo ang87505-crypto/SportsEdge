@@ -23,10 +23,26 @@ class Steps(unittest.TestCase):
         self.assertEqual(au.classify_step(0.80, 0.97), 'unexplained', 'a ~21% step: spin-off or special dividend')
         self.assertEqual(au.classify_step(0.97, 0.90), 'unexplained', 'a falling ratio is never a normal event')
         self.assertIsNone(au.classify_step(None, 1.0))
+        self.assertIsNone(au.classify_step(1.0, 1.0004), 'rounding jitter below 10 bps is not an event')
+
+    def test_persistent_steps_ignore_rounding_jitter_and_find_each_event_once(self):
+        days = [f'd{i:03d}' for i in range(60)]
+        jitter = lambda i: (1 if i % 2 else -1) * 0.0004
+        # ratio: 0.95 with jitter, a dividend step (+0.6%) at 20, a 2-for-1 split at 40.
+        ratio = lambda i: (0.95 * (1.006 if i >= 20 else 1.0) * (2.0 if i >= 40 else 1.0)) * (1 + jitter(i))
+        b = bars(days, lambda i: 100.0 if i < 40 else 50.0, ratio)
+        steps = au.persistent_steps(b)
+        self.assertEqual(len(steps), 2, 'jitter produces no events; each real step is reported once')
+        for (j, _), true_day in zip(steps, (20, 40)):
+            self.assertLessEqual(abs(j - true_day), 1, 'located within one bar of the true event')
+        self.assertEqual([au.classify_step(1.0, s) for _, s in steps], ['dividend', 'split'])
+        r = au.audit_symbol('AAA', b, days)
+        self.assertEqual(r['events'], {'dividend': 1, 'split': 1})
+        self.assertEqual(r['unexplained'], [])
 
     def test_symbol_audit_finds_gaps_bad_prices_events_and_extremes(self):
-        days = [f'2024-01-{i:02d}' for i in range(1, 21)]
-        b = bars(days, lambda i: 100.0 if i < 10 else 50.0, lambda i: 0.5 if i < 10 else 1.0)  # a 2-for-1 split on day 10
+        days = [f'2024-{1 + i // 28:02d}-{1 + i % 28:02d}' for i in range(30)]
+        b = bars(days, lambda i: 100.0 if i < 15 else 50.0, lambda i: 0.5 if i < 15 else 1.0)  # a 2-for-1 split on day 15
         b['c'][5] = None
         for k in b:
             if k != 'c':
