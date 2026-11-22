@@ -9,7 +9,7 @@ const probe=createServer();probe.listen(0,'127.0.0.1');await once(probe,'listeni
 const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
 // Do not provide a real data, broker, dispatch or owner credential to this server.
 const env=Object.fromEntries(Object.entries(process.env).filter(([name])=>
- !/^(SPORTSEDGE_|ALPACA_|APCA_|SUPABASE_|ODDS_)/.test(name)));
+ !/^(SPORTSEDGE_|ALPACA_|APCA_|SUPABASE_|ODDS_|KALSHI_)/.test(name)));
 env.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY=' '+key+'\r\n';env.NODE_ENV='production';
 const child=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port',String(port)],
  {cwd:process.cwd(),env,stdio:'ignore'});
@@ -52,6 +52,12 @@ try{
  assert.equal(kalshi.status,503,'signed-in Kalshi request reaches the deliberately disconnected store');
  assert.equal((await kalshi.json()).code,'KALSHI_STORE_NOT_CONFIGURED');
  assert.equal((await fetch(base+'/api/internal/kalshi-paper',{method:'POST',headers:{Cookie:cookie,Origin:'https://other.example','Content-Type':'application/json'},body:'{"action":"start-demo"}'})).status,403,'cross-origin Kalshi write is refused');
+ const connectionBody=JSON.stringify({action:'check-demo-connection'});
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:connectionBody})).status,401,'anonymous demo connection checks are refused');
+ assert.equal((await fetch(base+'/api/internal/kalshi-paper',{method:'POST',headers:{Cookie:cookie,Origin:'https://other.example','Content-Type':'application/json'},body:connectionBody})).status,403,'cross-origin connection checks are refused');
+ const connection=await fetch(base+'/api/internal/kalshi-paper',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:connectionBody});
+ assert.equal(connection.status,503,'the owner connection check runs without the disconnected database');
+ assert.equal((await connection.json()).code,'KALSHI_DEMO_ACCOUNT_NOT_CONFIGURED','isolated checks cannot inherit real Kalshi credentials');
  assert.equal((await fetch(base+'/api/internal/kalshi-paper/tick',{headers:{Cookie:cookie}})).status,401,'owner cookie is not a scheduler token');
  const tampered=cookie.slice(0,-1)+(cookie.at(-1)==='a'?'b':'a');
  assert.equal((await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:tampered}})).status,401);
