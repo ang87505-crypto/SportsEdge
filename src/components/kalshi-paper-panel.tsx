@@ -11,14 +11,14 @@ const readiness=(code:string)=>code==='READY_FOR_OWNER_CHECK'?'Ready for an owne
 export function KalshiPaperPanel(){
  const [state,setState]=useState<State>({kind:'loading'}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const read=useCallback(async()=>{
-  if(!ownerHintPresent(document.cookie)){setState({kind:'login'});return;}
+  if(!ownerHintPresent(document.cookie)){setNotice('');setState({kind:'login'});return;}
   try{
    const response=await fetch('/api/internal/kalshi-paper',{credentials:'same-origin',cache:'no-store'});
    const data=await response.json();
-   if(response.status===401){setState({kind:'login'});return;}
-   if(!response.ok||data.schemaVersion!=='kalshi-platform-view-v1'){setState({kind:'error',code:data.code});return;}
+   if(response.status===401){setNotice('');setState({kind:'login'});return;}
+   if(!response.ok||data.schemaVersion!=='kalshi-platform-view-v1'){setNotice('');setState({kind:'error',code:data.code});return;}
    setState({kind:'ready',data});
-  }catch{setState({kind:'error'});}
+  }catch{setNotice('');setState({kind:'error'});}
  },[]);
  useEffect(()=>{const timer=window.setTimeout(()=>void read(),0);return()=>window.clearTimeout(timer);},[read]);
  async function act(action:string){
@@ -27,7 +27,7 @@ export function KalshiPaperPanel(){
    const response=await fetch('/api/internal/kalshi-paper',{method:'POST',credentials:'same-origin',
     headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
    const data=await response.json();
-   if(response.status===401){setState({kind:'login'});setNotice('Your owner session expired. Sign in again.');}
+   if(response.status===401){setNotice('');setState({kind:'login'});}
    else if(!response.ok)setNotice((action==='check-demo-connection'?'Demo connection could not be verified. ':'The action was not confirmed. Refresh before another order test. ')+(data.code??''));
    else if(action==='check-demo-connection'){
     const r=data.result;

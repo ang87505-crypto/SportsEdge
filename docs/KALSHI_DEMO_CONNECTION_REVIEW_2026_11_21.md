@@ -77,19 +77,19 @@ API call, connected balance result or demo order is claimed by this candidate.
 ## Verification
 
 The new owner regression fails on the original handler (400 instead of the new
-bounded check) and passes after implementation. Twelve focused tests verify actual
+bounded check) and passes after implementation. Thirteen focused tests verify actual
 Ed25519/RSA signatures, exact host/path/method, one request, no retry, sanitized
 errors, bounded replies, fixed-point amounts, malformed keys, fixture refusal,
-owner/origin boundaries, absence of database/trading calls, scheduler isolation
-and preservation of the broader approval gate.
+owner/origin boundaries, absence of database/trading calls, scheduler isolation,
+preservation of the broader approval gate and timeout classification after headers.
 
 Local checks:
 
 ```sh
 node --experimental-strip-types --test src/lib/server/kalshi-demo-balance-check.test.mjs
-# 12 pass; synthetic keys and intercepted transport
+# 13 pass; synthetic keys and intercepted transport
 node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs src/lib/server/kalshi-*.test.mjs scripts/kalshi-independent-weather-collect.test.mjs scripts/kalshi-weather-contract-eval.test.mjs
-# 163 pass; zero skips/failures
+# 164 pass; zero skips/failures
 npm run lint
 # zero errors; six existing warnings
 npm run build
@@ -104,10 +104,26 @@ credential result independent of the unavailable test database. Client bundles
 are checked for credential-reader names and signing headers.
 
 The browser fixture intercepts the new action with clearly synthetic cash, checks
-the success message, confirms order controls stay disabled and clears the private
-notice on sign-out. GitHub must verify that fixture and the full existing checks
+the success message, confirms order controls stay disabled and checks that the
+private notice does not return after signing out and back in without a reload.
+It also checks recovery after an expired session, an unavailable owner read and a
+transport failure. GitHub must verify that fixture and the full existing checks
 at the published head; consult the PR for actual hosted receipts. Synthetic
 success is never a real account connection or performance result.
+
+## Follow-up to the supplied independent review
+
+The owner supplied Claude's independent review of `ffbe2b8437b7c3129b8610a6179cfddac5ff3090`.
+It found no release blocker and identified two low-severity issues. The follow-up
+clears notice state when a panel read loses authentication or fails, so old cash
+cannot return on recovery. A timeout while reading the response body now reports
+the same sanitized transport code as a timeout before headers, without retrying.
+The timeout regression first failed with BAD_REPLY on the reviewed implementation.
+
+The local browser executable could not start because this runtime refuses its
+socket operation. The expanded browser check therefore requires the hosted CI
+receipt on the final commit. Unit checks use synthetic keys and intercepted
+responses; the follow-up makes no authenticated exchange request.
 
 ## Release, owner acceptance and rollback
 

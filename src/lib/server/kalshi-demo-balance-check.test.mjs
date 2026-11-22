@@ -134,6 +134,22 @@ test('transport and HTTP failures are not retried and expose no raw body or secr
  assert.equal(calls,1);
 });
 
+test('a timeout after response headers is a sanitized transport failure without a retry',async t=>{
+ const env=keyEnv(),timeout=new AbortController();let calls=0,headersReturned=false;
+ t.mock.method(AbortSignal,'timeout',milliseconds=>{assert.equal(milliseconds,8000);return timeout.signal;});
+ await assert.rejects(checkKalshiDemoConnection(env,async()=>{
+  calls++;
+  const body=new ReadableStream({pull(controller){
+   assert.ok(headersReturned);
+   timeout.abort(new DOMException(env.KALSHI_DEMO_PRIVATE_KEY,'TimeoutError'));
+   controller.error(timeout.signal.reason);
+  }},{highWaterMark:0});
+  const response=new Response(body,{headers:{'content-type':'application/json'}});
+  headersReturned=true;return response;
+ },()=>at),error=>error.code==='TRANSPORT_FAILED'&&!error.message.includes(env.KALSHI_DEMO_PRIVATE_KEY));
+ assert.equal(calls,1);
+});
+
 test('malformed balances never become a fabricated zero or usable cash value',async()=>{
  for(const data of [null,[],{}, {balance_dollars:100},{balance_dollars:'NaN'},{balance_dollars:'Infinity'},
   {balance_dollars:'-1.0000'},{balance_dollars:'1e3'},{balance_dollars:'1.0000001'},

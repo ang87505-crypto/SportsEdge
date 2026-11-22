@@ -26,10 +26,11 @@ export async function checkKalshiDemoConnection(
  try{signature=(key.asymmetricKeyType==='ed25519'?sign(null,message,key):
   sign('sha256',message,{key,padding:constants.RSA_PKCS1_PSS_PADDING,saltLength:constants.RSA_PSS_SALTLEN_DIGEST})).toString('base64');}
  catch{throw new KalshiDemoError('INVALID_KEY');}
+ const signal=AbortSignal.timeout(8000);
  let response:Response;
  try{
   response=await fetcher(KALSHI_DEMO_ORIGIN+PATH,{method:'GET',redirect:'error',credentials:'omit',cache:'no-store',
-   signal:AbortSignal.timeout(8000),headers:{Accept:'application/json','KALSHI-ACCESS-KEY':keyId,
+   signal,headers:{Accept:'application/json','KALSHI-ACCESS-KEY':keyId,
     'KALSHI-ACCESS-TIMESTAMP':String(timestamp),'KALSHI-ACCESS-SIGNATURE':signature}});
  }catch{throw new KalshiDemoError('TRANSPORT_FAILED');}
  if(!response.ok)throw new KalshiDemoError('HTTP_'+response.status);
@@ -45,7 +46,7 @@ export async function checkKalshiDemoConnection(
   if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('shape');
   cashMicros=demoFixedMicros((data as Record<string,unknown>).balance_dollars);
   if(cashMicros<0)throw new Error('balance');
- }catch{throw new KalshiDemoError('BAD_REPLY');}
+ }catch{throw new KalshiDemoError(signal.aborted?'TRANSPORT_FAILED':'BAD_REPLY');}
  finally{reader.releaseLock();}
  return {status:'DEMO_CONNECTION_VERIFIED',source:'KALSHI_DEMO',readOnly:true,cashMicros,
   checkedAt:new Date(timestamp).toISOString()};

@@ -416,6 +416,8 @@ try{
      if(init?.method==='POST'){const action=JSON.parse(init.body).action;window.__kalshiActions.push(action);
       return Response.json(action==='check-demo-connection'?{status:'CHECKED',action,result:{status:'DEMO_CONNECTION_VERIFIED',
        source:'KALSHI_DEMO',readOnly:true,cashMicros:100000000,checkedAt:${JSON.stringify(NOW)}}}:{status:'RECORDED'});}
+     if(window.__kalshiReadStatus==='transport')throw Error('SYNTHETIC_OWNER_READ_TRANSPORT');
+     if(window.__kalshiReadStatus)return Response.json({code:'SYNTHETIC_OWNER_READ_UNAVAILABLE'},{status:window.__kalshiReadStatus});
      return Response.json(${JSON.stringify(fixture)});
     }return window.__kalshiRealFetch(input,init);};return true;})()`);
    await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
@@ -441,7 +443,23 @@ try{
    await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
    await until(async()=>evaluate(send,`document.body.textContent.includes('Owner sign-in required')`),'Kalshi fixture sign-out');
    if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Connection balance remained visible after sign-out');
-   console.log('PASS Kalshi owner UI fixture: read-only demo connection, stopped order controls, private notice cleared on sign-out, partial fill table, offline action, 320/390/1440 layouts');
+   await send('Network.setCookie',{name:'__Host-sportsedge-owner-hint',value:'1',url:base,path:'/',secure:true,sameSite:'Strict'});
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Collecting history')`),'Kalshi fixture sign-in without reloading');
+   if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Old connection balance returned after signing back in without reloading');
+   for(const [failure,prompt] of [[401,'Owner sign-in required'],[503,'Paper status unavailable'],['transport','Paper status unavailable']]){
+    await evaluate(send,`(()=>{[...document.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='Demo account and automation controls').open=true;
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Test demo connection').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`),'fresh connection before '+failure);
+    await evaluate(send,`(()=>{window.__kalshiReadStatus=${JSON.stringify(failure)};
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes(${JSON.stringify(prompt)})`),'owner read failure '+failure);
+    await evaluate(send,`(()=>{window.__kalshiReadStatus=0;
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes('Collecting history')`),'owner read recovery '+failure);
+    if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Old connection balance returned after owner read failure '+failure);
+   }
+   console.log('PASS Kalshi owner UI fixture: read-only demo connection, stopped order controls, private notice cleared across sign-out/sign-in and failed owner reads, partial fill table, offline action, 320/390/1440 layouts');
   }catch(error){const message='Kalshi owner UI: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  }
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
