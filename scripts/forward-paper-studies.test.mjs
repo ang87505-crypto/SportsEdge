@@ -97,8 +97,8 @@ test('missing credentials are reported without a request or a fabricated ready s
 });
 
 const workflow=readFileSync(new URL('../.github/workflows/forward-paper-studies.yml',import.meta.url),'utf8');
-function job(name){
- const lines=workflow.split('\n'),start=lines.indexOf('  '+name+':');assert.ok(start>=0);
+function job(name,source=workflow){
+ const lines=source.split('\n'),start=lines.indexOf('  '+name+':');assert.ok(start>=0);
  let end=start+1;while(end<lines.length&&!/^  [a-z_]+:/.test(lines[end]))end++;
  return lines.slice(start+1,end);
 }
@@ -131,4 +131,34 @@ test('actual workflow guards keep manual preflight separate from explicit record
  assert.match(job('preflight').join('\n'),/ref: \$\{\{ github.sha \}\}/);
  assert.match(job('preflight').join('\n'),/scripts\/forward-paper-studies.ts --readiness-only/);
  assert.doesNotMatch(job('record').join('\n'),/--readiness-only/);
+});
+
+function assertPinnedStudyJobs(source){
+ for(const name of ['test','preflight','record']){
+  const lines=job(name,source),body=lines.join('\n');
+  const checkout=lines.findIndex(line=>line.startsWith('      - uses: actions/checkout@'));
+  assert.ok(checkout>=0,name+' checkout is required');
+  const next=lines.findIndex((line,i)=>i>checkout&&line.startsWith('      - '));
+  assert.ok(next>checkout,name+' must verify the checkout before running repository code');
+  const block=lines.slice(checkout,next).join('\n');
+  assert.match(block,/^          ref: \$\{\{ github\.sha \}\}$/m,name+' checkout must use the tested workflow commit');
+  assert.match(block,/^          persist-credentials: false$/m);
+  assert.equal(lines[next],'      - name: Verify checked-out workflow commit',name+' must verify actual HEAD immediately');
+  assert.equal(lines[next+1],'        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"',name+' must reject a mismatched receipt commit');
+  assert.doesNotMatch(lines.slice(0,next+2).join('\n'),/secrets\./);
+  if(name==='test')assert.doesNotMatch(body,/secrets\./);
+  else assert.match(body,/needs: test/);
+ }
+}
+test('every study job uses and verifies the tested immutable workflow commit',()=>{
+ assertPinnedStudyJobs(workflow);
+ // Prove the check rejects the old moving-main checkout in each actual job.
+ for(const name of ['test','preflight','record']){
+  const section=job(name).join('\n');
+  const movingMain=workflow.replace(section,section.replace('ref: ${{ github.sha }}','ref: main'));
+  assert.notEqual(movingMain,workflow);
+  assert.throws(()=>assertPinnedStudyJobs(movingMain),new RegExp(name+' checkout must use the tested workflow commit'));
+ }
+ const unchecked=workflow.replaceAll('run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"','run: true');
+ assert.throws(()=>assertPinnedStudyJobs(unchecked),/must reject a mismatched receipt commit/);
 });
