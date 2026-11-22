@@ -68,3 +68,22 @@ test('research intake index may append; rewriting a receipt or immutable content
   assert.equal(show(b,'research-data','research-intake/objects/a.json').out,'{"frozen":1}\n');
  }
 });
+
+// Regression (2026-11-21, Research collect runs 44867479053 / 44891899827): the frozen weekly lab ledger is appended
+// once per decision week. Its first append after the initial freeze was refused as a rewrite, which discarded the whole
+// nightly research commit. Appending must pass; editing or truncating an earlier frozen row must still be refused.
+test('lab stock forward ledger may append new frozen rows; rewriting or truncating an earlier row is refused',()=>{
+ for(const bad of ['{"week":1,"edited":true}\n{"week":2}\n','']){
+  const {d,b}=bare();
+  const run=(args)=>sh('bash',[join(repo,'.github/scripts/research-data-branch.sh'),...args],{cwd:d,env:env({RESEARCH_DATA_REMOTE:b})});
+  assert.ok(run(['checkout']).ok);
+  const dir=join(d,'research-data/lab');mkdirSync(dir,{recursive:true});
+  writeFileSync(join(dir,'stock-forward-ledger.jsonl'),'{"week":1}\n');
+  assert.ok(run(['commit','freeze week 1']).ok);
+  writeFileSync(join(dir,'stock-forward-ledger.jsonl'),'{"week":1}\n{"week":2}\n');
+  const ok=run(['commit','freeze week 2']);assert.ok(ok.ok,ok.out+ok.err);
+  writeFileSync(join(dir,'stock-forward-ledger.jsonl'),bad);
+  const refused=run(['commit','rewrite']);assert.equal(refused.ok,false);assert.match(refused.out,/APPEND_ONLY_VIOLATION/);
+  assert.equal(show(b,'research-data','lab/stock-forward-ledger.jsonl').out,'{"week":1}\n{"week":2}\n');
+ }
+});
