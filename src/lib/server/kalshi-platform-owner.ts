@@ -3,13 +3,15 @@ import {kalshiPlatformStore,type KalshiPlatformStore} from './kalshi-platform-st
 import {loadKalshiPlatformView} from './kalshi-platform-view.ts';
 import {runKalshiPlatform,kalshiSchemaReady,platformCode,type SavedForecast} from './kalshi-platform-worker.ts';
 import {kalshiDemoClient,type KalshiDemoClient} from './kalshi-demo-client.ts';
+import {checkKalshiDemoConnection,type KalshiDemoConnectionResult} from './kalshi-demo-balance-check.ts';
 import {reconcileKalshiDemo,startKalshiDemo,stopKalshiDemo,runKalshiDemo} from './kalshi-demo-worker.ts';
 import {buildKalshiFixtureReplay} from '../prediction-markets/kalshi/paper-fixture.ts';
 import {verifyContractForecast} from '../prediction-markets/kalshi/contract-grade.ts';
 export {OWNER_COOKIE};
 type Request={url:string;ownerCookie?:string;origin?:string|null;body?:unknown;readBody?:()=>Promise<unknown>};
 export type KalshiOwnerDeps={env?:Readonly<Record<string,string|undefined>>;now?:()=>number;
- store?:()=>KalshiPlatformStore;demo?:()=>KalshiDemoClient;run?:typeof runKalshiPlatform};
+ store?:()=>KalshiPlatformStore;demo?:()=>KalshiDemoClient;run?:typeof runKalshiPlatform;
+ connection?:()=>Promise<KalshiDemoConnectionResult>};
 const reply=(status:number,body:unknown)=>({status,body});
 function authorized(req:Request,d:KalshiOwnerDeps){
  const secret=d.env?.SPORTSEDGE_ALPACA_DASHBOARD_OWNER_KEY??ownerSecret();
@@ -27,9 +29,14 @@ export async function handleKalshiOwnerPost(req:Request,deps:KalshiOwnerDeps={})
  let body:unknown;try{body=req.readBody?await req.readBody():req.body;}catch{return reply(400,{status:'INVALID_REQUEST'});}
  if(!body||typeof body!=='object'||Array.isArray(body))return reply(400,{status:'INVALID_REQUEST'});
  const action=(body as {action?:unknown}).action;
- const allowed=['run-worker','offline-check','check-demo','start-demo','stop-demo','smoke-demo'];
+ const allowed=['run-worker','offline-check','check-demo','check-demo-connection','start-demo','stop-demo','smoke-demo'];
  if(typeof action!=='string'||!allowed.includes(action))return reply(400,{status:'INVALID_ACTION'});
  try{
+  if(action==='check-demo-connection'){
+   if(Object.keys(body).length!==1)return reply(400,{status:'INVALID_REQUEST'});
+   const result=await (deps.connection??(()=>checkKalshiDemoConnection(deps.env,fetch,deps.now)))();
+   return reply(200,{status:'CHECKED',action,result});
+  }
   const store=(deps.store??(()=>kalshiPlatformStore(deps.env)))();await kalshiSchemaReady(store);
   const now=()=>new Date((deps.now??Date.now)()).toISOString();
   const demo=deps.demo??(()=>kalshiDemoClient(deps.env));

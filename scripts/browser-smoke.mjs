@@ -413,7 +413,9 @@ try{
    if(!await evaluate(send,`document.cookie.includes('__Host-sportsedge-owner-hint=1')`))throw Error('Local browser owner hint was not set');
    await evaluate(send,`(()=>{window.__kalshiActions=[];window.__kalshiRealFetch=window.fetch;
     window.fetch=async(input,init)=>{if(String(input)==='/api/internal/kalshi-paper'){
-     if(init?.method==='POST'){window.__kalshiActions.push(JSON.parse(init.body).action);return Response.json({status:'RECORDED'});}
+     if(init?.method==='POST'){const action=JSON.parse(init.body).action;window.__kalshiActions.push(action);
+      return Response.json(action==='check-demo-connection'?{status:'CHECKED',action,result:{status:'DEMO_CONNECTION_VERIFIED',
+       source:'KALSHI_DEMO',readOnly:true,cashMicros:100000000,checkedAt:${JSON.stringify(NOW)}}}:{status:'RECORDED'});}
      return Response.json(${JSON.stringify(fixture)});
     }return window.__kalshiRealFetch(input,init);};return true;})()`);
    await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
@@ -431,9 +433,15 @@ try{
    }
    await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Run offline system check').click();return true;})()`);
    await until(async()=>evaluate(send,`document.body.textContent.includes('Synthetic system check saved.')`),'offline fixture action');
-   if(await evaluate(send,`JSON.stringify(window.__kalshiActions)`)!=='["offline-check"]')throw Error('Unexpected synthetic UI action');
-   console.log('PASS Kalshi owner UI fixture: history pending, order controls disabled without credentials, partial fill table, offline action, 320/390/1440 layouts');
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Test demo connection').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Read-only demo connection verified. Available mock cash: $100.00')`),'read-only demo connection fixture action');
+   if(await evaluate(send,`JSON.stringify(window.__kalshiActions)`)!=='["offline-check","check-demo-connection"]')throw Error('Unexpected synthetic UI action');
+   if(!await evaluate(send,`[...document.querySelectorAll('button')].filter(b=>['Start demo automation','Run one demo order test'].includes(b.textContent)).every(b=>b.disabled)`))throw Error('Connection check enabled an order control');
    await send('Network.deleteCookies',{name:'__Host-sportsedge-owner-hint',url:base});
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Owner sign-in required')`),'Kalshi fixture sign-out');
+   if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Connection balance remained visible after sign-out');
+   console.log('PASS Kalshi owner UI fixture: read-only demo connection, stopped order controls, private notice cleared on sign-out, partial fill table, offline action, 320/390/1440 layouts');
   }catch(error){const message='Kalshi owner UI: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  }
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
