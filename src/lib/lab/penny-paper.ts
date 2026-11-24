@@ -31,7 +31,7 @@ export function pennySummary(entries:PennyEntry[],settlements:PennySettlement[],
  const rows=[...entries].filter(e=>Date.parse(e.recorded_at)<=now).sort((a,b)=>a.recorded_at.localeCompare(b.recorded_at)||a.id-b.id);
  if(new Set(rows.map(e=>e.id)).size!==rows.length)throw Error('PENNY_DUPLICATE_ENTRY');
  const latest=new Map<number,PennySettlement>();
- for(const s of settlements){if(Date.parse(s.recorded_at)>now)continue;const old=latest.get(s.penny_entry_id);if(!old||s.revision>old.revision)latest.set(s.penny_entry_id,s);}
+ for(const s of settlements){if(!Number.isFinite(Date.parse(s.recorded_at))||Date.parse(s.recorded_at)>now)continue;const old=latest.get(s.penny_entry_id);if(!old||s.revision>old.revision)latest.set(s.penny_entry_id,s);}
  for(const e of rows)for(const n of [e.stake_cents,e.reference_stake_cents])if(!Number.isSafeInteger(n)||n<0||n>50)throw Error('PENNY_INVALID_LEDGER');
  const arm=(reference:boolean)=>{
   let bank:number=PENNY_PAPER_POLICY.initialCents,peak=bank,maxDrawdown=0,staked=0,pnl=0,open=0,entered=0;
@@ -42,11 +42,22 @@ export function pennySummary(entries:PennyEntry[],settlements:PennySettlement[],
    if(stake){entered++;staked+=stake;const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(e.recorded_at));daily.set(day,(daily.get(day)??0)+stake);}
    if(profit===null||profit===undefined)open+=stake;
   }
-  // Realized equity follows settlement availability, not the source entry's original date.
-  const known=rows.map(e=>({e,s:latest.get(e.id)})).filter(x=>x.s).sort((a,b)=>a.s!.recorded_at.localeCompare(b.s!.recorded_at)||a.e.id-b.e.id);
-  for(const {s} of known){const p=reference?s!.reference_profit_cents:s!.profit_cents;if(p===null)continue;pnl+=p;bank+=p;peak=Math.max(peak,bank);maxDrawdown=Math.max(maxDrawdown,1-bank/peak);}
+  // Realized equity follows every settlement receipt and correction, not a rewritten latest-only history.
+  const byId=new Map(rows.map(e=>[e.id,e])),booked=new Map<number,{revision:number;profit:number}>();
+  const known=settlements.filter(s=>byId.has(s.penny_entry_id)&&Number.isFinite(Date.parse(s.recorded_at))&&Date.parse(s.recorded_at)<=now)
+   .sort((a,b)=>Date.parse(a.recorded_at)-Date.parse(b.recorded_at)||a.penny_entry_id-b.penny_entry_id||a.revision-b.revision);
+  for(const s of known){
+   const old=booked.get(s.penny_entry_id);
+   if(old&&s.revision<=old.revision)throw Error('PENNY_INVALID_LEDGER');
+   const e=byId.get(s.penny_entry_id)!,stake=reference?e.reference_stake_cents:e.stake_cents;
+   const p=reference?s.reference_profit_cents:s.profit_cents;
+   if(p!==null&&(!Number.isSafeInteger(p)||p < -stake))throw Error('PENNY_INVALID_LEDGER');
+   const profit=p??0,delta=profit-(old?.profit??0);
+   booked.set(s.penny_entry_id,{revision:s.revision,profit});
+   pnl+=delta;bank+=delta;peak=Math.max(peak,bank);maxDrawdown=Math.max(maxDrawdown,1-bank/peak);
+  }
   return {entered,totalStakedCents:staked,realizedProfitCents:pnl,realizedEquityCents:bank,openStakeCents:open,availableCents:bank-open,
-   settledStakeCents:rows.reduce((a,e)=>a+(latest.get(e.id)?.profit_cents!==null&&latest.has(e.id)?(reference?e.reference_stake_cents:e.stake_cents):0),0),
+   settledStakeCents:rows.reduce((a,e)=>a+(latest.has(e.id)&&(reference?latest.get(e.id)!.reference_profit_cents:latest.get(e.id)!.profit_cents)!==null?(reference?e.reference_stake_cents:e.stake_cents):0),0),
    maxDrawdown,maxDailyExposureCents:Math.max(0,...daily.values())};
  };
  const eligible=rows.filter(e=>e.probability_ppm!==null),settled=rows.filter(e=>latest.has(e.id));

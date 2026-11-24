@@ -67,5 +67,17 @@ su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE pu
 check_study_readiness READY always-enabled-append-only-trigger
 su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_lab_experiments ENABLE TRIGGER props_append_only'" >/dev/null
 check_study_readiness READY origin-enabled-append-only-trigger
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_penny_entries DISABLE TRIGGER props_penny_freeze'" >/dev/null
+check_study_readiness NOT_READY disabled-penny-freeze
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_penny_entries ENABLE TRIGGER props_penny_freeze'" >/dev/null
+check_study_readiness READY restored-penny-freeze
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_lab_predictions ENABLE REPLICA TRIGGER props_lab_prediction_chronology'" >/dev/null
+check_study_readiness NOT_READY replica-only-lab-chronology
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_lab_predictions ENABLE TRIGGER props_lab_prediction_chronology'" >/dev/null
+check_study_readiness READY restored-lab-chronology
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'DROP TRIGGER props_append_only ON public.props_lab_experiments; CREATE TRIGGER props_append_only BEFORE UPDATE ON public.props_lab_experiments FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'" >/dev/null
+check_study_readiness NOT_READY append-only-missing-delete
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'DROP TRIGGER props_append_only ON public.props_lab_experiments; CREATE TRIGGER props_append_only BEFORE UPDATE OR DELETE ON public.props_lab_experiments FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'" >/dev/null
+check_study_readiness READY restored-append-only-events
 su postgres -c "dropdb props_setup_t"
 cd "$repo" && PROPS_PG_TEST=1 node --experimental-strip-types --no-warnings --test src/lib/server/props-cycle.integration.test.mjs src/lib/server/props-tick.integration.test.mjs src/lib/server/props-monotone-shadow.integration.test.mjs

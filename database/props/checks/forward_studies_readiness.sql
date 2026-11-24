@@ -15,6 +15,13 @@ WITH want(rel, kind, grp) AS (VALUES
   ('props_lab_flags','r','lab'),('props_lab_reports','r','lab'),('props_lab_stakes','r','lab'),
   ('props_penny_cohorts','r','penny'),('props_penny_entries','r','penny'),('props_penny_settlements','r','penny'),
   ('props_penny_tampering','v','penny')),
+guards(rel, trigger_name, fn) AS (VALUES
+  ('props_lab_predictions','props_lab_prediction_chronology','props_lab_check_frozen'),
+  ('props_lab_flags','props_lab_flag_chronology','props_lab_check_frozen'),
+  ('props_lab_stakes','props_lab_stake_chronology','props_lab_check_stake'),
+  ('props_penny_cohorts','props_penny_cohort_clock','props_penny_cohort_guard'),
+  ('props_penny_entries','props_penny_freeze','props_penny_entry_guard'),
+  ('props_penny_settlements','props_penny_grade','props_penny_settlement_guard')),
 c AS (
   SELECT w.*, k.oid, k.relkind::text AS actual_kind, k.relrowsecurity AS rls
   FROM want w LEFT JOIN pg_class k ON k.relname = w.rel AND k.relnamespace = 'public'::regnamespace),
@@ -28,7 +35,13 @@ chk AS (
     CASE WHEN oid IS NULL THEN NULL ELSE (has_table_privilege('anon', oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
        OR has_table_privilege('authenticated', oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) END AS public_access,
     rls,
-    EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid = c.oid AND t.tgname = 'props_append_only' AND NOT t.tgisinternal AND t.tgenabled IN ('O','A')) AS append_only_trigger
+    EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid = c.oid AND t.tgname = 'props_append_only' AND NOT t.tgisinternal AND t.tgenabled IN ('O','A') AND t.tgtype=27
+      AND t.tgfoid=to_regprocedure('public.props_immutable()') AND t.tgqual IS NULL
+      AND t.tgattr=''::int2vector) AS append_only_trigger,
+    NOT EXISTS (SELECT 1 FROM guards g WHERE g.rel=c.rel AND NOT EXISTS
+      (SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND t.tgname=g.trigger_name
+        AND NOT t.tgisinternal AND t.tgenabled IN ('O','A') AND t.tgtype=7
+        AND t.tgfoid=to_regprocedure('public.'||g.fn||'()') AND t.tgqual IS NULL)) AS insert_guard_ready
   FROM c),
 v AS (
   SELECT *, CASE
@@ -41,6 +54,7 @@ v AS (
     WHEN svc_mutate THEN 'SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE'
     WHEN kind = 'r' AND NOT rls THEN 'RLS_DISABLED'
     WHEN kind = 'r' AND NOT append_only_trigger THEN 'APPEND_ONLY_TRIGGER_MISSING'
+    WHEN NOT insert_guard_ready THEN 'INSERT_GUARD_MISSING_OR_DISABLED'
     ELSE 'READY' END AS state
   FROM chk),
 seq AS (

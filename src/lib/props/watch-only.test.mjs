@@ -128,3 +128,13 @@ test('Watch Only source has no provider, write, entry, scraping or staking opera
  assert.doesNotMatch(code,/\bfetch\s*\(|\bstore\.(insert|update|upsert|delete)\s*\(/);
  assert.doesNotMatch(code,/\b(recordEntries|buildEntries|placeBet|submitBet|callOddsApi)\s*\(/);
 });
+
+test('global totals use the first received qualifying source, not alphabetical platform display order',()=>{
+ const first=ob(1);
+ const later=ob(2,'nba-100','Sample One',{platform:'pick6',recorded_at:'2026-11-12T19:02:10.000Z',ingested_at:'2026-11-12T19:02:00.000Z'});
+ const x=watchOnlyLedger(raw([later,first],[pr(1),pr(2,2,.25,.75,0,{predicted_at:'2026-11-12T19:02:20.000Z'})],[gr(1),gr(2)]));
+ assert.equal(x.rows.find(r=>r.isUnique).observationId,1);
+ assert.equal(x.report(0).wins,1);assert.equal(x.report(0).losses,0);
+ assert.equal(x.report(.70).losses,1);
+ assert.equal(x.report(0,undefined,'pick6').losses,1);
+});

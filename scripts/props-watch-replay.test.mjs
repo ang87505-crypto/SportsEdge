@@ -119,3 +119,16 @@ test('remote input, duplicate flags and unknown options never initiate network r
   const x=cli(args);assert.equal(x.status,2);assert.equal(x.report,null);assert.match(x.err,/WATCH_REPLAY_(?:LOCAL_INPUT_REQUIRED|INVALID_ARGUMENTS)/);
  }
 });
+
+test('replay totals and grade kinds agree when a later platform has a different grade',()=>{
+ const data=fixture();
+ data.results=data.results.filter(g=>g.observation_id!==1&&g.observation_id!==8);
+ data.results.push(grade(1,'void_dnp',null),grade(8,'more',10));
+ withSnapshot(data,path=>{
+  const x=cli(['--input',path]);assert.equal(x.status,0,x.err);
+  assert.equal(x.report.totals.pushes,4);
+  assert.equal(x.report.gradeKinds.voidDnp,2);
+  assert.equal(x.report.totals.pushes,x.report.gradeKinds.ties+x.report.gradeKinds.voids);
+  assert.equal(x.report.byPlatform.pick6.wins,1);
+ });
+});
