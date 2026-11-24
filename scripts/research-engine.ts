@@ -14,7 +14,7 @@
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
 import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync} from 'node:fs';
-import {adopt,EngineError,fingerprint,register,transition,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
+import {adopt,advance,EngineError,fingerprint,register,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
 import {nextStatus,type Result} from '../src/lib/lab/engine/evaluate.ts';
 import {pair,forwardResult,type FrozenPrediction,type Grade} from '../src/lib/lab/engine/forward.ts';
@@ -167,7 +167,7 @@ try{
     const res=forwardResult(e.forward!,rep,now);
     const n=nextStatus(e,res);
     const inFp=fingerprint({format:'forward-result-v2',spec:e.forward,rows:rep.rows,stale:res.details.stale});
-    const t=transition(reg,e.id,n.to,n.reason,now,inFp,{...res,...res.details},res.disposition);reg=t.registry;
+    const t=advance(reg,e.id,n.to,n.reason,now,inFp,{...res,...res.details},res.disposition);reg=t.registry;
     (report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:t.changed,reason:n.reason,details:res.details});
    }
   }
@@ -183,7 +183,7 @@ try{
   const results:{experimentId:string;result:Result}[]=JSON.parse(readFileSync(opt('result')!,'utf8'));
   for(const x of results){
    const e=reg.experiments.find(y=>y.id===x.experimentId);if(!e){(report.applied as unknown[]).push({id:x.experimentId,error:'UNKNOWN_EXPERIMENT'});continue;}
-   const n=nextStatus(e,x.result);const r=transition(reg,e.id,n.to,n.reason,now,fingerprint(x),x.result as unknown as Record<string,unknown>,x.result.disposition);
+   const n=nextStatus(e,x.result);const r=advance(reg,e.id,n.to,n.reason,now,fingerprint(x),x.result as unknown as Record<string,unknown>,x.result.disposition);
    reg=r.registry;(report.applied as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:r.changed,reason:n.reason});
   }
  }

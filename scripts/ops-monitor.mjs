@@ -91,14 +91,17 @@ async function propsEvidence(){
   const [control,collects,settles,doneCollect,doneSettle]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
    getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers}),
-   getJson(done+'&kind=eq.collect',{headers}),getJson(done+'&kind=eq.settle',{headers})]);
+   getJson(done+'&kind=eq.collect',{headers}),
+   // The completed settle also carries its safety-brake receipt, so a brake that silently errors is visible.
+   getJson(done.replace('finished_at&','finished_at,safetyBrake:summary->safetyBrake&')+'&kind=eq.settle',{headers})]);
   const bad=[collects,settles,doneCollect,doneSettle].find(r=>!r.ok||!Array.isArray(r.json));
   if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
   const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
   const okRun=kind=>(kind==='collect'?doneCollect:doneSettle).json[0]?.finished_at??null;
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),
-   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle')};
+   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle'),
+   lastSettleSafetyBrake:doneSettle.json[0]?doneSettle.json[0].safetyBrake??null:undefined};
  }catch{return {state:'UNAVAILABLE'};}
 }
 async function researchEvidence(){

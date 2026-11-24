@@ -146,6 +146,20 @@ test('props receipts: green workflows that collect nothing for two days are surf
   assert.deepEqual(propsReceiptBlockers({state: 'UNAVAILABLE'}, now), []);
 });
 
+test('props receipts: a completed settle without a valid safety-brake check is surfaced, never silently passed', () => {
+  const now = T('2026-11-12T00:00Z');
+  const base = {state: 'OK', controlState: 'RUNNING', lastCompletedCollectAt: '2026-11-11T20:11Z', lastCompletedSettleAt: '2026-11-11T16:29Z'};
+  const ids = brake => propsReceiptBlockers({...base, lastSettleSafetyBrake: brake}, now).map(b => b.id);
+  assert.deepEqual(ids({trip: false, n: 87, hitRate: 0.6, upper: 0.7}), [], 'a recorded check passes');
+  assert.deepEqual(ids({trip: false, n: 0, hitRate: null, upper: null}), [], 'no graded picks yet is still a valid check');
+  for (const bad of [null, {error: 'DB_PGRST301'}, {error: 'UNEXPECTED'}, {}, {trip: 'no', n: 3}, {trip: false, n: -1}, 'x'])
+    assert.deepEqual(ids(bad), ['props-safety-brake-unverified'], JSON.stringify(bad));
+  assert.match(propsReceiptBlockers({...base, lastSettleSafetyBrake: {error: 'DB_PGRST301'}}, now)[0].text, /error DB_PGRST301/);
+  // No completed settle read (older receipts) or a paused control: no brake claim either way.
+  assert.deepEqual(ids(undefined), []);
+  assert.deepEqual(propsReceiptBlockers({...base, controlState: 'PAUSED', lastSettleSafetyBrake: null}, now), []);
+});
+
 test('a run GitHub queued hours ago and never started is reported as stuck, not as running', () => {
   const now = T('2026-11-12T00:00Z');
   const stuck = {...run('2026-11-11T20:44Z', null, 'schedule', 'queued'), run_started_at: '2026-11-11T20:44Z'};
