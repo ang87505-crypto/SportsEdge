@@ -1298,6 +1298,140 @@
      "inputFingerprint": "c525ffab94b96dbd78c5577634ab36521b23dc1867a9b9aa66ef41fd8a566558"
     }
    ]
+  },
+  {
+   "id": "lab-stock-cash-efficient-fill",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:cash-efficient-whole-share-allocator",
+   "hypothesis": "Sizing the live weekly picks with a cash-efficient whole-share allocator (band 5-15%, fill to the 50% gross cap) beats the live rules on the $1,000 account after costs, and beats SPY held at the same exposure.",
+   "dataDependencies": [
+    "Alpaca SIP daily bars, raw and all-adjusted (read-only)",
+    "config/paper-auto/universe-large-cap-v1.json revision large-cap-v1-2026-11-09"
+   ],
+   "frozen": {
+    "features": [
+     "mom252-skip21",
+     "trend200",
+     "fill-band-v1"
+    ],
+    "parameters": {
+     "picks": 5,
+     "perSector": 2,
+     "weightPerPick": 0.1,
+     "maxLastClose": 95,
+     "allocator": "fill-band-v1",
+     "grossCap": 0.5,
+     "nameCap": 0.15,
+     "bandLow": 0.05,
+     "execution": "whole shares at the decision open; band keeps 5-15% holdings; fill spends the unused 50% gross best-ranked first",
+     "costBpsJudged": 10,
+     "costBpsRobustness": 25,
+     "dev": "2017-01-01..2022-12-31",
+     "holdout": "2023-01-01..2026-11-23"
+    }
+   },
+   "dataCutoff": "2026-11-23T21:00:00Z",
+   "codeFingerprint": "d1660f0242e12299dbaac1684705f88b5561a86a23c73392a9607aead0779607",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
+    "secondary": [
+     "average invested share",
+     "holdout max drawdown",
+     "full-period Sharpe at 25 bps",
+     "Sharpe vs SPY at the strategy’s own realized exposure",
+     "turnover per year"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 bps per side judged; 25 bps robustness",
+   "decisionRule": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md: R1 Sharpe above the live rules in dev AND holdout with holdout drawdown within 5 points; R2 full Sharpe above at 25 bps; R3 full-period average invested at least 5 points above the live rules; R4 Sharpe above SPY at its own realized exposure in dev AND holdout. R1-R4 PROMISING; R1-R3 only RUNNING (forward only); otherwise REJECTED.",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
+   "source": "existing",
+   "registeredAt": "2026-11-24T23:30:00Z",
+   "history": [
+    {
+     "at": "2026-11-24T23:30:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md); zero fitted parameters; constants from registered limits",
+     "inputFingerprint": null
+    }
+   ]
+  },
+  {
+   "id": "lab-stock-holdrank10-cash-efficient-fill",
+   "domain": "stocks",
+   "hypothesisKey": "stocks:rank-hold-buffer-cash-efficient-allocator",
+   "hypothesis": "The frozen top-10 hold buffer with the cash-efficient whole-share allocator (band 5-15%, fill to the 50% gross cap) beats the live rules on the $1,000 account after costs, and beats SPY held at the same exposure.",
+   "dataDependencies": [
+    "Alpaca SIP daily bars, raw and all-adjusted (read-only)",
+    "config/paper-auto/universe-large-cap-v1.json revision large-cap-v1-2026-11-09"
+   ],
+   "frozen": {
+    "features": [
+     "mom252-skip21",
+     "trend200",
+     "holdrank10",
+     "fill-band-v1"
+    ],
+    "parameters": {
+     "HOLD_RANK_MAX": 10,
+     "picks": 5,
+     "perSector": 2,
+     "weightPerPick": 0.1,
+     "maxLastClose": 95,
+     "allocator": "fill-band-v1",
+     "grossCap": 0.5,
+     "nameCap": 0.15,
+     "bandLow": 0.05,
+     "execution": "whole shares at the decision open; band keeps 5-15% holdings; fill spends the unused 50% gross best-ranked first",
+     "costBpsJudged": 10,
+     "costBpsRobustness": 25,
+     "dev": "2017-01-01..2022-12-31",
+     "holdout": "2023-01-01..2026-11-23"
+    }
+   },
+   "dataCutoff": "2026-11-23T21:00:00Z",
+   "codeFingerprint": "d1660f0242e12299dbaac1684705f88b5561a86a23c73392a9607aead0779607",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
+    "secondary": [
+     "average invested share",
+     "holdout max drawdown",
+     "full-period Sharpe at 25 bps",
+     "Sharpe vs SPY at the strategy’s own realized exposure",
+     "turnover per year"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 26,
+    "minWeeks": 26
+   },
+   "baseline": "stock-v2-weekly-1",
+   "costAssumptions": "10 bps per side judged; 25 bps robustness",
+   "decisionRule": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md: R1 Sharpe above the live rules in dev AND holdout with holdout drawdown within 5 points; R2 full Sharpe above at 25 bps; R3 full-period average invested at least 5 points above the live rules; R4 Sharpe above SPY at its own realized exposure in dev AND holdout. R1-R4 PROMISING; R1-R3 only RUNNING (forward only); otherwise REJECTED.",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
+   "source": "existing",
+   "registeredAt": "2026-11-24T23:30:00Z",
+   "history": [
+    {
+     "at": "2026-11-24T23:30:00Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md); zero fitted parameters; constants from registered limits",
+     "inputFingerprint": null
+    }
+   ]
   }
  ]
 }
