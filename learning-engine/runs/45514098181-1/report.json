@@ -1,0 +1,1151 @@
+{
+ "generatedBy": "scripts/research-engine.ts",
+ "runId": "75d8be21b40ae1bb",
+ "at": "2026-11-24T23:56:46.206Z",
+ "limits": {
+  "maxNewHypothesesPerDomain": 2,
+  "maxRows": 20000,
+  "maxRuntimeMs": 300000,
+  "maxLedgerRequests": 80,
+  "maxForwardEvaluations": 5
+ },
+ "guarantees": [
+  "GET-only reads; no database writes; no provider, broker or AI calls",
+  "No model, pick, entry, stake, budget, schedule or order can change",
+  "Rejected ideas are never re-proposed; at most 2 new hypotheses per domain per run",
+  "READY_FOR_REVIEW waits for the owner; nothing is promoted"
+ ],
+ "domains": {
+  "sports": {
+   "inputFingerprint": "0cc84f1da778cc53ae9960ecefd3ebe0a8dc470801a5c45067af21a98da7aacb",
+   "rows": 767,
+   "clean": 767,
+   "ledgerRequests": 27,
+   "qualityIssues": {},
+   "picks": {
+    "picks": 168,
+    "hits": 99,
+    "hitRate": 0.5893,
+    "lower95": 0.5137,
+    "upper95": 0.6609
+   },
+   "scorecard": {
+    "schema": "sports-probability-scorecard-v1",
+    "scope": "NON_TIE_BASELINE_LINES",
+    "duplicatesExcluded": 0,
+    "all": {
+     "lines": 767,
+     "games": 29,
+     "dates": 15,
+     "brier": 0.252506,
+     "logLoss": 0.698457,
+     "fairBrier": 0.25,
+     "brierDifference": 0.002506,
+     "brierDifference95": {
+      "lower95": -0.005087,
+      "upper95": 0.010148
+     },
+     "picks": 168,
+     "hits": 99,
+     "hitRate": 0.589286,
+     "hitRate95": {
+      "lower95": 0.513705,
+      "upper95": 0.660874
+     },
+     "meanConfidence": 0.6506,
+     "confidenceGap": 0.061315,
+     "confidenceGap95": {
+      "lower95": -0.02801,
+      "upper95": 0.152741
+     },
+     "smallSample": false
+    },
+    "groups": [
+     {
+      "id": "stat",
+      "label": "Player statistic",
+      "rows": [
+       {
+        "id": "points",
+        "label": "points",
+        "summary": {
+         "lines": 403,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.253472,
+         "logLoss": 0.70069,
+         "fairBrier": 0.25,
+         "brierDifference": 0.003472,
+         "brierDifference95": {
+          "lower95": -0.005723,
+          "upper95": 0.013632
+         },
+         "picks": 119,
+         "hits": 69,
+         "hitRate": 0.579832,
+         "hitRate95": {
+          "lower95": 0.490013,
+          "upper95": 0.664657
+         },
+         "meanConfidence": 0.653494,
+         "confidenceGap": 0.073662,
+         "confidenceGap95": {
+          "lower95": -0.029742,
+          "upper95": 0.182907
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "rebounds",
+        "label": "rebounds",
+        "summary": {
+         "lines": 231,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.256517,
+         "logLoss": 0.706492,
+         "fairBrier": 0.25,
+         "brierDifference": 0.006517,
+         "brierDifference95": {
+          "lower95": -0.005466,
+          "upper95": 0.020055
+         },
+         "picks": 35,
+         "hits": 20,
+         "hitRate": 0.571429,
+         "hitRate95": {
+          "lower95": 0.408571,
+          "upper95": 0.720157
+         },
+         "meanConfidence": 0.647248,
+         "confidenceGap": 0.07582,
+         "confidenceGap95": {
+          "lower95": -0.062885,
+          "upper95": 0.233194
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "assists",
+        "label": "assists",
+        "summary": {
+         "lines": 133,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.242613,
+         "logLoss": 0.677737,
+         "fairBrier": 0.25,
+         "brierDifference": -0.007387,
+         "brierDifference95": {
+          "lower95": -0.019933,
+          "upper95": 0.003986
+         },
+         "picks": 14,
+         "hits": 10,
+         "hitRate": 0.714286,
+         "hitRate95": {
+          "lower95": 0.453505,
+          "upper95": 0.882788
+         },
+         "meanConfidence": 0.634385,
+         "confidenceGap": -0.079901,
+         "confidenceGap95": {
+          "lower95": -0.288822,
+          "upper95": 0.142469
+         },
+         "smallSample": false
+        }
+       }
+      ]
+     },
+     {
+      "id": "side",
+      "label": "Recorded pick direction",
+      "rows": [
+       {
+        "id": "more",
+        "label": "more",
+        "summary": {
+         "lines": 49,
+         "games": 23,
+         "dates": 14,
+         "brier": 0.26893,
+         "logLoss": 0.733855,
+         "fairBrier": 0.25,
+         "brierDifference": 0.01893,
+         "brierDifference95": {
+          "lower95": -0.015921,
+          "upper95": 0.053748
+         },
+         "picks": 49,
+         "hits": 25,
+         "hitRate": 0.510204,
+         "hitRate95": {
+          "lower95": 0.374673,
+          "upper95": 0.644251
+         },
+         "meanConfidence": 0.638898,
+         "confidenceGap": 0.128694,
+         "confidenceGap95": {
+          "lower95": -0.001601,
+          "upper95": 0.253074
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "less",
+        "label": "less",
+        "summary": {
+         "lines": 119,
+         "games": 28,
+         "dates": 15,
+         "brier": 0.24142,
+         "logLoss": 0.677717,
+         "fairBrier": 0.25,
+         "brierDifference": -0.00858,
+         "brierDifference95": {
+          "lower95": -0.039283,
+          "upper95": 0.024905
+         },
+         "picks": 119,
+         "hits": 74,
+         "hitRate": 0.621849,
+         "hitRate95": {
+          "lower95": 0.532199,
+          "upper95": 0.703878
+         },
+         "meanConfidence": 0.655419,
+         "confidenceGap": 0.03357,
+         "confidenceGap95": {
+          "lower95": -0.06172,
+          "upper95": 0.136153
+         },
+         "smallSample": false
+        }
+       }
+      ]
+     },
+     {
+      "id": "confidence",
+      "label": "Recorded pick confidence",
+      "rows": [
+       {
+        "id": "0.5-0.6",
+        "label": "50%–60%",
+        "summary": {
+         "lines": 0,
+         "games": 0,
+         "dates": 0,
+         "brier": null,
+         "logLoss": null,
+         "fairBrier": null,
+         "brierDifference": null,
+         "brierDifference95": null,
+         "picks": 0,
+         "hits": 0,
+         "hitRate": null,
+         "hitRate95": null,
+         "meanConfidence": null,
+         "confidenceGap": null,
+         "confidenceGap95": null,
+         "smallSample": true
+        }
+       },
+       {
+        "id": "0.6-0.65",
+        "label": "60%–65%",
+        "summary": {
+         "lines": 102,
+         "games": 27,
+         "dates": 15,
+         "brier": 0.241012,
+         "logLoss": 0.67513,
+         "fairBrier": 0.25,
+         "brierDifference": -0.008988,
+         "brierDifference95": {
+          "lower95": -0.033686,
+          "upper95": 0.018522
+         },
+         "picks": 102,
+         "hits": 61,
+         "hitRate": 0.598039,
+         "hitRate95": {
+          "lower95": 0.501005,
+          "upper95": 0.687957
+         },
+         "meanConfidence": 0.619981,
+         "confidenceGap": 0.021942,
+         "confidenceGap95": {
+          "lower95": -0.076863,
+          "upper95": 0.135724
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "0.65-0.7",
+        "label": "65%–70%",
+        "summary": {
+         "lines": 39,
+         "games": 24,
+         "dates": 15,
+         "brier": 0.252469,
+         "logLoss": 0.700419,
+         "fairBrier": 0.25,
+         "brierDifference": 0.002469,
+         "brierDifference95": {
+          "lower95": -0.059987,
+          "upper95": 0.07339
+         },
+         "picks": 39,
+         "hits": 23,
+         "hitRate": 0.589744,
+         "hitRate95": {
+          "lower95": 0.434183,
+          "upper95": 0.729209
+         },
+         "meanConfidence": 0.673518,
+         "confidenceGap": 0.083774,
+         "confidenceGap95": {
+          "lower95": -0.090151,
+          "upper95": 0.284535
+         },
+         "smallSample": true
+        }
+       },
+       {
+        "id": "0.7-0.8",
+        "label": "70%–80%",
+        "summary": {
+         "lines": 27,
+         "games": 16,
+         "dates": 12,
+         "brier": 0.276929,
+         "logLoss": 0.756576,
+         "fairBrier": 0.25,
+         "brierDifference": 0.026929,
+         "brierDifference95": {
+          "lower95": -0.054202,
+          "upper95": 0.11409
+         },
+         "picks": 27,
+         "hits": 15,
+         "hitRate": 0.555556,
+         "hitRate95": {
+          "lower95": 0.373127,
+          "upper95": 0.724144
+         },
+         "meanConfidence": 0.733171,
+         "confidenceGap": 0.177616,
+         "confidenceGap95": {
+          "lower95": 0.004292,
+          "upper95": 0.366806
+         },
+         "smallSample": true
+        }
+       },
+       {
+        "id": "0.8-1",
+        "label": "80%–100%",
+        "summary": {
+         "lines": 0,
+         "games": 0,
+         "dates": 0,
+         "brier": null,
+         "logLoss": null,
+         "fairBrier": null,
+         "brierDifference": null,
+         "brierDifference95": null,
+         "picks": 0,
+         "hits": 0,
+         "hitRate": null,
+         "hitRate95": null,
+         "meanConfidence": null,
+         "confidenceGap": null,
+         "confidenceGap95": null,
+         "smallSample": true
+        }
+       }
+      ]
+     },
+     {
+      "id": "history",
+      "label": "Games of player history",
+      "rows": [
+       {
+        "id": "0-5",
+        "label": "Up to 5 games",
+        "summary": {
+         "lines": 23,
+         "games": 8,
+         "dates": 6,
+         "brier": 0.275682,
+         "logLoss": 0.745873,
+         "fairBrier": 0.25,
+         "brierDifference": 0.025682,
+         "brierDifference95": {
+          "lower95": -0.017907,
+          "upper95": 0.064005
+         },
+         "picks": 7,
+         "hits": 4,
+         "hitRate": 0.571429,
+         "hitRate95": {
+          "lower95": 0.250454,
+          "upper95": 0.841783
+         },
+         "meanConfidence": 0.651583,
+         "confidenceGap": 0.080154,
+         "confidenceGap95": {
+          "lower95": -0.212394,
+          "upper95": 0.323245
+         },
+         "smallSample": true
+        }
+       },
+       {
+        "id": "6-10",
+        "label": "6–10 games",
+        "summary": {
+         "lines": 337,
+         "games": 26,
+         "dates": 14,
+         "brier": 0.251173,
+         "logLoss": 0.695671,
+         "fairBrier": 0.25,
+         "brierDifference": 0.001173,
+         "brierDifference95": {
+          "lower95": -0.011705,
+          "upper95": 0.016787
+         },
+         "picks": 89,
+         "hits": 52,
+         "hitRate": 0.58427,
+         "hitRate95": {
+          "lower95": 0.480469,
+          "upper95": 0.681096
+         },
+         "meanConfidence": 0.649571,
+         "confidenceGap": 0.065302,
+         "confidenceGap95": {
+          "lower95": -0.057246,
+          "upper95": 0.229608
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "11-plus",
+        "label": "More than 10 games",
+        "summary": {
+         "lines": 407,
+         "games": 20,
+         "dates": 11,
+         "brier": 0.252301,
+         "logLoss": 0.698084,
+         "fairBrier": 0.25,
+         "brierDifference": 0.002301,
+         "brierDifference95": {
+          "lower95": -0.004156,
+          "upper95": 0.008472
+         },
+         "picks": 72,
+         "hits": 43,
+         "hitRate": 0.597222,
+         "hitRate95": {
+          "lower95": 0.481805,
+          "upper95": 0.702791
+         },
+         "meanConfidence": 0.651777,
+         "confidenceGap": 0.054555,
+         "confidenceGap95": {
+          "lower95": -0.045872,
+          "upper95": 0.165695
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "unknown",
+        "label": "Unknown",
+        "summary": {
+         "lines": 0,
+         "games": 0,
+         "dates": 0,
+         "brier": null,
+         "logLoss": null,
+         "fairBrier": null,
+         "brierDifference": null,
+         "brierDifference95": null,
+         "picks": 0,
+         "hits": 0,
+         "hitRate": null,
+         "hitRate95": null,
+         "meanConfidence": null,
+         "confidenceGap": null,
+         "confidenceGap95": null,
+         "smallSample": true
+        }
+       }
+      ]
+     },
+     {
+      "id": "minutes",
+      "label": "Minutes variability (SD / expected minutes)",
+      "rows": [
+       {
+        "id": "under-015",
+        "label": "Below 0.15",
+        "summary": {
+         "lines": 340,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.257422,
+         "logLoss": 0.708762,
+         "fairBrier": 0.25,
+         "brierDifference": 0.007422,
+         "brierDifference95": {
+          "lower95": -0.001729,
+          "upper95": 0.017292
+         },
+         "picks": 65,
+         "hits": 32,
+         "hitRate": 0.492308,
+         "hitRate95": {
+          "lower95": 0.374636,
+          "upper95": 0.610838
+         },
+         "meanConfidence": 0.644217,
+         "confidenceGap": 0.15191,
+         "confidenceGap95": {
+          "lower95": 0.000397,
+          "upper95": 0.300332
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "015-030",
+        "label": "0.15–0.30",
+        "summary": {
+         "lines": 383,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.250911,
+         "logLoss": 0.695237,
+         "fairBrier": 0.25,
+         "brierDifference": 0.000911,
+         "brierDifference95": {
+          "lower95": -0.00832,
+          "upper95": 0.009309
+         },
+         "picks": 87,
+         "hits": 56,
+         "hitRate": 0.643678,
+         "hitRate95": {
+          "lower95": 0.53893,
+          "upper95": 0.736274
+         },
+         "meanConfidence": 0.653397,
+         "confidenceGap": 0.009719,
+         "confidenceGap95": {
+          "lower95": -0.095468,
+          "upper95": 0.110446
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "030-plus",
+        "label": "0.30 or higher",
+        "summary": {
+         "lines": 44,
+         "games": 16,
+         "dates": 13,
+         "brier": 0.22841,
+         "logLoss": 0.646857,
+         "fairBrier": 0.25,
+         "brierDifference": -0.02159,
+         "brierDifference95": {
+          "lower95": -0.054971,
+          "upper95": 0.011846
+         },
+         "picks": 16,
+         "hits": 11,
+         "hitRate": 0.6875,
+         "hitRate95": {
+          "lower95": 0.444039,
+          "upper95": 0.858356
+         },
+         "meanConfidence": 0.661322,
+         "confidenceGap": -0.026178,
+         "confidenceGap95": {
+          "lower95": -0.201707,
+          "upper95": 0.157864
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "unknown",
+        "label": "Unknown",
+        "summary": {
+         "lines": 0,
+         "games": 0,
+         "dates": 0,
+         "brier": null,
+         "logLoss": null,
+         "fairBrier": null,
+         "brierDifference": null,
+         "brierDifference95": null,
+         "picks": 0,
+         "hits": 0,
+         "hitRate": null,
+         "hitRate95": null,
+         "meanConfidence": null,
+         "confidenceGap": null,
+         "confidenceGap95": null,
+         "smallSample": true
+        }
+       }
+      ]
+     },
+     {
+      "id": "gap",
+      "label": "Model mean distance from platform line",
+      "rows": [
+       {
+        "id": "under-020",
+        "label": "Below 20%",
+        "summary": {
+         "lines": 663,
+         "games": 29,
+         "dates": 15,
+         "brier": 0.2529,
+         "logLoss": 0.699184,
+         "fairBrier": 0.25,
+         "brierDifference": 0.0029,
+         "brierDifference95": {
+          "lower95": -0.003809,
+          "upper95": 0.010245
+         },
+         "picks": 107,
+         "hits": 65,
+         "hitRate": 0.607477,
+         "hitRate95": {
+          "lower95": 0.512767,
+          "upper95": 0.694736
+         },
+         "meanConfidence": 0.637209,
+         "confidenceGap": 0.029733,
+         "confidenceGap95": {
+          "lower95": -0.0633,
+          "upper95": 0.136225
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "020-040",
+        "label": "20%–40%",
+        "summary": {
+         "lines": 90,
+         "games": 28,
+         "dates": 15,
+         "brier": 0.251602,
+         "logLoss": 0.697419,
+         "fairBrier": 0.25,
+         "brierDifference": 0.001602,
+         "brierDifference95": {
+          "lower95": -0.02787,
+          "upper95": 0.030158
+         },
+         "picks": 48,
+         "hits": 26,
+         "hitRate": 0.541667,
+         "hitRate95": {
+          "lower95": 0.402908,
+          "upper95": 0.67425
+         },
+         "meanConfidence": 0.67518,
+         "confidenceGap": 0.133513,
+         "confidenceGap95": {
+          "lower95": -0.011612,
+          "upper95": 0.278925
+         },
+         "smallSample": false
+        }
+       },
+       {
+        "id": "040-plus",
+        "label": "40% or higher",
+        "summary": {
+         "lines": 14,
+         "games": 9,
+         "dates": 9,
+         "brier": 0.239689,
+         "logLoss": 0.670715,
+         "fairBrier": 0.25,
+         "brierDifference": -0.010311,
+         "brierDifference95": {
+          "lower95": -0.083668,
+          "upper95": 0.059332
+         },
+         "picks": 13,
+         "hits": 8,
+         "hitRate": 0.615385,
+         "hitRate95": {
+          "lower95": 0.355225,
+          "upper95": 0.822906
+         },
+         "meanConfidence": 0.670064,
+         "confidenceGap": 0.054679,
+         "confidenceGap95": {
+          "lower95": -0.121571,
+          "upper95": 0.273728
+         },
+         "smallSample": true
+        }
+       },
+       {
+        "id": "unknown",
+        "label": "Unknown",
+        "summary": {
+         "lines": 0,
+         "games": 0,
+         "dates": 0,
+         "brier": null,
+         "logLoss": null,
+         "fairBrier": null,
+         "brierDifference": null,
+         "brierDifference95": null,
+         "picks": 0,
+         "hits": 0,
+         "hitRate": null,
+         "hitRate95": null,
+         "meanConfidence": null,
+         "confidenceGap": null,
+         "confidenceGap95": null,
+         "smallSample": true
+        }
+       }
+      ]
+     }
+    ],
+    "note": "Descriptive research on unique graded non-tie lines and conditional More/Less probabilities. The fixed 50/50 reference has binary Brier 0.25; it is not a sportsbook price or trading strategy. Brier-difference and confidence-gap intervals resample whole games; hit-rate Wilson intervals are descriptive and do not account for game correlation. Groups below 40 lines or 10 games are marked small. These overlapping subgroup views do not select a challenger, change promotion gates, establish profitability, or justify a model change."
+   },
+   "drift": {
+    "policy": {
+     "version": "sports-drift-v1",
+     "recentDays": 7,
+     "referenceDays": 28,
+     "minLinesPerWindow": 100,
+     "minGamesPerWindow": 10,
+     "minBrierChange": 0.02,
+     "minConfidenceGapChange": 0.05,
+     "replicates": 1000,
+     "seed": 20261119,
+     "familyAlpha": 0.05
+    },
+    "status": "NO_CLEAR_DRIFT",
+    "recent": {
+     "lines": 325,
+     "games": 13,
+     "picks": 50,
+     "pickGames": 13,
+     "brier": 0.258891,
+     "confidenceGap": 0.1138
+    },
+    "reference": {
+     "lines": 442,
+     "games": 16,
+     "picks": 118,
+     "pickGames": 16,
+     "brier": 0.247812,
+     "confidenceGap": 0.039075
+    },
+    "changes": [
+     {
+      "metric": "brier",
+      "difference": 0.01108,
+      "lower95": -0.001697,
+      "upper95": 0.025228,
+      "pAdjusted": 0.113886,
+      "review": false
+     },
+     {
+      "metric": "confidence_gap",
+      "difference": 0.074724,
+      "lower95": -0.08798,
+      "upper95": 0.247484,
+      "pAdjusted": 0.218781,
+      "review": false
+     }
+    ],
+    "reason": "No clear deterioration detected under this rule. This does not establish stable accuracy or profitability."
+   },
+   "patterns": [
+    {
+     "id": "picks-overall",
+     "domain": "sports",
+     "description": "All recorded picks: stated confidence minus hit rate",
+     "n": 168,
+     "clusters": 29,
+     "effect": 0.0613,
+     "lower95": -0.0342,
+     "upper95": 0.1608,
+     "significant": false,
+     "idea": "overall-recalibration"
+    },
+    {
+     "id": "picks-more",
+     "domain": "sports",
+     "description": "More picks: stated confidence minus hit rate",
+     "n": 49,
+     "clusters": 23,
+     "effect": 0.1287,
+     "lower95": 0.0007,
+     "upper95": 0.2565,
+     "significant": true,
+     "idea": "side-asymmetric-calibration"
+    },
+    {
+     "id": "picks-less",
+     "domain": "sports",
+     "description": "Less picks: stated confidence minus hit rate",
+     "n": 119,
+     "clusters": 28,
+     "effect": 0.0336,
+     "lower95": -0.0647,
+     "upper95": 0.1493,
+     "significant": false,
+     "idea": null
+    },
+    {
+     "id": "picks-no-book-quote",
+     "domain": "sports",
+     "description": "Picks without a same-line sportsbook quote",
+     "n": 51,
+     "clusters": 16,
+     "effect": 0.1356,
+     "lower95": -0.0151,
+     "upper95": 0.2905,
+     "significant": false,
+     "idea": "market-anchor-when-books-missing"
+    }
+   ],
+   "proposed": [],
+   "skipped": [
+    {
+     "key": "sports:side-asymmetric-calibration",
+     "why": "already_under_test"
+    }
+   ],
+   "alarms": {
+    "policy": {
+     "version": "sports-alarms-v1",
+     "calibrationDays": 60,
+     "minPicks": 100,
+     "minPickGames": 20,
+     "maxConfidenceGapLower95": 0.03,
+     "accuracyDays": 30,
+     "minAccuracyPicks": 50,
+     "breakEven": 0.577,
+     "overdueHours": 36,
+     "maxOverdueShare": 0.02,
+     "minOverdueLines": 5,
+     "staleDays": 3,
+     "activityDays": 14,
+     "replicates": 2000,
+     "seed": 20261124
+    },
+    "status": "OK",
+    "alarms": [],
+    "calibration": {
+     "picks": 168,
+     "games": 29,
+     "confidenceGap": 0.061315,
+     "lower95": -0.030962,
+     "upper95": 0.15302
+    },
+    "accuracy": {
+     "picks": 168,
+     "hitRate": 0.589286,
+     "upper95": 0.660874
+    },
+    "coverage": {
+     "scored": 1054,
+     "locked": 1023,
+     "graded": 1023,
+     "overdue": 0,
+     "contradictoryGrades": 0,
+     "newestPredictedAt": "2026-11-24T19:18:10.564009+00:00",
+     "newestGradedAt": "2026-11-24T10:33:49.006001+00:00"
+    },
+    "reason": "No alarm under sports-alarms-v1. This does not establish accuracy or profitability."
+   }
+  }
+ },
+ "forward": [
+  {
+   "id": "props-learn-v1-shadow",
+   "from": "INSUFFICIENT_DATA",
+   "to": "INSUFFICIENT_DATA",
+   "changed": false,
+   "reason": "Forward sample below the registered minimums: dates 13/14, clusters 24/50, decisions 69/100",
+   "details": {
+    "candidate": "props-learn-v1",
+    "baseline": "props-nb-minutes-rate-v1",
+    "pairs": 659,
+    "dates": 13,
+    "games": 24,
+    "candidateBrier": 0.2631174358726664,
+    "baselineBrier": 0.2641678321447115,
+    "interval": {
+     "lower95": -0.0037794104645532947,
+     "upper95": 0.001980176143160234,
+     "games": 24
+    },
+    "failed": [
+     "min_dates",
+     "min_games",
+     "min_decisions",
+     "brier_interval"
+    ],
+    "refusedAfterLock": 0,
+    "invalidPredictions": 0,
+    "excludedBeforeRegistration": 0,
+    "invalidGrades": 0,
+    "metadataConflicts": 0,
+    "unpaired": 139,
+    "ungraded": 39,
+    "latestCandidateAt": "2026-11-24T19:18:11.985057+00:00",
+    "stale": false
+   }
+  },
+  {
+   "id": "props-learn-v2-shadow",
+   "from": "INSUFFICIENT_DATA",
+   "to": "INSUFFICIENT_DATA",
+   "changed": false,
+   "reason": "Forward sample below the registered minimums: observations 406/500, dates 8/14, clusters 15/50, decisions 34/100",
+   "details": {
+    "candidate": "props-learn-v2",
+    "baseline": "props-nb-minutes-rate-v1",
+    "pairs": 406,
+    "dates": 8,
+    "games": 15,
+    "candidateBrier": 0.2714940073319177,
+    "baselineBrier": 0.2743858166961658,
+    "interval": {
+     "lower95": -0.0055742209899974,
+     "upper95": -0.00007506614513187977,
+     "games": 15
+    },
+    "failed": [
+     "min_lines",
+     "min_dates",
+     "min_games",
+     "min_decisions",
+     "brier_interval"
+    ],
+    "refusedAfterLock": 0,
+    "invalidPredictions": 0,
+    "excludedBeforeRegistration": 496,
+    "invalidGrades": 0,
+    "metadataConflicts": 0,
+    "unpaired": 0,
+    "ungraded": 37,
+    "latestCandidateAt": "2026-11-24T19:18:11.985002+00:00",
+    "stale": false
+   }
+  }
+ ],
+ "applied": [],
+ "seed": {
+  "adopted": [],
+  "refused": []
+ },
+ "productionShadows": {
+  "added": [],
+  "ignored": [
+   {
+    "version": "props-learn-v1",
+    "reason": "already_tracked"
+   },
+   {
+    "version": "props-learn-v2",
+    "reason": "already_tracked"
+   },
+   {
+    "version": "props-learn-v3",
+    "reason": "already_tracked"
+   }
+  ]
+ },
+ "status": "OK",
+ "failure": null,
+ "registryChanged": false,
+ "registrySummary": [
+  {
+   "id": "lab-sports-ablation-v1-recalibration",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective: helps in 2025-26 (Holm-significant), no clear effect on 2026-27 to date; forward lab tables not applied, so no forward evidence."
+  },
+  {
+   "id": "lab-sports-ablation-v1-role-minutes",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective small gain in 2025-26, none visible in 2026-27; forward lab not applied."
+  },
+  {
+   "id": "lab-sports-ablation-v1-matchup-rest",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Retrospective small gain in 2025-26, none in 2026-27; rest feature is mislabelled for ~22.5% of lines (calendar-rest fix pending owner review)."
+  },
+  {
+   "id": "lab-sports-ablation-v1-market",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "No sportsbook history exists; testable forward only once the lab tables are applied."
+  },
+  {
+   "id": "props-learn-v1-shadow",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "props-gap-shrink-v1",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "Prospective challenger in props research receipts; sample far below the gate."
+  },
+  {
+   "id": "lab-sports-challengers-v2-side-asym",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00043 (Holm p 0.003), fold 2 +0.00007 (CI -0.00042..+0.00056). Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-uncertainty",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00027 (p 0.002), fold 2 +0.00015. Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-line-gap",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00044 (p 0.003), fold 2 -0.00027 (CI -0.00075..+0.00021, p 0.52). Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-challengers-v2-all-new",
+   "domain": "sports",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT: fold 1 -0.00051 (p 0.003), fold 2 -0.00009. Prospective scoring from 2026-11-14."
+  },
+  {
+   "id": "lab-sports-injury-rotation",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Blocked: no licensed, timestamped pre-lock injury/rotation feed is collected (see research intake source register)."
+  },
+  {
+   "id": "daily-oc-losers5-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "Rejected 2026-11-09: none qualifies after costs."
+  },
+  {
+   "id": "momentum-quality-paper-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS gate: drawdown > 35%, Sharpe below SPY."
+  },
+  {
+   "id": "berkshire-13f-top5-paper-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS gate with the 45-day filing lag modelled."
+  },
+  {
+   "id": "daily-reversal5-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS 8 of 9 gates after costs (turnover ~224x/yr)."
+  },
+  {
+   "id": "daily-momentum5d-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS 8 of 9 gates after costs."
+  },
+  {
+   "id": "daily-spy-trend50-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS: below exposure-matched SPY."
+  },
+  {
+   "id": "spy-tom-v1",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "FAILS: below exposure-matched SPY."
+  },
+  {
+   "id": "qmom-disclosure-follower-v1",
+   "domain": "stocks",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "Forward only (no reliable historical holdings); 2 sessions recorded."
+  },
+  {
+   "id": "lab-stock-psychology-v1",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "No clear effect after Holm (2023+ holdout); frozen forward picks from 2026-11-16."
+  },
+  {
+   "id": "lab-stock-v3-riskadj",
+   "domain": "stocks",
+   "status": "REJECTED",
+   "disposition": "REJECTED"
+  },
+  {
+   "id": "lab-stock-v3-mom-lowvol",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "lab-stock-v3-core-satellite",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "props-learn-v2-shadow",
+   "domain": "sports",
+   "status": "INSUFFICIENT_DATA",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "lab-stock-holdrank10-wholeshare",
+   "domain": "stocks",
+   "status": "RUNNING",
+   "disposition": "NO_CLEAR_EFFECT"
+  },
+  {
+   "id": "props-learn-v3-shadow",
+   "domain": "sports",
+   "status": "FAILED",
+   "disposition": "ERROR"
+  }
+ ],
+ "runtimeMs": 2733
+}
