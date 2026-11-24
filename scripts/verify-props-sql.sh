@@ -79,5 +79,14 @@ su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'DROP TRIGGER p
 check_study_readiness NOT_READY append-only-missing-delete
 su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'DROP TRIGGER props_append_only ON public.props_lab_experiments; CREATE TRIGGER props_append_only BEFORE UPDATE OR DELETE ON public.props_lab_experiments FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'" >/dev/null
 check_study_readiness READY restored-append-only-events
+# The NBA shadow's before-lock guard lives on props_predictions (props_v1); older broad service_role grants are not gated.
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_predictions DISABLE TRIGGER props_prediction_chronology'" >/dev/null
+check_study_readiness NOT_READY disabled-shadow-prediction-lock-guard
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_predictions ENABLE TRIGGER props_prediction_chronology'" >/dev/null
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'DROP TRIGGER props_append_only ON public.props_predictions'" >/dev/null
+check_study_readiness NOT_READY shadow-predictions-not-append-only
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'CREATE TRIGGER props_append_only BEFORE UPDATE OR DELETE ON public.props_predictions FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'" >/dev/null
+su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'GRANT ALL ON public.props_predictions TO service_role'" >/dev/null
+check_study_readiness READY shadow-legacy-grants-reported-not-gated
 su postgres -c "dropdb props_setup_t"
 cd "$repo" && PROPS_PG_TEST=1 node --experimental-strip-types --no-warnings --test src/lib/server/props-cycle.integration.test.mjs src/lib/server/props-tick.integration.test.mjs src/lib/server/props-monotone-shadow.integration.test.mjs

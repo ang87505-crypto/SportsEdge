@@ -12,6 +12,7 @@ This candidate packages the completed forward-study chain for one review and one
 | #207 | 18147898f2db896c14a3fa96c778224ee599285a | Offline stored-line replay, grade provenance and receipt chronology |
 | #205 SQL only | ecc260b14d55ce62a6a88448ed24faad92417095 | Read-only hosted grants/RLS/trigger/sequence check, strengthened below |
 | #208 candidate | d981585a65127bf1dd62cad5a3d43bcea88ebdc1 | Exact-commit workflow checkouts and the first readiness strengthening |
+| #208 review | 4462f0983731abb35edf582c2546baf833a57e14 | Replay receipt-order dedup, correction-delta penny equity, insert-guard readiness ([review](FORWARD_STUDY_INDEPENDENT_REVIEW_2026_11_24.md)) |
 | main | ebffeb95b7e360380d4ca2c372a7856227ca7084 | Merged #203 archive repair and #210 Kalshi demo balance check, integrated by a clean merge |
 
 The net edits after #207 are limited to:
@@ -27,9 +28,9 @@ The net edits after #207 are limited to:
 The review covered workflow pinning, inherited diffs, frozen NBA calibrator, forecast-before-lock chronology, database privileges/RLS/append-only protections, replay and penny-cent accounting. It found one concrete defect and fixed it in the read-only check only:
 
 - **The readiness query could report READY with the BEFORE INSERT guards disabled.** Those triggers set the database clock, refuse after-lock and after-result writes, and compute penny stakes and returns in whole cents. With `props_penny_freeze`, `props_penny_grade` or a lab chronology trigger disabled, or rebound to another function, the service role could insert caller-chosen stakes, settlements or post-lock forecasts. Reproduced on disposable PostgreSQL before the fix: `OVERALL = READY`.
-- The query now also requires each guard to be enabled (O or A), unconditional, BEFORE ROW INSERT, and bound to its function. The `props_append_only` trigger must be BEFORE ROW UPDATE and DELETE through `props_immutable()`, with no column list or WHEN clause.
-- It adds a `shadow` row for `props_predictions`. That table's `props_prediction_chronology` lock guard and append-only trigger are what keep NBA shadow forecasts before lock. Its older props_v1 grants are displayed but not gated. Supabase's default grants may give service_role UPDATE/DELETE/TRUNCATE there, and that is a separate pre-existing review item; this candidate does not repair it.
-- New disposable cases: disabled penny stake guard, disabled lab lock guard, disabled shadow lock guard, settlement guard bound to a no-op function, and a column-limited append-only trigger. All return NOT_READY. Re-enabled or restored guards return READY.
+- Both reviews fixed this independently; the integrated query is #208's `4462f09` version (`INSERT_GUARD_MISSING_OR_DISABLED`). Each guard must be enabled (O or A), unconditional, exactly BEFORE ROW INSERT, and bound to its function. The `props_append_only` trigger must be exactly BEFORE ROW UPDATE OR DELETE through `props_immutable()`, with no column list or WHEN clause.
+- This branch adds only a `shadow` row for `props_predictions` on top. That table's `props_prediction_chronology` lock guard and append-only trigger are what keep NBA shadow forecasts before lock. Its older props_v1 grants are displayed but not gated. Supabase's default grants may give service_role UPDATE/DELETE/TRUNCATE there, and that is a separate pre-existing review item; this candidate does not repair it.
+- Disposable cases from #208: disabled penny freeze, replica-only lab chronology and append-only without DELETE return NOT_READY. Restored triggers return READY. Added here: disabled shadow lock guard and missing shadow append-only trigger return NOT_READY. Broad legacy grants on `props_predictions` remain READY (reported, not gated).
 
 Unchanged by the review: the generated owner setup bundle, model artifacts, registered sample minimums, promotion gates, source schedules, budgets, stock session files, broker controls and Kalshi demo/live access. Frozen artifacts are byte-identical to #200 (`research/props_monotone_cal_v1_20261120`, calibrator digest `8b84007d37b9…`, baseline digest `4ca4be3779f1…`). There is no new strategy or new performance result.
 
@@ -55,7 +56,7 @@ Required before merge, in the active props project vfyzbliksooljxrlfadp:
 1. Run database/props/checks/forward_studies_readiness.sql from this candidate's final head, read-only, and retain all rows.
 2. Every row must be READY, including `shadow | props_predictions`, and `zz | OVERALL` must be READY.
 3. If only study rows are MISSING, the unchanged database/props/forward_studies_setup.sql is the existing setup. It creates absent complete schemas and narrows study grants, and it refuses partial schemas. Applying it is a hosted migration and needs separate owner approval.
-4. On the nine study tables, grant and RLS states (`SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE`, `SERVICE_ROLE_CANNOT_READ/INSERT`, `ANON_OR_AUTHENTICATED_ACCESS`, `RLS_DISABLED`) are repaired by re-running that same bundle. `APPEND_ONLY_TRIGGER_MISSING`, `INSERT_GUARD_TRIGGER_MISSING`, `WRONG_KIND`, a sequence state, or any non-READY `shadow` row needs review, not an automatic workaround. Never edit grants, triggers or rows by hand.
+4. On the nine study tables, grant and RLS states (`SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE`, `SERVICE_ROLE_CANNOT_READ/INSERT`, `ANON_OR_AUTHENTICATED_ACCESS`, `RLS_DISABLED`) are repaired by re-running that same bundle. `APPEND_ONLY_TRIGGER_MISSING`, `INSERT_GUARD_MISSING_OR_DISABLED`, `WRONG_KIND`, a sequence state, or any non-READY `shadow` row needs review, not an automatic workaround. Never edit grants, triggers or rows by hand.
 5. Repeat the read-only SQL after any approved change. Permission denial does not establish missing tables.
 
 ## Owner release gate

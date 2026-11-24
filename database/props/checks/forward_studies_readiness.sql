@@ -10,18 +10,22 @@
 -- Candidate follow-up: disabled and replica-only triggers do not protect normal writer sessions.
 -- The trigger must fire in origin/local mode (O) or always (A). This is a configuration check, not proof of a completed worker run.
 -- MISSING means "not present in this database", never inferred from an inaccessible project.
+-- Shadow row (review 2026-11-24): the frozen NBA shadow writes props_predictions. Its before-lock guarantee is that table's
+-- props_prediction_chronology guard plus append-only trigger, so both are required. Its older props_v1 grants are
+-- shown in svc_mutate but not gated here (a pre-existing item that this study bundle does not repair).
 WITH want(rel, kind, grp) AS (VALUES
   ('props_lab_experiments','r','lab'),('props_lab_events','r','lab'),('props_lab_predictions','r','lab'),
   ('props_lab_flags','r','lab'),('props_lab_reports','r','lab'),('props_lab_stakes','r','lab'),
   ('props_penny_cohorts','r','penny'),('props_penny_entries','r','penny'),('props_penny_settlements','r','penny'),
-  ('props_penny_tampering','v','penny')),
+  ('props_penny_tampering','v','penny'),('props_predictions','r','shadow')),
 guards(rel, trigger_name, fn) AS (VALUES
   ('props_lab_predictions','props_lab_prediction_chronology','props_lab_check_frozen'),
   ('props_lab_flags','props_lab_flag_chronology','props_lab_check_frozen'),
   ('props_lab_stakes','props_lab_stake_chronology','props_lab_check_stake'),
   ('props_penny_cohorts','props_penny_cohort_clock','props_penny_cohort_guard'),
   ('props_penny_entries','props_penny_freeze','props_penny_entry_guard'),
-  ('props_penny_settlements','props_penny_grade','props_penny_settlement_guard')),
+  ('props_penny_settlements','props_penny_grade','props_penny_settlement_guard'),
+  ('props_predictions','props_prediction_chronology','props_check_prediction')),
 c AS (
   SELECT w.*, k.oid, k.relkind::text AS actual_kind, k.relrowsecurity AS rls
   FROM want w LEFT JOIN pg_class k ON k.relname = w.rel AND k.relnamespace = 'public'::regnamespace),
@@ -51,7 +55,7 @@ v AS (
     WHEN NOT svc_select THEN 'SERVICE_ROLE_CANNOT_READ'
     WHEN kind = 'r' AND NOT svc_insert THEN 'SERVICE_ROLE_CANNOT_INSERT'
     WHEN kind = 'v' AND svc_insert THEN 'SERVICE_ROLE_CAN_INSERT_VIEW'
-    WHEN svc_mutate THEN 'SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE'
+    WHEN svc_mutate AND grp <> 'shadow' THEN 'SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE'
     WHEN kind = 'r' AND NOT rls THEN 'RLS_DISABLED'
     WHEN kind = 'r' AND NOT append_only_trigger THEN 'APPEND_ONLY_TRIGGER_MISSING'
     WHEN NOT insert_guard_ready THEN 'INSERT_GUARD_MISSING_OR_DISABLED'
