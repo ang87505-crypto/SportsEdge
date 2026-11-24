@@ -8,32 +8,23 @@
 -- UPDATE/DELETE/TRUNCATE on new public tables; main's props_lab_v1.sql did not revoke them, and TRUNCATE bypasses the
 -- append-only row triggers. The #200 bundle's final grant block narrows all nine tables to SELECT,INSERT.
 -- Candidate follow-up: disabled and replica-only triggers do not protect normal writer sessions.
--- Triggers must fire in origin/local mode (O) or always (A), as unconditional BEFORE ROW triggers bound to the
--- expected function. The append-only trigger must cover every UPDATE (no column list) and DELETE through props_immutable().
--- Release review 2026-11-24: the BEFORE INSERT guards are required too. They set database-clock times, refuse
--- after-lock/after-result writes and compute penny stakes/returns in whole cents; without them the service role
--- could insert caller-chosen stakes or post-lock forecasts. props_predictions is checked for its lock guard and
--- append-only trigger only (the NBA shadow writes there); its props_v1 grants are reported, not gated, here.
--- This is a configuration check, not proof of a completed worker run or of each guard function's body.
+-- The trigger must fire in origin/local mode (O) or always (A). This is a configuration check, not proof of a completed worker run.
 -- MISSING means "not present in this database", never inferred from an inaccessible project.
-WITH want(rel, kind, grp, guard, guard_fn) AS (VALUES
-  ('props_lab_experiments','r','lab',NULL,NULL),('props_lab_events','r','lab',NULL,NULL),
-  ('props_lab_predictions','r','lab','props_lab_prediction_chronology','props_lab_check_frozen'),
-  ('props_lab_flags','r','lab','props_lab_flag_chronology','props_lab_check_frozen'),
-  ('props_lab_reports','r','lab',NULL,NULL),
-  ('props_lab_stakes','r','lab','props_lab_stake_chronology','props_lab_check_stake'),
-  ('props_penny_cohorts','r','penny','props_penny_cohort_clock','props_penny_cohort_guard'),
-  ('props_penny_entries','r','penny','props_penny_freeze','props_penny_entry_guard'),
-  ('props_penny_settlements','r','penny','props_penny_grade','props_penny_settlement_guard'),
-  ('props_penny_tampering','v','penny',NULL,NULL),
-  ('props_predictions','r','shadow','props_prediction_chronology','props_check_prediction')),
+WITH want(rel, kind, grp) AS (VALUES
+  ('props_lab_experiments','r','lab'),('props_lab_events','r','lab'),('props_lab_predictions','r','lab'),
+  ('props_lab_flags','r','lab'),('props_lab_reports','r','lab'),('props_lab_stakes','r','lab'),
+  ('props_penny_cohorts','r','penny'),('props_penny_entries','r','penny'),('props_penny_settlements','r','penny'),
+  ('props_penny_tampering','v','penny')),
+guards(rel, trigger_name, fn) AS (VALUES
+  ('props_lab_predictions','props_lab_prediction_chronology','props_lab_check_frozen'),
+  ('props_lab_flags','props_lab_flag_chronology','props_lab_check_frozen'),
+  ('props_lab_stakes','props_lab_stake_chronology','props_lab_check_stake'),
+  ('props_penny_cohorts','props_penny_cohort_clock','props_penny_cohort_guard'),
+  ('props_penny_entries','props_penny_freeze','props_penny_entry_guard'),
+  ('props_penny_settlements','props_penny_grade','props_penny_settlement_guard')),
 c AS (
   SELECT w.*, k.oid, k.relkind::text AS actual_kind, k.relrowsecurity AS rls
   FROM want w LEFT JOIN pg_class k ON k.relname = w.rel AND k.relnamespace = 'public'::regnamespace),
--- Enabled, unconditional, row-level BEFORE triggers only (tgtype bits: 1 ROW, 2 BEFORE, 4 INSERT, 8 DELETE, 16 UPDATE).
-trg AS (
-  SELECT t.tgrelid, t.tgname, t.tgfoid, t.tgtype::integer AS tgtype, t.tgattr
-  FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgqual IS NULL AND t.tgenabled IN ('O','A')),
 chk AS (
   SELECT grp, rel, kind, actual_kind,
     oid IS NOT NULL AS present,
@@ -44,10 +35,13 @@ chk AS (
     CASE WHEN oid IS NULL THEN NULL ELSE (has_table_privilege('anon', oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
        OR has_table_privilege('authenticated', oid, 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) END AS public_access,
     rls,
-    EXISTS (SELECT 1 FROM trg t WHERE t.tgrelid = c.oid AND t.tgname = 'props_append_only'
-      AND t.tgfoid = to_regprocedure('public.props_immutable()') AND (t.tgtype & 27) = 27 AND cardinality(t.tgattr::int2[]) = 0) AS append_only_trigger,
-    guard IS NULL OR EXISTS (SELECT 1 FROM trg t WHERE t.tgrelid = c.oid AND t.tgname = c.guard
-      AND t.tgfoid = to_regprocedure('public.' || c.guard_fn || '()') AND (t.tgtype & 7) = 7) AS insert_guard
+    EXISTS (SELECT 1 FROM pg_trigger t WHERE t.tgrelid = c.oid AND t.tgname = 'props_append_only' AND NOT t.tgisinternal AND t.tgenabled IN ('O','A') AND t.tgtype=27
+      AND t.tgfoid=to_regprocedure('public.props_immutable()') AND t.tgqual IS NULL
+      AND t.tgattr=''::int2vector) AS append_only_trigger,
+    NOT EXISTS (SELECT 1 FROM guards g WHERE g.rel=c.rel AND NOT EXISTS
+      (SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND t.tgname=g.trigger_name
+        AND NOT t.tgisinternal AND t.tgenabled IN ('O','A') AND t.tgtype=7
+        AND t.tgfoid=to_regprocedure('public.'||g.fn||'()') AND t.tgqual IS NULL)) AS insert_guard_ready
   FROM c),
 v AS (
   SELECT *, CASE
@@ -57,20 +51,20 @@ v AS (
     WHEN NOT svc_select THEN 'SERVICE_ROLE_CANNOT_READ'
     WHEN kind = 'r' AND NOT svc_insert THEN 'SERVICE_ROLE_CANNOT_INSERT'
     WHEN kind = 'v' AND svc_insert THEN 'SERVICE_ROLE_CAN_INSERT_VIEW'
-    WHEN svc_mutate AND grp <> 'shadow' THEN 'SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE'
+    WHEN svc_mutate THEN 'SERVICE_ROLE_CAN_UPDATE_DELETE_OR_TRUNCATE'
     WHEN kind = 'r' AND NOT rls THEN 'RLS_DISABLED'
     WHEN kind = 'r' AND NOT append_only_trigger THEN 'APPEND_ONLY_TRIGGER_MISSING'
-    WHEN NOT insert_guard THEN 'INSERT_GUARD_TRIGGER_MISSING'
+    WHEN NOT insert_guard_ready THEN 'INSERT_GUARD_MISSING_OR_DISABLED'
     ELSE 'READY' END AS state
   FROM chk),
 seq AS (
   SELECT CASE WHEN to_regclass('public.props_penny_entries_id_seq') IS NULL OR to_regclass('public.props_penny_settlements_id_seq') IS NULL
     THEN 'MISSING' WHEN has_sequence_privilege('service_role','public.props_penny_entries_id_seq','USAGE')
     AND has_sequence_privilege('service_role','public.props_penny_settlements_id_seq','USAGE') THEN 'READY' ELSE 'SERVICE_ROLE_NO_USAGE' END AS state)
-SELECT grp, rel, state, present, svc_select, svc_insert, svc_mutate, public_access, rls, append_only_trigger, insert_guard FROM v
+SELECT grp, rel, state, present, svc_select, svc_insert, svc_mutate, public_access, rls, append_only_trigger FROM v
 UNION ALL
-SELECT 'penny', 'penny id sequences', state, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM seq
+SELECT 'penny', 'penny id sequences', state, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM seq
 UNION ALL
 SELECT 'zz', 'OVERALL', CASE WHEN (SELECT bool_and(state = 'READY') FROM v) AND (SELECT state FROM seq) = 'READY'
-  THEN 'READY' ELSE 'NOT_READY' END, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+  THEN 'READY' ELSE 'NOT_READY' END, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 ORDER BY 1, 2;

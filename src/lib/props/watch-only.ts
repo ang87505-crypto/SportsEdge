@@ -115,7 +115,7 @@ export function watchOnlyLedger(r:ResearchRaw,asOf=r.nowIso){
  // different platform (e.g. a Pick6-only filter must not become all zeros).
  const countUnique=(items:WatchRow[])=>{
   const seen=new Set<string>();
-  return tally(items.map(row=>{
+  return tally([...items].sort((a,b)=>time(a.recordedAt)-time(b.recordedAt)||a.observationId-b.observationId).map(row=>{
    const isUnique=!seen.has(row.key);seen.add(row.key);
    return {...row,isUnique};
   }));

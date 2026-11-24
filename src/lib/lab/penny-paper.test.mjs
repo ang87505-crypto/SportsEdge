@@ -24,3 +24,20 @@ test('forward account uses only known grades, latest corrections, open reserves 
  const b=pennySummary(entries,[original,corrected],'2026-11-22T05:00:00Z');assert.equal(b.variable.realizedProfitCents,-8);assert.equal(b.settled,1);assert.equal(b.variable.openStakeCents,0);
  assert.throws(()=>pennySummary([...entries,...entries],[],'2026-11-21T05:00:00Z'),/DUPLICATE/);
 });
+
+test('correction changes booked cents by the delta and preserves the prior equity peak',()=>{
+ const e={id:1,source_entry_id:7,probability_ppm:414050,stake_cents:8,reference_stake_cents:10,reason:'SIZED',recorded_at:'2026-11-20T18:00:00Z',lock_at:'2026-11-21T00:00:00Z',record_sha256:'a'.repeat(64)};
+ const won={penny_entry_id:1,revision:1,grade_ids:[11,12],outcome:'won',return_cents:24,profit_cents:16,reference_return_cents:30,reference_profit_cents:20,recorded_at:'2026-11-21T04:00:00Z'};
+ const lost={...won,revision:2,grade_ids:[11,13],outcome:'lost',return_cents:0,profit_cents:-8,reference_return_cents:0,reference_profit_cents:-10,recorded_at:'2026-11-22T04:00:00Z'};
+ const x=pennySummary([e],[lost,won],'2026-11-22T05:00:00Z');
+ assert.equal(x.variable.realizedEquityCents,49992);
+ assert.equal(x.reference.realizedEquityCents,49990);
+ assert.ok(Math.abs(x.variable.maxDrawdown-24/50016)<1e-12);
+ assert.ok(Math.abs(x.reference.maxDrawdown-30/50020)<1e-12);
+ const unknown={...lost,revision:3,grade_ids:[14,15],outcome:'payout_unknown',return_cents:null,profit_cents:null,reference_return_cents:null,reference_profit_cents:null,recorded_at:'2026-11-23T04:00:00Z'};
+ const y=pennySummary([e],[won,lost,unknown],'2026-11-23T05:00:00Z');
+ assert.equal(y.variable.realizedProfitCents,0);assert.equal(y.variable.openStakeCents,8);
+ assert.equal(y.reference.realizedProfitCents,0);assert.equal(y.reference.openStakeCents,10);
+ assert.equal(y.variable.settledStakeCents,0);assert.equal(y.reference.settledStakeCents,0);
+ assert.ok(Math.abs(y.variable.maxDrawdown-24/50016)<1e-12);
+});
