@@ -1298,6 +1298,101 @@
      "inputFingerprint": "c525ffab94b96dbd78c5577634ab36521b23dc1867a9b9aa66ef41fd8a566558"
     }
    ]
+  },
+  {
+   "id": "lab-props-opponent-rate",
+   "domain": "sports",
+   "hypothesisKey": "sports:opponent-allowed-rate-only",
+   "hypothesis": "Scaling the frozen baseline per-minute rate by a walk-forward opponent allowed-rate factor (beta per stat, fit on the preceding season) improves NBA props probability quality. Narrower than lab-sports-ablation-v1-matchup-rest (opponent only, no home/rest).",
+   "dataDependencies": [
+    "SportsDataverse ESPN NBA player box scores (CC BY 4.0), player_box_2017..2021.csv pinned in research/props_opponent_rate_v1_20261124/protocol.json"
+   ],
+   "frozen": {
+    "features": [
+     "opponent allowed per-minute rate / league, season-to-date, >=10 earlier games"
+    ],
+    "parameters": {
+     "betaGrid": "0..1.5 step 0.1",
+     "betaFit": "min binary Brier on the preceding season only",
+     "fittedBetas": {
+      "2018-19": {
+       "points": 0.6,
+       "rebounds": 0.5,
+       "assists": 0.7
+      },
+      "2019-20": {
+       "points": 0.8,
+       "rebounds": 0.5,
+       "assists": 0.6
+      },
+      "2020-21": {
+       "points": 0.7,
+       "rebounds": 0.5,
+       "assists": 0.7
+      }
+     },
+     "minOpponentGames": 10
+    }
+   },
+   "dataCutoff": "2021-05-16T23:59:59Z",
+   "codeFingerprint": "7c926814f6bd975a7765d2c70df8c54691eccd0883dac7e6d409e39feb32f856",
+   "datasetFingerprints": [
+    {
+     "name": "research/props_opponent_rate_v1_20261124/results.json",
+     "sha256": "a814f22fb71fe13e711a352eec88cc64698ee60ee4f6446c083ab2acfa07a6e8"
+    }
+   ],
+   "metrics": {
+    "primary": "paired binary Brier difference vs props-nb-minutes-rate-v1 (game-clustered bootstrap)",
+    "secondary": [
+     "log loss",
+     "residual slope on log opponent factor",
+     "calibration gap"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "docs/PROPS_CHALLENGER_OPPONENT_RATE_PREREG_2026_11_24.md: pooled Brier diff upper 95% < 0, every test season mean < 0, pooled log-loss diff < 0 -> QUALIFIES_FOR_FORWARD_TEST; forward review only under the unchanged production REVIEW_GATE on real lines.",
+   "status": "PROMISING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "PROMISING",
+    "observations": 191607,
+    "clusters": 3231,
+    "reason": "Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2018-19, 2019-20 and 2020-21 proxy lines (chronological folds, beta fit on the preceding season only): pooled paired Brier diff -0.000308 (95% CI -0.000384 to -0.000229, 191,607 lines, 3,231 games), every season improved, log loss -0.00066. Residual-vs-opponent slope ~0.36 -> ~0.02. Effect is ~7x smaller than the production REVIEW_GATE threshold (-0.002); no forward predictions are recorded; never auto-promoted."
+   },
+   "disposition": "PROMISING",
+   "source": "existing",
+   "registeredAt": "2026-11-24T20:59:05Z",
+   "history": [
+    {
+     "at": "2026-11-24T20:59:05Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any 2016-17..2020-21 props line was scored (docs/PROPS_CHALLENGER_OPPONENT_RATE_PREREG_2026_11_24.md); one mechanism, beta per stat from a fixed grid",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:01:27Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "one pre-registered chronological evaluation run (scripts/props-opponent-eval.ts)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:01:27Z",
+     "from": "RUNNING",
+     "to": "PROMISING",
+     "reason": "Retrospective evidence only; forward frozen predictions must meet the registered minimums before review. Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2018-19, 2019-20 and 2020-21 proxy lines (chronological folds, beta fit on the preceding season only): pooled paired Brier diff -0.000308 (95% CI -0.000384 to -0.000229, 191,607 lines, 3,231 games), every season improved, log loss -0.00066. Residual-vs-opponent slope ~0.36 -> ~0.02. Effect is ~7x smaller than the production REVIEW_GATE threshold (-0.002); no forward predictions are recorded; never auto-promoted.",
+     "inputFingerprint": "a814f22fb71fe13e711a352eec88cc64698ee60ee4f6446c083ab2acfa07a6e8"
+    }
+   ]
   }
  ]
 }
