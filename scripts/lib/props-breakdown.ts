@@ -6,12 +6,15 @@
 import {predictLine,lineProbabilities,type GameLog,type ModelParams,type PriorSummary} from '../../src/lib/props/model.ts';
 import {STATS,type Stat} from '../../src/lib/props/contract.ts';
 import {proxyLine,statOf,priors,fitDispersion,byAthlete,MODEL_FIXED,type BoxRow} from './box-csv.ts';
+import {adjustedProbabilities,fitAdjustment,type Adjustment} from '../../src/lib/props/availability.ts';
 
 export type Line={game:string;start:string;date:string;athlete:string;team:string;opponent:string;stat:Stat;line:number;
  /** baseline binary P(more); proxy lines are half-points, so P(tie)=0 */
  q:number;y:0|1;mean:number;expMinutes:number;sdMinutes:number;games:number;
  /** the baseline's per-minute rate and NB size for this stat (as stored, rounded to 1e-6) */
  rate:number;dispersion:number;
+ /** minutes actually played in this game (the outcome side; never a model input) */
+ actualMinutes:number;
  /** player per-minute rate divided by the league per-minute rate (prior season) for this stat */
  rateRel:number;
  /** |mean - line| / predictive SD */
@@ -85,7 +88,7 @@ export function scoreLines(season:BoxRow[],params:ModelParams,priorOf:(a:string)
     const o=opp.get(`${r.game}|${r.opponent}|${s}`);
     out.push({game:r.game,start:r.start,date:r.start.slice(0,10),athlete:r.athlete,team:r.team,opponent:r.opponent,stat:s,line,
      q,y:actual>line?1:0,mean:p.mean,expMinutes:p.inputs.expMinutes,sdMinutes:p.inputs.sdMinutes,games:p.inputs.games,
-     rate:p.inputs.rate,dispersion:params.dispersion[s],
+     rate:p.inputs.rate,dispersion:params.dispersion[s],actualMinutes:r.log.minutes!,
      rateRel:p.inputs.rate/params.leagueRate[s],z:sd>0?Math.abs(p.mean-line)/sd:0,opp:o?.factor??null,oppGames:o?.games??0});
    }
   });
@@ -201,3 +204,24 @@ export function pairedDiffBy(lines:Line[],qc:(l:Line)=>number,reps:number,seed:n
 }
 export const pairedDiff=(lines:Line[],beta:Record<Stat,number>,reps:number,seed:number)=>
  pairedDiffBy(lines,l=>opponentQ(l,beta[l.stat]),reps,seed);
+
+// ---------------------------------------------------------------- challenger props-nb-low-minutes-v1
+
+/** Pre-registered segment (docs/PROPS_CHALLENGER_LOW_MINUTES_PREREG_2026_11_24.md): expected minutes strictly below 15. */
+export const LOW_MINUTES_MAX=15;
+/**
+ * Fit the minutes adjustment on ONE earlier season from realized minutes only (no outcome of any line is used):
+ * m = mean(min(minutes,53) / expected), s = extra relative SD beyond the model's own, over unique low-minute player-games.
+ */
+export function fitLowMinutes(lines:Line[]):Adjustment&{n:number}{
+ const seen=new Set<string>(),rows:{minutes:number;expMinutes:number;sdMinutes:number}[]=[];
+ for(const l of lines){if(!(l.expMinutes<LOW_MINUTES_MAX))continue;const k=l.game+'|'+l.athlete;if(seen.has(k))continue;seen.add(k);
+  rows.push({minutes:l.actualMinutes,expMinutes:l.expMinutes,sdMinutes:l.sdMinutes});}
+ const f=fitAdjustment(rows);return {m:f.m,s:f.s,n:f.n};
+}
+/** Challenger binary P(more): unchanged at or above 15 expected minutes; below it, the baseline NB with adjusted minutes. */
+export function lowMinutesQ(l:Pick<Line,'q'|'rate'|'expMinutes'|'sdMinutes'|'dispersion'|'line'>,a:Adjustment){
+ if(!(l.expMinutes<LOW_MINUTES_MAX))return l.q;
+ const p=adjustedProbabilities({rate:l.rate,expMinutes:l.expMinutes,sdMinutes:l.sdMinutes,dispersion:l.dispersion,line:l.line},a);
+ return p.pMore/(p.pMore+p.pLess);
+}
