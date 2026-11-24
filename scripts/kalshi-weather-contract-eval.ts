@@ -7,7 +7,7 @@
  *   --as-of 2026-11-20T19:00:00Z --archive-ref <research-data commit> [--out report.json]
  */
 import {createHash} from 'node:crypto';
-import {existsSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
+import {existsSync,readFileSync,readdirSync,statSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {verifyIndependentWeatherMemory,type IndependentWeatherMemory} from '../src/lib/prediction-markets/kalshi/weather-memory.ts';
@@ -24,26 +24,33 @@ function listDir(root:string,sub:string){
  if(!existsSync(dir))return [];
  const files=readdirSync(dir).filter(f=>FILE.test(f)).sort();
  if(files.length>2000)throw Error('WEATHER_EVAL_ARCHIVE_TOO_LARGE');
- return files.map(f=>({date:f.slice(0,10),rel:join('kalshi-independent','nyc-weather',sub,f),path:join(dir,f)}));
+ return files.map(f=>({date:f.slice(0,10),rel:['kalshi-independent','nyc-weather',sub,f].join('/'),path:join(dir,f)}));
 }
 export function evaluateWeatherArchive(x:{root:string;asOf:string;archiveRef:string}){
  if(typeof x.root!=='string'||!x.root||!Number.isFinite(Date.parse(x.asOf))||
   typeof x.archiveRef!=='string'||!/^[A-Za-z0-9._/-]{1,80}$/.test(x.archiveRef))throw Error('WEATHER_EVAL_INVALID_ARGS');
  const asOf=Date.parse(x.asOf);
  const inputs:{path:string;sha256:string}[]=[];
- const read=(f:{rel:string;path:string})=>{const bytes=readFileSync(f.path);inputs.push({path:f.rel,sha256:sha(bytes)});return JSON.parse(bytes.toString('utf8'));};
+ const read=(f:{rel:string;path:string})=>{
+  if(statSync(f.path).size>120_000)throw Error('WEATHER_EVAL_RECORD_TOO_LARGE');
+  const bytes=readFileSync(f.path);
+  if(bytes.length>120_000)throw Error('WEATHER_EVAL_RECORD_TOO_LARGE');
+  return {raw:JSON.parse(bytes.toString('utf8')),receipt:{path:f.rel,sha256:sha(bytes)}};
+ };
  // Only evidence that existed at asOf is admitted, so a later run reproduces an earlier report.
  const forecasts=new Map<string,IndependentWeatherMemory>();
  for(const f of listDir(x.root,'forecasts')){
-  const m=verifyIndependentWeatherMemory(read(f));
+  const {raw,receipt}=read(f),m=verifyIndependentWeatherMemory(raw);
   if(m.targetLocalDate!==f.date)throw Error('WEATHER_EVAL_ARCHIVE_DATE_INTEGRITY');
-  if(Date.parse(m.capturedAt)<=asOf)forecasts.set(f.date,m);
+  if(Date.parse(m.capturedAt)<=asOf){forecasts.set(f.date,m);inputs.push(receipt);}
  }
  const outcomes=new Map<string,ReturnType<typeof verifyCentralParkCli>>();
  for(const f of listDir(x.root,'cli-daily-preliminary')){
-  const c=verifyCentralParkCli(read(f));
+  const {raw,receipt}=read(f),c=verifyCentralParkCli(raw);
   if(c.reportDate!==f.date)throw Error('WEATHER_EVAL_ARCHIVE_DATE_INTEGRITY');
-  if(Date.parse(c.fetchedAt)<=asOf)outcomes.set(f.date,c);
+  const available=Date.parse(c.fetchedAt);
+  if(!Number.isFinite(available))throw Error('WEATHER_EVAL_INVALID_RECEIPT_TIME');
+  if(available<=asOf){outcomes.set(f.date,c);inputs.push(receipt);}
  }
  const training:WeatherTrainingDay[]=[...forecasts.keys()].filter(d=>outcomes.has(d)).sort()
   .map(d=>independentTrainingDay(forecasts.get(d)!,outcomes.get(d)!));

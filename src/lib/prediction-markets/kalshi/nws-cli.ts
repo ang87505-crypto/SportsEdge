@@ -105,6 +105,11 @@ export function verifyCentralParkCli(raw:unknown):CentralParkCliDaily{
   typeof base.rawProductText!=='string'||
   createHash('sha256').update(base.rawProductText).digest('hex')!==base.sourceDigest)
   throw Error('NWS_CLI_INVALID_MEMORY');
+ // A recomputed outer checksum alone cannot establish the label's agreement with NOAA text.
+ if(typeof base.fetchedAt!=='string')throw Error('NWS_CLI_INVALID_MEMORY');
+ let parsed:CentralParkCliDaily;
+ try{parsed=parseCentralParkCli(base.rawProductText,base.fetchedAt);}catch{throw Error('NWS_CLI_INVALID_MEMORY');}
+ if(parsed.id!==id)throw Error('NWS_CLI_INVALID_MEMORY');
  return raw as CentralParkCliDaily;
 }
 /** Independent model training only. This does NOT certify market settlement. */

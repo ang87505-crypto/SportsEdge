@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,writeFileSync,mkdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {evaluateWeatherArchive} from './kalshi-weather-contract-eval.ts';
@@ -31,6 +31,7 @@ test('archive evaluation is offline, reproducible, as-of bounded and reports blo
  const root=mkdtempSync(join(tmpdir(),'sportsedge-eval-'));
  try{
   await collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>at,fetcher});
+  const before=evaluateWeatherArchive({root,asOf:'2026-11-15T00:00:00Z',archiveRef:'fixture'});
   await collectIndependentWeather({phase:'outcome',root,userAgent:agent,now:()=>outcomeAt,fetcher});
   const realFetch=globalThis.fetch;
   globalThis.fetch=()=>{throw Error('network forbidden');};
@@ -49,9 +50,22 @@ test('archive evaluation is offline, reproducible, as-of bounded and reports blo
    assert.equal(a.archive.files.length,2);
    // Before the outcome was fetched, the report must not see it.
    const early=evaluateWeatherArchive({root,asOf:'2026-11-15T00:00:00Z',archiveRef:'fixture'});
+   assert.deepEqual(early,before,'later valid receipts must not change earlier report content or digest');
+   assert.equal(early.archive.files.length,1);
+   assert.equal(early.archive.files[0].path,'kalshi-independent/nyc-weather/forecasts/2026-11-14.json');
+   assert.notEqual(early.archive.aggregateSha256,a.archive.aggregateSha256);
    assert.equal(early.forecasts[0].observedHighF,null);
    assert.deepEqual(early.blockers.outcomesPending,['2026-11-14']);
   }finally{globalThis.fetch=realFetch;}
   assert.throws(()=>evaluateWeatherArchive({root,asOf:'nope',archiveRef:'x'}),/WEATHER_EVAL_INVALID_ARGS/);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test('oversized local archive records fail closed before evaluation',()=>{
+ const root=mkdtempSync(join(tmpdir(),'sportsedge-eval-limit-'));
+ try{
+  const dir=join(root,'kalshi-independent','nyc-weather','forecasts');mkdirSync(dir,{recursive:true});
+  writeFileSync(join(dir,'2026-11-14.json'),' '.repeat(120001));
+  assert.throws(()=>evaluateWeatherArchive({root,asOf:'2026-11-16T00:00:00Z',archiveRef:'fixture'}),/WEATHER_EVAL_RECORD_TOO_LARGE/);
  }finally{rmSync(root,{recursive:true,force:true});}
 });

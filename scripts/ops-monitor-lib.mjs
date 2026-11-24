@@ -4,6 +4,20 @@
 
 const FIELD_RANGES = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
 
+/** The public heartbeat contains research clocks only; insufficient model history is healthy collection. */
+export function kalshiReceiptBlockers(health,nowMs){
+ const codes=new Set(['FORECAST_STALE','FORECAST_UNAVAILABLE','OUTCOME_STALE','OUTCOME_UNAVAILABLE']);
+ const valid=health?.schemaVersion==='kalshi-research-health-v1'&&
+  ['OK','ATTENTION','UNAVAILABLE'].includes(health.state)&&Array.isArray(health.issues)&&health.issues.length<=10&&
+  health.issues.every(x=>codes.has(x))&&
+  Number.isFinite(Date.parse(health.checkedAt))&&Date.parse(health.checkedAt)<=nowMs&&nowMs-Date.parse(health.checkedAt)<=10*60_000;
+ const issues=valid&&health.state==='OK'&&!health.issues.length?[]:
+  valid&&health.issues.length?health.issues:['HEALTH_UNAVAILABLE'];
+ return issues.map(code=>({id:'kalshi:'+code.toLowerCase(),
+  text:'Kalshi weather archive needs attention: '+code+'. A successful workflow alone does not prove a fresh forecast or outcome.',
+  action:'Open Kalshi paper for the public weather archive and inspect Independent NYC weather memory runs. No demo Start is required for research.'}));
+}
+
 /** Parse one five-field cron expression (UTC) into sets of allowed values. Supports *, n, a-b, lists and steps. */
 export function parseCron(expr) {
   const parts = String(expr).trim().split(/\s+/);

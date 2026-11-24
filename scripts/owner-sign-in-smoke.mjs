@@ -59,6 +59,12 @@ try{
  assert.equal(connection.status,503,'the owner connection check runs without the disconnected database');
  assert.equal((await connection.json()).code,'KALSHI_DEMO_ACCOUNT_NOT_CONFIGURED','isolated checks cannot inherit real Kalshi credentials');
  assert.equal((await fetch(base+'/api/internal/kalshi-paper/tick',{headers:{Cookie:cookie}})).status,401,'owner cookie is not a scheduler token');
+ const heartbeat=await fetch(base+'/api/research/kalshi-health');
+ assert.ok([200,503].includes(heartbeat.status),'public archive status is available without an owner session');
+ const health=await heartbeat.json();
+ assert.equal(health.schemaVersion,'kalshi-research-health-v1');assert.equal(health.archive.requiredPairs,30);
+ assert.equal('demo' in health,false);assert.equal('worker' in health,false);assert.equal('account' in health,false);
+ assert.equal((await fetch(base+'/api/research/kalshi-health',{method:'POST'})).status,405,'public heartbeat is read-only');
  const tampered=cookie.slice(0,-1)+(cookie.at(-1)==='a'?'b':'a');
  assert.equal((await fetch(base+'/api/internal/paper-auto',{headers:{Cookie:tampered}})).status,401);
  const signOut=await fetch(base+'/api/internal/alpaca-paper/session',{method:'DELETE',headers:{Origin:origin,Cookie:cookie}});
