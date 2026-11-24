@@ -1,6 +1,6 @@
 {
   "registry_version": "sportsedge-research-registry-v1",
-  "revision": "2026-11-09-r1+daily-2026-11-10+lab-2026-11-12+holdrank10-2026-11-19",
+  "revision": "2026-11-09-r1+daily-2026-11-10+lab-2026-11-12+holdrank10-2026-11-19+cash-efficient-2026-11-24",
   "note": "Research only. Listing a strategy here never activates it. Status values: active (the frozen live paper strategy), challenger (collecting evidence, activation off), rejected (failed its pre-registered test; kept as a permanent negative result), reference (a comparison only).",
   "strategies": [
     {
@@ -127,6 +127,27 @@
         "analytics/stock_weekly_backtest_v1.py"
       ],
       "rules": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md"
+    },
+    {
+      "id": "stock-weekly-cash-efficient-fill-v1",
+      "status": "challenger",
+      "kind": "weekly-challenger",
+      "description": "Live weekly picks sized by the cash-efficient whole-share allocator fill-band-v1 (band 5-15%, fill to the 50% gross cap, 15% name cap). Pre-registered 2026-11-24 before any result; research only; never activates.",
+      "code": [
+        "analytics/stock_weekly_backtest_v1.py"
+      ],
+      "rules": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
+    },
+    {
+      "id": "stock-weekly-holdrank10-cash-efficient-fill-v1",
+      "status": "challenger",
+      "kind": "weekly-challenger",
+      "description": "Frozen top-10 hold buffer with the cash-efficient whole-share allocator fill-band-v1. Pre-registered 2026-11-24 before any result; research only; never activates.",
+      "code": [
+        "analytics/stock_rank_buffer_candidate.py",
+        "analytics/stock_weekly_backtest_v1.py"
+      ],
+      "rules": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
     }
   ],
   "sources": [
@@ -238,6 +259,18 @@
       "result_ref": "run 44602976829; research/stock_challenger_holdrank10_20261119/results.json; docs/STOCK_CHALLENGER_HOLDRANK10_RESULTS_2026_11_19.md",
       "mode": "historical-exploratory",
       "prereg": "docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md"
+    },
+    {
+      "id": "cash-efficient-fill-2026-11-24",
+      "strategy": "stock-weekly-cash-efficient-fill-v1",
+      "status": "registered",
+      "prereg": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
+    },
+    {
+      "id": "holdrank10-cash-efficient-fill-2026-11-24",
+      "strategy": "stock-weekly-holdrank10-cash-efficient-fill-v1",
+      "status": "registered",
+      "prereg": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
     }
   ]
 }
