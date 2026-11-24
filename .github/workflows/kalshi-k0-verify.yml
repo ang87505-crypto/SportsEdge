@@ -16,3 +16,45 @@ jobs:
         with:
           node-version: '24'
       - run: node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs scripts/kalshi-independent-weather-collect.test.mjs scripts/kalshi-weather-contract-eval.test.mjs
+  pinned-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check out immutable public NOAA research archive
+        uses: actions/checkout@v4
+        with:
+          ref: 8d2374af520bf6321e8262a9cc36b852d313c0c2
+          path: pinned-noaa-archive
+          sparse-checkout: kalshi-independent/nyc-weather
+          persist-credentials: false
+      - name: Replay pinned archive offline and assert known evidence counts
+        run: |
+          test "$(git -C pinned-noaa-archive rev-parse HEAD)" = 8d2374af520bf6321e8262a9cc36b852d313c0c2
+          node --experimental-strip-types scripts/kalshi-weather-contract-eval.ts pinned-noaa-archive --as-of 2026-11-24T20:00:00Z --archive-ref 8d2374af520bf6321e8262a9cc36b852d313c0c2 --out "$RUNNER_TEMP/noaa-evaluation.json"
+          node --input-type=module - "$RUNNER_TEMP/noaa-evaluation.json" <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const r=JSON.parse(readFileSync(process.argv[2],'utf8'));
+          assert.equal(r.forecasts.length,11);
+          assert.equal(r.archive.files.length,17);
+          assert.equal(r.blockers.pairedDays.length,6);
+          assert.equal(r.blockers.trainingShortfall,24);
+          assert.deepEqual(r.blockers.missingOutcomesPastLatestEndpoint,['2026-11-15','2026-11-16','2026-11-17']);
+          assert.deepEqual(r.blockers.outcomesPending,['2026-11-24','2026-11-25']);
+          assert.equal(r.evaluation.holdoutDays,0);
+          assert.equal(r.evaluation.promotionEligible,false);
+          assert.equal(r.networkRequests,0);
+          assert.equal(r.kalshiDataUsed,false);
+          console.log(JSON.stringify({forecasts:r.forecasts.length,pairs:r.blockers.pairedDays.length,shortfall:r.blockers.trainingShortfall,holdoutDays:r.evaluation.holdoutDays,archiveDigest:r.archive.aggregateSha256}));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinned-noaa-evaluation
+          path: ${{ runner.temp }}/noaa-evaluation.json
+          if-no-files-found: error
