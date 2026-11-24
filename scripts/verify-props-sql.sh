@@ -67,5 +67,25 @@ su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE pu
 check_study_readiness READY always-enabled-append-only-trigger
 su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c 'ALTER TABLE public.props_lab_experiments ENABLE TRIGGER props_append_only'" >/dev/null
 check_study_readiness READY origin-enabled-append-only-trigger
+# Release review: database-computed stakes, returns and lock refusals live in BEFORE INSERT guards; require them too.
+setup_sql() { su postgres -c "psql -qAt -v ON_ERROR_STOP=1 -d props_setup_t -c \"$1\"" >/dev/null; }
+setup_sql 'ALTER TABLE public.props_penny_entries DISABLE TRIGGER props_penny_freeze'
+check_study_readiness NOT_READY disabled-penny-stake-guard
+setup_sql 'ALTER TABLE public.props_penny_entries ENABLE TRIGGER props_penny_freeze'
+setup_sql 'ALTER TABLE public.props_lab_predictions DISABLE TRIGGER props_lab_prediction_chronology'
+check_study_readiness NOT_READY disabled-lab-lock-guard
+setup_sql 'ALTER TABLE public.props_lab_predictions ENABLE TRIGGER props_lab_prediction_chronology'
+setup_sql 'ALTER TABLE public.props_predictions DISABLE TRIGGER props_prediction_chronology'
+check_study_readiness NOT_READY disabled-shadow-prediction-lock-guard
+setup_sql 'ALTER TABLE public.props_predictions ENABLE TRIGGER props_prediction_chronology'
+check_study_readiness READY guards-re-enabled
+setup_sql 'CREATE FUNCTION public.props_test_noop() RETURNS trigger LANGUAGE plpgsql AS \$f\$ BEGIN RETURN NEW; END \$f\$'
+setup_sql 'DROP TRIGGER props_penny_grade ON public.props_penny_settlements; CREATE TRIGGER props_penny_grade BEFORE INSERT ON public.props_penny_settlements FOR EACH ROW EXECUTE FUNCTION public.props_test_noop()'
+check_study_readiness NOT_READY settlement-guard-bound-to-other-function
+setup_sql 'DROP TRIGGER props_penny_grade ON public.props_penny_settlements; CREATE TRIGGER props_penny_grade BEFORE INSERT ON public.props_penny_settlements FOR EACH ROW EXECUTE FUNCTION public.props_penny_settlement_guard()'
+setup_sql 'DROP TRIGGER props_append_only ON public.props_penny_settlements; CREATE TRIGGER props_append_only BEFORE UPDATE OF outcome OR DELETE ON public.props_penny_settlements FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'
+check_study_readiness NOT_READY column-limited-append-only-trigger
+setup_sql 'DROP TRIGGER props_append_only ON public.props_penny_settlements; CREATE TRIGGER props_append_only BEFORE UPDATE OR DELETE ON public.props_penny_settlements FOR EACH ROW EXECUTE FUNCTION public.props_immutable()'
+check_study_readiness READY guards-restored
 su postgres -c "dropdb props_setup_t"
 cd "$repo" && PROPS_PG_TEST=1 node --experimental-strip-types --no-warnings --test src/lib/server/props-cycle.integration.test.mjs src/lib/server/props-tick.integration.test.mjs src/lib/server/props-monotone-shadow.integration.test.mjs
