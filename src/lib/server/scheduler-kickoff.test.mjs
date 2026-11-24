@@ -218,3 +218,67 @@ test('weekly learning backup: Sunday 16 UTC only, kind=weekly trigger=backup, sk
   fetcher:fetcher([],{runs:[{created_at:'2026-11-15T10:31:00Z',status:'completed',conclusion:'success'}]})});
  assert.equal((await done.json()).reason,'already_succeeded_since_slot');
 });
+
+const RESEARCH_BACKUPS=[
+ ['props-research-midday','2026-11-24T16:20:00Z','2026-11-24T15:45:00Z'],
+ ['props-research-early','2026-11-24T20:20:00Z','2026-11-24T19:25:00Z'],
+ ['props-research-late','2026-11-24T23:20:00Z','2026-11-24T22:25:00Z'],
+];
+
+test('missed NBA research slots recover through the read-only receipt workflow, even after an earlier successful receipt',async()=>{
+ for(const [name,now,since] of RESEARCH_BACKUPS){
+  const calls=[];
+  const result=await handleSchedulerKickoff(req(),name,env,{now:at(now),fetcher:fetcher(calls,{runs:[
+   {created_at:new Date(Date.parse(since)-1000).toISOString(),status:'completed',conclusion:'success'},
+   {created_at:'2026-11-23T23:59:00Z',status:'completed',conclusion:'success'},
+  ]})});
+  assert.equal(result.status,202,name);
+  assert.deepEqual(calls.map(c=>c.method),['GET','POST'],name);
+  assert.match(calls[0].url,/props-research\.yml\/runs\?branch=main&per_page=10$/);
+  assert.match(calls[1].url,/props-research\.yml\/dispatches$/);
+  assert.deepEqual(calls[1].body,{ref:'main',inputs:{}},'no collection, order or control action');
+ }
+});
+
+test('a current NBA research success or queued/running receipt suppresses its backup at the exact slot boundary',async()=>{
+ for(const [name,now,since] of RESEARCH_BACKUPS){
+  for(const [status,conclusion,reason] of [
+   ['completed','success','already_succeeded_since_slot'],
+   ['queued',null,'already_running_since_slot'],
+   ['in_progress',null,'already_running_since_slot'],
+  ]){
+   const calls=[];
+   const result=await handleSchedulerKickoff(req(),name,env,{now:at(now),fetcher:fetcher(calls,{runs:[
+    {created_at:since,status,conclusion},
+   ]})});
+   assert.equal((await result.json()).reason,reason,name+' '+status);
+   assert.deepEqual(calls.map(c=>c.method),['GET'],'a covered slot has no dispatch');
+  }
+ }
+});
+
+test('a failed or cancelled NBA research receipt permits one recovery dispatch; failures are not treated as coverage',async()=>{
+ for(const [name,now,since] of RESEARCH_BACKUPS){
+  for(const conclusion of ['failure','cancelled']){
+   const calls=[];
+   const result=await handleSchedulerKickoff(req(),name,env,{now:at(now),fetcher:fetcher(calls,{runs:[
+    {created_at:since,status:'completed',conclusion},
+   ]})});
+   assert.equal(result.status,202,name+' '+conclusion);
+   assert.equal(calls.filter(c=>c.method==='POST').length,1);
+  }
+ }
+});
+
+test('NBA research recovery requires the existing production cron authorization and its own hour before any network call',async()=>{
+ for(const [name,now] of RESEARCH_BACKUPS){
+  const calls=[],deps={now:at(now),fetcher:fetcher(calls)};
+  assert.equal((await handleSchedulerKickoff(req('Bearer wrong'),name,env,deps)).status,401);
+  assert.equal((await handleSchedulerKickoff(req(),name,{...env,VERCEL_ENV:'preview'},deps)).status,403);
+  assert.equal((await handleSchedulerKickoff(req('Bearer '+SECRET,'https://x.test/a?force=true'),name,env,deps)).status,400);
+  assert.equal((await handleSchedulerKickoff(req(),name,{...env,SPORTSEDGE_GITHUB_DISPATCH_TOKEN:''},deps)).status,503);
+  const outside=await handleSchedulerKickoff(req(),name,env,{...deps,now:()=>Date.parse(now)+3600_000});
+  assert.equal((await outside.json()).reason,'outside_slot_hour');
+  assert.equal(calls.length,0);
+ }
+});
