@@ -36,6 +36,8 @@ Unchanged by the review: the generated owner setup bundle, model artifacts, regi
 
 Observations that do not block release:
 
+- **Experiment-manifest drift on a frozen props file.** `scripts/experiment-manifest.mjs verify docs/experiments/manifest-2026-11-13-candidate.json` reports `src/lib/server/props-cycle.ts` drifted for `props-paper-v1`. This is new in this candidate: the frozen NBA shadow hook. The other two drifted props files, `capture-plan.ts` and `props-tick.ts`, already drift on main. The hook runs after baseline predictions and picks are saved and catches all of its own errors. It writes only `props-nb-monotone-cal-v1` rows and cannot change a pick, entry or stake, so production behaviour is unchanged. At release, record the drift as an owner-acknowledged additive change, and take a new manifest snapshot after merge. The stock experiment has zero drift.
+
 - Lab/penny freezing now runs after a *successful* capture tick or grading cycle, or on the daily 17:37 UTC schedule. The old in-tick lab step ran even after a failed tick. Lines that lock within about 30 minutes of a failed tick may therefore miss a lab forecast. They are never backfilled. The NBA monotone shadow runs inside the capture cycle and is unaffected.
 - The readiness query checks configuration, not guard function bodies. A hand-replaced function body with the same name would still pass. Do not edit study functions by hand.
 
