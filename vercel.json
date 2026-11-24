@@ -26,6 +26,18 @@
       "schedule": "0 23 * * *"
     },
     {
+      "path": "/api/internal/scheduler/props-research-midday",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-research-early",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-research-late",
+      "schedule": "0 23 * * *"
+    },
+    {
       "path": "/api/internal/scheduler/props-tick-13",
       "schedule": "0 13 * * *"
     },
