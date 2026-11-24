@@ -20,3 +20,5 @@ Pinned NOAA research-data commit 8d2374af520bf6321e8262a9cc36b852d313c0c2: 11 pr
 4. Keep all demo/live controls and market-data approval gates unchanged, and do not launch any workers. If unexpected regression, use a reviewed code revert; never rewrite archived evidence.
 
 The combined integration CI is pending at creation; individual green results do not prove the combined tree. No hosted state has been modified.
+
+Independent review on 7a19828 confirmed all 17 archived records, matching replay digest and 12 passing checks. Follow-up adds the reviewer's two date-rollover regression tests and clarifies internal consistency versus authenticity. These are test/documentation-only changes; runtime files remain byte-identical. Final-head CI must pass before owner-approved release.

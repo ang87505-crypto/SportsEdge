@@ -88,7 +88,7 @@ test('future observed labels never enter the probability model',()=>{
  assert.equal(b.historicalTrainingDays,34);
 });
 
-test('a recomputed archive checksum cannot hide inconsistent underlying hourly forecast data',()=>{
+test('rehashing does not repair internally inconsistent hourly forecast data',()=>{
  const {id,...base}=buildIndependentWeatherMemory(mock());
  const snapshot={...base.sourceSnapshot,hourly:base.sourceSnapshot.hourly.map(h=>({...h,temperatureF:h.temperatureF+1}))};
  for(const altered of [{...base,forecastHighF:base.forecastHighF+1},{...base,forecastIssuedAt:'2026-11-13T20:00:00Z'},
