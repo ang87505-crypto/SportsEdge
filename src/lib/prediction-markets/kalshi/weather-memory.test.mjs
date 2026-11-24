@@ -87,3 +87,12 @@ test('future observed labels never enter the probability model',()=>{
  assert.equal(a.id,b.id);
  assert.equal(b.historicalTrainingDays,34);
 });
+
+test('rehashing does not repair internally inconsistent hourly forecast data',()=>{
+ const {id,...base}=buildIndependentWeatherMemory(mock());
+ const snapshot={...base.sourceSnapshot,hourly:base.sourceSnapshot.hourly.map(h=>({...h,temperatureF:h.temperatureF+1}))};
+ for(const altered of [{...base,forecastHighF:base.forecastHighF+1},{...base,forecastIssuedAt:'2026-11-13T20:00:00Z'},
+  {...base,sourceSnapshot:snapshot},{...base,sourceDigest:digest(snapshot.hourly),sourceSnapshot:{...snapshot,sourceDigest:digest(snapshot.hourly)}}]){
+  assert.throws(()=>verifyIndependentWeatherMemory({id:digest(altered),...altered}),/INVALID_RECORD/);
+ }
+});

@@ -1,9 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
+import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,kalshiReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 
 const T = s => Date.parse(s);
+
+test('Kalshi receipts distinguish healthy research from missing, failed and stale heartbeats',()=>{
+ const now=T('2026-11-22T08:00:00Z');
+ const health={schemaVersion:'kalshi-research-health-v1',checkedAt:'2026-11-22T07:59:00Z',state:'OK',issues:[]};
+ assert.deepEqual(kalshiReceiptBlockers(health,now),[]);
+ for(const value of [null,{...health,schemaVersion:'wrong'},{...health,checkedAt:'2026-11-22T07:00:00Z'},
+  {...health,checkedAt:'2026-11-23T07:59:00Z'},{...health,state:'UNAVAILABLE'},
+  {...health,issues:['PRIVATE_BODY\nSECRET']}]){
+  const blockers=kalshiReceiptBlockers(value,now);assert.equal(blockers.length,1);
+  assert.equal(blockers[0].id,'kalshi:health_unavailable');
+  assert.equal(JSON.stringify(blockers).includes('SECRET'),false);
+ }
+ const blockers=kalshiReceiptBlockers({...health,state:'ATTENTION',issues:['OUTCOME_STALE','FORECAST_STALE']},now);
+ assert.deepEqual(blockers.map(b=>b.id),['kalshi:outcome_stale','kalshi:forecast_stale']);
+});
 const run = (startedAt, conclusion = 'success', event = 'schedule', status = 'completed') =>
   ({id: T(startedAt), html_url: 'https://github.com/x/runs/1', event, status, conclusion, run_started_at: startedAt,
     created_at: startedAt, updated_at: startedAt, head_sha: 'a'.repeat(40)});
