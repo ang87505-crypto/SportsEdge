@@ -1393,6 +1393,97 @@
      "inputFingerprint": "a814f22fb71fe13e711a352eec88cc64698ee60ee4f6446c083ab2acfa07a6e8"
     }
    ]
+  },
+  {
+   "id": "lab-props-low-minutes",
+   "domain": "sports",
+   "hypothesisKey": "sports:low-expected-minutes-adjustment",
+   "hypothesis": "For lines under 15 baseline expected minutes, scaling expected minutes by m and widening the minutes SD by s (fit on the preceding season from realized minutes only) improves NBA props probability quality.",
+   "dataDependencies": [
+    "SportsDataverse ESPN NBA player box scores (CC BY 4.0), player_box_2012..2016.csv pinned in research/props_low_minutes_v1_20261124/protocol.json"
+   ],
+   "frozen": {
+    "features": [
+     "baseline expected minutes < 15"
+    ],
+    "parameters": {
+     "segmentMaxExpectedMinutes": 15,
+     "fit": "fitAdjustment on unique low-minute player-games of the preceding season",
+     "fitted": {
+      "2013-14": {
+       "m": 0.9341,
+       "s": 0.4754
+      },
+      "2014-15": {
+       "m": 0.9089,
+       "s": 0.4423
+      },
+      "2015-16": {
+       "m": 0.9281,
+       "s": 0.4599
+      }
+     }
+    }
+   },
+   "dataCutoff": "2016-04-13T23:59:59Z",
+   "codeFingerprint": "101ccf489b7b7ef3ce0ce9601757e503c021c5293934f1a13e759291f12920ac",
+   "datasetFingerprints": [
+    {
+     "name": "research/props_low_minutes_v1_20261124/results.json",
+     "sha256": "de7930dbed741345ffcffe08967501b31f0e0e1daf6225df820ffd1c5decb0f0"
+    }
+   ],
+   "metrics": {
+    "primary": "paired binary Brier difference vs props-nb-minutes-rate-v1 on all lines (game-clustered bootstrap)",
+    "secondary": [
+     "log loss",
+     "under-15 segment gap and bias",
+     "combined with props-nb-opponent-rate-v1"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "docs/PROPS_CHALLENGER_LOW_MINUTES_PREREG_2026_11_24.md: pooled Brier diff upper 95% < 0, every test season mean < 0, pooled log-loss diff < 0 -> QUALIFIES_FOR_FORWARD_TEST; forward review only under the unchanged production REVIEW_GATE on real lines.",
+   "status": "PROMISING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "PROMISING",
+    "observations": 213087,
+    "clusters": 3561,
+    "reason": "Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2013-14, 2014-15 and 2015-16 proxy lines (m, s fit on the preceding season from realized minutes only): pooled paired Brier diff -0.00138 (95% CI -0.00152 to -0.00122; 213,087 lines, 3,561 games), every season improved, log loss -0.0039. Under-15-minute segment Brier -0.008 to -0.010, bias about -9 -> -3 points. Additive with the opponent challenger. Below the production REVIEW_GATE (-0.002); no forward predictions are recorded; never auto-promoted."
+   },
+   "disposition": "PROMISING",
+   "source": "existing",
+   "registeredAt": "2026-11-24T21:27:59Z",
+   "history": [
+    {
+     "at": "2026-11-24T21:27:59Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any 2011-12..2015-16 props line was scored (docs/PROPS_CHALLENGER_LOW_MINUTES_PREREG_2026_11_24.md); m and s from realized minutes only",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:29:21Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "one pre-registered chronological evaluation run (scripts/props-low-minutes-eval.ts)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:29:21Z",
+     "from": "RUNNING",
+     "to": "PROMISING",
+     "reason": "Retrospective evidence only; forward frozen predictions must meet the registered minimums before review. Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2013-14, 2014-15 and 2015-16 proxy lines (m, s fit on the preceding season from realized minutes only): pooled paired Brier diff -0.00138 (95% CI -0.00152 to -0.00122; 213,087 lines, 3,561 games), every season improved, log loss -0.0039. Under-15-minute segment Brier -0.008 to -0.010, bias about -9 -> -3 points. Additive with the opponent challenger. Below the production REVIEW_GATE (-0.002); no forward predictions are recorded; never auto-promoted.",
+     "inputFingerprint": "de7930dbed741345ffcffe08967501b31f0e0e1daf6225df820ffd1c5decb0f0"
+    }
+   ]
   }
  ]
 }
