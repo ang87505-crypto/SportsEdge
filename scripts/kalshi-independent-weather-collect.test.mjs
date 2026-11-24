@@ -107,3 +107,18 @@ test('an outcome collected before the next forecast enters its history at the re
   assert.equal(saved.targetLocalDate,'2026-11-16');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
+
+test('archive timestamps record completed source reads, not the start of requests',async()=>{
+ const root=temp();try{
+  const later='2026-11-13T21:00:05Z',cliLater='2026-11-15T12:00:07Z';
+  let clock=at;const fc=fakeFetcher([]);
+  const a=await collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const response=await fc(url,init);if(url===fURL)clock=later;return response;
+  }});
+  assert.equal(JSON.parse(readFileSync(a.file,'utf8')).capturedAt,later);
+  clock=outcomeAt;const b=await collectIndependentWeather({phase:'outcome',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const response=await fc(url,init);clock=cliLater;return response;
+  }});
+  assert.equal(JSON.parse(readFileSync(b.file,'utf8')).fetchedAt,cliLater);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
