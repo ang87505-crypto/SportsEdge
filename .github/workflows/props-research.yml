@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/props/research.test.mjs src/lib/server/props-research-data.test.mjs
+      - run: node --experimental-strip-types --test src/lib/props/research.test.mjs src/lib/server/props-research-data.test.mjs src/lib/props/forecast-trace.test.mjs
   snapshot:
     needs: verify
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
