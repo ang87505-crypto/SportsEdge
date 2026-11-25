@@ -1,0 +1,28 @@
+name: Independent BLS CPI memory safety verification
+on:
+  pull_request:
+    paths:
+      - 'scripts/kalshi-independent-cpi-collect.ts'
+      - 'scripts/kalshi-independent-cpi-collect.test.mjs'
+      - '.github/workflows/kalshi-public-cpi-verify.yml'
+      - '.github/workflows/kalshi-public-cpi-memory.yml'
+      - 'docs/KALSHI_PUBLIC_CPI_MEMORY_2026_11_13.md'
+permissions:
+  contents: read
+jobs:
+  public-cpi-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify one-get CPI archive, integrity, no-lookahead and no paid Kalshi requests
+        run: node --experimental-strip-types --test scripts/kalshi-independent-cpi-collect.test.mjs
+      - name: Reject any edits to active markets, model, stock or NBA infrastructure
+        run: |
+          ! git diff --name-only origin/main...HEAD | grep -E '^(src/|database/|analytics/|config/|vercel\.json$|\.github/workflows/(paper-auto|props-|kalshi-independent-weather-memory))'
