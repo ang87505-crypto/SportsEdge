@@ -57,7 +57,7 @@ The combined tree (main `8c03239` + #216 + #221, `cdf55fa`) merges with no confl
 
 - `scripts/paper-release-gates.mjs` reads the ledger through `parseLedger`. #222 adds only `decisions[].rejected`, which the gate never reads, and its parser cannot throw on JSON input.
 - **Differential run:** main's gate and #222's gate were run on 252 ledgers: the passing fixture and 17 failing mutations, each with 14 diagnostics shapes (missing, null, array, string, malformed, oversized). Results were identical, and the parsed ledgers were identical apart from the new field.
-- **Committed proof:** `scripts/paper-release.test.mjs` (`3ca976d`) asserts that the gate result is unchanged under odd diagnostics, for one passing and two failing ledgers.
+- **Committed proof:** `scripts/paper-release.test.mjs` (`3ca976d`) asserts that the gate result is unchanged under odd diagnostics, for one passing and two failing ledgers. It passes locally with the full file, 166/166 across the stock, gate and ops suites. Hosted CI does **not** run it, because the *Independent PAPER release checks* workflow is `disabled_manually` along with the expired watcher. #222's 7 hosted checks are green.
 - **Merge timing:** safe before Sunday evening or after Nov 30. As with any deploy, not inside the freeze.
 
 ## 4. Stock scheduling (no duplicate orders, no bypassed controls)
