@@ -95,10 +95,32 @@ export function collectionStatus(x:CollectionInput){
   else if(s.state==='SKIPPED')missing.push({when:s.scheduledFor,what:'Collect slot',why:s.outcome==='BUDGET_EXHAUSTED'?'Rolling 24-hour credits already used':s.note??s.outcome??'Skipped'});
   else if(s.startDelayMinutes!==null&&s.startDelayMinutes>60)missing.push({when:s.scheduledFor,what:'Collect slot',why:`Started ${s.startDelayMinutes} min late`});
  }
- for(const sl of slates)for(const g of sl.games)if(MISSING.includes(g.state))
-  missing.push({when:g.window.to,what:g.matchup,why:{MISSED:'No tick ran inside its capture window',NO_LINES_FOUND:'No PrizePicks/Pick6 lines were posted when captured',
+ for(const sl of slates)for(const g of sl.games)if(MISSING.includes(g.state)){
+  const p=plans.find(p=>p.provider_event_id===g.event)!;
+  const w=planWindows(p,plans);
+  // EARLY primaries can still capture in the LATE fallback window. A missed primary
+  // is only final at the late deadline, not the end of its originally assigned window.
+  const ranges=p.arm==='early'?[[w.earlyFrom,w.earlyTo],[w.lateFrom,w.lateTo]]:[[w.lateFrom,w.lateTo]];
+  const inWindow=(t:number)=>ranges.some(([from,to])=>t>=Date.parse(from)&&t<Date.parse(to));
+  const ticks=collects.filter(r=>isTick(r.slot_key)&&inWindow(Date.parse(r.started_at)));
+  const reasons=new Set<string>();
+  // An event-specific primary deferral is stronger evidence than a generic NOTHING_DUE.
+  // Only use completed receipts from a relevant window; never infer a budget refusal
+  // from today's balance, a different game, a retry or a closing recheck.
+  for(const r of ticks){
+   if(r.status!=='completed'||!obj(r.summary)||!Array.isArray(r.summary.deferred))continue;
+   for(const d of r.summary.deferred)if(obj(d)&&d.event===g.event&&d.captureKey==='primary'&&typeof d.reason==='string')
+    reasons.add(d.reason);
+  }
+  const budgetLabels:Record<string,string>={DAILY_CAP:'rolling 24-hour credit cap',MONTHLY_CAP:'30-day credit cap',PROVIDER_FLOOR:'provider credit floor',INVALID:'invalid budget state'};
+  const recorded=[...reasons].filter(r=>Object.hasOwn(budgetLabels,r)).map(r=>budgetLabels[r]);
+  const missedWhy=recorded.length?'Primary deferred in a recorded tick: '+recorded.join(', ')+'; no later capture recorded':
+   ticks.length?'A tick ran inside the capture window, but no primary capture was recorded; cause unverified':
+   'No tick ran inside its capture window in the available receipts; older run history may be incomplete';
+  missing.push({when:g.state==='MISSED'?w.lateTo:g.window.to,what:g.matchup,why:{MISSED:missedWhy,NO_LINES_FOUND:'No PrizePicks/Pick6 lines were posted when captured',
    BUDGET_REFUSED:'Credits were not available inside its window',FAILED:'The capture request failed (not retried)',
    ATTEMPT_UNRESOLVED:'A capture started but its outcome was not recorded (never retried automatically)'}[g.state as string]??g.state});
+ }
 
  // Why the latest completed collect made no entries (per platform).
  const withEntries=collects.find(r=>r.status==='completed'&&obj(r.summary)&&obj(r.summary.entries));
