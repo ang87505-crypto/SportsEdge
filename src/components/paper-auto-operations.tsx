@@ -6,6 +6,7 @@ import {Badge,Callout,Details,Empty,Metric,MetricGrid,Panel,StatusDot} from '@/c
 import {isOwnerStopAlert,OPERATOR_STATES,type PaperAutoLedger,type UnregisteredLedger} from '@/lib/stocks/paper-auto-ledger';
 import {forwardPerformance,PAPER_AUTO_PERFORMANCE_LABELS,type MarkVerdict} from '@/lib/stocks/paper-auto-performance';
 import {evaluateStockForward,type FunnelStage} from '@/lib/stocks/paper-auto-evaluation';
+import {stockResearchTracking,type TargetStatus} from '@/lib/stocks/paper-auto-tracking';
 import {activity,headline,holdings,latestPicks,nextRuns} from '@/lib/stocks/autopilot-view';
 import {paperRisk} from '@/lib/stocks/paper-risk';
 import {ownerKeyInput,ownerSignInError,OWNER_KEY_HINT} from '@/lib/owner-sign-in';
@@ -273,6 +274,7 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
   </Panel>
 
   <LearningEvidence l={l}/>
+  <ResearchTracking l={l}/>
 
   {l.intents.length>0&&<Panel title="Orders" description="Whole-share limit orders on the paper account" flush>
    <div className="table-wrap"><table className="data-table">
@@ -320,6 +322,37 @@ function Autopilot({l,release,act,working,starting,oneClick}:{l:PaperAutoLedger;
    {l.gateEvents.length>0&&<><h3>On/off history</h3><ul className="quiet">{l.gateEvents.map((g,k)=><li key={k}>{when(g.at)}: {g.fromMode} → {g.toMode} ({g.reason}) by {g.actor}</li>)}</ul></>}
   </Details>
  </>;
+}
+
+const TARGET_LABEL:Record<TargetStatus,string>={FILLED:'Filled',PARTIAL:'Partly filled',UNFILLED:'Sent, not filled',
+ NOT_ORDERED_HELD:'Already held',NOT_ORDERED:'Not ordered',ORDER_STATE_UNKNOWN:'Order state unknown'};
+/** Research tracking (stock-research-tracking-v1): SPY at the strategy's own exposure, turnover, assumed costs, rejected
+ * candidates and decision-to-fill per target. Read-only; it never changes an order, gate or decision. */
+function ResearchTracking({l}:{l:PaperAutoLedger}){
+ const t=stockResearchTracking(l,new Date().toISOString()),b=t.benchmark;
+ const tone=t.state==='INTEGRITY_ISSUES'?'warning':t.state==='MEASURING'?'info':'neutral';
+ const rejected=t.rejectedCandidates.filter(d=>d.rejected>0).slice(-4).reverse();
+ return <Panel title="Research tracking" description="Measured the way the research was: SPY at the same exposure, turnover and costs from broker-confirmed fills, and what happened to every target."
+  actions={<Badge tone={tone}>{t.state.replaceAll('_',' ')}</Badge>}>
+  <MetricGrid columns={4}>
+   <Metric label="Strategy vs SPY at same exposure" value={b.state==='MEASURED'?pct(b.excessVsMatchedSpy):'NEEDS 2 VERIFIED CLOSES'}
+    detail={b.state==='MEASURED'?`strategy ${pct(b.strategyReturn)}, SPY at ${dd(b.averageExposure)} exposure ${pct(b.matchedExposureSpyReturn)}; ${b.links} links`:'verified closes only, never interpolated'}/>
+   <Metric label="Strategy vs SPY 100%" value={b.state==='MEASURED'?pct(b.excessVsSpy):'—'} detail={b.state==='MEASURED'?`SPY ${pct(b.spyReturn)}, ${b.fromSession} to ${b.toSession}`:'—'}/>
+   <Metric label="Turnover" value={t.turnover.turnover===null?'—':`${(t.turnover.turnover*100).toFixed(1)}%`}
+    detail={t.turnover.annualizedTurnover===null?(t.turnover.note??'—'):`${(t.turnover.annualizedTurnover*100).toFixed(0)}% a year; ${t.turnover.filledOrders} fills`}/>
+   <Metric label="Estimated costs" value={t.costs.assumedCostDollars===null?'—':usd.format(t.costs.assumedCostDollars)}
+    detail={`${t.costs.assumedBpsPerSide} bps per side; fill vs limit ${t.costs.fillVersusLimitBps===null?'—':`${t.costs.fillVersusLimitBps>0?'+':''}${t.costs.fillVersusLimitBps.toFixed(1)} bps`}`}/>
+  </MetricGrid>
+  <p className="quiet small-print">Drawdown: strategy {dd(t.drawdown.strategy)}, SPY at the same exposure {dd(t.drawdown.matchedExposureSpy)}. {t.costs.note}</p>
+  {t.reconciliation.length>0&&<div className="table-wrap"><table className="data-table">
+   <caption className="quiet small-print">Decision to fill, target by target (latest decisions first).</caption>
+   <thead><tr><th>Session</th><th>Target</th><th>Result</th><th>Ordered</th><th>Filled</th></tr></thead>
+   <tbody>{t.reconciliation.slice(-2).reverse().flatMap(r=>r.rows.map(x=><tr key={r.session+x.symbol}>
+    <td>{r.session}</td><td>{x.symbol}</td><td>{TARGET_LABEL[x.status]}</td><td>{x.orderedShares}</td><td>{x.filledShares}</td></tr>))}</tbody>
+  </table></div>}
+  {rejected.length>0&&<p className="quiet small-print">Candidates the bridge skipped: {rejected.map(d=>`${d.session}: ${d.rejected} (${Object.entries(d.byReason).map(([k,n])=>`${n} ${k.replaceAll('_',' ').toLowerCase()}`).join(', ')})`).join('; ')}.</p>}
+  {t.issues.length>0&&<Callout tone="warning" title="Needs review">{t.issues.slice(0,6).join('; ')}</Callout>}
+ </Panel>;
 }
 
 const FUNNEL_LABEL:Record<FunnelStage,string>={NO_TARGETS:'No targets',NOT_EXECUTED:'No execute ran',
