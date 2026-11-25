@@ -104,6 +104,24 @@ export function transition(reg:Registry,id:string,to:Status,reason:string,at:str
  return {registry:{...reg,experiments},changed:true};
 }
 
+/**
+ * Apply an evaluation outcome. nextStatus() may ask a PROPOSED experiment to move straight to a status that the
+ * lifecycle only allows after RUNNING (INSUFFICIENT_DATA, PROMISING, READY_FOR_REVIEW). Rather than throwing, which
+ * fails and reverts the whole engine run for every experiment, record "PROPOSED -> RUNNING (evaluation started)"
+ * first, then the outcome. Anything still illegal after that throws, as before. Idempotent per input fingerprint.
+ */
+export function advance(reg:Registry,id:string,to:Status,reason:string,at:string,inputFingerprint:string|null,
+ result?:Record<string,unknown>,disposition?:string):{registry:Registry;changed:boolean}{
+ const e=reg.experiments.find(x=>x.id===id);
+ if(!e)throw new EngineError('UNKNOWN_EXPERIMENT');
+ if(inputFingerprint&&e.history.some(h=>h.inputFingerprint===inputFingerprint))return {registry:reg,changed:false};
+ if(e.status==='PROPOSED'&&!TRANSITIONS.PROPOSED.includes(to)&&TRANSITIONS.RUNNING.includes(to)){
+  const started=transition(reg,id,'RUNNING','Evaluation started; first result recorded in the next entry.',at,null);
+  return {registry:transition(started.registry,id,to,reason,at,inputFingerprint,result,disposition).registry,changed:true};
+ }
+ return transition(reg,id,to,reason,at,inputFingerprint,result,disposition);
+}
+
 /** Ideas the engine must not propose again (rejected) or that are already being tested. */
 export function blockedIdeas(reg:Registry):{rejected:Set<string>;active:Set<string>}{
  const rejected=new Set<string>(),active=new Set<string>();
