@@ -1332,12 +1332,7 @@
    },
    "dataCutoff": "2026-11-23T21:00:00Z",
    "codeFingerprint": "d1660f0242e12299dbaac1684705f88b5561a86a23c73392a9607aead0779607",
-   "datasetFingerprints": [
-    {
-     "name": "research/stock_challenger_cash_efficient_20261124/results.json",
-     "sha256": "be70b16ffcaee035f35b9feefebab1302dc42a53887ce82ac9a2a29aebb6f0ab"
-    }
-   ],
+   "datasetFingerprints": [],
    "metrics": {
     "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
     "secondary": [
@@ -1355,15 +1350,9 @@
    "baseline": "stock-v2-weekly-1",
    "costAssumptions": "10 bps per side judged; 25 bps robustness",
    "decisionRule": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md: R1 Sharpe above the live rules in dev AND holdout with holdout drawdown within 5 points; R2 full Sharpe above at 25 bps; R3 full-period average invested at least 5 points above the live rules; R4 Sharpe above SPY at its own realized exposure in dev AND holdout. R1-R4 PROMISING; R1-R3 only RUNNING (forward only); otherwise REJECTED.",
-   "status": "REJECTED",
-   "result": {
-    "evidence": "retrospective",
-    "disposition": "REJECTED",
-    "observations": 204,
-    "weeks": 204,
-    "reason": "Pre-registered verdict REJECTED (run 45481431747 (stock-weekly-backtest.yml round 4, end 2026-11-23, commit e27a6d6), whole shares, 10 bps). R1 fails: holdout Sharpe 0.37 vs live 0.45 (dev 0.52 vs 0.45); holdout drawdown -13.2% vs -9.3%. Invests 49% vs 39% (R3 pass) and survives 25 bps (0.42 vs 0.39), but turnover rises 9.0x to 12.0x/yr. Below SPY at its own exposure: holdout Sharpe 0.37 vs 1.22. Kept as a permanent negative result."
-   },
-   "disposition": "REJECTED",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
    "source": "existing",
    "registeredAt": "2026-11-24T20:29:44Z",
    "history": [
@@ -1373,13 +1362,6 @@
      "to": "PROPOSED",
      "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md); zero fitted parameters; constants from registered limits",
      "inputFingerprint": null
-    },
-    {
-     "at": "2026-11-24T20:34:35Z",
-     "from": "PROPOSED",
-     "to": "REJECTED",
-     "reason": "Rejected by its pre-registered rule. Pre-registered verdict REJECTED (run 45481431747 (stock-weekly-backtest.yml round 4, end 2026-11-23, commit e27a6d6), whole shares, 10 bps). R1 fails: holdout Sharpe 0.37 vs live 0.45 (dev 0.52 vs 0.45); holdout drawdown -13.2% vs -9.3%. Invests 49% vs 39% (R3 pass) and survives 25 bps (0.42 vs 0.39), but turnover rises 9.0x to 12.0x/yr. Below SPY at its own exposure: holdout Sharpe 0.37 vs 1.22. Kept as a permanent negative result.",
-     "inputFingerprint": "be70b16ffcaee035f35b9feefebab1302dc42a53887ce82ac9a2a29aebb6f0ab"
     }
    ]
   },
@@ -1418,12 +1400,7 @@
    },
    "dataCutoff": "2026-11-23T21:00:00Z",
    "codeFingerprint": "d1660f0242e12299dbaac1684705f88b5561a86a23c73392a9607aead0779607",
-   "datasetFingerprints": [
-    {
-     "name": "research/stock_challenger_cash_efficient_20261124/results.json",
-     "sha256": "be70b16ffcaee035f35b9feefebab1302dc42a53887ce82ac9a2a29aebb6f0ab"
-    }
-   ],
+   "datasetFingerprints": [],
    "metrics": {
     "primary": "Sharpe vs the live rules in development and holdout (whole shares, 10 bps)",
     "secondary": [
@@ -1441,15 +1418,9 @@
    "baseline": "stock-v2-weekly-1",
    "costAssumptions": "10 bps per side judged; 25 bps robustness",
    "decisionRule": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md: R1 Sharpe above the live rules in dev AND holdout with holdout drawdown within 5 points; R2 full Sharpe above at 25 bps; R3 full-period average invested at least 5 points above the live rules; R4 Sharpe above SPY at its own realized exposure in dev AND holdout. R1-R4 PROMISING; R1-R3 only RUNNING (forward only); otherwise REJECTED.",
-   "status": "RUNNING",
-   "result": {
-    "evidence": "retrospective",
-    "disposition": "NO_CLEAR_EFFECT",
-    "observations": 204,
-    "weeks": 204,
-    "reason": "Pre-registered verdict BEATS_CURRENT_BELOW_MATCHED_SPY (run 45481431747 (stock-weekly-backtest.yml round 4, end 2026-11-23, commit e27a6d6), whole shares, 10 bps). Beats the live rules: Sharpe dev 0.60 vs 0.45, holdout 0.68 vs 0.45, holdout drawdown -11.1% vs -9.3%, full Sharpe at 25 bps 0.51 vs 0.39, invested 49% vs 39%, turnover 6.1x vs 9.0x/yr. Holdout paired weekly t vs live 1.46 (204 weeks, not significant). Below SPY at its own exposure: dev 0.60 vs 0.63, holdout 0.68 vs 1.22; full CAGR 7.2% vs 7.1% with higher volatility. Forward only; never eligible for review until it beats matched SPY forward."
-   },
-   "disposition": "NO_CLEAR_EFFECT",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
    "source": "existing",
    "registeredAt": "2026-11-24T20:29:44Z",
    "history": [
@@ -1459,13 +1430,6 @@
      "to": "PROPOSED",
      "reason": "pre-registered before the run (docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md); zero fitted parameters; constants from registered limits",
      "inputFingerprint": null
-    },
-    {
-     "at": "2026-11-24T20:34:35Z",
-     "from": "PROPOSED",
-     "to": "RUNNING",
-     "reason": "No clear effect yet; continues only through prospective evaluation. Pre-registered verdict BEATS_CURRENT_BELOW_MATCHED_SPY (run 45481431747 (stock-weekly-backtest.yml round 4, end 2026-11-23, commit e27a6d6), whole shares, 10 bps). Beats the live rules: Sharpe dev 0.60 vs 0.45, holdout 0.68 vs 0.45, holdout drawdown -11.1% vs -9.3%, full Sharpe at 25 bps 0.51 vs 0.39, invested 49% vs 39%, turnover 6.1x vs 9.0x/yr. Holdout paired weekly t vs live 1.46 (204 weeks, not significant). Below SPY at its own exposure: dev 0.60 vs 0.63, holdout 0.68 vs 1.22; full CAGR 7.2% vs 7.1% with higher volatility. Forward only; never eligible for review until it beats matched SPY forward.",
-     "inputFingerprint": "be70b16ffcaee035f35b9feefebab1302dc42a53887ce82ac9a2a29aebb6f0ab"
     }
    ]
   }

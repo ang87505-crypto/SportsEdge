@@ -130,7 +130,7 @@
     },
     {
       "id": "stock-weekly-cash-efficient-fill-v1",
-      "status": "rejected",
+      "status": "challenger",
       "kind": "weekly-challenger",
       "description": "Live weekly picks sized by the cash-efficient whole-share allocator fill-band-v1 (band 5-15%, fill to the 50% gross cap, 15% name cap). Pre-registered 2026-11-24 before any result; research only; never activates.",
       "code": [
@@ -263,19 +263,13 @@
     {
       "id": "cash-efficient-fill-2026-11-24",
       "strategy": "stock-weekly-cash-efficient-fill-v1",
-      "status": "complete",
-      "verdict": "REJECTED",
-      "result_ref": "run 45481431747; research/stock_challenger_cash_efficient_20261124/results.json; docs/STOCK_CHALLENGER_CASH_EFFICIENT_RESULTS_2026_11_24.md",
-      "mode": "historical-exploratory",
+      "status": "registered",
       "prereg": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
     },
     {
       "id": "holdrank10-cash-efficient-fill-2026-11-24",
       "strategy": "stock-weekly-holdrank10-cash-efficient-fill-v1",
-      "status": "complete",
-      "verdict": "BEATS_CURRENT_BELOW_MATCHED_SPY",
-      "result_ref": "run 45481431747; research/stock_challenger_cash_efficient_20261124/results.json; docs/STOCK_CHALLENGER_CASH_EFFICIENT_RESULTS_2026_11_24.md",
-      "mode": "historical-exploratory",
+      "status": "registered",
       "prereg": "docs/STOCK_CHALLENGER_CASH_EFFICIENT_PREREG_2026_11_24.md"
     }
   ]
