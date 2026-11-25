@@ -7,9 +7,9 @@ Research only. No candidate is active and broker writes stay off. Pre-registrati
 | Source | Attempts | Last status | Last success | Failures |
 |---|---|---|---|---|
 | openfigi-cusip | 7 | OK | 2026-11-17T04:43:42Z | 0 |
-| qmom-holdings | 29 | OK | 2026-11-24T12:37:07Z | 4 |
+| qmom-holdings | 30 | OK | 2026-11-25T04:43:44Z | 4 |
 | sec-company-tickers | 1 | OK | 2026-11-10T17:34:55Z | 0 |
-| sec-edgar-13f | 413 | OK | 2026-11-24T12:37:07Z | 156 |
+| sec-edgar-13f | 416 | OK | 2026-11-25T04:43:44Z | 156 |
 | sec-form345-dataset | 43 | FETCH_FAILED | 2026-11-10T17:34:55Z | 2 |
 | sec-xbrl-companyfacts | 134 | OK | 2026-11-10T17:34:55Z | 0 |
 
@@ -96,8 +96,8 @@ Decisions 118; orders 252, filled 247, unfilled (gap 5, no bar 0, cash 0), reduc
 |---|---|---|---|---|---|---|---|---|---|
 | | 4.0% | 29.8% | 60.3% | 13.4% | -11.7% | 21.4% | 13.6% | 6.5% | 4.0% |
 
-## Forward paper ledgers (latest session 2026-11-23)
+## Forward paper ledgers (latest session 2026-11-24)
 
-- **berkshire-13f-top5-paper-v1**: INSUFFICIENT FORWARD SAMPLE. Since 2026-11-10 (10 sessions, 2 rebalances): total -3.1% at 10 bps vs SPY -3.4%.
+- **berkshire-13f-top5-paper-v1**: INSUFFICIENT FORWARD SAMPLE. Since 2026-11-10 (11 sessions, 2 rebalances): total -2.4% at 10 bps vs SPY -3.9%.
 - **momentum-quality-paper-v1**: NOT STARTED (no decision yet).
-- **qmom-disclosure-follower-v1**: INSUFFICIENT FORWARD SAMPLE. Since 2026-11-10 (10 sessions, 1 rebalances): total -4.3% at 10 bps vs SPY -3.4%.
+- **qmom-disclosure-follower-v1**: INSUFFICIENT FORWARD SAMPLE. Since 2026-11-10 (11 sessions, 1 rebalances): total -4.8% at 10 bps vs SPY -3.9%.
