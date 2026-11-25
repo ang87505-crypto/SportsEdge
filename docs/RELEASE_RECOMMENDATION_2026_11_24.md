@@ -41,8 +41,7 @@ on its own evidence clock and is not a release blocker.
 | #222: stock suites, ESLint, `next build` | 149/149; ESLint clean; build passed |
 
 **Hosted CI**
-- **#221 and #222:** all checks green.
-- **#217:** checks were still running at the time of writing.
+- **#221, #222 and #217:** all checks green on their new heads.
 - **#216:** green on `e0b86c2` before the retarget (17 passed, 5 main-only jobs skipped).
 - **Release-gate test:** the *Independent PAPER release checks* workflow is disabled, so #222's gate test runs locally only.
 
