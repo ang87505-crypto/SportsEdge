@@ -100,5 +100,14 @@ export function verifyIndependentWeatherMemory(raw:unknown):IndependentWeatherMe
    (!Number.isSafeInteger(r.estimatedBandProbabilityPpm)||
     (r.estimatedBandProbabilityPpm as number)<1||(r.estimatedBandProbabilityPpm as number)>=1_000_000)))
   throw Error('WEATHER_MEMORY_INVALID_RECORD');
+ // Revalidate the underlying forecast and its derived high without reconstructing model history.
+ let rebuilt:IndependentWeatherMemory;
+ try{
+  const snapshot=r.sourceSnapshot as NWSHourlyResearch;
+  if(sha(snapshot.hourly)!==snapshot.sourceDigest)throw Error('WEATHER_MEMORY_SOURCE_DIGEST');
+  rebuilt=buildIndependentWeatherMemory(snapshot);
+ }catch{throw Error('WEATHER_MEMORY_INVALID_RECORD');}
+ if(rebuilt.forecastHighF!==r.forecastHighF||rebuilt.forecastIssuedAt!==r.forecastIssuedAt||
+  rebuilt.targetLocalDate!==r.targetLocalDate)throw Error('WEATHER_MEMORY_INVALID_RECORD');
  return raw as IndependentWeatherMemory;
 }

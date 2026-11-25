@@ -4,7 +4,7 @@
  * job, places an order or prints a secret. Usage: node scripts/ops-monitor.mjs <out-dir>
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
+import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,kalshiReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
@@ -91,14 +91,17 @@ async function propsEvidence(){
   const [control,collects,settles,doneCollect,doneSettle]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
    getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers}),
-   getJson(done+'&kind=eq.collect',{headers}),getJson(done+'&kind=eq.settle',{headers})]);
+   getJson(done+'&kind=eq.collect',{headers}),
+   // The completed settle also carries its safety-brake receipt, so a brake that silently errors is visible.
+   getJson(done.replace('finished_at&','finished_at,safetyBrake:summary->safetyBrake&')+'&kind=eq.settle',{headers})]);
   const bad=[collects,settles,doneCollect,doneSettle].find(r=>!r.ok||!Array.isArray(r.json));
   if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
   const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
   const okRun=kind=>(kind==='collect'?doneCollect:doneSettle).json[0]?.finished_at??null;
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),
-   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle')};
+   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle'),
+   lastSettleSafetyBrake:doneSettle.json[0]?doneSettle.json[0].safetyBrake??null:undefined};
  }catch{return {state:'UNAVAILABLE'};}
 }
 async function researchEvidence(){
@@ -111,6 +114,16 @@ async function researchEvidence(){
     failedKeys:Array.isArray(x.lastBatch?.failed)?x.lastBatch.failed.slice(0,6).map(f=>({key:String(f.key).slice(0,40),error:f.error?String(f.error).split(' ')[0].slice(0,40):null})):[]})),
    candidates:(s.candidates||[]).slice(0,3).map(c=>({id:c.id,active:c.active,verdict:c.historical?.verdict??'NOT_EVALUATED',forwardStatus:c.forward?.status??null,forwardSessions:c.forward?.sessions??0}))};
  }catch{return {state:'UNAVAILABLE'};}
+}
+async function kalshiEvidence(){
+ try{
+  const r=await getJson(cfg.site+'/api/research/kalshi-health',{attempts:1});
+  // Do not copy an arbitrary HTTP body into the public status file.
+  const h=r.json;
+  if(!h||h.schemaVersion!=='kalshi-research-health-v1')return null;
+  const summary={schemaVersion:h.schemaVersion,checkedAt:h.checkedAt,state:h.state,issues:h.issues};
+  return kalshiReceiptBlockers(summary,Date.now()).some(b=>b.id==='kalshi:health_unavailable')?null:summary;
+ }catch{return null;}
 }
 /** Check-only evaluation of the pinned stock release gate (the same function the temporary watcher used).
  * Never merges, never extends the watcher's window. Publishes only the gate's outcome code. */
@@ -255,14 +268,16 @@ function blockers(jobs,props,research,release,site,creds){
 // ---------- main ----------
 const jobs=[];
 for(const job of cfg.jobs)jobs.push(await evaluate(job));
-const [props,research,release,site]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks()]);
+const [props,research,release,site,kalshi]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks(),kalshiEvidence()]);
 const creds=credentials();
 const blockerList=blockers(jobs,props,research,release,site,creds);
+const kalshiBlockers=kalshiReceiptBlockers(kalshi,Date.now());blockerList.push(...kalshiBlockers);
 const roll=rollUp(jobs);
-const overall={state:!site.ok||roll.state==='ATTENTION'?'ATTENTION':roll.state==='WARN'||blockerList.length?'WARN':'OK',attention:roll.attention};
+const overall={state:!site.ok||roll.state==='ATTENTION'||kalshiBlockers.length?'ATTENTION':roll.state==='WARN'||blockerList.length?'WARN':'OK',
+ attention:[...roll.attention,...(kalshiBlockers.length?['kalshi-research']:[])]};
 const status={schemaVersion:'ops-status-v1',generatedAt:nowIso,timezoneShown:'America/Denver',
  monitorRun:env.GITHUB_RUN_ID?{id:Number(env.GITHUB_RUN_ID),url:`https://github.com/${REPO}/actions/runs/${env.GITHUB_RUN_ID}`,event:env.GITHUB_EVENT_NAME??null}:null,
- overall,jobs,evidence:{props,research,release},site,credentials:creds,blockers:blockerList,
+ overall,jobs,evidence:{props,research,release,kalshi},site,credentials:creds,blockers:blockerList,
  notes:['Planned times come from cron schedules and are not executions. Executions link to real GitHub runs.',
   'GitHub can start scheduled runs late or drop them under load; MISSED_SLOT means a planned time passed without any run.',
   'Stock account balances, positions and gate state are owner-only and are not in this public file.']};
