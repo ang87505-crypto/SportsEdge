@@ -26,6 +26,7 @@ import {trackProductionShadows,type ShadowArtifact} from '../src/lib/lab/engine/
 import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
 import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
+import {evidenceCoverage} from '../src/lib/lab/engine/evidence.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -209,6 +210,8 @@ try{
 }
 report.status=status;report.failure=failure;report.registryChanged=fingerprint(reg)!==before;
 report.registrySummary=reg.experiments.map(e=>({id:e.id,domain:e.domain,status:e.status,disposition:e.disposition}));
+try{report.evidence=evidenceCoverage(reg,{sportsLedger:flag('sports-ledger')||!!opt('sports-rows'),stockWeeks:!!opt('stock-weeks')},now);}
+catch(e){report.evidence={error:e instanceof Error?e.message:String(e)};}
 report.runtimeMs=Date.now()-t0;
 const run={runId,at:now,status,failure,registryChanged:report.registryChanged,
  proposed:Object.fromEntries(Object.entries(report.domains as Record<string,{proposed?:Hypothesis[]}>).map(([k,v])=>[k,(v.proposed??[]).map(h=>h.key)])),
