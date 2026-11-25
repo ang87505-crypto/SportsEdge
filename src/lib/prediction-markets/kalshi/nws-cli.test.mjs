@@ -97,3 +97,10 @@ test('no unnecessary requests without valid identification; size and HTTP limits
  await assert.rejects(readCentralParkCli({userAgent:'SportsEdge research repo URL',
   fetcher:async()=>new Response('a'.repeat(20001))}),/TOO_LARGE/);
 });
+
+test('a rehashed archive cannot substitute a different high or issuance for the raw NOAA product',()=>{
+ const {id,...base}=parseCentralParkCli(text,at);
+ for(const altered of [{...base,observedHighF:53},{...base,issuedAt:'2026-11-14T06:38:00.000Z'},{...base,reportDate:'2026-11-12'}]){
+  assert.throws(()=>verifyCentralParkCli({id:digest(altered),...altered}),/INVALID_MEMORY/);
+ }
+});

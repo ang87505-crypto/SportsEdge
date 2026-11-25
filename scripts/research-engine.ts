@@ -1,7 +1,7 @@
 /**
  * AI 2.0 learning engine runner (research only): one complete, idempotent learning cycle.
  *   node --experimental-strip-types scripts/research-engine.ts --registry research/engine/registry.json --out <dir>
- *        [--state <dir>] [--sports-ledger | --sports-rows rows.json --forward-input fwd.json] [--stock-weeks weeks.json]
+ *        [--state <dir>] [--sports-ledger | --sports-rows rows.json --forward-input fwd.json [--sports-coverage coverage.json]] [--stock-weeks weeks.json]
  *        [--result results.json] [--evaluate-forward] [--now ISO]
  *
  * 1 read newly graded outcomes and frozen predictions (GET-only from the props ledger, host-pinned; or offline JSON)
@@ -14,7 +14,7 @@
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
 import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync} from 'node:fs';
-import {adopt,EngineError,fingerprint,register,transition,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
+import {adopt,advance,EngineError,fingerprint,register,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
 import {nextStatus,type Result} from '../src/lib/lab/engine/evaluate.ts';
 import {pair,forwardResult,type FrozenPrediction,type Grade} from '../src/lib/lab/engine/forward.ts';
@@ -26,6 +26,7 @@ import {trackProductionShadows,type ShadowArtifact} from '../src/lib/lab/engine/
 import {trackMonotoneShadow} from '../src/lib/lab/engine/monotone-shadow.ts';
 import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
+import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -40,7 +41,7 @@ const runId=fingerprint({now,argv:argv.slice(2)}).slice(0,16);
 
 class Budget extends Error{constructor(){super('BUDGET_EXHAUSTED');this.name='Budget';}}
 
-type Ledger={rows:SportsRow[];preds:FrozenPrediction[];grades:Grade[];requests:number;artifacts?:ShadowArtifact[]};
+type Ledger={rows:SportsRow[];preds:FrozenPrediction[];grades:Grade[];requests:number;artifacts?:ShadowArtifact[];coverage?:Coverage};
 async function readLedger():Promise<Ledger>{
  if(!Number.isSafeInteger(LIMITS.maxLedgerRequests)||LIMITS.maxLedgerRequests<0||LIMITS.maxLedgerRequests>1000)throw new Error('INVALID_REQUEST_BUDGET');
  const url=process.env.SPORTSEDGE_PROPS_SUPABASE_URL??'',key=process.env.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY??'';
@@ -81,6 +82,10 @@ async function readLedger():Promise<Ledger>{
  const dateOf=(iso:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(iso));
  const numberOrNull=(x:unknown)=>x===null||x===undefined||!Number.isFinite(Number(x))?null:Number(x);
  const rows:SportsRow[]=[],seen=new Set<string>(),fp:FrozenPrediction[]=[],grades=new Map<string,Grade>();
+ // Outcome coverage of baseline predictions: every scored line is counted, including ones excluded from rows below.
+ const coverage:Coverage={scored:0,locked:0,graded:0,overdue:0,contradictoryGrades:0,newestPredictedAt:null,newestGradedAt:null};
+ const later=(a:string|null,b:string)=>a===null||Date.parse(b)>Date.parse(a)?b:a;
+ for(const r of latest.values())coverage.newestGradedAt=later(coverage.newestGradedAt,r.graded_at);
  for(const p of [...scored].sort((a:{id:number},b:{id:number})=>a.id-b.id)){
   const ob=o.get(Number(p.observation_id)) as Ob|undefined;if(!ob)continue;
   const key=keyOf(ob);
@@ -90,6 +95,13 @@ async function readLedger():Promise<Ledger>{
    p:{pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)}});
   const res=latest.get(Number(p.observation_id));
   const actual=numberOrNull(res?.actual),validGrade=res&&actual!==null&&(actual>Number(ob.line)?'more':actual<Number(ob.line)?'less':'tie')===res.outcome;
+  if(p.model_version===MODEL_VERSION){
+   coverage.scored++;if(Number.isFinite(Date.parse(p.predicted_at)))coverage.newestPredictedAt=later(coverage.newestPredictedAt,p.predicted_at);
+   const lock=Date.parse(ob.lock_at);
+   if(lock<Date.parse(now)){coverage.locked++;
+    if(res){if(validGrade||String(res.outcome).startsWith('void'))coverage.graded++;else coverage.contradictoryGrades++;}
+    else if(Date.parse(now)-lock>ALARM_POLICY.overdueHours*3600_000)coverage.overdue++;}
+  }
   if(validGrade&&(!grades.has(key)||Date.parse(res.graded_at)>Date.parse(grades.get(key)!.gradedAt)))grades.set(key,{key,outcome:res.outcome as Grade['outcome'],gradedAt:res.graded_at});
   if(p.model_version!==MODEL_VERSION||!validGrade||!res||(res.outcome!=='more'&&res.outcome!=='less')||seen.has(key)||
    !validProbabilities({pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)})||Date.parse(p.data_cutoff)>Date.parse(p.predicted_at)||Date.parse(ob.recorded_at)>Date.parse(p.predicted_at))continue;
@@ -107,7 +119,7 @@ async function readLedger():Promise<Ledger>{
  for(const e of events){if(Date.parse(e.at)>Date.parse(now))continue;const old=lastEvent.get(e.version);if(!old||Number(e.id)>old.id)lastEvent.set(e.version,{id:Number(e.id),event:e.event});}
  const shadows=[...lastEvent].filter(([v,e])=>/^props-learn-v\d+$/.test(v)&&['shadow_start','eligible'].includes(e.event)).map(([v])=>v);
  const artifacts:ShadowArtifact[]=shadows.length?await all('props_model_artifacts?select=version,sha256,artifact,created_at&version=in.('+shadows.join(',')+')&order=created_at.asc'):[];
- return {rows,preds:fp,grades:[...grades.values()],requests,artifacts};
+ return {rows,preds:fp,grades:[...grades.values()],requests,artifacts,coverage};
 }
 
 function newExperiment(h:Hypothesis,dataFp:string):Experiment{
@@ -149,12 +161,14 @@ try{
  if(flag('sports-ledger'))ledger=await readLedger();
  else if(opt('sports-rows')){
   const fwd=opt('forward-input')?JSON.parse(readFileSync(opt('forward-input')!,'utf8')):{predictions:[],grades:[]};
-  ledger={rows:JSON.parse(readFileSync(opt('sports-rows')!,'utf8')),preds:fwd.predictions,grades:fwd.grades,requests:0};
+  ledger={rows:JSON.parse(readFileSync(opt('sports-rows')!,'utf8')),preds:fwd.predictions,grades:fwd.grades,requests:0,
+   ...(opt('sports-coverage')?{coverage:JSON.parse(readFileSync(opt('sports-coverage')!,'utf8')) as Coverage}:{})};
  }
  if(ledger){
   if(ledger.rows.length>LIMITS.maxRows)throw new Error('ROW_LIMIT');
   const {clean,issues}=sportsQuality(ledger.rows,now);
   const patterns=sportsPatterns(clean);
+  const drift=sportsDrift(clean,now);
   const tracked=trackProductionShadows(reg,ledger.artifacts??[],now);reg=tracked.registry;
   report.productionShadows={added:tracked.added,ignored:tracked.ignored};
   const monotone=trackMonotoneShadow(reg,ledger.preds,now);reg=monotone.registry;
@@ -164,7 +178,8 @@ try{
   for(const h of prop.proposed)reg=register(reg,newExperiment(h,fp),now);
   (report.domains as Record<string,unknown>).sports={inputFingerprint:fp,rows:ledger.rows.length,clean:clean.length,ledgerRequests:ledger.requests,
    qualityIssues:issues.reduce((m:Record<string,number>,i)=>{m[i.code]=(m[i.code]??0)+1;return m;},{}),
-   picks:hitSummary(clean),scorecard:sportsScorecard(clean),drift:sportsDrift(clean,now),patterns,proposed:prop.proposed,skipped:prop.skipped};
+   picks:hitSummary(clean),scorecard:sportsScorecard(clean),drift,patterns,proposed:prop.proposed,skipped:prop.skipped,
+   alarms:ledger.coverage?sportsAlarms(clean,ledger.coverage,drift,now):null};
   if(flag('evaluate-forward')){
    const due=reg.experiments.filter(e=>e.forward&&!['REJECTED','READY_FOR_REVIEW','FAILED'].includes(e.status)).slice(0,LIMITS.maxForwardEvaluations);
    for(const e of due){
@@ -172,7 +187,7 @@ try{
     const res=forwardResult(e.forward!,rep,now);
     const n=nextStatus(e,res);
     const inFp=fingerprint({format:'forward-result-v2',spec:e.forward,rows:rep.rows,stale:res.details.stale});
-    const t=transition(reg,e.id,n.to,n.reason,now,inFp,{...res,...res.details},res.disposition);reg=t.registry;
+    const t=advance(reg,e.id,n.to,n.reason,now,inFp,{...res,...res.details},res.disposition);reg=t.registry;
     (report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:t.changed,reason:n.reason,details:res.details});
    }
   }
@@ -188,7 +203,7 @@ try{
   const results:{experimentId:string;result:Result}[]=JSON.parse(readFileSync(opt('result')!,'utf8'));
   for(const x of results){
    const e=reg.experiments.find(y=>y.id===x.experimentId);if(!e){(report.applied as unknown[]).push({id:x.experimentId,error:'UNKNOWN_EXPERIMENT'});continue;}
-   const n=nextStatus(e,x.result);const r=transition(reg,e.id,n.to,n.reason,now,fingerprint(x),x.result as unknown as Record<string,unknown>,x.result.disposition);
+   const n=nextStatus(e,x.result);const r=advance(reg,e.id,n.to,n.reason,now,fingerprint(x),x.result as unknown as Record<string,unknown>,x.result.disposition);
    reg=r.registry;(report.applied as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:r.changed,reason:n.reason});
   }
  }

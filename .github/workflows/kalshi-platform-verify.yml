@@ -6,6 +6,7 @@ on:
       - 'src/lib/prediction-markets/kalshi/**'
       - 'src/components/kalshi-paper-panel.tsx'
       - 'src/app/api/internal/kalshi-paper/**'
+      - 'src/app/api/research/kalshi-health/**'
       - 'src/app/prediction-markets/kalshi/**'
       - 'database/kalshi/**'
       - 'scripts/verify-kalshi-platform-sql.py'
