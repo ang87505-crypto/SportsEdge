@@ -126,6 +126,14 @@
       "schedule": "0 22 * * 1-5"
     },
     {
+      "path": "/api/internal/scheduler/stock-monitor-late",
+      "schedule": "0 1 * * 2-6"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-decision-backup",
+      "schedule": "0 10 * * 1-5"
+    },
+    {
       "path": "/api/internal/scheduler/props-learn-weekly",
       "schedule": "0 16 * * 0"
     }

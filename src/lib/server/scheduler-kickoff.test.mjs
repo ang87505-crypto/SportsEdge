@@ -89,20 +89,23 @@ test('every slot has a daily Vercel cron in its own hour, and props slots name a
  for(const c of crons)assert.doesNotMatch(c.schedule.split(' ').slice(0,2).join(' '),/[*\/,-]/,'Hobby allows daily crons only');
 });
 
-test('stock worker backups: weekday execute slots inside the trading window in both New York offsets, monitor after the close',async()=>{
+test('stock worker backups: weekday execute slots inside the trading window in both New York offsets, monitors on the same New York evening',async()=>{
  const stock=Object.entries(SCHEDULER_SLOTS).filter(([,s])=>s.workflow==='paper-auto-worker.yml');
  const kinds=stock.map(([,s])=>s.inputs.kind).sort();
- assert.deepEqual(kinds,['execute','execute','execute','monitor']);
+ assert.deepEqual(kinds,['execute','execute','execute','monitor','monitor']);
  for(const [name,s] of stock){
   assert.deepEqual(Object.keys(s.inputs).sort(),['experiment','kind','trigger'],name);
   assert.equal(s.inputs.experiment,'stock-v2-weekly-1');assert.equal(s.inputs.trigger,'backup');
-  assert.deepEqual(s.weekdaysUtc,[1,2,3,4,5],name);
-  // Vercel Hobby fires somewhere inside the hour: [h:00, h:59].
-  const first=s.hourUtc*60,last=first+59;
+  // Vercel Hobby fires somewhere inside the hour: [h:00, h:59]. Check New York local time and weekday in both offsets.
   for(const offset of [4,5]){ // EDT, EST
-   const open=(9*60+30)+offset*60,close=16*60+offset*60;
-   if(s.inputs.kind==='execute')assert.ok(first>=open&&last<close-20,`${name} outside the execute window at UTC-${offset}`);
-   else assert.ok(first>=close,`${name} before the close at UTC-${offset}`);
+   for(const utcDay of s.weekdaysUtc){
+    for(const minute of [s.hourUtc*60,s.hourUtc*60+59]){
+     const local=utcDay*1440+minute-offset*60,nyDay=((Math.floor(local/1440))%7+7)%7,nyMinute=((local%1440)+1440)%1440;
+     assert.ok(nyDay>=1&&nyDay<=5,`${name} not on a New York weekday at UTC-${offset}`);
+     if(s.inputs.kind==='execute')assert.ok(nyMinute>=9*60+30&&nyMinute<16*60-20,`${name} outside the execute window at UTC-${offset}`);
+     else assert.ok(nyMinute>=16*60+15,`${name} before the 16:15 ET monitor window at UTC-${offset}`);
+    }
+   }
   }
  }
  const calls=[];
@@ -113,6 +116,37 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  const saturday=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-14T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal((await saturday.json()).reason,'outside_slot_hour');
  assert.equal(calls.length,1);
+ // The late monitor backs up Monday's close mark at 01:xx UTC Tuesday, and never runs on a Monday UTC morning.
+ const late=[];
+ assert.equal((await handleSchedulerKickoff(req(),'stock-monitor-late',env,{now:at('2026-12-01T01:20:00Z'),fetcher:fetcher(late)})).status,202);
+ assert.deepEqual(late[0].body,{ref:'main',inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}});
+ assert.equal((await (await handleSchedulerKickoff(req(),'stock-monitor-late',env,{now:at('2026-11-30T01:20:00Z'),fetcher:fetcher(late)})).json()).reason,'outside_slot_hour');
+});
+
+test('weekly decision backup: before 08:00 ET in both offsets, never initial, skipped when today\'s kickoff run exists',async()=>{
+ const s=SCHEDULER_SLOTS['stock-decision-backup'];
+ assert.equal(s.workflow,'paper-auto-decision-weekly.yml');
+ assert.deepEqual(s.inputs,{experiment:'stock-v2-weekly-1',initial:'false'},'no session (today in New York), never initial');
+ assert.deepEqual(s.weekdaysUtc,[1,2,3,4,5]);assert.equal(s.skipIfSucceededSinceUtc,'09:00');
+ for(const offset of [4,5]){const last=s.hourUtc*60+59-offset*60;assert.ok(last<7*60+55,`must start before 07:55 ET at UTC-${offset}`);assert.ok(s.hourUtc*60-offset*60>=3*60);}
+ const monday='2026-11-30T10:10:00Z';
+ // Today's 09:00 kickoff run waiting for 08:00 ET, or already done: no second copy.
+ for(const [status,conclusion,reason] of [['in_progress',null,'already_running_since_slot'],['queued',null,'already_running_since_slot'],['completed','success','already_succeeded_since_slot']]){
+  const calls=[];
+  const r=await handleSchedulerKickoff(req(),'stock-decision-backup',env,{now:at(monday),fetcher:fetcher(calls,{runs:[{created_at:'2026-11-30T09:16:51Z',status,conclusion}]})});
+  assert.equal((await r.json()).reason,reason);assert.deepEqual(calls.map(c=>c.method),['GET']);
+ }
+ // Kickoff missed entirely, or its run failed: exactly one recovery dispatch with the fixed inputs.
+ for(const runs of [[],[{created_at:'2026-11-30T09:16:51Z',status:'completed',conclusion:'failure'}],[{created_at:'2026-11-29T22:40:20Z',status:'completed',conclusion:'success'}]]){
+  const calls=[];
+  const r=await handleSchedulerKickoff(req(),'stock-decision-backup',env,{now:at(monday),fetcher:fetcher(calls,{runs})});
+  assert.equal(r.status,202);
+  const post=calls.filter(c=>c.method==='POST');assert.equal(post.length,1);
+  assert.deepEqual(post[0].body,{ref:'main',inputs:{experiment:'stock-v2-weekly-1',initial:'false'}});
+  assert.match(post[0].url,/paper-auto-decision-weekly\.yml\/dispatches$/);
+ }
+ const saturday=await handleSchedulerKickoff(req(),'stock-decision-backup',env,{now:at('2026-11-28T10:10:00Z'),fetcher:fetcher([])});
+ assert.equal((await saturday.json()).reason,'outside_slot_hour');
 });
 
 test('regression 2026-11-11: a late run of yesterday\'s research slot does not suppress today\'s backup',async()=>{

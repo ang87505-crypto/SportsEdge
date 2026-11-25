@@ -57,6 +57,19 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
   inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
  'stock-monitor':{hourUtc:22,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
   inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ // Second chance for the same-session close mark (2026-11-25 review): 01:xx UTC Tue-Sat is 20:xx EST / 21:xx EDT on the
+ // SAME New York session, inside the monitor's 16:15 ET-to-midnight window. No skip check is needed: the controller
+ // records one monitor per session and answers a repeat with SLOT_ALREADY_FINISHED (seen every day Nov 16-24).
+ 'stock-monitor-late':{hourUtc:1,weekdaysUtc:[2,3,4,5,6],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ // Second chance for the weekly decision kickoff (Vercel 09:00 UTC is its only on-time path; GitHub's 11:20 cron has
+ // arrived 7-13 h late and is refused as REFERENCE_CAPTURE_TOO_LATE). 10:xx UTC is 05:xx EST / 06:xx EDT, before the
+ // 08:00 ET capture. Skipped when today's 09:00 kickoff run is queued, running or succeeded; a failed one gets one retry.
+ // Session is blank (the workflow uses today in New York) and initial is always false: the one-time initial
+ // decision was used on 2026-10-30. The bridge still decides only on the first session of an ISO week, and the
+ // database keeps one decision per session.
+ 'stock-decision-backup':{hourUtc:10,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-decision-weekly.yml',stock:true,
+  inputs:{experiment:'stock-v2-weekly-1',initial:'false'},skipIfSucceededSinceUtc:'09:00'},
  'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
  'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };
