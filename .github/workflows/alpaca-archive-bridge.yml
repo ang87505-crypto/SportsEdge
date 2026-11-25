@@ -1,0 +1,42 @@
+name: Alpaca offline archive evidence bridge
+on:
+  push:
+    branches: ['research/alpaca-archive-bridge-20261017']
+  pull_request:
+    paths:
+      - 'analytics/alpaca_archive_bridge_v1.py'
+      - 'analytics/test_alpaca_archive_bridge_v1.py'
+      - 'analytics/alpaca_history_archive.py'
+      - 'analytics/stock_data_contract.py'
+      - '.github/workflows/alpaca-archive-bridge.yml'
+permissions:
+  contents: read
+jobs:
+  archive-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      matrix:
+        python: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Offline source bridge, archive, strict stock contract and frozen-model regressions
+        run: |
+          python -m unittest analytics.test_alpaca_archive_bridge_v1 -v
+          python -m unittest analytics.test_alpaca_history_archive -v
+          python -m unittest analytics.test_stock_data_contract -v
+          python -m unittest analytics.test_stock_momentum_v1 -v
+      - name: Refuse invented source availability or strategy performance
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('analytics/alpaca_archive_bridge_v1.py').read_text()
+          for marker in ['"historical_backtest_ready": False','"research_signal_admitted": False',
+                         '"performance": None','"historical_availability_verified": False']:
+              assert marker in p, marker
+          PY
