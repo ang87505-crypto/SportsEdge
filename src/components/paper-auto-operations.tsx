@@ -329,7 +329,11 @@ const TARGET_LABEL:Record<TargetStatus,string>={FILLED:'Filled',PARTIAL:'Partly 
 /** Research tracking (stock-research-tracking-v1): SPY at the strategy's own exposure, turnover, assumed costs, rejected
  * candidates and decision-to-fill per target. Read-only; it never changes an order, gate or decision. */
 function ResearchTracking({l}:{l:PaperAutoLedger}){
- const t=stockResearchTracking(l,new Date().toISOString()),b=t.benchmark;
+ let t:ReturnType<typeof stockResearchTracking>;
+ // Never let a reporting panel take down the page that holds Start and Stop.
+ try{t=stockResearchTracking(l,new Date().toISOString());}
+ catch{return <Panel title="Research tracking" description="Unavailable for this ledger right now. Orders, Start and Stop are unaffected."><span/></Panel>;}
+ const b=t.benchmark;
  const tone=t.state==='INTEGRITY_ISSUES'?'warning':t.state==='MEASURING'?'info':'neutral';
  const rejected=t.rejectedCandidates.filter(d=>d.rejected>0).slice(-4).reverse();
  return <Panel title="Research tracking" description="Measured the way the research was: SPY at the same exposure, turnover and costs from broker-confirmed fills, and what happened to every target."
