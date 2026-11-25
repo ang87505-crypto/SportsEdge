@@ -24,6 +24,8 @@
      "workflow": "research-collect.yml", "required": true, "staleAfterHours": 100, "graceMinutes": 180},
     {"id": "research-engine", "label": "Learning engine: evaluate frozen predictions", "area": "research",
      "workflow": "research-engine.yml", "required": true, "staleAfterHours": 48, "graceMinutes": 180},
+    {"id": "kalshi-weather", "label": "Kalshi research: independent NOAA collection", "area": "research",
+     "workflow": "kalshi-independent-weather-memory.yml", "required": true, "staleAfterHours": 30, "graceMinutes": 180},
     {"id": "research-evaluate", "label": "Strategy research: monthly evaluation", "area": "research",
      "workflow": "research-evaluate.yml", "required": true, "staleAfterHours": 800, "graceMinutes": 240},
     {"id": "paper-release", "label": "Temporary PAPER release watcher", "area": "release",
