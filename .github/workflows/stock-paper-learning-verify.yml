@@ -1,0 +1,30 @@
+name: Stock PAPER learning evidence and preflight verification
+on:
+  pull_request:
+    paths:
+      - 'src/lib/stocks/paper-auto-learning-evidence*'
+      - 'src/lib/stocks/paper-auto-ledger.ts'
+      - 'src/components/paper-auto-operations.tsx'
+      - 'scripts/stock-monday-preflight*'
+      - 'docs/MONDAY_STOCK_LEARNING_READINESS_2026_11_13.md'
+      - '.github/workflows/stock-paper-learning-verify.yml'
+permissions:
+  contents: read
+jobs:
+  read-only-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify decision-fill lineage and no-lookahead / preflight refusal cases
+        run: node --experimental-strip-types --test src/lib/stocks/paper-auto-learning-evidence.test.mjs scripts/stock-monday-preflight.test.mjs
+      - name: Never change stock release or start paper orders from this PR
+        run: |
+          node -e "const s=require('fs').readFileSync('src/lib/stocks/paper-auto-release.ts','utf8');for(const v of ['paperOnly:true','brokerWritesEnabled:false','scheduledRunsEnabled:true','realMoneyEnabled:false'])if(!s.includes(v))process.exit(1)"
+          ! git diff --name-only origin/main...HEAD | grep -E '^(src/lib/server/paper-auto-controller.ts|src/lib/server/paper-auto-broker.ts|scripts/paper-auto-worker.ts|\.github/workflows/paper-auto-worker.yml|config/paper-auto/stock-v2-weekly-1.json)$'
