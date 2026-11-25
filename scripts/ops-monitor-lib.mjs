@@ -200,6 +200,17 @@ export function propsReceiptBlockers(props, nowMs, {collectHours = 48, settleHou
   if (hoursSince(props.lastCompletedSettleAt) > settleHours)
     out.push({id: 'props-no-settle', text: `No props settle has completed in ${settleHours} hours (latest: ${props.lastSettle ? props.lastSettle.outcome ?? props.lastSettle.status : 'none'}).`,
       action: 'Open the latest props-daily settle run; pending picks stay pending until a settle completes.'});
+  // The safety brake runs inside every completed settle and is best-effort there, so its failure would otherwise be
+  // silent. Missing, errored or malformed receipts mean the brake could not have paused anything: fail closed by
+  // reporting it. Reporting only: the monitor never pauses or resumes. undefined = no completed settle was read.
+  const brake = props.lastSettleSafetyBrake;
+  if (brake !== undefined && props.lastCompletedSettleAt) {
+    const ok = brake && typeof brake === 'object' && !('error' in brake) && typeof brake.trip === 'boolean' &&
+      Number.isSafeInteger(brake.n) && brake.n >= 0;
+    if (!ok)
+      out.push({id: 'props-safety-brake-unverified', text: `The latest completed props settle did not record a valid safety-brake check (${brake && typeof brake === 'object' && 'error' in brake ? 'error ' + String(brake.error).slice(0, 40) : 'no receipt'}). The automatic pause on confidently losing picks may not be working.`,
+        action: 'Open the latest props-daily settle run summary (safetyBrake). Until it records a valid check, review recent pick results manually and use the owner pause if needed.'});
+  }
   return out;
 }
 
