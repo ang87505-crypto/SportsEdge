@@ -1,130 +1,206 @@
-# Release recommendation and remaining checklist (final, 2026-11-25)
+# Release queue and Nov 30 completion plan (final, 2026-11-25)
 
-Prepared by Claude for the owner. ChatGPT owns Kalshi paper-testing automation, production verification and
-automated tracking receipt checks; nothing here duplicates that work.
-- **Production main:** `8c03239` (#213, #218 and #220 deployed).
-- **This is a recommendation, not an approval.** Nothing here merges, migrates, dispatches orders or activates trading.
-- **No research, model, gate, sample-minimum or cadence change** is included.
+Prepared by Claude for the owner. ChatGPT owns Kalshi paper-testing automation, production verification and automated
+tracking receipt checks; nothing here duplicates that work.
 
-**Finish line (Nov 30, core development complete)** means operational readiness, Part A. Algorithm validation
-(Part B) runs on its own evidence clock and does **not** move that finish line.
+- **Production main:** `8c03239` (#213, #218, #220 live).
+- **This is a recommendation, not an approval.** Nothing has been merged, migrated, dispatched or activated.
+- **No research, model, gate, sample-minimum, cadence or risk change** is included anywhere below.
 
-## 1. PR decisions
+**Finish line (Nov 30, core development complete) = Part A, operational readiness.** Algorithm validation (Part B) runs
+on its own evidence clock and is not a release blocker.
 
-| PR | Head | Decision | Why |
-|---|---|---|---|
-| **#224** (ChatGPT) | `7953351` | **Merge now** | Independent review posted. Offline step reproduces exact totals, receipt deterministic, 0 network requests, read-only permissions, no secrets, 8/8 checks, clean with main and every candidate. Follow-up (not blocking): register `kalshi-paper-verify.yml` in `config/ops/jobs.json` |
-| **#217** | `0f2def9` | **Merge and deploy before Sunday evening** (approves 2 crons) | Nov 30 checklist and schedule recovery. No gate, risk, cadence or frozen-file change; duplicates are refused by the controller |
-| **#221** | `b483430` | **Merge now** | Traces every NBA prediction of every model; props research only |
-| **#222** | `3ca976d` | **Merge now or after Nov 30; not inside the freeze** | Now proven not to affect the #102 gate (section 3) |
-| **#219** | `32f8e97` | Merge any time | Research record only (docs, scripts, registry); never production |
-| **#223** | this | Merge any time | Docs only |
-| **#102** | `9e23e63` | **After** `STOCK_SUPERVISED_SESSION_VERIFIED` | The gate itself requires it |
-| **#216 → #208** | `e0b86c2` → `4462f09` | **After Nov 30**, with the gates in section 2 | Starts NBA shadow writes and study recording |
+## 1. Work completed in this round
 
-**Close as superseded** (no merge):
-- **#211, #214, #215:** superseded by merged #218.
-- **#192, #195, #199, #200, #201, #202, #205, #206, #207:** contained in #208/#216. Close when #208 merges.
-- **#187:** stale. Its Nov 23 plan is past, and its remaining 6 files would revert newer main code.
-
-**Owner's call** (not claimed as superseded):
-- **#196:** ChatGPT's round 4, result FAILS. Merging it records the negative finding.
-- **#171, #179, #186, #204:** older and only partly overlapping.
-
-## 2. NBA expanded prediction tracking (#208 + #216 + #221)
-
-The combined tree (main `8c03239` + #216 + #221, `cdf55fa`) merges with no conflicts.
-
-**Tests**
-- Props, lab, engine, research and props-server suites: **322 passed, 0 failed**. The 10 skipped are database tests, which run in the SQL harness.
-- The full five-way integration (tree `253f4b9`) still stands: Node 1,175/0, SQL 9 suites with 18 readiness cases and 10 integration tests, Python 470, build OK.
-
-**Shadow predictions are traced:** a frozen monotone-shadow prediction (`props-nb-monotone-cal-v1`) traces as `TRACEABLE`:
-- it appears as its own model in `byModel`;
-- it shows graded or pending outcomes;
-- it is listed as `undecided`, because shadows are never picked.
-
-**Production improvements are preserved.** #216's `research-engine.ts` keeps #220's `advance()`, coverage and alarms beside #208's shadow tracking.
-
-**Manifest:** stock drift is zero. Props drift is in `props-cycle.ts` (#208's additive shadow hook) and in `capture-plan.ts`/`props-tick.ts` (already on main).
-
-**Gates before merge:**
-1. Re-run hosted readiness from #216's head and confirm 13 rows with `OVERALL = READY`.
-2. Acknowledge the `props-cycle.ts` drift, and take a new manifest snapshot after the merge.
-3. Merge only outside the freeze (section 5).
-
-## 3. #222 does not interfere with Nov 30
-
-- `scripts/paper-release-gates.mjs` reads the ledger through `parseLedger`. #222 adds only `decisions[].rejected`, which the gate never reads, and its parser cannot throw on JSON input.
-- **Differential run:** main's gate and #222's gate were run on 252 ledgers: the passing fixture and 17 failing mutations, each with 14 diagnostics shapes (missing, null, array, string, malformed, oversized). Results were identical, and the parsed ledgers were identical apart from the new field.
-- **Committed proof:** `scripts/paper-release.test.mjs` (`3ca976d`) asserts that the gate result is unchanged under odd diagnostics, for one passing and two failing ledgers. It passes locally with the full file, 166/166 across the stock, gate and ops suites. Hosted CI does **not** run it, because the *Independent PAPER release checks* workflow is `disabled_manually` along with the expired watcher. #222's 7 hosted checks are green.
-- **Merge timing:** safe before Sunday evening or after Nov 30. As with any deploy, not inside the freeze.
-
-## 4. Stock scheduling (no duplicate orders, no bypassed controls)
-
-- **Cause:** GitHub's stock crons start hours late. On-time work already comes from Vercel backups:
-  - decision dispatched at 09:xx UTC;
-  - execute at 15, 16 and 18 UTC;
-  - monitor at 22 UTC.
-- **#217 closes the two remaining single points of failure:**
-
-| Backup | When | Duplicate protection |
+| PR | Head | Change |
 |---|---|---|
-| `stock-decision-backup` | 10:xx UTC | Skipped if today's kickoff run succeeded or is still queued or running. `initial:'false'`. The database allows one decision per session |
-| `stock-monitor-late` | 01:xx UTC, same New York evening | A repeat returns `SLOT_ALREADY_FINISHED` |
+| **#216** | `e0b86c2` | **Now the single NBA release.** Retargeted to `main`. It contains #208 (`4462f09`), the review fixes and main |
+| **#221** | `1b3ceb9` | Prediction tracing, plus learning-engine **evidence coverage** on every run |
+| **#222** | `46d8cd5` | Stock tracking **finished**: a read-only *Research tracking* panel on the Autopilot page, fail-safe so the page always works. Proven not to affect the #102 gate |
+| **#217** | `1329851` | **Final Nov 30 timeline** (MST/ET/UTC), links and fallbacks F1–F6. Covers the same-quarter-hour skipped-execute hazard, pinned by a new PostgreSQL e2e test |
+| **#224** | `7953351` | Independent review: releasable. ChatGPT owns its release |
 
-- **No execute is added.** On Nov 30 the execute is owner-dispatched. Orders stay behind the owner-armed gate, the release manifest and the close−20 min refusal.
-- The ops line `stock-worker: MISSED_SLOT` describes GitHub's own cron slots, not lost sessions. #217's checklist says so.
+## 2. Test results
 
-## 5. Learning-engine data completeness
+**Integrated tree** (main + #216 + #221 + #222 + #217, `82ab4b7`):
 
-Latest production run: `45549736401-1`, at 04:52 UTC Nov 25, on main.
+| Suite | Result |
+|---|---|
+| Node: engine, props, props server, research, stocks, release gates, paper-auto, kickoff, ops | **515 passed, 0 failed**. The 44 skipped are database tests, run below |
+| Stock and command e2e on real PostgreSQL | **187/187**, not skipped |
+| Props SQL harness | all contract suites; **18 readiness cases**, including the shadow lock-guard and append-only cases; exit 0 |
 
-| System | Predictions | Outcomes | Performance | Status |
-|---|---|---|---|---|
-| **NBA baseline** | 767 clean ledger rows | 1,054 scored, 1,054 locked, 1,023 graded, **0 overdue**, 0 contradictory | 168 picks at 58.9% (Wilson upper 66.1%); confidence gap +6.1 points (95% CI −3.1 to +15.3) | **Complete.** Alarms OK, drift and coverage reported |
-| **NBA shadows** | `props-learn-v1/v2-shadow` paired | same ledger | forward pairing | Complete; `INSUFFICIENT_DATA` until the registered sample is met |
-| **NBA monotone shadow** | written only after #208 merges | traced by #221 | tracked by #216's `trackMonotoneShadow` | Starts at #208 merge |
-| **Stocks (PAPER)** | ledger and daily marks exist | — | SPY comparison exists (main; #222 at matched exposure) | **Not fed to the engine.** No producer for `--stock-weeks` |
-| **Kalshi** | its own forecast and grade store (4 forecasts, 2 grades) | — | — | **Not an engine domain.** Graded by ChatGPT's pipeline |
+**Per branch:**
 
-**The stock producer is not a Nov 30 item.** The engine's stock rule needs at least 26 forward weeks, which cannot exist before about late May 2027. Feeding the owner-only ledger into the engine workflow also needs a reviewed secret-access change.
+| Suite | Result |
+|---|---|
+| #217: controller, worker, owner, risk, broker and kickoff with PostgreSQL | 97/97 |
+| New *"Nov 30 sequence"* controller test | passes |
+| #221: engine suites | 65/65 |
+| #221: props suites | 188/188 |
+| #222: stock suites, ESLint, `next build` | 149/149; ESLint clean; build passed |
 
-Schedule it as post-acceptance integration (Part B). Until then, stock evidence lives in the PAPER ledger and the ops `stockGate`.
+**Hosted CI**
+- **#221 and #222:** all checks green.
+- **#217:** checks were still running at the time of writing.
+- **#216:** green on `e0b86c2` before the retarget (17 passed, 5 main-only jobs skipped).
+- **Release-gate test:** the *Independent PAPER release checks* workflow is disabled, so #222's gate test runs locally only.
 
-## 6. Remaining release checklist
+## 3. NBA release (#216, containing #208 and #221's sibling)
+
+**Nothing in the code blocks it.** The three genuine blockers:
+1. **Owner approval of the frozen-file change.** `props-cycle.ts` (`props-paper-v1`) gains an additive shadow hook. Approve it, then take a new manifest snapshot after merge.
+2. **A fresh hosted readiness run** from #216's head, returning 13 rows with `OVERALL = READY`, just before merge.
+3. **The deploy freeze**, from Sunday 6:00 PM MST until the gate read.
+
+**Safe before Nov 30:**
+- **#221**, now.
+- **#216**, only if blockers 1 and 2 are cleared before Sunday 6:00 PM MST. It touches no stock file.
+
+Monotone-shadow predictions are traced by #221 (verified on the combined tree).
+
+## 4. Stock scheduling (existing recovery architecture)
+
+**Nov 24–25 run logs confirm the pattern:**
+- Vercel backups do the on-time work.
+- GitHub's crons arrive after the close and send nothing: `NO_EXECUTABLE_DECISION_TODAY`, `OUTSIDE_EXECUTION_WINDOW`, `SLOT_ALREADY_FINISHED`.
+
+**#217's two backups remove the remaining single points of failure.** These are the 10:xx UTC decision and the 01:xx UTC close mark.
+
+**Protections unchanged:**
+- one decision per session;
+- quarter-hour slot de-duplication;
+- `SHADOW_PLAN_ONLY` on main;
+- owner gate;
+- close − 20 min refusal;
+- no re-sending of an order whose outcome is unknown.
+
+**The one operational hazard found** is now covered in the checklist and a test. An owner execute that starts in the same UTC quarter hour as a finished main shadow run is skipped before any broker call. Dispatch at 7:31–7:44 AM MST. If it is skipped, dispatch once more in the next quarter hour.
+
+## 5. Learning engine: what it receives and reports
+
+| Evidence | Automatic? | Reported |
+|---|---|---|
+| NBA baseline predictions and outcomes | **Yes.** Production: 1,054 scored, 1,023 graded, 0 overdue | alarms: overconfidence, accuracy below break-even, missing outcomes, contradictory grades, stale data, drift |
+| NBA shadow models | Yes, 2 experiments with forward specs | forward pairing → `INSUFFICIENT_DATA`, `FAILED` on stale or absent data, never promotion |
+| Other active experiments (15 of 17) | **No.** They advance only on an owner-supplied result | **New:** `report.evidence` lists them, with days since their last change, and flags any quiet for 30+ days |
+| Stock PAPER performance | **No.** No `--stock-weeks` producer | **New:** gap `STOCK_EVIDENCE_NOT_SUPPLIED`, instead of silence |
+| Kalshi | Graded outside the engine (ChatGPT) | stated as `GRADED_OUTSIDE_ENGINE` |
+| Failed and rejected strategies | from the registry | **New:** listed per run. Currently 1 failed and 8 rejected |
+
+Declining performance, missing data and failed strategies are detected and **reported for review only**. Tests cover each case (`fail-closed`, `alarms` and `evidence` suites).
+
+Feeding stock and lab evidence automatically is Part B integration work. It is not needed for Nov 30.
+
+## 6. Merge-ready queue (all 78 open PRs)
+
+### Merge before Sunday 6:00 PM MST
+
+| Order | PR | Condition |
+|---|---|---|
+| 1 | **#224** | Merged by ChatGPT or the owner |
+| 2 | **#221** | — |
+| 3 | **#217** | You approve its two crons. Confirm the Vercel deploy |
+| 4 | **#219**, **#223** | Docs, research record, registry |
+| 5 | **#216** (optional) | Only if §3 blockers 1 and 2 are done |
+
+### After the Nov 30 gate reads `STOCK_SUPERVISED_SESSION_VERIFIED`
+
+| Order | PR | Condition |
+|---|---|---|
+| 6 | **#102** | At exactly `9e23e63`. GitHub reports it mergeable |
+| 7 | **#222** | — |
+| 8 | **#216** | If not merged before. Then close **#208**, **#192**, **#195**, **#199**, **#200**, **#201**, **#202**, **#206** and **#207**: their heads are git ancestors of #216 |
+
+### Close: superseded or stale (verified)
+
+| PR | Reason |
+|---|---|
+| #211, #214, #215 | Superseded by merged #218 |
+| #187 | Stale Nov 23 plan. 13 of 19 files already on main; the rest would revert newer code |
+| #171 | Stale Nov 16 prep. It edits the stock ledger and Autopilot page; superseded by #217's checklist and #222 |
+| #163 | Stale Nov 13 handoff document |
+
+### Close: likely superseded (the content landed on main in a later form)
+
+Check before closing.
+
+| PR | Evidence |
+|---|---|
+| #166, #167 | AI 2.0 learning engine and research intake. All files are on main, last changed Nov 19 |
+| #168, #174, #177 | Command center. All files are on main, last changed Nov 14. #177: 15 of 16 identical |
+| #184 | Early-capture backups. The scheduler was rewritten Nov 24 |
+
+### Close: October stacks (27 PRs, 5–7 weeks old, built on pre-release history)
+
+#20, #21, #22, #23, #24, #25, #26, #32, #35, #36, #37, #43, #44, #45, #46, #48, #50, #53, #69, #74, #75, #76, #77, #78, #79, #80, #83.
+
+- GitHub cannot merge 7 of them.
+- Most of the rest target unmerged stack bases.
+- The UI, paper controls and Alpaca PAPER areas they touch were rebuilt on main since.
+- Closing keeps their branches.
+
+### Owner's call: research records that preserve negative findings
+
+Merge as records after Nov 30, or keep open. **Do not delete their branches.**
+
+| PR | Finding |
+|---|---|
+| #97 | Cost-aware momentum |
+| #109 | Daily open-to-close: none qualifies. Already `REJECTED` in the registry |
+| #133, #134 | Next-gen stock slate, buffer ledger |
+| #164 | Sports challengers v2: none qualifies |
+| #165 | Lab-stock v3: none qualifies |
+| #196 | Cash-aware sizing **FAILS** |
+| #198 | Idle cash |
+
+#196 and #198 edit the stock backtest workflow that #216 also edits. Merge them after #216 and re-check.
+
+### Owner's call: review documents not carried anywhere else
+
+- **#204, #205:** Nov 21 baseline and cross-review documents. #205's readiness SQL is superseded by #216's stricter query, but these documents are not in #216 (this corrects my earlier note).
+- **#212:** Oct 30 NBA batch document. I have not reviewed it in depth.
+
+### Owner's call: new features or research, outside "finish the platform"
+
+Defer or close:
+- **#94:** a second stock strategy. It edits paper-auto workflows and staging SQL. **Not before Nov 30.**
+- **#172, #173:** new data memories.
+- **#175, #176, #178:** plans and contracts.
+- **#185:** UI redesign.
+- **#179:** watch-only. Partly landed; the NBA shadows are now in #216.
+- **#209:** QMOM diagnostics.
+
+### ChatGPT's area
+
+- **#180:** NOAA archive visibility.
+- **#186:** NOAA grading fix. Both conflict with main after #218.
+
+## 7. Remaining checklist
 
 ### Part A: operational readiness (the Nov 30 finish line)
 
-**By Sunday Nov 29, before evening**
-1. [ ] Merge #224.
-2. [ ] Merge #221.
-3. [ ] Approve #217's two crons, then merge #217 and confirm the Vercel deploy is live. If you don't approve the crons, use the manual fallbacks in `docs/STOCK_PAPER_SESSION_2026_11_30.md`.
-4. [ ] Optional: merge #222, #219 and #223. If not done now, do them after Nov 30.
-5. [ ] **Freeze.** No merge or deploy from Sunday evening until the gate reads verified.
+1. [ ] **By Sun 6:00 PM MST:** merge #224, #221, #217 (and approve its crons), #219, #223. Optionally #216.
+2. [ ] **Freeze** from Sun 6:00 PM MST until step 4.
+3. [ ] **Mon Nov 30:** follow `docs/STOCK_PAPER_SESSION_2026_11_30.md` (#217) step by step:
+   - decision check by 6:15 AM;
+   - arm at 7:00–7:25;
+   - execute at 7:31–7:44 AM MST from your own account on `release/stock-paper-orders`;
+   - fills;
+   - Stop/Start by 1:30 PM;
+   - mark by 4:00 PM.
+4. [ ] Run the operations monitor. It must read `STOCK_SUPERVISED_SESSION_VERIFIED`.
+5. [ ] Merge #102 at `9e23e63`, then #222. Merge #216 if not already done: hosted readiness READY plus the drift approval and a new snapshot.
+6. [ ] Close the PRs listed above.
 
-**Monday Nov 30** (follow the #217 checklist)
+**Core development is complete when 1–6 are done.** No other development task is required.
 
-6. [ ] The decision reads `TARGETS` for 2026-11-30. `initial` is not reused.
-7. [ ] Owner dispatches execute on `release/stock-paper-orders` at `9e23e63`. The receipt shows `posts > 0`, and both actor and triggering actor are the owner.
-8. [ ] Fills recorded, then owner Stop and Start, with a `CLEAN` reconcile in between.
-9. [ ] Same-session mark inside a monitor run, between 16:15 ET and New York midnight.
-10. [ ] Run the operations monitor. `stockGate.reason` must read `STOCK_SUPERVISED_SESSION_VERIFIED`.
+### Part B: long-term validation (separate clock)
 
-**After the gate is verified**
-
-11. [ ] Review and merge #102 at `9e23e63`. Merge #222 if you held it.
-12. [ ] Re-run hosted readiness from #216's head. If it reads READY, merge #216 into #208, then #208. Acknowledge the drift and take a new manifest snapshot.
-13. [ ] Run the *Forward paper studies* preflight. ChatGPT confirms production receipts.
-14. [ ] Close the superseded PRs in section 1.
-
-**Core development is complete when 1–14 are done.** No other development task is required for Nov 30.
-
-### Part B: long-term algorithm validation (separate clock, not a release blocker)
-
-- **NBA monotone shadow and `props-learn` shadows:** forward evidence until the registered sample minimums are met. The engine requests owner review; it never promotes on its own.
-- **#219 challengers** (opponent rate, low minutes): `PROMISING` on retrospective evidence only. They need a frozen forward shadow before any review.
-- **Stock strategy:** 26+ forward weeks against matched-exposure SPY. Add the `--stock-weeks` producer as reviewed integration work before then.
+- **NBA monotone shadow and `props-learn` shadows:** forward samples until their registered minimums are met.
+- **#219 challengers:** retrospective only. They need a frozen forward shadow before any review.
+- **Stock strategy:** 26+ forward weeks against matched-exposure SPY. Add a `--stock-weeks` producer as reviewed integration work before then.
+- **Engine feeds for the 15 owner-supplied-only experiments:** connect the forward lab report after #216 has recorded data.
 - **Kalshi:** 30 pairs and 50 holdout, unchanged. ChatGPT owns it.
-- **Ops follow-ups** (ChatGPT): add `kalshi-paper-verify` to `config/ops/jobs.json`.
-- **Next props release:** consider the frozen-file guard in `rules.ts` (`Number.isFinite`), from the fail-closed audit.
+- **Ops follow-ups** (ChatGPT): register `kalshi-paper-verify` in `config/ops/jobs.json`.
+- **Next props release:** the `Number.isFinite` guard in the frozen `rules.ts`.
