@@ -124,3 +124,8 @@
 {"at": "2026-11-25T04:43:47Z", "command": "daily-forward", "file": "research-data/results/daily-forward-2026-11-25T044347Z.json", "status": {"daily-momentum5d-v1": "INSUFFICIENT FORWARD SAMPLE", "daily-reversal5-v1": "INSUFFICIENT FORWARD SAMPLE", "daily-spy-trend50-v1": "INSUFFICIENT FORWARD SAMPLE"}}
 {"at": "2026-11-25T04:43:47Z", "command": "tom-forward", "file": "research-data/results/tom-forward-2026-11-25T044347Z.json", "status": "INSUFFICIENT FORWARD SAMPLE"}
 {"at": "2026-11-25T04:43:48Z", "command": "lab-forward", "file": "research-data/results/lab-forward-2026-11-25T044348Z.json", "frozen_now": 0}
+{"at": "2026-11-25T11:27:50Z", "command": "collect", "requests": 3, "result": {"cusips_mapped": 42, "cusips_unmapped": 10, "qmom": "OK", "sec": "OK", "sec_new_filings": 0}}
+{"at": "2026-11-25T11:27:52Z", "command": "forward", "file": "research-data/results/forward-2026-11-25T112752Z.json", "status": {"berkshire-13f-top5-paper-v1": "INSUFFICIENT FORWARD SAMPLE", "momentum-quality-paper-v1": "NOT STARTED", "qmom-disclosure-follower-v1": "INSUFFICIENT FORWARD SAMPLE"}}
+{"at": "2026-11-25T11:27:59Z", "command": "daily-forward", "file": "research-data/results/daily-forward-2026-11-25T112759Z.json", "status": {"daily-momentum5d-v1": "INSUFFICIENT FORWARD SAMPLE", "daily-reversal5-v1": "INSUFFICIENT FORWARD SAMPLE", "daily-spy-trend50-v1": "INSUFFICIENT FORWARD SAMPLE"}}
+{"at": "2026-11-25T11:28:03Z", "command": "tom-forward", "file": "research-data/results/tom-forward-2026-11-25T112803Z.json", "status": "INSUFFICIENT FORWARD SAMPLE"}
+{"at": "2026-11-25T11:28:03Z", "command": "lab-forward", "file": "research-data/results/lab-forward-2026-11-25T112803Z.json", "frozen_now": 0}
