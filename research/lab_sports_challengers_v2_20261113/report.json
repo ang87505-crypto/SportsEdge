@@ -1,0 +1,1644 @@
+{
+ "generatedBy": "scripts/lab-sports-challengers-v2.ts",
+ "experimentId": "lab-sports-challengers-v2",
+ "specSha256": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+ "preRegistrationCommit": "035625f",
+ "evidence": "retrospective",
+ "caveats": [
+  "Proxy lines (floor of last-10 median + 0.5), not platform lines: probability quality only; no virtual or real return is implied.",
+  "Fold 1 reuses a season earlier studies inspected; fold 2 is out of season for every trained weight; prospective scoring starts 2026-11-14T00:00:00Z.",
+  "Diagnostics are exploratory groupings of the base model and are not tests.",
+  "Nothing here changes the active model, picks, entries, stakes or budgets."
+ ],
+ "sources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+   "pinned": true
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89",
+   "pinned": true
+  },
+  {
+   "file": "player_box_2027.csv",
+   "sha256": "d5f182f511bcdfdbbabda6d6ff2a41b5fcf7f00f05aff932e82d1e6521e3cd37",
+   "pinned": false
+  }
+ ],
+ "leakage": {
+  "checked": 92880910,
+  "violations": 0
+ },
+ "spec": {
+  "id": "lab-sports-challengers-v2",
+  "domain": "sports",
+  "registeredAt": "2026-11-13T20:00:00Z",
+  "researchOnly": true,
+  "baselines": [
+   "base",
+   "recal"
+  ],
+  "candidates": [
+   {
+    "id": "side_asym",
+    "features": "side_asym",
+    "hypothesis": "More-leaning and Less-leaning forecasts are miscalibrated differently; separate slopes for positive and negative base log-odds improve probability quality over a single-slope recalibration."
+   },
+   {
+    "id": "uncertainty",
+    "features": "uncertainty",
+    "hypothesis": "Forecasts for players with volatile minutes (high SD/expected minutes) or short history (few games) are overconfident; shrinking their log-odds by learned amounts improves probability quality."
+   },
+   {
+    "id": "line_gap",
+    "features": "line_gap",
+    "hypothesis": "When the model mean is far from the line, the line carries information the model lacks; shrinking log-odds as the relative gap grows improves probability quality."
+   },
+   {
+    "id": "all_new",
+    "features": "all_new",
+    "hypothesis": "The three adjustments together improve on single-slope recalibration."
+   }
+  ],
+  "reference": "recal",
+  "features": {
+   "recal": [
+    "bias",
+    "base_logit"
+   ],
+   "side_asym": [
+    "bias",
+    "base_logit_pos",
+    "base_logit_neg"
+   ],
+   "uncertainty": [
+    "bias",
+    "base_logit",
+    "base_logit*minutes_cv",
+    "base_logit*inv_sqrt_games"
+   ],
+   "line_gap": [
+    "bias",
+    "base_logit",
+    "base_logit*abs_rel_gap"
+   ],
+   "all_new": [
+    "bias",
+    "base_logit_pos",
+    "base_logit_neg",
+    "base_logit*minutes_cv",
+    "base_logit*inv_sqrt_games",
+    "base_logit*abs_rel_gap"
+   ]
+  },
+  "fitting": {
+   "model": "ridge-logistic per stat, bias unpenalised",
+   "lambdaGrid": [
+    0.01,
+    0.1,
+    1,
+    10
+   ],
+   "lambdaChoice": "time-ordered 5-chunk forward validation inside the training data only"
+  },
+  "folds": [
+   {
+    "id": "fold1",
+    "evidence": "exploratory",
+    "train": "2025-26 lines before 2026-01-01",
+    "test": "2025-26 lines from 2026-01-01 (season inspected by earlier studies)"
+   },
+   {
+    "id": "fold2",
+    "evidence": "out-of-season",
+    "train": "all 2025-26 lines",
+    "test": "2026-27 lines to the run date (layer 1 = production parameters)"
+   },
+   {
+    "id": "forward",
+    "evidence": "prospective",
+    "train": "all 2025-26 lines (weights frozen in the artifact)",
+    "test": "2026-27 games starting at or after forwardStartsAt, scored by re-running with --forward"
+   }
+  ],
+  "forwardStartsAt": "2026-11-14T00:00:00Z",
+  "metrics": {
+   "primary": "brier",
+   "secondary": [
+    "logLoss",
+    "ece",
+    "qualified-pick hit rate",
+    "coverage",
+    "side calibration"
+   ]
+  },
+  "decisionRule": {
+   "family": "Holm across the 4 candidate-vs-recal Brier comparisons in each fold, alpha 0.05, game-clustered bootstrap (2000 replicates, seed 20261113)",
+   "promising": "fold2 Holm p < 0.05 AND fold2 Brier upper95 < 0 AND fold1 mean Brier difference < 0 AND fold2 log loss not worse",
+   "rejected": "fold2 Brier lower95 > 0 (credibly worse than recal) OR fold1 and fold2 both point the wrong way",
+   "otherwise": "NO_CLEAR_EFFECT (kept as a hypothesis; may continue only through prospective forward evaluation)",
+   "promotion": "Never automatic. PROMISING only enters prospective forward evaluation; the existing review gate (500 graded real lines, 14 dates, 50 games) applies before READY_FOR_REVIEW."
+  },
+  "bootstrap": {
+   "replicates": 2000,
+   "seed": 20261113
+  },
+  "proxyLines": "floor(median of last 10)+0.5, the lab-sports-ablation-v1 proxy; not platform lines, so no return is implied."
+ },
+ "folds": [
+  {
+   "label": "fold1-2025-26-second-half (exploratory)",
+   "n": 45216,
+   "games": 739,
+   "dates": 96,
+   "from": "2026-01-01",
+   "to": "2026-04-13",
+   "variants": [
+    {
+     "id": "base",
+     "n": 45216,
+     "brier": 0.239463,
+     "logLoss": 0.674552,
+     "ece": 0.03011,
+     "decisions": {
+      "qualified": 21686,
+      "coverage": 0.4796,
+      "qualifiedHitRate": 0.6375,
+      "qualifiedHit95": [
+       0.631,
+       0.6438
+      ],
+      "skipped": 23530,
+      "skippedFavouriteHitRate": 0.5499,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 7470,
+        "hitRate": 0.5901,
+        "meanConfidence": 0.6737,
+        "gap": 0.0836
+       },
+       "less": {
+        "n": 14216,
+        "hitRate": 0.6624,
+        "meanConfidence": 0.6733,
+        "gap": 0.0109
+       }
+      }
+     }
+    },
+    {
+     "id": "recal",
+     "n": 45216,
+     "brier": 0.236975,
+     "logLoss": 0.666527,
+     "ece": 0.01368,
+     "decisions": {
+      "qualified": 19089,
+      "coverage": 0.4222,
+      "qualifiedHitRate": 0.6562,
+      "qualifiedHit95": [
+       0.6495,
+       0.6629
+      ],
+      "skipped": 26127,
+      "skippedFavouriteHitRate": 0.5442,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 4462,
+        "hitRate": 0.6226,
+        "meanConfidence": 0.6643,
+        "gap": 0.0417
+       },
+       "less": {
+        "n": 14627,
+        "hitRate": 0.6665,
+        "meanConfidence": 0.6646,
+        "gap": -0.0019
+       }
+      }
+     }
+    },
+    {
+     "id": "side_asym",
+     "n": 45216,
+     "brier": 0.236542,
+     "logLoss": 0.665545,
+     "ece": 0.00818,
+     "decisions": {
+      "qualified": 17356,
+      "coverage": 0.3838,
+      "qualifiedHitRate": 0.6559,
+      "qualifiedHit95": [
+       0.6488,
+       0.6629
+      ],
+      "skipped": 27860,
+      "skippedFavouriteHitRate": 0.5517,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 3282,
+        "hitRate": 0.6332,
+        "meanConfidence": 0.6438,
+        "gap": 0.0107
+       },
+       "less": {
+        "n": 14074,
+        "hitRate": 0.6612,
+        "meanConfidence": 0.6764,
+        "gap": 0.0152
+       }
+      }
+     }
+    },
+    {
+     "id": "uncertainty",
+     "n": 45216,
+     "brier": 0.236711,
+     "logLoss": 0.665943,
+     "ece": 0.01032,
+     "decisions": {
+      "qualified": 19438,
+      "coverage": 0.4299,
+      "qualifiedHitRate": 0.6543,
+      "qualifiedHit95": [
+       0.6476,
+       0.6609
+      ],
+      "skipped": 25778,
+      "skippedFavouriteHitRate": 0.5459,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 4485,
+        "hitRate": 0.6263,
+        "meanConfidence": 0.6593,
+        "gap": 0.033
+       },
+       "less": {
+        "n": 14953,
+        "hitRate": 0.6627,
+        "meanConfidence": 0.666,
+        "gap": 0.0033
+       }
+      }
+     }
+    },
+    {
+     "id": "line_gap",
+     "n": 45216,
+     "brier": 0.23654,
+     "logLoss": 0.665462,
+     "ece": 0.01329,
+     "decisions": {
+      "qualified": 21522,
+      "coverage": 0.476,
+      "qualifiedHitRate": 0.6471,
+      "qualifiedHit95": [
+       0.6407,
+       0.6535
+      ],
+      "skipped": 23694,
+      "skippedFavouriteHitRate": 0.5426,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 5689,
+        "hitRate": 0.6152,
+        "meanConfidence": 0.6394,
+        "gap": 0.0242
+       },
+       "less": {
+        "n": 15833,
+        "hitRate": 0.6586,
+        "meanConfidence": 0.6698,
+        "gap": 0.0112
+       }
+      }
+     }
+    },
+    {
+     "id": "all_new",
+     "n": 45216,
+     "brier": 0.23647,
+     "logLoss": 0.665368,
+     "ece": 0.00886,
+     "decisions": {
+      "qualified": 18595,
+      "coverage": 0.4112,
+      "qualifiedHitRate": 0.6531,
+      "qualifiedHit95": [
+       0.6463,
+       0.6599
+      ],
+      "skipped": 26621,
+      "skippedFavouriteHitRate": 0.5488,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 4063,
+        "hitRate": 0.6279,
+        "meanConfidence": 0.6321,
+        "gap": 0.0043
+       },
+       "less": {
+        "n": 14532,
+        "hitRate": 0.6602,
+        "meanConfidence": 0.6746,
+        "gap": 0.0144
+       }
+      }
+     }
+    }
+   ],
+   "comparisonsVsRecal": [
+    {
+     "candidate": "side_asym",
+     "brier": {
+      "mean": -0.0004330634908248575,
+      "lower95": -0.0007145746553861566,
+      "upper95": -0.00016589523877943624,
+      "clusters": 739,
+      "n": 45216,
+      "pImprove": 0.0009995002498750624
+     },
+     "logLossMean": -0.0009816996354880517,
+     "pImprove": 0.0009995002498750624,
+     "pAdjusted": 0.002999
+    },
+    {
+     "candidate": "uncertainty",
+     "brier": {
+      "mean": -0.0002645831299328951,
+      "lower95": -0.00040932148428653035,
+      "upper95": -0.00012105463360425088,
+      "clusters": 739,
+      "n": 45216,
+      "pImprove": 0.0004997501249375312
+     },
+     "logLossMean": -0.000584228365754249,
+     "pImprove": 0.0004997501249375312,
+     "pAdjusted": 0.001999
+    },
+    {
+     "candidate": "line_gap",
+     "brier": {
+      "mean": -0.00043476666014232167,
+      "lower95": -0.0006765070866166451,
+      "upper95": -0.0001930253271940893,
+      "clusters": 739,
+      "n": 45216,
+      "pImprove": 0.0009995002498750624
+     },
+     "logLossMean": -0.001064812509484009,
+     "pImprove": 0.0009995002498750624,
+     "pAdjusted": 0.002999
+    },
+    {
+     "candidate": "all_new",
+     "brier": {
+      "mean": -0.0005055489763675646,
+      "lower95": -0.0008003405672722022,
+      "upper95": -0.0002071510453770184,
+      "clusters": 739,
+      "n": 45216,
+      "pImprove": 0.0009995002498750624
+     },
+     "logLossMean": -0.0011590780964542324,
+     "pImprove": 0.0009995002498750624,
+     "pAdjusted": 0.002999
+    }
+   ],
+   "recalVsBase": {
+    "mean": -0.0024876766645593545,
+    "lower95": -0.003105660974877324,
+    "upper95": -0.0019179432646155511,
+    "clusters": 739,
+    "n": 45216,
+    "pImprove": 0.0004997501249375312
+   },
+   "diagnostics": {
+    "note": "Exploratory: base-model qualified picks on proxy lines. Groups suggest hypotheses; they are not evidence of an effect.",
+    "picks": 21686,
+    "groups": [
+     {
+      "by": "stat",
+      "groups": [
+       {
+        "key": "assists",
+        "n": 7948,
+        "hitRate": 0.6521,
+        "meanConfidence": 0.6765,
+        "gap": 0.0244,
+        "hit95": [
+         0.642,
+         0.663
+        ]
+       },
+       {
+        "key": "points",
+        "n": 6853,
+        "hitRate": 0.6094,
+        "meanConfidence": 0.672,
+        "gap": 0.0627,
+        "hit95": [
+         0.598,
+         0.621
+        ]
+       },
+       {
+        "key": "rebounds",
+        "n": 6885,
+        "hitRate": 0.6485,
+        "meanConfidence": 0.6713,
+        "gap": 0.0228,
+        "hit95": [
+         0.637,
+         0.66
+        ]
+       }
+      ]
+     },
+     {
+      "by": "side",
+      "groups": [
+       {
+        "key": "less",
+        "n": 14216,
+        "hitRate": 0.6624,
+        "meanConfidence": 0.6733,
+        "gap": 0.0109,
+        "hit95": [
+         0.655,
+         0.67
+        ]
+       },
+       {
+        "key": "more",
+        "n": 7470,
+        "hitRate": 0.5901,
+        "meanConfidence": 0.6737,
+        "gap": 0.0836,
+        "hit95": [
+         0.579,
+         0.601
+        ]
+       }
+      ]
+     },
+     {
+      "by": "confidence",
+      "groups": [
+       {
+        "key": "60-65%",
+        "n": 8807,
+        "hitRate": 0.5973,
+        "meanConfidence": 0.6243,
+        "gap": 0.0271,
+        "hit95": [
+         0.587,
+         0.607
+        ]
+       },
+       {
+        "key": "65-70%",
+        "n": 6472,
+        "hitRate": 0.6428,
+        "meanConfidence": 0.6735,
+        "gap": 0.0308,
+        "hit95": [
+         0.631,
+         0.654
+        ]
+       },
+       {
+        "key": "70-75%",
+        "n": 4130,
+        "hitRate": 0.6831,
+        "meanConfidence": 0.7234,
+        "gap": 0.0403,
+        "hit95": [
+         0.669,
+         0.697
+        ]
+       },
+       {
+        "key": "75-80%",
+        "n": 2277,
+        "hitRate": 0.6952,
+        "meanConfidence": 0.7723,
+        "gap": 0.0771,
+        "hit95": [
+         0.676,
+         0.714
+        ]
+       }
+      ]
+     },
+     {
+      "by": "minutes_cv",
+      "groups": [
+       {
+        "key": "<0.15",
+        "n": 5885,
+        "hitRate": 0.6619,
+        "meanConfidence": 0.6672,
+        "gap": 0.0054,
+        "hit95": [
+         0.65,
+         0.674
+        ]
+       },
+       {
+        "key": ">=0.50",
+        "n": 611,
+        "hitRate": 0.581,
+        "meanConfidence": 0.6823,
+        "gap": 0.1012,
+        "hit95": [
+         0.542,
+         0.62
+        ]
+       },
+       {
+        "key": "0.15-0.30",
+        "n": 9979,
+        "hitRate": 0.6391,
+        "meanConfidence": 0.673,
+        "gap": 0.0339,
+        "hit95": [
+         0.63,
+         0.649
+        ]
+       },
+       {
+        "key": "0.30-0.50",
+        "n": 5211,
+        "hitRate": 0.6133,
+        "meanConfidence": 0.6801,
+        "gap": 0.0668,
+        "hit95": [
+         0.6,
+         0.626
+        ]
+       }
+      ]
+     },
+     {
+      "by": "games_of_history",
+      "groups": [
+       {
+        "key": "<=5",
+        "n": 497,
+        "hitRate": 0.5976,
+        "meanConfidence": 0.6908,
+        "gap": 0.0932,
+        "hit95": [
+         0.554,
+         0.64
+        ]
+       },
+       {
+        "key": "11-20",
+        "n": 20342,
+        "hitRate": 0.6412,
+        "meanConfidence": 0.6726,
+        "gap": 0.0314,
+        "hit95": [
+         0.635,
+         0.648
+        ]
+       },
+       {
+        "key": "6-10",
+        "n": 847,
+        "hitRate": 0.5714,
+        "meanConfidence": 0.6824,
+        "gap": 0.111,
+        "hit95": [
+         0.538,
+         0.604
+        ]
+       }
+      ]
+     },
+     {
+      "by": "model_vs_line_gap",
+      "groups": [
+       {
+        "key": "<15%",
+        "n": 7180,
+        "hitRate": 0.6177,
+        "meanConfidence": 0.6333,
+        "gap": 0.0156,
+        "hit95": [
+         0.606,
+         0.629
+        ]
+       },
+       {
+        "key": ">=40%",
+        "n": 5626,
+        "hitRate": 0.5821,
+        "meanConfidence": 0.6908,
+        "gap": 0.1087,
+        "hit95": [
+         0.569,
+         0.595
+        ]
+       },
+       {
+        "key": "15-25%",
+        "n": 5255,
+        "hitRate": 0.6894,
+        "meanConfidence": 0.6917,
+        "gap": 0.0023,
+        "hit95": [
+         0.677,
+         0.702
+        ]
+       },
+       {
+        "key": "25-40%",
+        "n": 3625,
+        "hitRate": 0.6872,
+        "meanConfidence": 0.6995,
+        "gap": 0.0123,
+        "hit95": [
+         0.672,
+         0.702
+        ]
+       }
+      ]
+     },
+     {
+      "by": "rest",
+      "groups": [
+       {
+        "key": "1-2 days",
+        "n": 11362,
+        "hitRate": 0.6432,
+        "meanConfidence": 0.6732,
+        "gap": 0.03,
+        "hit95": [
+         0.634,
+         0.652
+        ]
+       },
+       {
+        "key": "3+ days",
+        "n": 594,
+        "hitRate": 0.6414,
+        "meanConfidence": 0.675,
+        "gap": 0.0336,
+        "hit95": [
+         0.602,
+         0.679
+        ]
+       },
+       {
+        "key": "back-to-back",
+        "n": 9730,
+        "hitRate": 0.6305,
+        "meanConfidence": 0.6736,
+        "gap": 0.043,
+        "hit95": [
+         0.621,
+         0.64
+        ]
+       }
+      ]
+     },
+     {
+      "by": "opponent_allowed",
+      "groups": [
+       {
+        "key": "average",
+        "n": 11959,
+        "hitRate": 0.6321,
+        "meanConfidence": 0.6742,
+        "gap": 0.0421,
+        "hit95": [
+         0.623,
+         0.641
+        ]
+       },
+       {
+        "key": "tough (<0.95)",
+        "n": 4919,
+        "hitRate": 0.6526,
+        "meanConfidence": 0.6722,
+        "gap": 0.0196,
+        "hit95": [
+         0.639,
+         0.666
+        ]
+       },
+       {
+        "key": "weak (>1.05)",
+        "n": 4808,
+        "hitRate": 0.6354,
+        "meanConfidence": 0.6729,
+        "gap": 0.0375,
+        "hit95": [
+         0.622,
+         0.649
+        ]
+       }
+      ]
+     },
+     {
+      "by": "rest_calendar_corrected",
+      "groups": [
+       {
+        "key": "1 day",
+        "n": 11946,
+        "hitRate": 0.6463,
+        "meanConfidence": 0.6721,
+        "gap": 0.0257,
+        "hit95": [
+         0.638,
+         0.655
+        ]
+       },
+       {
+        "key": "2+ days",
+        "n": 6500,
+        "hitRate": 0.6222,
+        "meanConfidence": 0.6763,
+        "gap": 0.0541,
+        "hit95": [
+         0.61,
+         0.634
+        ]
+       },
+       {
+        "key": "back-to-back",
+        "n": 3240,
+        "hitRate": 0.6355,
+        "meanConfidence": 0.6727,
+        "gap": 0.0372,
+        "hit95": [
+         0.619,
+         0.652
+        ]
+       }
+      ]
+     }
+    ],
+    "restDefinitionAudit": {
+     "basis": "player's previous game (layer1.lastPlayed)",
+     "lines": 45216,
+     "elapsedDefinitionBackToBack": 16860,
+     "calendarBackToBack": 6675,
+     "restDaysDisagree": 14229,
+     "calledBackToBackButHadRest": 10185,
+     "shareMislabelledBackToBack": 0.2253
+    }
+   }
+  },
+  {
+   "label": "fold2-2026-27-to-date (out of season)",
+   "n": 7104,
+   "games": 132,
+   "dates": 19,
+   "from": "2026-10-25",
+   "to": "2026-11-13",
+   "variants": [
+    {
+     "id": "base",
+     "n": 7104,
+     "brier": 0.231883,
+     "logLoss": 0.656677,
+     "ece": 0.02943,
+     "decisions": {
+      "qualified": 3510,
+      "coverage": 0.4941,
+      "qualifiedHitRate": 0.6567,
+      "qualifiedHit95": [
+       0.6408,
+       0.6722
+      ],
+      "skipped": 3594,
+      "skippedFavouriteHitRate": 0.5562,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 1164,
+        "hitRate": 0.6134,
+        "meanConfidence": 0.6769,
+        "gap": 0.0635
+       },
+       "less": {
+        "n": 2346,
+        "hitRate": 0.6782,
+        "meanConfidence": 0.6771,
+        "gap": -0.0011
+       }
+      }
+     }
+    },
+    {
+     "id": "recal",
+     "n": 7104,
+     "brier": 0.230934,
+     "logLoss": 0.653541,
+     "ece": 0.00961,
+     "decisions": {
+      "qualified": 2956,
+      "coverage": 0.4161,
+      "qualifiedHitRate": 0.6847,
+      "qualifiedHit95": [
+       0.6677,
+       0.7012
+      ],
+      "skipped": 4148,
+      "skippedFavouriteHitRate": 0.5593,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 613,
+        "hitRate": 0.6803,
+        "meanConfidence": 0.6606,
+        "gap": -0.0197
+       },
+       "less": {
+        "n": 2343,
+        "hitRate": 0.6859,
+        "meanConfidence": 0.6693,
+        "gap": -0.0166
+       }
+      }
+     }
+    },
+    {
+     "id": "side_asym",
+     "n": 7104,
+     "brier": 0.231002,
+     "logLoss": 0.653575,
+     "ece": 0.01247,
+     "decisions": {
+      "qualified": 2762,
+      "coverage": 0.3888,
+      "qualifiedHitRate": 0.6861,
+      "qualifiedHit95": [
+       0.6685,
+       0.7031
+      ],
+      "skipped": 4342,
+      "skippedFavouriteHitRate": 0.5548,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 471,
+        "hitRate": 0.707,
+        "meanConfidence": 0.6463,
+        "gap": -0.0607
+       },
+       "less": {
+        "n": 2291,
+        "hitRate": 0.6818,
+        "meanConfidence": 0.6776,
+        "gap": -0.0042
+       }
+      }
+     }
+    },
+    {
+     "id": "uncertainty",
+     "n": 7104,
+     "brier": 0.231085,
+     "logLoss": 0.653764,
+     "ece": 0.01146,
+     "decisions": {
+      "qualified": 2903,
+      "coverage": 0.4086,
+      "qualifiedHitRate": 0.67,
+      "qualifiedHit95": [
+       0.6527,
+       0.6869
+      ],
+      "skipped": 4201,
+      "skippedFavouriteHitRate": 0.5694,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 627,
+        "hitRate": 0.6539,
+        "meanConfidence": 0.6553,
+        "gap": 0.0014
+       },
+       "less": {
+        "n": 2276,
+        "hitRate": 0.6744,
+        "meanConfidence": 0.6718,
+        "gap": -0.0027
+       }
+      }
+     }
+    },
+    {
+     "id": "line_gap",
+     "n": 7104,
+     "brier": 0.230661,
+     "logLoss": 0.652823,
+     "ece": 0.00996,
+     "decisions": {
+      "qualified": 3395,
+      "coverage": 0.4779,
+      "qualifiedHitRate": 0.6698,
+      "qualifiedHit95": [
+       0.6538,
+       0.6854
+      ],
+      "skipped": 3709,
+      "skippedFavouriteHitRate": 0.5476,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 878,
+        "hitRate": 0.6458,
+        "meanConfidence": 0.6421,
+        "gap": -0.0036
+       },
+       "less": {
+        "n": 2517,
+        "hitRate": 0.6782,
+        "meanConfidence": 0.6735,
+        "gap": -0.0047
+       }
+      }
+     }
+    },
+    {
+     "id": "all_new",
+     "n": 7104,
+     "brier": 0.230843,
+     "logLoss": 0.653266,
+     "ece": 0.0111,
+     "decisions": {
+      "qualified": 2975,
+      "coverage": 0.4188,
+      "qualifiedHitRate": 0.6763,
+      "qualifiedHit95": [
+       0.6593,
+       0.6929
+      ],
+      "skipped": 4129,
+      "skippedFavouriteHitRate": 0.5524,
+      "aboveBreakEvenReference": true,
+      "bySide": {
+       "more": {
+        "n": 648,
+        "hitRate": 0.6728,
+        "meanConfidence": 0.6388,
+        "gap": -0.034
+       },
+       "less": {
+        "n": 2327,
+        "hitRate": 0.6773,
+        "meanConfidence": 0.6778,
+        "gap": 0.0006
+       }
+      }
+     }
+    }
+   ],
+   "comparisonsVsRecal": [
+    {
+     "candidate": "side_asym",
+     "brier": {
+      "mean": 0.00006830101336362464,
+      "lower95": -0.0004154298303832569,
+      "upper95": 0.0005586001102399877,
+      "clusters": 132,
+      "n": 7104,
+      "pImprove": 0.6046976511744128
+     },
+     "logLossMean": 0.00003403255723094242,
+     "pImprove": 0.6046976511744128,
+     "pAdjusted": 1
+    },
+    {
+     "candidate": "uncertainty",
+     "brier": {
+      "mean": 0.00015057966635108558,
+      "lower95": -0.00025084081213381344,
+      "upper95": 0.0005612752668857361,
+      "clusters": 132,
+      "n": 7104,
+      "pImprove": 0.7776111944027986
+     },
+     "logLossMean": 0.00022374963367497472,
+     "pImprove": 0.7776111944027986,
+     "pAdjusted": 1
+    },
+    {
+     "candidate": "line_gap",
+     "brier": {
+      "mean": -0.00027330925398972883,
+      "lower95": -0.0007476566902337085,
+      "upper95": 0.00021162539225328468,
+      "clusters": 132,
+      "n": 7104,
+      "pImprove": 0.13043478260869565
+     },
+     "logLossMean": -0.0007177583173339628,
+     "pImprove": 0.13043478260869565,
+     "pAdjusted": 0.521739
+    },
+    {
+     "candidate": "all_new",
+     "brier": {
+      "mean": -0.00009135813820624613,
+      "lower95": -0.0006130781915149574,
+      "upper95": 0.00043418997573522783,
+      "clusters": 132,
+      "n": 7104,
+      "pImprove": 0.367816091954023
+     },
+     "logLossMean": -0.0002745035012946282,
+     "pImprove": 0.367816091954023,
+     "pAdjusted": 1
+    }
+   ],
+   "recalVsBase": {
+    "mean": -0.0009491984750564559,
+    "lower95": -0.00221597125374475,
+    "upper95": 0.00033556400553455383,
+    "clusters": 132,
+    "n": 7104,
+    "pImprove": 0.08245877061469266
+   },
+   "diagnostics": {
+    "note": "Exploratory: base-model qualified picks on proxy lines. Groups suggest hypotheses; they are not evidence of an effect.",
+    "picks": 3510,
+    "groups": [
+     {
+      "by": "stat",
+      "groups": [
+       {
+        "key": "assists",
+        "n": 1220,
+        "hitRate": 0.6754,
+        "meanConfidence": 0.6807,
+        "gap": 0.0052,
+        "hit95": [
+         0.649,
+         0.701
+        ]
+       },
+       {
+        "key": "points",
+        "n": 1045,
+        "hitRate": 0.644,
+        "meanConfidence": 0.6764,
+        "gap": 0.0324,
+        "hit95": [
+         0.615,
+         0.672
+        ]
+       },
+       {
+        "key": "rebounds",
+        "n": 1245,
+        "hitRate": 0.649,
+        "meanConfidence": 0.674,
+        "gap": 0.025,
+        "hit95": [
+         0.622,
+         0.675
+        ]
+       }
+      ]
+     },
+     {
+      "by": "side",
+      "groups": [
+       {
+        "key": "less",
+        "n": 2346,
+        "hitRate": 0.6782,
+        "meanConfidence": 0.6771,
+        "gap": -0.0011,
+        "hit95": [
+         0.659,
+         0.697
+        ]
+       },
+       {
+        "key": "more",
+        "n": 1164,
+        "hitRate": 0.6134,
+        "meanConfidence": 0.6769,
+        "gap": 0.0635,
+        "hit95": [
+         0.585,
+         0.641
+        ]
+       }
+      ]
+     },
+     {
+      "by": "confidence",
+      "groups": [
+       {
+        "key": "60-65%",
+        "n": 1371,
+        "hitRate": 0.6295,
+        "meanConfidence": 0.6249,
+        "gap": -0.0046,
+        "hit95": [
+         0.604,
+         0.655
+        ]
+       },
+       {
+        "key": "65-70%",
+        "n": 1006,
+        "hitRate": 0.6471,
+        "meanConfidence": 0.6736,
+        "gap": 0.0265,
+        "hit95": [
+         0.617,
+         0.676
+        ]
+       },
+       {
+        "key": "70-75%",
+        "n": 684,
+        "hitRate": 0.6696,
+        "meanConfidence": 0.7237,
+        "gap": 0.0541,
+        "hit95": [
+         0.633,
+         0.704
+        ]
+       },
+       {
+        "key": "75-80%",
+        "n": 449,
+        "hitRate": 0.7416,
+        "meanConfidence": 0.7727,
+        "gap": 0.0311,
+        "hit95": [
+         0.699,
+         0.78
+        ]
+       }
+      ]
+     },
+     {
+      "by": "minutes_cv",
+      "groups": [
+       {
+        "key": "<0.15",
+        "n": 1585,
+        "hitRate": 0.6625,
+        "meanConfidence": 0.6725,
+        "gap": 0.0101,
+        "hit95": [
+         0.639,
+         0.685
+        ]
+       },
+       {
+        "key": ">=0.50",
+        "n": 46,
+        "hitRate": 0.7609,
+        "meanConfidence": 0.6658,
+        "gap": -0.0951,
+        "hit95": [
+         0.621,
+         0.861
+        ]
+       },
+       {
+        "key": "0.15-0.30",
+        "n": 1422,
+        "hitRate": 0.6589,
+        "meanConfidence": 0.6812,
+        "gap": 0.0223,
+        "hit95": [
+         0.634,
+         0.683
+        ]
+       },
+       {
+        "key": "0.30-0.50",
+        "n": 457,
+        "hitRate": 0.6193,
+        "meanConfidence": 0.6809,
+        "gap": 0.0616,
+        "hit95": [
+         0.574,
+         0.663
+        ]
+       }
+      ]
+     },
+     {
+      "by": "games_of_history",
+      "groups": [
+       {
+        "key": "<=5",
+        "n": 1621,
+        "hitRate": 0.6465,
+        "meanConfidence": 0.6844,
+        "gap": 0.0379,
+        "hit95": [
+         0.623,
+         0.669
+        ]
+       },
+       {
+        "key": "11-20",
+        "n": 130,
+        "hitRate": 0.6077,
+        "meanConfidence": 0.6682,
+        "gap": 0.0605,
+        "hit95": [
+         0.522,
+         0.687
+        ]
+       },
+       {
+        "key": "6-10",
+        "n": 1759,
+        "hitRate": 0.6697,
+        "meanConfidence": 0.6709,
+        "gap": 0.0012,
+        "hit95": [
+         0.647,
+         0.691
+        ]
+       }
+      ]
+     },
+     {
+      "by": "model_vs_line_gap",
+      "groups": [
+       {
+        "key": "<15%",
+        "n": 1107,
+        "hitRate": 0.6522,
+        "meanConfidence": 0.6323,
+        "gap": -0.0199,
+        "hit95": [
+         0.624,
+         0.68
+        ]
+       },
+       {
+        "key": ">=40%",
+        "n": 760,
+        "hitRate": 0.6197,
+        "meanConfidence": 0.7023,
+        "gap": 0.0826,
+        "hit95": [
+         0.585,
+         0.654
+        ]
+       },
+       {
+        "key": "15-25%",
+        "n": 924,
+        "hitRate": 0.671,
+        "meanConfidence": 0.6902,
+        "gap": 0.0192,
+        "hit95": [
+         0.64,
+         0.701
+        ]
+       },
+       {
+        "key": "25-40%",
+        "n": 719,
+        "hitRate": 0.6843,
+        "meanConfidence": 0.7023,
+        "gap": 0.018,
+        "hit95": [
+         0.649,
+         0.717
+        ]
+       }
+      ]
+     },
+     {
+      "by": "rest",
+      "groups": [
+       {
+        "key": "1-2 days",
+        "n": 2005,
+        "hitRate": 0.6559,
+        "meanConfidence": 0.6767,
+        "gap": 0.0209,
+        "hit95": [
+         0.635,
+         0.676
+        ]
+       },
+       {
+        "key": "3+ days",
+        "n": 29,
+        "hitRate": 0.5517,
+        "meanConfidence": 0.6872,
+        "gap": 0.1355,
+        "hit95": [
+         0.375,
+         0.716
+        ]
+       },
+       {
+        "key": "back-to-back",
+        "n": 1476,
+        "hitRate": 0.6599,
+        "meanConfidence": 0.6772,
+        "gap": 0.0173,
+        "hit95": [
+         0.635,
+         0.684
+        ]
+       }
+      ]
+     },
+     {
+      "by": "opponent_allowed",
+      "groups": [
+       {
+        "key": "average",
+        "n": 2183,
+        "hitRate": 0.6519,
+        "meanConfidence": 0.679,
+        "gap": 0.0272,
+        "hit95": [
+         0.632,
+         0.672
+        ]
+       },
+       {
+        "key": "tough (<0.95)",
+        "n": 699,
+        "hitRate": 0.6552,
+        "meanConfidence": 0.6768,
+        "gap": 0.0216,
+        "hit95": [
+         0.619,
+         0.69
+        ]
+       },
+       {
+        "key": "weak (>1.05)",
+        "n": 628,
+        "hitRate": 0.6752,
+        "meanConfidence": 0.6704,
+        "gap": -0.0047,
+        "hit95": [
+         0.638,
+         0.711
+        ]
+       }
+      ]
+     },
+     {
+      "by": "rest_calendar_corrected",
+      "groups": [
+       {
+        "key": "1 day",
+        "n": 2097,
+        "hitRate": 0.6667,
+        "meanConfidence": 0.6769,
+        "gap": 0.0103,
+        "hit95": [
+         0.646,
+         0.687
+        ]
+       },
+       {
+        "key": "2+ days",
+        "n": 831,
+        "hitRate": 0.639,
+        "meanConfidence": 0.6778,
+        "gap": 0.0389,
+        "hit95": [
+         0.606,
+         0.671
+        ]
+       },
+       {
+        "key": "back-to-back",
+        "n": 582,
+        "hitRate": 0.646,
+        "meanConfidence": 0.6763,
+        "gap": 0.0302,
+        "hit95": [
+         0.606,
+         0.684
+        ]
+       }
+      ]
+     }
+    ],
+    "restDefinitionAudit": {
+     "basis": "player's previous game (layer1.lastPlayed)",
+     "lines": 7104,
+     "elapsedDefinitionBackToBack": 2835,
+     "calendarBackToBack": 1221,
+     "restDaysDisagree": 2046,
+     "calledBackToBackButHadRest": 1614,
+     "shareMislabelledBackToBack": 0.2272
+    }
+   }
+  }
+ ],
+ "dispositions": {
+  "side_asym": {
+   "status": "NO_CLEAR_EFFECT",
+   "reason": "Not distinguishable from recalibration after Holm (fold2 Brier 0.00007, 95% CI -0.00042 to 0.00056, p=1.0000)."
+  },
+  "uncertainty": {
+   "status": "NO_CLEAR_EFFECT",
+   "reason": "Not distinguishable from recalibration after Holm (fold2 Brier 0.00015, 95% CI -0.00025 to 0.00056, p=1.0000)."
+  },
+  "line_gap": {
+   "status": "NO_CLEAR_EFFECT",
+   "reason": "Not distinguishable from recalibration after Holm (fold2 Brier -0.00027, 95% CI -0.00075 to 0.00021, p=0.5217)."
+  },
+  "all_new": {
+   "status": "NO_CLEAR_EFFECT",
+   "reason": "Not distinguishable from recalibration after Holm (fold2 Brier -0.00009, 95% CI -0.00061 to 0.00043, p=1.0000)."
+  }
+ },
+ "artifact": {
+  "experimentId": "lab-sports-challengers-v2",
+  "specSha256": "eee835a55f01aa22f3b7c25eea0b5c42138724a459ac31b6fe61397c1d8195d9",
+  "trainedOn": "all 2025-26 proxy lines",
+  "variants": {
+   "base": null,
+   "recal": {
+    "set": "recal",
+    "weights": {
+     "points": [
+      -0.09156513235408238,
+      0.47462927472799926
+     ],
+     "rebounds": [
+      -0.13131584543827246,
+      0.7970828004415177
+     ],
+     "assists": [
+      -0.11074637142456525,
+      0.823421259848782
+     ]
+    },
+    "lambda": {
+     "points": 0.01,
+     "rebounds": 0.01,
+     "assists": 0.01
+    },
+    "trainRows": {
+     "points": 23865,
+     "rebounds": 23865,
+     "assists": 23865
+    }
+   },
+   "side_asym": {
+    "set": "side_asym",
+    "weights": {
+     "points": [
+      0.07773207851036722,
+      0.26746550456245133,
+      0.9321443163133865
+     ],
+     "rebounds": [
+      -0.00790305814172222,
+      0.5186235147009718,
+      1.07366198789401
+     ],
+     "assists": [
+      -0.04395326980528006,
+      0.627304725978683,
+      0.9361148664606441
+     ]
+    },
+    "lambda": {
+     "points": 0.01,
+     "rebounds": 10,
+     "assists": 10
+    },
+    "trainRows": {
+     "points": 23865,
+     "rebounds": 23865,
+     "assists": 23865
+    }
+   },
+   "uncertainty": {
+    "set": "uncertainty",
+    "weights": {
+     "points": [
+      -0.06110075789294637,
+      0.9268242578901986,
+      -0.8249743478894898,
+      -0.696137768948675
+     ],
+     "rebounds": [
+      -0.11397247132817537,
+      1.1105019092994486,
+      -1.0105011219918707,
+      -0.1904364097549514
+     ],
+     "assists": [
+      -0.10525003827817309,
+      0.9334331636580457,
+      -0.3793695073020207,
+      -0.06554831991251668
+     ]
+    },
+    "lambda": {
+     "points": 0.01,
+     "rebounds": 0.01,
+     "assists": 10
+    },
+    "trainRows": {
+     "points": 23865,
+     "rebounds": 23865,
+     "assists": 23865
+    }
+   },
+   "line_gap": {
+    "set": "line_gap",
+    "weights": {
+     "points": [
+      -0.03417107880642685,
+      0.7564038556286322,
+      -0.2571638673172902
+     ],
+     "rebounds": [
+      -0.091992280951141,
+      0.9670979820964332,
+      -0.2860759754625295
+     ],
+     "assists": [
+      -0.08045186425513266,
+      0.9411960593162756,
+      -0.2583351783568944
+     ]
+    },
+    "lambda": {
+     "points": 10,
+     "rebounds": 10,
+     "assists": 0.01
+    },
+    "trainRows": {
+     "points": 23865,
+     "rebounds": 23865,
+     "assists": 23865
+    }
+   },
+   "all_new": {
+    "set": "all_new",
+    "weights": {
+     "points": [
+      0.031833623994433395,
+      0.5985782889468166,
+      0.9446020474946993,
+      -0.08513478341782534,
+      -0.16918915847833432,
+      -0.14019834224282512
+     ],
+     "rebounds": [
+      -0.017812224751109728,
+      0.734542677036696,
+      1.1736292596304596,
+      -0.5454080534345137,
+      0.043780977761995854,
+      -0.05350734826859854
+     ],
+     "assists": [
+      -0.043522725615488235,
+      0.763051402104984,
+      1.023794903616929,
+      -0.3006740107779339,
+      -0.025153848685010936,
+      -0.058614362022387755
+     ]
+    },
+    "lambda": {
+     "points": 10,
+     "rebounds": 1,
+     "assists": 10
+    },
+    "trainRows": {
+     "points": 23865,
+     "rebounds": 23865,
+     "assists": 23865
+    }
+   }
+  }
+ },
+ "runtimeSeconds": 120
+}

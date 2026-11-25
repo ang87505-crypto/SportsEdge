@@ -45,3 +45,5 @@ jobs:
           sudo -E env "PATH=$PATH" bash scripts/verify-props-sql.sh
       - name: Provider client and paid-call failure tests (no network)
         run: node --experimental-strip-types --test src/lib/server/props-odds-client.test.mjs
+      - name: AI 2.0 sports research tests (pre-registered challengers, calendar rest)
+        run: node --experimental-strip-types --test src/lib/lab/sports/*.test.mjs
