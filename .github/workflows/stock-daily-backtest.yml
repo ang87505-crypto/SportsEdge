@@ -1,0 +1,58 @@
+# Daily open-to-close PAPER backtest (research only; docs/STOCK_DAILY_OC_BACKTEST_PLAN_2026_11_09.md).
+# Runs on pushes to its research branch and by manual dispatch; never scheduled. Read-only Alpaca
+# market-data GETs with the first paper account's keys (no orders, no account data, no database).
+# Results go to the run summary, the log (with a SHA-256 and a base64 copy) and a 30-day artifact.
+name: Stock daily backtest (research)
+on:
+  push:
+    branches: [research/stock-daily-oc-20261109]
+    paths:
+      - analytics/stock_daily_oc_backtest_v1.py
+      - analytics/test_stock_daily_oc_backtest_v1.py
+      - .github/workflows/stock-daily-backtest.yml
+  workflow_dispatch:
+    inputs:
+      end:
+        description: Last session to include (YYYY-MM-DD)
+        required: true
+        type: string
+        default: '2026-11-06'
+permissions:
+  contents: read
+concurrency:
+  group: stock-daily-backtest
+  cancel-in-progress: false
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      END: ${{ inputs.end || '2026-11-06' }}
+      UNIVERSE: config/paper-auto/universe-large-cap-v1.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate input
+        run: '[[ "$END" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]] || { echo "invalid end"; exit 2; }'
+      - name: Unit tests (synthetic data, no network)
+        run: python -m unittest analytics.test_stock_daily_oc_backtest_v1 analytics.test_stock_weekly_backtest_v1
+      - name: Download daily bars, raw and adjusted, 2016 onward (read-only)
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: python -m analytics.stock_daily_oc_backtest_v1 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/bars.json.gz"
+      - name: Replay the five pre-registered rules and the comparisons (no network)
+        run: |
+          python -m analytics.stock_daily_oc_backtest_v1 run --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --end "$END" --output "$RUNNER_TEMP/results.json" --markdown "$RUNNER_TEMP/results.md"
+          cat "$RUNNER_TEMP/results.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stock-daily-backtest-${{ github.run_id }}
+          path: ${{ runner.temp }}/results.*
+          if-no-files-found: ignore
+          retention-days: 30
