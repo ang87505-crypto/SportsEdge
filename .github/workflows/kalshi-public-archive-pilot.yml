@@ -14,7 +14,7 @@ jobs:
       - name: Acquire bounded public NWS archive sample
         run: |
           python3 - <<'PY'
-          import csv, datetime, hashlib, io, json, pathlib, urllib.parse, urllib.request, zipfile
+          import csv, datetime, hashlib, io, json, pathlib, urllib.parse, urllib.request, urllib.error, time, zipfile
 
           out = pathlib.Path("weather-archive-pilot")
           out.mkdir(exist_ok=True)
@@ -23,15 +23,24 @@ jobs:
           requests = []
           # Fixed sample selected before reading any outcomes. Preserve each model separately.
           for model in ("GFS", "NBS"):
-              for start, end in (("2025-09-01", "2025-10-01"), ("2025-10-01", "2025-11-01"), ("2025-11-01", "2025-12-01")):
-                  params = {"station": "KNYC", "model": model, "sts": start+"T00:00Z", "ets": end+"T00:00Z", "format": "csv"}
-                  requests.append((model.lower()+"-"+start+".csv", "/cgi-bin/request/mos.py", params))
+              params = {"station": "KNYC", "model": model, "sts": "2025-09-01T00:00Z", "ets": "2025-12-01T00:00Z", "format": "csv"}
+              requests.append((model.lower()+"-2025-sep-nov.csv", "/cgi-bin/request/mos.py", params))
           # Include the next morning's CLI for the last target date; ZIP keeps original product timestamps.
           requests.append(("clin-yc-2025-sep-nov.zip", "/cgi-bin/afos/retrieve.py", {"pil":"CLINYC","center":"KOKX","fmt":"zip","sdate":"2025-09-01T00:00Z","edate":"2025-12-02T00:00Z","limit":"9999"}))
           receipt = {"schema":"weather-archive-retrieval-pilot-v1","purpose":"raw retrieval only; not training pairs, calibrated probabilities or exchange data","retrieved_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"admitted_training_pairs":0,"exchange_requests":0,"files":[]}
-          for name, endpoint, params in requests:
+          cooldown = False
+          for i, (name, endpoint, params) in enumerate(requests):
               url = root + endpoint + "?" + urllib.parse.urlencode(params)
               row = {"name":name,"source_url":url}
+              if cooldown:
+                  row.update(status="DEFERRED_RATE_LIMIT", error="Stopped after server rate limit; no request sent")
+                  receipt["files"].append(row)
+                  print(json.dumps(row),flush=True)
+                  continue
+              # Three bulk requests instead of seven immediate requests. Conservative pacing;
+              # no automatic retries or alternate hosts when the server refuses traffic.
+              if i:
+                  time.sleep(90)
               try:
                   req = urllib.request.Request(url, headers={"User-Agent":"SportsEdge independent weather research archive pilot/1.0"})
                   with urllib.request.urlopen(req, timeout=40) as response:
@@ -58,6 +67,11 @@ jobs:
                           row.update(raw_products=len(members),sample_member_names=[x.filename for x in members[:5]])
                   (out/name).write_bytes(data)
                   row.update(status="RETRIEVED_UNVALIDATED",bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+              except urllib.error.HTTPError as exc:
+                  row.update(status="FAILED",http_status=exc.code,error=str(exc)[:400])
+                  if exc.code == 429:
+                      cooldown = True
+                      row["retry_after"] = exc.headers.get("Retry-After")
               except Exception as exc:
                   row.update(status="FAILED",error=str(exc)[:400])
               receipt["files"].append(row)
