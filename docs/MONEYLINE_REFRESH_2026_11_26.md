@@ -1,112 +1,175 @@
 # NBA/EPL moneyline refresh: why the board went stale, and the gated repair (2026-11-26)
 
-Branch `claude/moneyline-refresh-20261126`, based on `main` at `4d26f7222016a55c5fe903d659f55665db3bbf67`. At 2026-11-26 20:20 UTC this was still the head of `main` and the last verified production commit.
+PR #229, branch `claude/moneyline-refresh-20261126`, merged with `main` at `fe96631` (#230). The release switch is **OFF**. Nothing in this PR has been applied to a hosted database, scheduled, deployed or run against the provider.
 
 ## Production evidence before any change (2026-11-26 20:22 UTC)
 
-`GET https://sports-edge-eta.vercel.app/api/sports?sport=nba` returned `status: stored` with 7 upcoming games:
+`GET https://sports-edge-eta.vercel.app/api/sports?sport=nba` returned 7 upcoming games.
+- The newest stored h2h quote anywhere was `2026-10-30T07:04:57Z`.
+- The two Nov 28 games carried Oct 8 prices from 2 books.
 
-| Start (UTC) | Game | Books | Newest stored quote |
-| --- | --- | --- | --- |
-| 2026-11-28 00:10 | Heat @ Knicks | 2 | 2026-10-08 22:52 |
-| 2026-11-28 02:40 | Lakers @ Spurs | 2 | 2026-10-08 22:52 |
-| 2026-12-25 to 2026-12-26 | five Christmas games | 8 each | 2026-10-30 07:04:57 |
+`?sport=soccer` returned 0 games. Every stored EPL fixture had started, and no new ones had been saved.
 
-The newest stored h2h quote anywhere was `2026-10-30T07:04:57Z`. `?sport=soccer` returned 0 games. Every stored EPL fixture had already started, and no new fixtures were saved.
+## Trace and cause
 
-## Trace
+1. `/sports` → `useSportsFeed` → `/api/sports` → `storedSports()` only reads `games` and `odds_snapshots` (`market=h2h`).
+2. The only writer of those rows is the dual-track collector, now split into:
+   - `src/lib/server/collect/odds-collector.ts`: the server-only wrapper;
+   - `dual-track-core.ts`: the logic, which can now be tested.
+3. It has two callers, and neither is scheduled:
+   - `GET /api/internal/collect-markets` (bearer token).
+   - `POST /api/internal/research-cycle`. It runs only on a single-use, ten-minute capability issued by the database function `research_dispatch(false)` through `pg_net`.
+4. Runs 2–3 on 2026-10-30 were explicit one-time runs (`docs/NBA_ON_DEMAND_MARKET_REFRESH_2026_10_30.md`). `research-market-refresh.yml` runs contract tests only. The props collector is a separate pipeline.
 
-1. `/sports` → `useSportsFeed` → `/api/sports` → `storedSports()` (`src/lib/server/research-db.ts`). This route only reads the research database (`games` + `odds_snapshots`, `market=h2h`). It never calls a provider.
-2. The only writer of those rows is `collectDualTracks()` (`src/lib/server/collect/odds-collector.ts`). It makes two Odds API h2h requests per run, for `basketball_nba` and `soccer_epl`, and saves append-only snapshots with ON CONFLICT DO NOTHING.
-3. `collectDualTracks()` has two callers:
-   - `GET /api/internal/collect-markets`, guarded by a bearer token. Its comment says "no automatic schedule until the owner … approves cron".
-   - `POST /api/internal/research-cycle`. It runs only on a single-use, ten-minute capability issued by the database function `research_dispatch(false)`. It reserves two requests through `research_reserve_credit` (8 per rolling 24 h, 240 per rolling 30 days).
-4. Nothing calls either route on a schedule:
-   - neither route appears in `vercel.json` or `SCHEDULER_SLOTS`;
-   - no workflow calls either route;
-   - `research-market-refresh.yml` only runs contract tests on push and PR.
-   - `docs/NBA_ON_DEMAND_MARKET_REFRESH_2026_10_30.md` and `docs/NBA_PAPER_RUN_2026_10_30.md` record runs 2–3 on Oct 30 as explicit one-time runs: "creates no … automatic schedules".
-   - `docs/SPORTSEDGE_NOV12_AI_READINESS.md` records "forward collection needs an external `research_dispatch` call and has no current schedule".
-5. The NBA player-prop collector is a separate pipeline: `props-daily.yml`/`props-tick.yml`, the props database and props budget. It never writes `games` or `odds_snapshots`, so it kept working while the moneyline board aged.
+**Cause.** Nothing is broken in the collector. The h2h refresh was built on demand, and a schedule was never approved.
 
-**Cause.** Nothing is broken in the collector. The h2h refresh was built as an on-demand operation, and the once-daily schedule its design documents anticipated was never approved or added. The last manual runs were on Oct 30.
+## Design (implemented and tested; not active)
 
-These earlier prerequisites for scheduling are already met in production:
-- database-level dedupe (`database/migrations/20261008_odds_snapshot_dedupe_v1.sql`, `docs/ATOMIC_ODDS_WRITES.md`);
-- a request budget (`research_reserve_credit`).
+```
+Vercel cron 11:00 UTC ─► /api/internal/moneyline-refresh            (switch OFF → returns before any network call)
+                           │ one RPC, no provider call, no credit reservation
+                           ▼
+        research_refresh_slot_dispatch('moneyline-h2h-<UTC date>')  (NEW, additive migration, not applied)
+          one transaction: INSERT slot ON CONFLICT DO NOTHING ─► if new: existing research_dispatch(false)
+                           │ pg_net (sent only if the transaction commits)
+                           ▼
+        existing /api/internal/research-cycle: research_claim (single use, 10 min)
+          → research_reserve_credit('nba'), ('soccer')   (existing 8/24h, 240/30d caps)
+          → collector → per-sport receipt → research_finish(run id, status, summary)
+```
 
-Owner approval of the schedule is the one missing step.
+### 1. Duplicate prevention
 
-## Repair in this branch (implemented and tested; NOT active)
+The old "newest quote under 20 h" check is gone: it was a read-then-write and could race.
 
-| File | Change | Why |
-| --- | --- | --- |
-| `src/lib/server/moneyline-refresh.ts` (new) | Once-daily handler. `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled=false` | Reuses the existing production pin (`researchCycleEnvironmentReady`), the existing `research_reserve_credit` caps and the existing collector. Changes no algorithm, budget or table. |
-| `src/app/api/internal/moneyline-refresh/route.ts` (new) | Wires the handler to `researchDb` and `collectDualTracks`, and logs only outcome codes and counts | Same server-only clients as `/api/sports` and `research-cycle` |
-| `vercel.json` | One cron: `/api/internal/moneyline-refresh` at `0 11 * * *` | Fires within 11:00 UTC: before EPL's earliest kickoff (12:30 UTC) and the same night's NBA tip-offs. No other Odds API job runs in that hour. `vercel.json` is a recorded, not frozen, file in the experiment manifest. |
-| `src/lib/server/moneyline-refresh.test.mjs` (new) | 12 tests | See below |
-| `.github/workflows/research-market-refresh.yml` | Runs the new test; path filters; comment saying this workflow proves contracts, not fresh data | The audit finding |
+The new slot is atomic:
+- Concurrent firings for one UTC day serialise on the slot's primary key. Exactly one of them commits a dispatch.
+- If `research_dispatch` raises, the slot row rolls back with it. A later firing that day may then dispatch once.
+- A committed dispatch spends the slot even if its run later fails. A failed run is never retried automatically.
+- Downstream, `research_claim` makes the capability single-use. Duplicate `pg_net` deliveries or replays of the same run therefore get 404, with no reserve and no collect.
 
-Order of checks on every firing:
-1. `CRON_SECRET` bearer (constant-time comparison).
-2. GET with no query.
-3. `VERCEL_ENV=production`.
-4. Inside the 11:00 UTC hour.
-5. **Release switch.** While it is off, the route returns `skipped/moneyline_schedule_off` before any network call.
-6. The production research database pin and server credentials. A read-only key, preview fixtures or the props/staging project all fail closed.
-7. Read the newest stored h2h `ingested_at`. If it is less than 20 h old, skip without spending credits.
-8. Reserve `nba`, then `soccer`, through the existing caps. A refusal returns 429 with no retry and no provider call.
-9. Run the existing collector once.
-10. Read the newest stored h2h row back from the database. The result is:
-    - `refreshed` only if a row saved by this run is visible in the database;
-    - `no_new_quotes` if the collector inserted nothing;
-    - otherwise `refresh_unverified` (503).
+Taken together, one scheduled slot can reserve credits at most once (two requests), and only inside a claimed run.
 
-Thrown messages are never returned, because provider URLs carry the key.
+### 2. Freshness and receipts, per sport
 
-Budget: 2 requests per day, about 60 per 30 days. That is inside the existing 240/30-day refresh cap and the 500/month plan already shared with props (200 + 240 ≤ 500, `docs/NBA_PLAYER_PROPS_PAPER_2026_11_07.md`). No budget increases.
+Each sport is stored, read back by **this run's own inserted row IDs** and classified separately (`src/lib/ingestion/track-receipt.ts`):
 
-It does not create forecasts, paper positions, settlements or results. It does not touch props, stocks, Kalshi, NOAA timing or any frozen experiment file.
+| Outcome | Meaning |
+| --- | --- |
+| `saved` | This run inserted rows, and every one was read back by ID under this sport's fixtures |
+| `unchanged` | Prices were offered, but all were already stored (same provider `last_update` and price) |
+| `empty_slate` | The provider listed no upcoming fixtures for the sport |
+| `no_prices` | Fixtures were listed, but none had a complete pregame h2h market |
+| `store_failed` | A write or the read-back failed. Rows may be partly written, so none are claimed |
+| `unverified` | Inserts were reported, but not all of them were found on read-back |
 
-## Tests run on this branch
+Each sport's receipt also carries `newestSourceObservedAt`: the newest provider timestamp offered for that sport.
 
-- `node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/server/moneyline-refresh.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs`: 54/54 pass, including the 12 new tests.
-- `scheduler-kickoff`, `props/backup-coverage`, `scripts/data-branches` and `scripts/experiment-manifest` tests (they read `vercel.json`): 36/36 pass.
-- `npx tsc --noEmit`: clean. `eslint` on the new files: clean. `npm run build`: passes, and `ƒ /api/internal/moneyline-refresh` is listed.
-- `experiment-manifest verify docs/experiments/manifest-2026-11-13-candidate.json`:
-  - The only recorded-file change from this branch is `vercel.json`.
-  - The props drift it reports (`capture-plan.ts`, `props-tick.ts`) already exists on `main` and is not from this branch.
+Run status:
 
-## Runtime evidence
+| Status | When |
+| --- | --- |
+| `refreshed` | Every sport is ok-class and at least one sport is `saved` |
+| `no_new_quotes` | Every sport is ok-class and none is `saved` |
+| `partial_refresh` | At least one sport is `saved` and another failed |
+| `refresh_failed` | No sport is `saved` and at least one failed |
+| `refresh_unverified` | The report's shape is not recognised |
 
-None yet, and none can be produced without an owner action. This session has no research-database or Vercel credentials, and the switch is off. A green workflow or a page reload does not show fresh ingestion. Fresh ingestion is shown by all three of:
+Only `refreshed` and `no_new_quotes` finish the run as `completed`. Everything else is `failed` with `reviewRequired`.
 
-1. `/api/sports?sport=nba` (and `soccer`) `bookmakers[].updatedAt` later than `2026-10-30T07:04:57Z`, and soccer `games.length > 0`;
-2. a `research_runs` receipt (manual path), or the `moneyline-refresh` Vercel log line with `status: refreshed`, `receipt.savedThisRun: true` and `receipt.after.ingestedAt` (scheduled path);
-3. new `odds_snapshots` rows with `ingested_at` at that time.
+The summary written by `research_finish` contains:
+- `runId`;
+- the per-sport outcomes;
+- the full report.
 
-## Owner actions (in order)
+The receipt is therefore tied to the claimed run, not to whichever row has a recent timestamp. Provider feeds are still fetched before any write. If storing one sport fails, the other sport's already-paid-for quotes are still saved and reported.
 
-1. **Restore the board now, within existing authorization (no deploy).** Use the documented Oct 30 path in the Supabase SQL editor of `fzyjazhvkstvwwzjhlrr`:
-   - Optionally run `research_dispatch(true)` first: a read-only probe that spends no credits.
-   - Then run `research_dispatch(false)` once: 2 credits.
-   - Check its `research_runs` receipt.
-   - Check the three signals above.
-2. **Approve or decline the daily schedule (2 requests per day).** If approved:
-   - Review and merge this branch.
-   - Then flip `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled` to `true` in a separate reviewed PR.
-   - Deploy outside the freeze, which starts Sunday 2026-11-29 18:00 MST (2026-11-30 01:00 UTC).
-   - Merging this branch with the switch off is inert: the cron returns `moneyline_schedule_off`.
-3. **First scheduled firing.** Confirm the 11:00 UTC log shows `refreshed`.
-   - The `research_reserve_credit` definition is not in the repository; it was installed directly in the database. It has only ever been called inside a claimed `research-cycle` run.
-   - If it refuses a call outside a run, the route returns 429 or 503 **before** any provider call.
-   - The fallback then is a database-side daily `research_dispatch(false)` via `pg_cron`. That is a database change for the owner.
-4. **Rollback.** Set the switch back to `false`. Snapshots are append-only, and nothing else changes.
+### 3. The `research_reserve_credit` contract
 
-## For ChatGPT (owner of ops configuration and page displays)
+**Blocked: the definition cannot be inspected from here.** The `research_*` functions were installed directly in the production database and are not in the repository on any branch. This session has no database credentials.
+
+The design no longer depends on how the function behaves outside a run: it is only called inside a claimed research-cycle run, which is the context of the successful run 3 on Oct 30.
+
+The exact read-only check is `database/verify/research_refresh_contract_readonly.sql`. It is a catalogue-only `BEGIN READ ONLY … ROLLBACK` that returns:
+- the definitions, return types, owners and execute grants of `research_dispatch`, `research_claim`, `research_finish` and `research_reserve_credit`;
+- the `research_*` columns and constraints;
+- whether `pg_net` and `pg_cron` are installed.
+
+The file ends with the seven questions (a–g) that the reviewer must answer before activation. It was dry-run locally against the stub database.
+
+## Changed files
+
+| File | Change |
+| --- | --- |
+| `database/migrations/20261126_research_refresh_slots_v1.sql` | New, additive and **not applied**. Adds the `research_refresh_slots` table (RLS on, no browser access) and the `research_refresh_slot_dispatch(text)` function (security definer, today's UTC slot only, execute granted to `service_role` only). It changes no existing object. |
+| `src/lib/server/moneyline-refresh.ts`, `src/app/api/internal/moneyline-refresh/route.ts` | The cron handler only claims the slot through the RPC. Switch `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled=false`. |
+| `src/lib/server/collect/dual-track-core.ts` (new), `odds-collector.ts` | Collector logic moved into a testable core. Provider requests are unchanged (2 h2h calls, `regions=us`, american odds). Each sport now gets its own store, read-back by ID and receipt. |
+| `src/lib/ingestion/track-receipt.ts` (new) | Pure per-sport classification and run status |
+| `src/lib/server/research-cycle-handler.ts` | Run status and `research_finish` status now come from the per-sport receipts. Claim, reserve and auth logic are unchanged. |
+| `vercel.json` | One cron: `0 11 * * *`. It is a recorded (not frozen) manifest file. |
+| `.github/workflows/research-market-refresh.yml` | Runs the new tests. Adds a `slot-sql` job (disposable local PostgreSQL). Its comment says it does not prove fresh data. |
+| `database/tests/research_refresh_slots_v1_{stub,test}.sql`, `…_race.sh`, `scripts/verify-research-refresh-sql.sh` | SQL contract, replay and race tests against a **stub** `research_dispatch` |
+| `database/verify/research_refresh_contract_readonly.sql` | The owner's read-only production check |
+
+## Validation (local, 2026-11-26)
+
+- **`scripts/verify-research-refresh-sql.sh`** (PostgreSQL 16):
+  - contract test, including grants, malformed slots, other-day slots and replay after failure and after success;
+  - race A: 20 concurrent firings → 1 `dispatched`, 19 `duplicate_slot`, 1 stub dispatch;
+  - race B: 20 concurrent firings where the first dispatch fails → 1 `failed (rolled back)`, 1 `dispatched`, 18 `duplicate_slot`, 1 stub dispatch;
+  - a `void`-returning dispatcher → PASS;
+  - re-applying the migration is idempotent.
+- **New tests:**
+  - collector core: 8 (both saved, EPL empty slate, unchanged, fresh NBA beside unchanged EPL, partial store failure, missing read-back, read-back outage, provider failure before any write);
+  - track receipts: 3;
+  - moneyline handler: 12 (switch off, auth/hour/env, 12-way overlap → 1 dispatch, replay after failure, mismatched replies);
+  - research-cycle: 4 (per-sport receipts tied to the run id, unknown report shape, 10 concurrent deliveries → 1 reserve pair and 1 collect, replay after a failed run).
+- Full JavaScript suite: 1221 tests, 1173 pass, 48 skipped, 0 fail.
+- `tsc`: clean. `eslint`: clean. `next build`: passes.
+- Python analytics: OK. Props SQL: all 7 suites pass, plus 9 integration tests.
+- `experiment-manifest verify`: the only recorded-file change from this branch is `vercel.json`. Frozen drift in `capture-plan.ts` and `props-tick.ts` already exists on `main`.
+
+## Runtime status
+
+| | Status |
+| --- | --- |
+| Implemented and tested | Everything above |
+| Deployed | Nothing |
+| Applied to a hosted database | Nothing |
+| Provider calls made | None |
+| Gated | The schedule (switch OFF), the migration and the contract check |
+
+A green workflow or a page reload does not show fresh ingestion. Fresh ingestion is shown by:
+- the `research_runs` summary for the dispatched run, with `status`, `runId` and per-sport outcomes;
+- `/api/sports?sport=nba` and `?sport=soccer` quote times after `2026-10-30T07:04:57Z`, and soccer games > 0 (unless `empty_slate`).
+
+## Owner actions, in order
+
+1. **Restore the board now, within existing authorization (no deploy).** In the SQL editor of `fzyjazhvkstvwwzjhlrr`:
+   - optionally run `select research_dispatch(true);` first (probe, 0 credits);
+   - then run `select research_dispatch(false);` once (2 credits);
+   - check the run's `research_runs` row and `/api/sports`.
+
+   The run uses the code currently deployed, so its summary does not yet contain the per-sport receipts.
+2. Run `database/verify/research_refresh_contract_readonly.sql`, then send the output for review against questions a–g.
+3. If approved:
+   - merge #229 (inert while the switch is off);
+   - apply the migration in the SQL editor;
+   - re-run step 2 to confirm the new objects and grants.
+4. Approve or decline the daily schedule: 2 requests per day, about 60 per 30 days, inside the existing 240 cap. If approved:
+   - flip `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled` in a separate reviewed PR;
+   - deploy **before** the freeze starts (Sun 2026-11-29 18:00 MST = 2026-11-30 01:00 UTC), or after it ends.
+5. **First firing (11:00 UTC):**
+   - the Vercel log shows `dispatched` with the slot;
+   - `research_refresh_slots` has one row for the day;
+   - the run summary shows the outcome for each sport;
+   - a manual re-request of the route the same day returns `duplicate_slot`.
+6. **Rollback.** Set the switch back to `false`. Slots and snapshots are append-only.
+
+## For ChatGPT (ops configuration and page displays)
 
 These were deliberately not changed here:
-- `config/ops/jobs.json` has no entry for this cron. Suggested job: daily at 11:00 UTC, success = the Vercel log line `status: refreshed` or `no_new_quotes`.
-- The sports page does not flag quote age. The two Nov 28 games show Oct 8 prices from 2 books.
-- EPL forecasts on `/sports` come from the static `src/data/research/epl_october_2026_forecasts.json`, not from stored fixtures.
-- The known 10-minute nominal start-time offset in Odds API NBA fixtures (`docs/NBA_PAPER_RUN_2026_10_30.md`) is unchanged.
+- An ops-monitor job for the 11:00 UTC firing in `config/ops/jobs.json`.
+- Quote-age display on `/sports`. #230 changed that page.
+- The static `epl_october_2026_forecasts.json` EPL panel.
+- The Odds API's 10-minute nominal NBA start offset.

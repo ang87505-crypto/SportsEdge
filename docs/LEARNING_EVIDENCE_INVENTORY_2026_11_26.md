@@ -26,7 +26,7 @@ Failed and rejected findings are preserved unchanged. They are terminal, and the
 | 10 | `lab-sports-injury-rotation` (INSUFFICIENT_DATA) | Licensed, timestamped pre-lock injury/rotation feed | None | **No** | None | **Owner:** select and authorize a licensed source. Nothing can be built on stored data |
 | 11 | `qmom-disclosure-follower-v1` (INSUFFICIENT_DATA) | 26 forward weeks vs SPY | `analytics/research` → `summary.json candidates[]` (nightly research-collect) | **Yes** | `summary.json` (2026-11-26 11:02 UTC): 12 forward **sessions** since 2026-11-10, total −4.75%, `INSUFFICIENT FORWARD SAMPLE` | **Eligible integration.** Add a reader for `candidates[id].forward`. It must count weeks as the registry defines them, not sessions: either the producer emits graded weeks, or the reader reports sessions and stays INSUFFICIENT_DATA |
 | 12–13 | `lab-stock-v3-mom-lowvol`, `lab-stock-v3-core-satellite` (RUNNING) | Weekly forward picks vs `stock-v2-weekly-1` and SPY | `analytics/stock_research_v3.py` | **No** (only in unmerged #165) | Retrospective only (recorded Holm p and holdout figures) | Merge or retire #165; owner decision. Until then they cannot advance |
-| 14 | `lab-stock-holdrank10-wholeshare` (RUNNING) | 26 graded forward weeks | `summary.json labHoldrank10`, read by `src/lib/lab/engine/stock-research.ts` | Yes, but empty | `labHoldrank10.frozenRows = 0` and `forward = {}` on 2026-11-26. The reader correctly returns nothing | **Investigate the producer.** No forward pick has been frozen since registration on Nov 19 |
+| 14 | `lab-stock-holdrank10-wholeshare` (RUNNING) | 26 graded forward weeks | `summary.json labHoldrank10` (the freeze was added in `4cf3ec5`, on main via #217/#222), read by `src/lib/lab/engine/stock-research.ts` | Yes, but empty | `labHoldrank10.frozenRows = 0` and `forward = {}` on 2026-11-26. The reader correctly returns nothing | First freeze expected for the Nov 30 week (#223: research-collect, Sat Nov 28 04:43 UTC). Verify that run; until then it stays owner-supplied |
 | 15–16 | `lab-props-opponent-rate`, `lab-props-low-minutes` (PROMISING, retrospective only) | Forward frozen predictions meeting the registered minimums | Retrospective evaluators `scripts/props-opponent-eval.ts`, `scripts/props-low-minutes-eval.ts` | **No forward producer** | Retrospective verdict QUALIFIES_FOR_FORWARD (2026-11-24) | Add a forward shadow scorer on the props ledger (same pattern as #5). PROMISING stays retrospective until then |
 
 ## Related observation (an automatic experiment)
@@ -36,7 +36,7 @@ Failed and rejected findings are preserved unchanged. They are terminal, and the
 - `weeks` 0;
 - `pending` 1.
 
-That is in `summary.json` as of 2026-11-26. No second weekly decision is visible for the week of Nov 23. The engine records exactly this (0/26 weeks). The producer's weekly cadence should be checked before anyone reads the count as progress.
+That is in `summary.json` as of 2026-11-26. #223 records the cause: the Nov 23 week was lost to the Nov 21 `APPEND_ONLY_VIOLATION`, which #203 fixed on main. The engine records exactly this (0/26 weeks). Confirm that the Sat Nov 28 04:43 UTC research-collect run freezes the Nov 30 week before reading the count as progress.
 
 ## Integrations possible with already-authorized saved data (not implemented in this milestone)
 
@@ -51,4 +51,6 @@ The other 10 need an owner action:
 - a licensed source (injury/rotation);
 - a merge decision on #165 (2 stock v3 experiments);
 - new forward producers (opponent-rate and low-minutes, 2 experiments);
-- a producer investigation (holdrank10).
+- verification of holdrank10's first forward freeze (Nov 28).
+
+_Updated in PR #229 at its second revision: rows 14 and the psychology note now cite #223's recorded causes. No experiment changed status, and none is described as automatic._
