@@ -39,6 +39,14 @@ test('active experiments without an automatic source are listed; quiet ones beyo
  assert.equal(EVIDENCE_POLICY.quietDays,30);
 });
 
+test('experiments fed by an automatic producer on this run are not listed as lacking one',()=>{
+ const r=reg([exp('lab','stocks','RUNNING','2026-11-27T00:00:00Z'),exp('none','sports','RUNNING','2026-09-01T00:00:00Z')]);
+ const without=evidenceCoverage(r,{sportsLedger:true,stockWeeks:true},NOW).experiments.ownerSuppliedOnly.map(e=>e.id);
+ const withFeed=evidenceCoverage(r,{sportsLedger:true,stockWeeks:true,fedByProducer:['lab']},NOW);
+ assert.deepEqual(without,['lab','none']);assert.deepEqual(withFeed.experiments.ownerSuppliedOnly.map(e=>e.id),['none']);
+ assert.equal(withFeed.experiments.automatic,1);
+});
+
 test('end to end: the engine report states its evidence coverage and moves nothing because of it',()=>{
  const dir=mkdtempSync(join(tmpdir(),'evidence-'));
  writeFileSync(join(dir,'rows.json'),'[]');writeFileSync(join(dir,'fwd.json'),JSON.stringify({predictions:[],grades:[]}));

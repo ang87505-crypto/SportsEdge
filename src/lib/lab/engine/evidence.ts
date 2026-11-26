@@ -12,12 +12,15 @@ import type {Registry,Status} from './experiments.ts';
 export const EVIDENCE_POLICY={version:'engine-evidence-v1',quietDays:30} as const;
 const TERMINAL:Status[]=['REJECTED','FAILED','READY_FOR_REVIEW'];
 
-export function evidenceCoverage(reg:Registry,inputs:{sportsLedger:boolean;stockWeeks:boolean;weatherForward?:boolean},nowIso:string,P=EVIDENCE_POLICY){
+export function evidenceCoverage(reg:Registry,inputs:{sportsLedger:boolean;stockWeeks:boolean;weatherForward?:boolean;fedByProducer?:readonly string[]},nowIso:string,P=EVIDENCE_POLICY){
  const now=Date.parse(nowIso);if(!Number.isFinite(now))throw Error('EVIDENCE_INVALID_CLOCK');
  const active=reg.experiments.filter(e=>!TERMINAL.includes(e.status));
  const lastChange=(e:Registry['experiments'][number])=>e.history.reduce((m,h)=>Math.max(m,Date.parse(h.at)||0),0);
  const days=(ms:number)=>ms?Math.round((now-ms)/864e5*10)/10:null;
- const ownerOnly=active.filter(e=>!e.forward).map(e=>({id:e.id,domain:e.domain,status:e.status,
+ // Automatic = a ledger-pairing forward spec, or an evidence producer that fed this experiment on this run
+ // (stock research ledgers, weather shadow scorecards). Everything else advances only on an owner-supplied result.
+ const fed=new Set(inputs.fedByProducer??[]);
+ const ownerOnly=active.filter(e=>!e.forward&&!fed.has(e.id)).map(e=>({id:e.id,domain:e.domain,status:e.status,
   lastChangeAt:lastChange(e)?new Date(lastChange(e)).toISOString():null,daysSinceChange:days(lastChange(e))}));
  const byStatus=(s:Status)=>reg.experiments.filter(e=>e.status===s).map(e=>e.id);
  const gaps:{code:string;detail:string}[]=[];

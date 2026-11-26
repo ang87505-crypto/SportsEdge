@@ -35,6 +35,7 @@ test('end to end: running experiments record forward evidence once; a rejected e
  const psych=a.reg.experiments.find(e=>e.id==='lab-stock-psychology-v1');
  assert.equal(psych.status,'INSUFFICIENT_DATA','3/26 forward weeks: below the registered minimum');
  assert.equal(a.rep.evidence.inputs.stocks,'CONNECTED');
+ assert.ok(!a.rep.evidence.experiments.ownerSuppliedOnly.some(e=>e.id==='lab-stock-psychology-v1'),'fed by the research ledger: not listed as lacking a producer');
  // Same input again: applied once.
  const b=run('b',join(dir,'a','registry.json'));
  assert.equal(b.reg.experiments.find(e=>e.id==='lab-stock-psychology-v1').history.length,psych.history.length);

@@ -52,6 +52,8 @@ test('engine attention: evidence gaps and sports alarms reach the page only as s
   domains:{sports:{alarms:{status:'ALARM',alarms:[{code:'MISSING_OUTCOMES',detail:'20 of 480 locked lines'}]}}}});
  assert.deepEqual(r.gaps.map(g=>g.code),['STOCK_EVIDENCE_NOT_SUPPLIED']);
  assert.deepEqual(r.inputs,{sports:'CONNECTED',stocks:'NOT_SUPPLIED',weather:'CONNECTED'});
+ assert.deepEqual(r.withoutProducer,[]);
+ assert.deepEqual(readEngineAttention({evidence:{experiments:{ownerSuppliedOnly:[{id:'lab-sports-injury-rotation'},{id:'<bad>'}]}}}).withoutProducer,['lab-sports-injury-rotation']);
  assert.deepEqual(r.alarms,{status:'ALARM',codes:['MISSING_OUTCOMES'],details:['20 of 480 locked lines']});
  assert.equal(readEngineAttention({domains:{sports:{alarms:{status:'WEIRD'}}}}).alarms,null);
  assert.equal(readEngineAttention(null),null);

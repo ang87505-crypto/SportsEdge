@@ -142,6 +142,7 @@ const regIn=state&&existsSync(state+'/registry.json')?state+'/registry.json':opt
 if(!regIn)throw new Error('missing --registry');
 let reg:Registry=JSON.parse(readFileSync(regIn,'utf8'));
 const before=fingerprint(reg);
+const fedByProducer=new Set<string>();
 let status='OK',failure:string|null=null;
 
 try{
@@ -164,6 +165,7 @@ try{
   for(const x of stockResearchResults(JSON.parse(readFileSync(opt('stock-research')!,'utf8')))){
    const e=reg.experiments.find(y=>y.id===x.experimentId);
    if(!e){applied.push({id:x.experimentId,skipped:'NOT_REGISTERED'});continue;}
+   fedByProducer.add(e.id);
    if(e.status==='REJECTED'||e.status==='FAILED'){applied.push({id:e.id,skipped:'TERMINAL_'+e.status});continue;}
    const n=nextStatus(e,x.result);
    const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'stock-research-v1',result:x.result}),x.result as unknown as Record<string,unknown>,x.result.disposition);
@@ -220,7 +222,7 @@ try{
   const x=card?.engineResult;
   if(card&&(card.schema!=='kalshi-weather-multisource-paper-scorecard-v1'||x?.result?.evidence!=='forward'))throw new Error('WEATHER_FORWARD_INVALID');
   const e=x?reg.experiments.find(y=>y.id===x.experimentId):null;
-  if(x&&e){const n=nextStatus(e,x.result as Result);
+  if(x&&e){fedByProducer.add(e.id);const n=nextStatus(e,x.result as Result);
    const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'weather-forward-v1',file:files.at(-1),result:x.result}),x.result,x.result.disposition);
    reg=r.registry;(report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:r.changed,reason:n.reason,details:{scorecard:files.at(-1)}});}
   (report.domains as Record<string,unknown>).weather={scorecard:files.at(-1)??null,summary:card?.summary??null,readiness:card?.readiness??null};
@@ -241,7 +243,7 @@ try{
 report.status=status;report.failure=failure;report.registryChanged=fingerprint(reg)!==before;
 report.registrySummary=reg.experiments.map(e=>({id:e.id,domain:e.domain,status:e.status,disposition:e.disposition}));
 try{report.evidence=evidenceCoverage(reg,{sportsLedger:flag('sports-ledger')||!!opt('sports-rows'),stockWeeks:!!opt('stock-weeks')||!!opt('stock-research'),
- weatherForward:!!opt('weather-forward')},now);}
+ weatherForward:!!opt('weather-forward'),fedByProducer:[...fedByProducer]},now);}
 catch(e){report.evidence={error:e instanceof Error?e.message:String(e)};}
 report.runtimeMs=Date.now()-t0;
 const run={runId,at:now,status,failure,registryChanged:report.registryChanged,
