@@ -95,6 +95,7 @@ try{
      const nav=document.querySelector(mobile?'nav[aria-label="Mobile navigation"]':'nav[aria-label="Primary"]');
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
+      composerBottom:main?.querySelector(".chat-form input")?.getBoundingClientRect().bottom??null,viewportHeight:innerHeight,
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
       currentNav:nav?.querySelectorAll(mobile?'[aria-current]':'a[aria-current="page"]').length??0,
       platformRoute:['/automation','/progress','/testing','/guide'].includes(location.pathname),
@@ -117,6 +118,7 @@ try{
     for(const href of data.links)internalLinks.add(href.split('#')[0]||'/');
     if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
+    if(route==='/'&&(data.composerBottom===null||data.composerBottom>data.viewportHeight-80))issues.push('Initial chat input is below the usable first screen');
     if(data.placeholders)issues.push('Placeholder links detected');
     if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
      issues.push('Model panel missing');

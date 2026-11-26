@@ -1,0 +1,99 @@
+/* Shared finishing pass. Presentation only; status colours keep their semantic meanings. */
+:root {
+  --text-2: #adbbb4;
+  --text-3: #8fa69b;
+  --line: rgba(162, 214, 186, .11);
+  --line-2: rgba(162, 214, 186, .18);
+  --r-lg: 16px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+}
+.content { padding-top: 30px; }
+.panel-v2, .glass {
+  border-color: var(--line-2);
+  box-shadow: inset 0 1px 0 rgba(219, 255, 235, .045), 0 14px 35px -30px rgba(0, 0, 0, .8);
+}
+.panel-head { gap: 16px; }
+.panel-head-copy p, .metric-detail { line-height: 1.55; }
+.metric-value, .metric strong, .kv dd, .data-table { font-variant-numeric: tabular-nums; }
+.page-heading h1 { letter-spacing: -.025em; }
+.button { min-height: 42px; }
+.section-tabs a { min-height: 40px; align-content: center; }
+.table-wrap, .chat-table-scroll { scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+.data-table td, .data-table th, .chat-table td, .chat-table th { line-height: 1.55; }
+.sidebar { gap: 20px; }
+.nav-link-child { min-height: 33px; }
+.command { min-width: 0; gap: 20px; }
+.command-head { padding: 2px 0 0; }
+.command-head .command-kicker {
+  margin: 0 0 10px; color: var(--accent-2); font-size: 11px;
+  font-weight: 600; letter-spacing: .13em; line-height: 1.4;
+}
+.command-head h1 { font-size: clamp(32px, 3vw, 42px); letter-spacing: -.025em; margin-bottom: 10px; }
+.command-head > p:last-child { max-width: 65ch; line-height: 1.6; }
+.command-strip { gap: 10px; min-width: 0; }
+.command-strip li { min-width: 0; }
+.command-strip-item {
+  gap: 7px; min-height: 118px; padding: 14px; border-color: var(--line-2);
+  border-radius: 13px; background: linear-gradient(150deg, rgba(24, 43, 34, .72), rgba(12, 23, 18, .9));
+}
+.command-strip-item strong { line-height: 1.45; }
+.command-strip-item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+.command-main { gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(280px, 350px); }
+.command-chat, .command-rail { min-width: 0; }
+.chat { gap: 12px; min-width: 0; }
+.chat-thread, .command-chat .chat-thread {
+  min-height: 250px; max-height: 60vh; align-content: start; overflow-y: auto;
+  border-radius: 16px; border-color: var(--line-2); background: rgba(10, 20, 15, .65);
+}
+.chat-thread.is-empty, .command-chat .chat-thread.is-empty { min-height: 76px; max-height: none; }
+.chat-msg { max-width: 96%; border-radius: 12px; }
+.chat-msg.bot { background: rgba(24, 42, 33, .72); }
+.chat-thread.is-empty .chat-msg { border: 0; padding: 6px 2px; background: transparent; }
+.chat-chips { gap: 7px; }
+.chat-chip { min-height: 38px; border-color: var(--line-2); }
+.chat-chip:focus-visible, .chat-examples summary:focus-visible, .chat-method summary:focus-visible {
+  outline: 2px solid var(--accent-2); outline-offset: 3px;
+}
+.chat-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+.chat-form input { min-width: 0; width: 100%; min-height: 48px; font-size: 16px; }
+.chat-form .button { min-height: 48px; padding: 8px 12px; }
+.chat-examples, .chat-method { min-width: 0; color: var(--text-2); font-size: var(--fs-sm); }
+.chat-examples summary, .chat-method summary { cursor: pointer; min-height: 30px; padding: 6px 0; }
+.chat-examples[open] summary, .chat-method[open] summary { margin-bottom: 6px; }
+.chat-method p { line-height: 1.65; }
+.chat-boundary { line-height: 1.6; }
+.briefing-now .status-list li { padding-block: 13px; }
+.briefing-now .status-value { max-width: 100px; white-space: normal; text-align: right; }
+.briefing-approvals { padding-top: 14px; }
+.continue-card { border-color: var(--line-2); }
+@media (max-width: 1100px) {
+  .command-main { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .content { padding-top: 20px; }
+  .command { gap: 16px; }
+  .command-head h1 { font-size: 34px; margin-bottom: 7px; }
+  .command-head > p:last-child { font-size: 14px; line-height: 1.55; }
+  .command-head .command-kicker { font-size: 10px; letter-spacing: .1em; margin-bottom: 8px; }
+  .command-strip {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(210px, 72%);
+    overflow-x: auto; max-width: 100%; padding: 2px 2px 8px; scroll-snap-type: x proximity;
+    scrollbar-width: thin; scrollbar-color: var(--line-3) transparent;
+  }
+  .command-strip li { scroll-snap-align: start; }
+  .command-strip-item { min-height: 112px; padding: 12px; }
+  .command-main { gap: 18px; }
+  .chat-thread, .command-chat .chat-thread { min-height: 220px; max-height: 55vh; }
+  .chat-thread.is-empty, .command-chat .chat-thread.is-empty { min-height: 70px; max-height: none; }
+  .chat-chip, .button, .section-tabs a { min-height: 44px; }
+  .chat-form { gap: 6px; }
+  .chat-form .button { padding-inline: 10px; font-size: 12px; }
+  .chat-form input { padding-inline: 10px; }
+  .chat-examples summary, .chat-method summary { min-height: 44px; padding-block: 11px; }
+  .panel-head { flex-wrap: wrap; }
+  .panel-head-actions { max-width: 100%; flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .command-strip { scroll-behavior: auto; scroll-snap-type: none; }
+}
