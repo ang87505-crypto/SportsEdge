@@ -1,0 +1,93 @@
+{
+ "schema": "kalshi-weather-multisource-paper-scorecard-v1",
+ "at": "2026-11-26T09:29:20.337Z",
+ "anchor": "SAME_DAY",
+ "inputsDigest": "7b0e5eaba1fb099c20e563a9e62090aed606ee4d7813d38239b428d59ff48636",
+ "inputsRetrievedAt": "2026-11-26T09:28:49.028988+00:00",
+ "inputsCapturedAt": "2026-11-26T09:28:49.028928+00:00",
+ "frozenNow": [
+  "2026-11-26-SAME_DAY"
+ ],
+ "gradedNow": [],
+ "skipped": {},
+ "outcomeConflicts": [],
+ "summary": [
+  {
+   "anchor": "DAY_AHEAD",
+   "frozen": 0,
+   "awaitingHistory": 0,
+   "graded": 0,
+   "ungraded": 0,
+   "missedSince": [],
+   "firstDate": null,
+   "lastDate": null,
+   "meanCrps": {
+    "COMBINED": null
+   },
+   "coverage80": null,
+   "vsBest": {
+    "against": null,
+    "n": 0,
+    "mean": null,
+    "lower95": null,
+    "upper95": null
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "0/50 graded forward days."
+  },
+  {
+   "anchor": "SAME_DAY",
+   "frozen": 1,
+   "awaitingHistory": 0,
+   "graded": 0,
+   "ungraded": 1,
+   "missedSince": [],
+   "firstDate": "2026-11-26",
+   "lastDate": "2026-11-26",
+   "meanCrps": {
+    "COMBINED": null
+   },
+   "coverage80": null,
+   "vsBest": {
+    "against": null,
+    "n": 0,
+    "mean": null,
+    "lower95": null,
+    "upper95": null
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "0/50 graded forward days."
+  }
+ ],
+ "readiness": {
+  "modelId": "knyc-multisource-emos-v1-research",
+  "paperForecasting": {
+   "status": "NOT_READY",
+   "missing": [
+    "DAY_AHEAD: 0/30 verified training days"
+   ]
+  },
+  "ownerReview": {
+   "status": "NOT_READY",
+   "missing": [
+    "DAY_AHEAD: 0/50 graded forward days",
+    "DAY_AHEAD: forward rule NO_CLEAR_EFFECT",
+    "SAME_DAY: 0/50 graded forward days",
+    "SAME_DAY: forward rule NO_CLEAR_EFFECT"
+   ]
+  },
+  "exchange": "DISABLED",
+  "ordersEnabled": false,
+  "note": "PAPER forecasting means frozen forecasts graded against NWS CLI reports. It uses no market data and places no order. Exchange access is a separate owner decision."
+ },
+ "engineResult": {
+  "experimentId": "lab-weather-knyc-multisource-emos-v1",
+  "result": {
+   "evidence": "forward",
+   "disposition": "NO_CLEAR_EFFECT",
+   "observations": 0,
+   "dates": 0,
+   "reason": "DAY_AHEAD: NO_CLEAR_EFFECT, 0 graded forward days, 0 missed anchors (0/50 graded forward days.) SAME_DAY: NO_CLEAR_EFFECT, 0 graded forward days, 0 missed anchors (0/50 graded forward days.) Frozen before each anchor; forecast accuracy only, no market data."
+  }
+ }
+}
