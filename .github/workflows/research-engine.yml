@@ -64,7 +64,8 @@ jobs:
           set -o pipefail
           node --experimental-strip-types --no-warnings scripts/research-engine.ts --registry research/engine/registry.json \
             --out "$RUNNER_TEMP/engine" --state "$RUNNER_TEMP/engine" --sports-ledger --evaluate-forward \
-            $( [ -d research-data/kalshi-independent/nyc-weather/multisource-v1 ] && echo --weather-forward research-data/kalshi-independent/nyc-weather/multisource-v1 ) | tee -a "$GITHUB_STEP_SUMMARY"
+            $( [ -d research-data/kalshi-independent/nyc-weather/multisource-v1 ] && echo --weather-forward research-data/kalshi-independent/nyc-weather/multisource-v1 ) \
+            $( [ -f research-data/summary.json ] && echo --stock-research research-data/summary.json ) | tee -a "$GITHUB_STEP_SUMMARY"
           node -e "const r=require(process.argv[1]);const s=r.domains.sports;console.log(JSON.stringify({picks:s?.picks,quality:s?.qualityIssues,patterns:(s?.patterns??[]).map(p=>[p.id,p.n,p.effect,p.lower95,p.upper95,p.significant]),proposed:(s?.proposed??[]).map(h=>h.key),skipped:s?.skipped,forward:r.forward.map(f=>({id:f.id,to:f.to,changed:f.changed,reason:f.reason}))},null,1))" "$RUNNER_TEMP/engine/report.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Archive the evaluation and its verified registry
         run: |
