@@ -24,7 +24,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: kalshi-weather-multisource-paper-${{ inputs.anchor || github.event.schedule }}
+  # Backup schedule and manual Vercel dispatch for the same anchor must share a lock.
+  group: kalshi-weather-multisource-paper-${{ inputs.anchor || (github.event.schedule == '41 9 * * *' && 'SAME_DAY' || 'DAY_AHEAD') }}
   cancel-in-progress: false
 jobs:
   preflight:
