@@ -1,0 +1,776 @@
+{
+ "modelId": "knyc-multisource-emos-v1-research",
+ "disposition": "NO_CLEAR_EFFECT",
+ "data": {
+  "label": "knyc-2024",
+  "targetRange": [
+   "2024-01-01",
+   "2024-12-31"
+  ],
+  "rangeSource": "receipt",
+  "inputsSha256": {
+   "clin-yc-2024-full-year.zip": "5b90740b011afd6aeafebe6de556ffe4d203e30410f8645efdf4bd71adb29071",
+   "gfs-2024-full-year.csv": "23403322a538f0940d780f16c439c6ba7250964c9d152990c339e4ef82ead701",
+   "nbs-2024-full-year.csv": "783ab24c709654075a64c01c3abc771a8d55c644384c61e998b1e81504f25407"
+  },
+  "cliFilesRead": 741,
+  "outcomes": 362,
+  "outcomesOutsideRange": 0,
+  "outcomeRange": [
+   "2024-01-01",
+   "2024-12-31"
+  ],
+  "forecastsByMember": {
+   "NWS": 0,
+   "NBM": 3654,
+   "GFS_MOS": 3660,
+   "HRRR": 0
+  },
+  "adapterIssues": {
+   "gfs": {
+    "MISSING_MAX": 738
+   },
+   "nbs": {
+    "MISSING_MAX": 735
+   },
+   "cli": {
+    "NWS_CLI_INTERIM_NOT_COMPLETE": 365,
+    "NWS_CLI_WRONG_STATION_OR_DATE": 1,
+    "WMO_ISSUANCE_MISMATCH": 3,
+    "NWS_CLI_MISSING_HIGH": 3,
+    "LATER_OR_DUPLICATE_REPORT": 4,
+    "NWS_CLI_NOT_NEXT_MORNING_REPORT": 1,
+    "NWS_CLI_WRONG_PRODUCT": 2
+   }
+  },
+  "conflictingDuplicates": {
+   "gfs": [],
+   "nbs": []
+  },
+  "daysWithMember": {
+   "DAY_AHEAD": {
+    "NWS": 0,
+    "NBM": 366,
+    "GFS_MOS": 366,
+    "HRRR": 0
+   },
+   "SAME_DAY": {
+    "NWS": 0,
+    "NBM": 366,
+    "GFS_MOS": 366,
+    "HRRR": 0
+   }
+  }
+ },
+ "anchors": [
+  {
+   "anchor": "DAY_AHEAD",
+   "station": "KNYC_CENTRAL_PARK",
+   "inputDays": 366,
+   "skippedInsufficientHistory": 31,
+   "skippedNoMember": 0,
+   "skippedNoOutcome": 4,
+   "scoredDays": 331,
+   "backtestDays": 165,
+   "holdoutDays": 166,
+   "backtestRange": [
+    "2024-02-01",
+    "2024-07-16"
+   ],
+   "holdoutRange": [
+    "2024-07-17",
+    "2024-12-31"
+   ],
+   "bestMemberChosenOnBacktest": "NBM_CORRECTED",
+   "backtest": {
+    "COMBINED": {
+     "n": 165,
+     "meanCrps": 1.725786,
+     "mae": 2.406061,
+     "meanLogLoss": 2.562942,
+     "meanEventBrier": 0.803568,
+     "coverage80": 0.818182,
+     "pitHistogram": [
+      19,
+      15,
+      18,
+      14,
+      15,
+      20,
+      12,
+      16,
+      15,
+      21
+     ]
+    },
+    "NBM_RAW": {
+     "n": 165,
+     "meanCrps": 1.83589,
+     "mae": 2.630303,
+     "meanLogLoss": 2.60384,
+     "meanEventBrier": 0.824664,
+     "coverage80": 0.830303,
+     "pitHistogram": [
+      16,
+      11,
+      23,
+      19,
+      4,
+      13,
+      23,
+      24,
+      12,
+      20
+     ]
+    },
+    "NBM_CORRECTED": {
+     "n": 165,
+     "meanCrps": 1.808039,
+     "mae": 2.490909,
+     "meanLogLoss": 2.596195,
+     "meanEventBrier": 0.812344,
+     "coverage80": 0.781818,
+     "pitHistogram": [
+      26,
+      13,
+      10,
+      17,
+      16,
+      11,
+      25,
+      14,
+      10,
+      23
+     ]
+    },
+    "GFS_MOS_RAW": {
+     "n": 165,
+     "meanCrps": 1.87967,
+     "mae": 2.569697,
+     "meanLogLoss": 2.652031,
+     "meanEventBrier": 0.8299,
+     "coverage80": 0.842424,
+     "pitHistogram": [
+      6,
+      11,
+      17,
+      20,
+      7,
+      23,
+      24,
+      15,
+      17,
+      25
+     ]
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 165,
+     "meanCrps": 1.852707,
+     "mae": 2.6,
+     "meanLogLoss": 2.633449,
+     "meanEventBrier": 0.822762,
+     "coverage80": 0.8,
+     "pitHistogram": [
+      18,
+      16,
+      16,
+      20,
+      14,
+      16,
+      13,
+      17,
+      13,
+      22
+     ]
+    },
+    "NBM_NATIVE": {
+     "n": 165,
+     "meanCrps": 1.932757,
+     "mae": 2.630303,
+     "meanLogLoss": 3.183097,
+     "meanEventBrier": 0.877988,
+     "coverage80": 0.648485,
+     "pitHistogram": [
+      34,
+      14,
+      6,
+      17,
+      0,
+      15,
+      13,
+      5,
+      18,
+      43
+     ]
+    },
+    "CLIMATOLOGY": {
+     "n": 165,
+     "meanCrps": 5.014117,
+     "mae": 6.872727,
+     "meanLogLoss": 3.642891,
+     "meanEventBrier": 1.199981,
+     "coverage80": 0.745455,
+     "pitHistogram": [
+      2,
+      3,
+      8,
+      20,
+      14,
+      16,
+      23,
+      17,
+      17,
+      45
+     ]
+    }
+   },
+   "holdout": {
+    "COMBINED": {
+     "n": 166,
+     "meanCrps": 1.222809,
+     "mae": 1.656627,
+     "meanLogLoss": 2.295127,
+     "meanEventBrier": 0.721827,
+     "coverage80": 0.837349,
+     "pitHistogram": [
+      16,
+      16,
+      19,
+      12,
+      21,
+      24,
+      13,
+      17,
+      9,
+      19
+     ]
+    },
+    "NBM_RAW": {
+     "n": 166,
+     "meanCrps": 1.282391,
+     "mae": 1.759036,
+     "meanLogLoss": 2.308028,
+     "meanEventBrier": 0.742268,
+     "coverage80": 0.891566,
+     "pitHistogram": [
+      10,
+      12,
+      9,
+      26,
+      2,
+      27,
+      27,
+      14,
+      21,
+      18
+     ]
+    },
+    "NBM_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.25805,
+     "mae": 1.728916,
+     "meanLogLoss": 2.306575,
+     "meanEventBrier": 0.734255,
+     "coverage80": 0.879518,
+     "pitHistogram": [
+      12,
+      14,
+      11,
+      22,
+      16,
+      18,
+      18,
+      30,
+      10,
+      15
+     ]
+    },
+    "GFS_MOS_RAW": {
+     "n": 166,
+     "meanCrps": 1.495136,
+     "mae": 2.012048,
+     "meanLogLoss": 2.442619,
+     "meanEventBrier": 0.791783,
+     "coverage80": 0.825301,
+     "pitHistogram": [
+      8,
+      3,
+      9,
+      22,
+      3,
+      29,
+      28,
+      22,
+      17,
+      25
+     ]
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.435945,
+     "mae": 2.012048,
+     "meanLogLoss": 2.400658,
+     "meanEventBrier": 0.783871,
+     "coverage80": 0.837349,
+     "pitHistogram": [
+      18,
+      17,
+      17,
+      21,
+      14,
+      26,
+      6,
+      14,
+      14,
+      19
+     ]
+    },
+    "NBM_NATIVE": {
+     "n": 166,
+     "meanCrps": 1.26784,
+     "mae": 1.759036,
+     "meanLogLoss": 2.331251,
+     "meanEventBrier": 0.734827,
+     "coverage80": 0.76506,
+     "pitHistogram": [
+      16,
+      24,
+      4,
+      13,
+      0,
+      31,
+      18,
+      2,
+      26,
+      32
+     ]
+    },
+    "CLIMATOLOGY": {
+     "n": 166,
+     "meanCrps": 4.992916,
+     "mae": 6.945783,
+     "meanLogLoss": 3.654489,
+     "meanEventBrier": 1.237775,
+     "coverage80": 0.716867,
+     "pitHistogram": [
+      47,
+      29,
+      20,
+      10,
+      13,
+      13,
+      12,
+      6,
+      8,
+      8
+     ]
+    }
+   },
+   "holdoutCombinedMinusBestMember": {
+    "n": 166,
+    "mean": -0.03524,
+    "lower95": -0.09315,
+    "upper95": 0.020964
+   },
+   "holdoutPairs": {
+    "NBM_RAW": {
+     "n": 166,
+     "mean": -0.059582,
+     "lower95": -0.123974,
+     "upper95": 0.018006
+    },
+    "NBM_CORRECTED": {
+     "n": 166,
+     "mean": -0.03524,
+     "lower95": -0.09315,
+     "upper95": 0.020964
+    },
+    "NBM_NATIVE": {
+     "n": 166,
+     "mean": -0.045031,
+     "lower95": -0.12805,
+     "upper95": 0.054887
+    },
+    "GFS_MOS_RAW": {
+     "n": 166,
+     "mean": -0.272327,
+     "lower95": -0.403456,
+     "upper95": -0.137963
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 166,
+     "mean": -0.213136,
+     "lower95": -0.301777,
+     "upper95": -0.121066
+    }
+   },
+   "checks": {
+    "enoughHoldout": true,
+    "beatsBestMember": true,
+    "beatsNbmNative": true,
+    "beatsClimatology": true,
+    "bootstrapUpperBelowZero": false,
+    "coverageWithinRange": true
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "At least one pre-registered HOLDOUT condition fails: bootstrapUpperBelowZero."
+  },
+  {
+   "anchor": "SAME_DAY",
+   "station": "KNYC_CENTRAL_PARK",
+   "inputDays": 366,
+   "skippedInsufficientHistory": 30,
+   "skippedNoMember": 0,
+   "skippedNoOutcome": 4,
+   "scoredDays": 332,
+   "backtestDays": 166,
+   "holdoutDays": 166,
+   "backtestRange": [
+    "2024-01-31",
+    "2024-07-16"
+   ],
+   "holdoutRange": [
+    "2024-07-17",
+    "2024-12-31"
+   ],
+   "bestMemberChosenOnBacktest": "NBM_CORRECTED",
+   "backtest": {
+    "COMBINED": {
+     "n": 166,
+     "meanCrps": 1.438855,
+     "mae": 2.054217,
+     "meanLogLoss": 2.367254,
+     "meanEventBrier": 0.789885,
+     "coverage80": 0.843373,
+     "pitHistogram": [
+      16,
+      19,
+      16,
+      18,
+      16,
+      14,
+      14,
+      14,
+      18,
+      21
+     ]
+    },
+    "NBM_RAW": {
+     "n": 166,
+     "meanCrps": 1.49166,
+     "mae": 2.174699,
+     "meanLogLoss": 2.381868,
+     "meanEventBrier": 0.80063,
+     "coverage80": 0.849398,
+     "pitHistogram": [
+      11,
+      19,
+      21,
+      17,
+      3,
+      13,
+      31,
+      12,
+      20,
+      19
+     ]
+    },
+    "NBM_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.440406,
+     "mae": 2.048193,
+     "meanLogLoss": 2.361166,
+     "meanEventBrier": 0.791824,
+     "coverage80": 0.831325,
+     "pitHistogram": [
+      19,
+      15,
+      13,
+      24,
+      9,
+      17,
+      17,
+      14,
+      17,
+      21
+     ]
+    },
+    "GFS_MOS_RAW": {
+     "n": 166,
+     "meanCrps": 1.711541,
+     "mae": 2.331325,
+     "meanLogLoss": 2.554723,
+     "meanEventBrier": 0.834697,
+     "coverage80": 0.831325,
+     "pitHistogram": [
+      10,
+      11,
+      10,
+      15,
+      5,
+      29,
+      20,
+      15,
+      23,
+      28
+     ]
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.650805,
+     "mae": 2.337349,
+     "meanLogLoss": 2.527439,
+     "meanEventBrier": 0.819986,
+     "coverage80": 0.813253,
+     "pitHistogram": [
+      18,
+      10,
+      28,
+      12,
+      17,
+      13,
+      16,
+      12,
+      21,
+      19
+     ]
+    },
+    "NBM_NATIVE": {
+     "n": 166,
+     "meanCrps": 1.580578,
+     "mae": 2.174699,
+     "meanLogLoss": 2.877791,
+     "meanEventBrier": 0.86988,
+     "coverage80": 0.668675,
+     "pitHistogram": [
+      34,
+      20,
+      3,
+      9,
+      2,
+      17,
+      16,
+      0,
+      27,
+      38
+     ]
+    },
+    "CLIMATOLOGY": {
+     "n": 166,
+     "meanCrps": 4.854693,
+     "mae": 6.680723,
+     "meanLogLoss": 3.588267,
+     "meanEventBrier": 1.225076,
+     "coverage80": 0.759036,
+     "pitHistogram": [
+      3,
+      3,
+      8,
+      21,
+      20,
+      10,
+      24,
+      16,
+      17,
+      44
+     ]
+    }
+   },
+   "holdout": {
+    "COMBINED": {
+     "n": 166,
+     "meanCrps": 0.982922,
+     "mae": 1.343373,
+     "meanLogLoss": 2.042729,
+     "meanEventBrier": 0.672643,
+     "coverage80": 0.885542,
+     "pitHistogram": [
+      12,
+      17,
+      17,
+      16,
+      23,
+      14,
+      22,
+      14,
+      17,
+      14
+     ]
+    },
+    "NBM_RAW": {
+     "n": 166,
+     "meanCrps": 1.071569,
+     "mae": 1.481928,
+     "meanLogLoss": 2.094689,
+     "meanEventBrier": 0.704243,
+     "coverage80": 0.86747,
+     "pitHistogram": [
+      10,
+      15,
+      12,
+      10,
+      5,
+      32,
+      22,
+      18,
+      24,
+      18
+     ]
+    },
+    "NBM_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.013329,
+     "mae": 1.415663,
+     "meanLogLoss": 2.05141,
+     "meanEventBrier": 0.691578,
+     "coverage80": 0.891566,
+     "pitHistogram": [
+      17,
+      8,
+      19,
+      12,
+      12,
+      24,
+      14,
+      32,
+      13,
+      15
+     ]
+    },
+    "GFS_MOS_RAW": {
+     "n": 166,
+     "meanCrps": 1.307585,
+     "mae": 1.801205,
+     "meanLogLoss": 2.312151,
+     "meanEventBrier": 0.76691,
+     "coverage80": 0.837349,
+     "pitHistogram": [
+      15,
+      15,
+      16,
+      36,
+      2,
+      24,
+      28,
+      6,
+      7,
+      17
+     ]
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 166,
+     "meanCrps": 1.290823,
+     "mae": 1.740964,
+     "meanLogLoss": 2.307068,
+     "meanEventBrier": 0.753305,
+     "coverage80": 0.849398,
+     "pitHistogram": [
+      16,
+      16,
+      18,
+      15,
+      26,
+      20,
+      14,
+      13,
+      12,
+      16
+     ]
+    },
+    "NBM_NATIVE": {
+     "n": 166,
+     "meanCrps": 1.073227,
+     "mae": 1.481928,
+     "meanLogLoss": 2.124675,
+     "meanEventBrier": 0.713634,
+     "coverage80": 0.813253,
+     "pitHistogram": [
+      13,
+      26,
+      1,
+      7,
+      0,
+      37,
+      17,
+      2,
+      36,
+      27
+     ]
+    },
+    "CLIMATOLOGY": {
+     "n": 166,
+     "meanCrps": 4.78741,
+     "mae": 6.759036,
+     "meanLogLoss": 3.576184,
+     "meanEventBrier": 1.245458,
+     "coverage80": 0.73494,
+     "pitHistogram": [
+      44,
+      28,
+      24,
+      8,
+      14,
+      14,
+      12,
+      6,
+      9,
+      7
+     ]
+    }
+   },
+   "holdoutCombinedMinusBestMember": {
+    "n": 166,
+    "mean": -0.030407,
+    "lower95": -0.101238,
+    "upper95": 0.069805
+   },
+   "holdoutPairs": {
+    "NBM_RAW": {
+     "n": 166,
+     "mean": -0.088647,
+     "lower95": -0.167599,
+     "upper95": 0.032258
+    },
+    "NBM_CORRECTED": {
+     "n": 166,
+     "mean": -0.030407,
+     "lower95": -0.101238,
+     "upper95": 0.069805
+    },
+    "NBM_NATIVE": {
+     "n": 166,
+     "mean": -0.090305,
+     "lower95": -0.16709,
+     "upper95": 0.028671
+    },
+    "GFS_MOS_RAW": {
+     "n": 166,
+     "mean": -0.324663,
+     "lower95": -0.481299,
+     "upper95": -0.220913
+    },
+    "GFS_MOS_CORRECTED": {
+     "n": 166,
+     "mean": -0.307902,
+     "lower95": -0.438235,
+     "upper95": -0.208763
+    }
+   },
+   "checks": {
+    "enoughHoldout": true,
+    "beatsBestMember": true,
+    "beatsNbmNative": true,
+    "beatsClimatology": true,
+    "bootstrapUpperBelowZero": false,
+    "coverageWithinRange": true
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "At least one pre-registered HOLDOUT condition fails: bootstrapUpperBelowZero."
+  }
+ ],
+ "provenance": {
+  "workflowRun": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45760830405",
+  "codeCommit": "63f13ca",
+  "method": "unchanged pre-registered protocol (sha256 23762ccab292...df77); conflicting duplicate forecasts excluded; targets bounded"
+ }
+}

@@ -43,6 +43,11 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  ...Object.fromEntries([13,14,15,16,17,18,19,20,21,22,23,0,1,2].map(h=>['props-tick-'+String(h).padStart(2,'0'),
   {hourUtc:h,workflow:'props-tick.yml',inputs:{trigger:'backup'},tick:true} satisfies Slot])),
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
+ // Kalshi weather shadow PAPER forecasts (knyc-multisource-emos-v1-research): one dispatch per horizon, inside its capture
+ // window before the anchor (SAME_DAY 11:00Z, DAY_AHEAD 14:00Z). The workflow's preflight skips an already-frozen or late
+ // anchor before any retrieval, so a duplicate dispatch costs nothing. Research only: no market data, orders or stakes.
+ 'kalshi-weather-same-day':{hourUtc:9,workflow:'kalshi-weather-multisource-paper.yml',inputs:{anchor:'SAME_DAY'}},
+ 'kalshi-weather-day-ahead':{hourUtc:12,workflow:'kalshi-weather-multisource-paper.yml',inputs:{anchor:'DAY_AHEAD'}},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
  // Weekly learning backup (Sunday): GitHub's 10:00 UTC schedule is often late or dropped. Skips if today's run already
  // succeeded or is running; a late GitHub run after this backup skips training itself (minDaysBetweenTrains).

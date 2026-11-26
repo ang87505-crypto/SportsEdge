@@ -13,7 +13,8 @@
  * A repeat run on the same data changes nothing. It never writes to a database, never calls a provider, broker or
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
-import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync,readdirSync} from 'node:fs';
+import {join} from 'node:path';
 import {adopt,advance,EngineError,fingerprint,register,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
 import {nextStatus,type Result} from '../src/lib/lab/engine/evaluate.ts';
@@ -209,6 +210,20 @@ try{
   const fp=fingerprint(weeks);
   for(const h of prop.proposed)reg=register(reg,newExperiment(h,fp),now);
   (report.domains as Record<string,unknown>).stocks={inputFingerprint:fp,weeks:weeks.length,patterns,proposed:prop.proposed,skipped:prop.skipped};
+ }
+ if(opt('weather-forward')){
+  // Forward PAPER evidence for the Kalshi weather challenger: the newest append-only scorecard written by
+  // scripts/kalshi-weather-multisource-paper.ts. Applied through the same lifecycle rules as every other result.
+  const dir=join(opt('weather-forward')!,'scorecards');
+  const files=existsSync(dir)?readdirSync(dir).filter(f=>/^\d{4}-\d{2}-\d{2}T\d{4}Z\.json$/.test(f)).sort():[];
+  const card=files.length?JSON.parse(readFileSync(join(dir,files.at(-1)!),'utf8')):null;
+  const x=card?.engineResult;
+  if(card&&(card.schema!=='kalshi-weather-multisource-paper-scorecard-v1'||x?.result?.evidence!=='forward'))throw new Error('WEATHER_FORWARD_INVALID');
+  const e=x?reg.experiments.find(y=>y.id===x.experimentId):null;
+  if(x&&e){const n=nextStatus(e,x.result as Result);
+   const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'weather-forward-v1',file:files.at(-1),result:x.result}),x.result,x.result.disposition);
+   reg=r.registry;(report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:r.changed,reason:n.reason,details:{scorecard:files.at(-1)}});}
+  (report.domains as Record<string,unknown>).weather={scorecard:files.at(-1)??null,summary:card?.summary??null,readiness:card?.readiness??null};
  }
  if(opt('result')){
   const results:{experimentId:string;result:Result}[]=JSON.parse(readFileSync(opt('result')!,'utf8'));

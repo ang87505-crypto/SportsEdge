@@ -1,0 +1,57 @@
+name: Kalshi weather multisource challenger (offline evaluation)
+# Evaluates the pre-registered knyc-multisource-emos-v1-research challenger, unchanged, on every retrieval run listed
+# in research/kalshi_weather_multisource_v1_20261126/eval-runs.json (PR #226's "Independent weather archive retrieval
+# pilot"). Each artifact is verified against its own SHA-256 receipt before anything is extracted.
+# Scored targets are bounded by the receipt's (or the config's) target range.
+# It makes no request to IEM, NOAA or Kalshi. No secrets, no exchange access, no writes outside this run.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/kalshi-weather-multisource-eval.yml'
+      - '.github/scripts/weather-archive-fetch.sh'
+      - 'scripts/kalshi-weather-multisource-eval.ts'
+      - 'src/lib/prediction-markets/kalshi/weather-multisource*'
+      - 'src/lib/prediction-markets/kalshi/weather-archive-adapter.ts'
+      - 'research/kalshi_weather_multisource_v1_20261126/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: kalshi-weather-multisource-eval
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Unit tests (synthetic data only)
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource*.test.mjs
+      - name: Verify, then evaluate each configured retrieval run offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/out"
+          jq -c '.runs[]' research/kalshi_weather_multisource_v1_20261126/eval-runs.json | while read -r r; do
+            label=$(jq -r .label <<<"$r"); run=$(jq -r .runId <<<"$r"); from=$(jq -r .from <<<"$r"); to=$(jq -r .to <<<"$r")
+            [[ "$label" =~ ^[a-z0-9-]{1,40}$ && "$from" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$to" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "bad config"; exit 1; }
+            bash .github/scripts/weather-archive-fetch.sh "$run" independent-weather-archive-pilot "$RUNNER_TEMP/$label"
+            node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-eval.ts \
+              --inputs "$RUNNER_TEMP/$label/in" --cli-dir "$RUNNER_TEMP/$label/cli" --from "$from" --to "$to" --label "$label" \
+              --out "$RUNNER_TEMP/out/report-$label.json" --engine-result "$RUNNER_TEMP/out/engine-result-$label.json" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: kalshi-weather-multisource-eval
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 30
