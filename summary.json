@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-26T04:43:56Z",
+  "forwardAt": "2026-11-26T11:02:19Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-26T04:43:41Z",
- "generatedAt": "2026-11-26T04:44:14Z",
+ "forwardAt": "2026-11-26T11:02:07Z",
+ "generatedAt": "2026-11-26T11:02:33Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -456,6 +456,11 @@
    "volatility_shock": "no_clear_effect"
   }
  },
+ "labHoldrank10": {
+  "experiment": "lab-stock-holdrank10-wholeshare",
+  "forward": {},
+  "frozenRows": 0
+ },
  "limitations": [
   "Historical results use previously inspected data and a survivorship-biased stock universe.",
   "Historical simulation and forward paper results are separate; no candidate is activated."
@@ -481,8 +486,8 @@
     "items": 1
    },
    "lastSuccessAt": "2026-11-26T04:43:40Z",
-   "retrievedAt": "2026-11-26T04:43:40Z",
-   "status": "OK"
+   "retrievedAt": "2026-11-26T11:02:06Z",
+   "status": "PARSE_FAILED"
   },
   {
    "id": "sec-company-tickers",
@@ -500,8 +505,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-26T04:43:40Z",
-   "retrievedAt": "2026-11-26T04:43:40Z",
+   "lastSuccessAt": "2026-11-26T11:02:06Z",
+   "retrievedAt": "2026-11-26T11:02:06Z",
    "status": "OK"
   },
   {
