@@ -16,7 +16,10 @@ test('absent stock and sports inputs are named as gaps only when active experime
  const r=evidenceCoverage(reg([exp('s1','sports','RUNNING','2026-11-27T00:00:00Z',{kind:'ledger-models'}),exp('k1','stocks','RUNNING','2026-11-27T00:00:00Z')]),
   {sportsLedger:false,stockWeeks:false},NOW);
  assert.deepEqual(r.gaps.map(g=>g.code),['SPORTS_LEDGER_NOT_SUPPLIED','STOCK_EVIDENCE_NOT_SUPPLIED']);
- assert.deepEqual(r.inputs,{sports:'NOT_SUPPLIED',stocks:'NOT_SUPPLIED',kalshi:'GRADED_OUTSIDE_ENGINE'});
+ assert.deepEqual(r.inputs,{sports:'NOT_SUPPLIED',stocks:'NOT_SUPPLIED',weather:'NOT_SUPPLIED'});
+ const wx=evidenceCoverage(reg([exp('w1','weather','RUNNING','2026-11-27T00:00:00Z')]),{sportsLedger:true,stockWeeks:true},NOW);
+ assert.deepEqual(wx.gaps.map(g=>g.code),['WEATHER_EVIDENCE_NOT_SUPPLIED']);
+ assert.deepEqual(evidenceCoverage(reg([exp('w1','weather','RUNNING','2026-11-27T00:00:00Z')]),{sportsLedger:true,stockWeeks:true,weatherForward:true},NOW).gaps,[]);
  const ok=evidenceCoverage(reg([exp('s1','sports','RUNNING','2026-11-27T00:00:00Z',{kind:'ledger-models'})]),{sportsLedger:true,stockWeeks:false},NOW);
  assert.deepEqual(ok.gaps,[],'no active stock experiment: no stock gap');
  const rejectedOnly=evidenceCoverage(reg([exp('k1','stocks','REJECTED','2026-01-01T00:00:00Z')]),{sportsLedger:true,stockWeeks:false},NOW);

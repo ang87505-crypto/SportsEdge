@@ -27,6 +27,7 @@ import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
 import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
 import {evidenceCoverage} from '../src/lib/lab/engine/evidence.ts';
+import {stockResearchResults} from '../src/lib/lab/engine/stock-research.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -155,6 +156,20 @@ try{
   }
   report.seed={adopted,refused};
  }
+ if(opt('stock-research')){
+  // Forward evidence from the nightly stock research ledgers (research-data summary.json). Terminal experiments are
+  // reported and never advanced; each input is applied once (fingerprinted).
+  const applied:unknown[]=[];
+  for(const x of stockResearchResults(JSON.parse(readFileSync(opt('stock-research')!,'utf8')))){
+   const e=reg.experiments.find(y=>y.id===x.experimentId);
+   if(!e){applied.push({id:x.experimentId,skipped:'NOT_REGISTERED'});continue;}
+   if(e.status==='REJECTED'||e.status==='FAILED'){applied.push({id:e.id,skipped:'TERMINAL_'+e.status});continue;}
+   const n=nextStatus(e,x.result);
+   const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'stock-research-v1',result:x.result}),x.result as unknown as Record<string,unknown>,x.result.disposition);
+   reg=r.registry;applied.push({id:e.id,from:e.status,to:n.to,changed:r.changed,weeks:x.result.weeks});
+  }
+  (report.domains as Record<string,unknown>).stockResearch={applied};
+ }
  let ledger:Ledger|null=null;
  if(flag('sports-ledger'))ledger=await readLedger();
  else if(opt('sports-rows')){
@@ -210,7 +225,8 @@ try{
 }
 report.status=status;report.failure=failure;report.registryChanged=fingerprint(reg)!==before;
 report.registrySummary=reg.experiments.map(e=>({id:e.id,domain:e.domain,status:e.status,disposition:e.disposition}));
-try{report.evidence=evidenceCoverage(reg,{sportsLedger:flag('sports-ledger')||!!opt('sports-rows'),stockWeeks:!!opt('stock-weeks')},now);}
+try{report.evidence=evidenceCoverage(reg,{sportsLedger:flag('sports-ledger')||!!opt('sports-rows'),stockWeeks:!!opt('stock-weeks')||!!opt('stock-research'),
+ weatherForward:!!opt('weather-forward')},now);}
 catch(e){report.evidence={error:e instanceof Error?e.message:String(e)};}
 report.runtimeMs=Date.now()-t0;
 const run={runId,at:now,status,failure,registryChanged:report.registryChanged,
