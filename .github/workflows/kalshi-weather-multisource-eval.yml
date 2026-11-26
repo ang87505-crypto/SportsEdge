@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: '24'
       - name: Unit tests (synthetic data only)
-        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource.test.mjs
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource*.test.mjs
       - name: Download the retrieval run's artifact (no external host)
         env:
           GH_TOKEN: ${{ github.token }}

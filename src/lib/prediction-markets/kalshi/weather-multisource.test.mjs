@@ -135,17 +135,20 @@ test('CLI archive adapter: first next-morning report per day, WMO cross-check, i
  assert.equal(r.issues.REPORT_REVISED_VALUE,1);assert.equal(r.issues.WMO_ISSUANCE_MISMATCH,1);assert.equal(r.issues.NWS_CLI_INTERIM_NOT_COMPLETE,1);
 });
 
-test('engine result is retrospective; paper readiness needs forward capture, 30 + 50 forward days and the owner',()=>{
+test('engine result is retrospective; paper forecasting needs only 30 verified training days, owner review needs 50 forward days',()=>{
  const {forecasts,outcomes}=world({days:120});
  const rep=evaluateMultisource([buildAnchorDays(forecasts,outcomes,S,'DAY_AHEAD')]),r=engineResult(rep);
  assert.equal(r.experimentId,MULTISOURCE_EXPERIMENT_ID);assert.equal(r.result.evidence,'retrospective');assert.match(r.result.reason,/no profitability claim/);
- const none=paperReadiness([],true);assert.equal(none.status,'NOT_READY');assert.equal(none.exchangeAccess,'DISABLED');assert.equal(none.ordersEnabled,false);
- const ok={forwardFrozenDays:30,forwardHoldoutDays:50,forwardDisposition:'PROMISING',membersCapturedForward:['NWS','NBM']};
- const fw=[{anchor:'DAY_AHEAD',...ok},{anchor:'SAME_DAY',...ok}];
- assert.equal(paperReadiness(fw,false).status,'READY_FOR_OWNER_APPROVAL');assert.equal(paperReadiness(fw,true).status,'OWNER_APPROVED_FOR_PAPER');
- const nwsOnly=paperReadiness(fw.map(f=>({...f,membersCapturedForward:['NWS']})),true);
- assert.equal(nwsOnly.status,'NOT_READY');assert.match(nwsOnly.missing.join(' '),/forward capture of NBM or GFS MOS/);
- assert.equal(paperReadiness(fw.map(f=>({...f,forwardHoldoutDays:49})),true).status,'NOT_READY');
+ const fwd=(graded,disposition)=>['DAY_AHEAD','SAME_DAY'].map(anchor=>({anchor,graded,disposition}));
+ const start=paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:30,SAME_DAY:30},verifiedInputs:true,forward:fwd(0,'NO_CLEAR_EFFECT')});
+ assert.equal(start.paperForecasting.status,'READY','history satisfies the 30-day training minimum; no forward wait');
+ assert.equal(start.ownerReview.status,'NOT_READY');assert.equal(start.exchange,'DISABLED');assert.equal(start.ordersEnabled,false);
+ assert.equal(paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:29,SAME_DAY:30},verifiedInputs:true,forward:[]}).paperForecasting.status,'NOT_READY');
+ assert.equal(paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:30,SAME_DAY:30},verifiedInputs:false,forward:[]}).paperForecasting.status,'NOT_READY');
+ assert.equal(paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:30,SAME_DAY:30},verifiedInputs:true,forward:fwd(49,'PROMISING')}).ownerReview.status,'NOT_READY');
+ assert.equal(paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:30,SAME_DAY:30},verifiedInputs:true,forward:fwd(50,'NO_CLEAR_EFFECT')}).ownerReview.status,'NOT_READY');
+ const ok=paperReadiness({trainingDaysByAnchor:{DAY_AHEAD:30,SAME_DAY:30},verifiedInputs:true,forward:fwd(50,'PROMISING')});
+ assert.equal(ok.ownerReview.status,'READY');assert.equal(ok.exchange,'DISABLED');
 });
 
 test('the frozen protocol file is the one pre-registered (hash pinned)',()=>{

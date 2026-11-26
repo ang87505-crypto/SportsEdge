@@ -13,7 +13,7 @@ import {MEMBERS,MULTISOURCE_MODEL_ID,MULTISOURCE_POLICY,baselinePmfs,integerCrps
 export const EVAL_POLICY=Object.freeze({minHoldoutDaysForReview:50,blockDays:7,replicates:2000,seed:20261126,
  coverage:Object.freeze([0.70,0.90] as const)});
 type ModelId='COMBINED'|BaselineId;
-type DayScore={crps:number;absErr:number;logLoss:number;eventBrier:number|null;covered:boolean;pit:number};
+export type DayScore={crps:number;absErr:number;logLoss:number;eventBrier:number|null;covered:boolean;pit:number};
 export type EvalRow={date:string;observedHighF:number;trainingDays:number;members:string[];scores:Partial<Record<ModelId,DayScore>>};
 type Summary={n:number;meanCrps:number|null;mae:number|null;meanLogLoss:number|null;meanEventBrier:number|null;coverage80:number|null;
  pitHistogram:number[]};
@@ -23,7 +23,8 @@ const avg=(xs:number[])=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
 const r6=(x:number|null)=>x===null?null:Number(x.toFixed(6));
 const pmfMean=(p:Pmf)=>p.pmfPpm.reduce((s,x,i)=>s+x*(p.supportMinF+i),0)/U;
 
-function score(p:Pmf,y:number,ladderCenter:number):DayScore{
+/** Scores one whole-degree distribution against one outcome (also used to grade frozen paper forecasts). */
+export function scoreDay(p:Pmf,y:number,ladderCenter:number):DayScore{
  let eventBrier:number|null=null;
  try{
   const ladder=independentLadder(ladderCenter),probs=pmfEventProbabilitiesPpm(p,ladder).map(x=>x/U);
@@ -74,8 +75,8 @@ export function evaluateAnchor(days:readonly AnchorDay[],P=MULTISOURCE_POLICY,E=
   const f=multisourceForecast(ordered,t,P);
   if(f.blocker==='WX_MS_INSUFFICIENT_DAYS'){skippedInsufficientHistory++;continue;}
   if(!f.distribution){skippedNoMember++;continue;}
-  const y=t.observedHighF,center=Math.round(f.mu!),scores:EvalRow['scores']={COMBINED:score(f.distribution,y,center)};
-  for(const [k,p] of Object.entries(baselinePmfs(trainingWindow(ordered,t,P),t,P)) as [BaselineId,Pmf][])scores[k]=score(p,y,center);
+  const y=t.observedHighF,center=Math.round(f.mu!),scores:EvalRow['scores']={COMBINED:scoreDay(f.distribution,y,center)};
+  for(const [k,p] of Object.entries(baselinePmfs(trainingWindow(ordered,t,P),t,P)) as [BaselineId,Pmf][])scores[k]=scoreDay(p,y,center);
   rows.push({date:t.localDate,observedHighF:y,trainingDays:f.trainingDays,members:Object.keys(t.members),scores});
  }
  const half=Math.floor(rows.length/2),back=rows.slice(0,half),hold=rows.slice(half);

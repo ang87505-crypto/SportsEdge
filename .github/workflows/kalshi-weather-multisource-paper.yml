@@ -1,0 +1,82 @@
+name: Kalshi weather multisource PAPER forecasts
+# Daily PAPER forecasts and grading for the pre-registered knyc-multisource-emos-v1-research challenger.
+# - Retrieval: PR #226's archive-retrieval workflow, called for a trailing 45-day KNYC window (its own pacing and
+#   receipts). This workflow makes no direct IEM, NOAA or Kalshi request. Requires #226 to expose `workflow_call`
+#   with start/end/station inputs, as requested in its review.
+# - Freeze: one forecast per anchor (SAME_DAY 11:00Z, DAY_AHEAD 14:00Z), refused after the anchor. A late or
+#   missed run is recorded as missed, never backfilled.
+# - Grade: against the NWS CLI report (archive and the live collector's files). Append-only on research-data.
+# PAPER only: no market data, no account, no orders, no stakes. Exchange access stays disabled.
+on:
+  schedule:
+    - cron: '7 10 * * *'    # SAME_DAY anchor 11:00Z (6 AM EST)
+    - cron: '33 10 * * *'   # backup; refused automatically after the anchor
+    - cron: '7 13 * * *'    # DAY_AHEAD anchor 14:00Z (9 AM EST)
+    - cron: '33 13 * * *'   # backup
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kalshi-weather-multisource-paper
+  cancel-in-progress: false
+jobs:
+  window:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      start: ${{ steps.w.outputs.start }}
+      end: ${{ steps.w.outputs.end }}
+    steps:
+      - id: w
+        run: |
+          echo "start=$(date -u -d '-45 days' +%F)" >> "$GITHUB_OUTPUT"
+          echo "end=$(date -u -d '+1 day' +%F)" >> "$GITHUB_OUTPUT"
+  retrieve:
+    needs: window
+    uses: ./.github/workflows/kalshi-public-archive-pilot.yml
+    with:
+      start: ${{ needs.window.outputs.start }}
+      end: ${{ needs.window.outputs.end }}
+      station: KNYC
+  paper:
+    needs: retrieve
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: research-data
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Unit tests (synthetic data only)
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource*.test.mjs
+      - name: Download this run's retrieval artifact
+        run: |
+          set -euo pipefail
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" --jq '.artifacts[]|select(.name=="independent-weather-archive-pilot")|.id' | head -1)
+          [[ "$id" =~ ^[0-9]+$ ]] || { echo "retrieval artifact missing"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/in" "$RUNNER_TEMP/cli"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$RUNNER_TEMP/a.zip"
+          unzip -q "$RUNNER_TEMP/a.zip" -d "$RUNNER_TEMP/in"
+          CLI=$(jq -r '.files[]|select(.name|endswith(".zip"))|.name' "$RUNNER_TEMP/in/receipt.json")
+          [[ "$CLI" =~ ^[a-z0-9][a-z0-9.-]{0,80}$ ]] || { echo "unexpected file name"; exit 1; }
+          unzip -q "$RUNNER_TEMP/in/$CLI" -d "$RUNNER_TEMP/cli"
+      - name: Check out append-only research-data
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Freeze due forecasts, grade published outcomes, write the forward scorecard
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-paper.ts \
+            --inputs "$RUNNER_TEMP/in" --cli-dir "$RUNNER_TEMP/cli" --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit only new paper records
+        run: bash .github/scripts/research-data-branch.sh commit "kalshi weather multisource paper ${{ github.run_id }}"

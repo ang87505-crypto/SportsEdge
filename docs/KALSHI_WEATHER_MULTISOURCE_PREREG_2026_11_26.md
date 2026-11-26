@@ -137,3 +137,15 @@ Profitability needs authorised market data and forward paper testing, both owner
 4. **Owner approval.**
 
 `paperReadiness()` reports which of these are missing and returns `NOT_READY` until all hold. Exchange access stays disabled.
+
+## Amendment, 2026-11-26: paper-testing gate only. No model, evaluation or decision constant changed
+
+The original "Path to automated paper testing" required 30 forward-frozen days and 50 forward holdout days **before** paper testing. That is circular, because paper forecasting is what produces forward evidence. It was corrected before any forward forecast existed.
+
+| Stage | Requirement |
+|---|---|
+| **Paper forecasting** (frozen forecasts graded against the NWS CLI report; no market data, no orders) | 30 verified training days per horizon. Archive history with documented availability counts, as the protocol's trailing window already uses. Plus a receipt-verified input run within 3 h of the freeze |
+| **Owner review** | unchanged: 50 graded **forward** days per horizon meeting the forward rule |
+| **Exchange access** | always disabled; a separate owner decision |
+
+**Forward rule** (stricter than the backtest rule): the combination must beat, with a 95% block-bootstrap bound, the best of every bias-corrected member and NBM native **in hindsight**, beat climatology, and keep 80% coverage in [0.70, 0.90].

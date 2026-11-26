@@ -7,6 +7,7 @@
  *   report per climate day, available at its printed issuance time (cross-checked against the WMO header).
  * Outcomes carry provenance IEM_AFOS_CLI_ARCHIVE and are never mixed into the live v0/v1 training.
  */
+import {createHash} from 'node:crypto';
 import {parseCentralParkCli} from './nws-cli.ts';
 import {MULTISOURCE_POLICY,type DailyOutcome,type MemberForecast} from './weather-multisource.ts';
 
@@ -87,4 +88,25 @@ export function parseCliArchive(products:readonly {name:string;text:string}[]){
  }
  const outcomes=[...best.values()].sort((a,b)=>a.localDate.localeCompare(b.localDate));
  return {outcomes:outcomes.map(o=>({station:o.station,localDate:o.localDate,observedHighF:o.observedHighF,observedAvailableAt:o.observedAvailableAt,provenance:o.provenance})) as DailyOutcome[],sources:outcomes.map(o=>({date:o.localDate,name:o.name,sourceDigest:o.sourceDigest})),issues};
+}
+
+/**
+ * Receipt-checked loader for one retrieval run's files (PR #226's artifact layout). Every file is hashed and must
+ * match the receipt before it is parsed; a receipt that is not RETRIEVED_UNVALIDATED, or that made exchange
+ * requests, is refused.
+ */
+export function loadVerifiedArchive(x:{receiptText:string;files:{name:string;bytes:Uint8Array}[];cliProducts:{name:string;text:string}[];icao?:string}){
+ const receipt=JSON.parse(x.receiptText) as {status?:string;exchange_requests?:number;retrieved_at?:string;files?:{name:string;sha256?:string}[]};
+ if(receipt.status!=='RETRIEVED_UNVALIDATED'||receipt.exchange_requests!==0)throw Error('WX_ARCHIVE_RECEIPT_NOT_USABLE');
+ const sha=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex'),inputsSha256:Record<string,string>={};
+ for(const f of x.files){const r=(receipt.files??[]).find(z=>z.name===f.name),h=sha(f.bytes);
+  if(!r||r.sha256!==h)throw Error('INPUT_HASH_MISMATCH '+f.name);inputsSha256[f.name]=h;}
+ const icao=x.icao??'KNYC',station=stationKey(icao),text=(p:string)=>new TextDecoder().decode(x.files.find(f=>f.name.startsWith(p))?.bytes);
+ const gfsFile=x.files.find(f=>f.name.startsWith('gfs-')),nbsFile=x.files.find(f=>f.name.startsWith('nbs-'));
+ if(!gfsFile||!nbsFile)throw Error('WX_ARCHIVE_MISSING_MOS');
+ const g=parseIemMosCsv(text('gfs-'),'GFS',icao),n=parseIemMosCsv(text('nbs-'),'NBS',icao),cli=parseCliArchive(x.cliProducts);
+ return {station,retrievedAt:receipt.retrieved_at??null,inputsSha256,
+  inputsDigest:createHash('sha256').update(JSON.stringify(Object.entries(inputsSha256).sort())).digest('hex'),
+  forecasts:[...g.forecasts,...n.forecasts].map(f=>({...f,station})),outcomes:cli.outcomes,outcomeSources:cli.sources,
+  issues:{gfs:g.issues,nbs:n.issues,cli:cli.issues}};
 }
