@@ -1,0 +1,51 @@
+name: Integrated weather shadow release rehearsal
+# Offline integration check on already captured public data. Never writes research-data or dispatches orders.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/kalshi-shadow-release-rehearsal.yml'
+      - '.github/workflows/kalshi-public-archive-pilot.yml'
+      - '.github/workflows/kalshi-weather-multisource-paper.yml'
+      - 'scripts/kalshi-weather-multisource-paper.ts'
+      - 'src/lib/prediction-markets/kalshi/weather-multisource*'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify existing recent retrieval artifact
+        run: bash .github/scripts/weather-archive-fetch.sh 45758616949 independent-weather-archive-pilot "$RUNNER_TEMP/wx"
+      - name: Rehearse cutoff refusal with real archived inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rehearsal"
+          for anchor in SAME_DAY DAY_AHEAD; do
+            node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-paper.ts \
+              --anchor "$anchor" --inputs "$RUNNER_TEMP/wx/in" --cli-dir "$RUNNER_TEMP/wx/cli" \
+              --data "$RUNNER_TEMP/rehearsal/$anchor" --now 2026-11-26T05:03:00Z
+            test ! -d "$RUNNER_TEMP/rehearsal/$anchor/kalshi-independent/nyc-weather/multisource-v1/forecasts"
+            card=$(find "$RUNNER_TEMP/rehearsal/$anchor" -name '*.json' -type f)
+            jq -e '.frozenNow==[] and .gradedNow==[] and ([.skipped[]]|all(.=="BEFORE_CAPTURE_WINDOW")) and .readiness.exchange=="DISABLED" and .readiness.ordersEnabled==false' "$card"
+          done
+          # Same-day anchor 11Z: by 09Z the 05Z receipt is too old; refusing it prevents stale forward evidence.
+          node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-paper.ts \
+            --anchor SAME_DAY --inputs "$RUNNER_TEMP/wx/in" --cli-dir "$RUNNER_TEMP/wx/cli" \
+            --data "$RUNNER_TEMP/rehearsal/stale" --now 2026-11-26T09:30:00Z
+          test ! -d "$RUNNER_TEMP/rehearsal/stale/kalshi-independent/nyc-weather/multisource-v1/forecasts"
+          card=$(find "$RUNNER_TEMP/rehearsal/stale" -name '*.json' -type f)
+          jq -e '.frozenNow==[] and ([.skipped[]]|all(startswith("INPUTS_NOT_FRESH"))) and .readiness.ordersEnabled==false' "$card"
+          echo "Verified actual archive, refused early and stale shadow freezes. No production writes, exchange calls or orders."
+      - name: Regression tests for freeze, grade and immutable records
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource*.test.mjs src/lib/props/collection-status.test.mjs

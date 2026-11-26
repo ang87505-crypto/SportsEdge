@@ -4,6 +4,7 @@ import {connection} from 'next/server';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
 import {KalshiPaperPanel} from '@/components/kalshi-paper-panel';
+import {HISTORICAL_2024,loadMultisourceShadow} from '@/lib/prediction-markets/kalshi/weather-multisource-view';
 
 /**
  * Only independent archived NOAA weather data is read from the research-data branch.
@@ -70,6 +71,37 @@ async function IndependentWeatherPanels(){
   </Panel>
  </>;
 }
+
+const f3=(x:number|null)=>x===null?'—':x.toFixed(3);
+const LABEL:Record<string,string>={SAME_DAY:'Same day (frozen by 6 AM EST)',DAY_AHEAD:'Day ahead (frozen by 9 AM EST the day before)'};
+/** Multi-source challenger: committed 2024 evaluation plus the newest shadow PAPER scorecard. Research only. */
+async function MultisourceShadowPanel(){
+ await connection();
+ const fwd=await loadMultisourceShadow();
+ return <Panel title="Multi-source weather challenger (shadow)" actions={<Evidence kind={fwd.state==='RECORDED'?'recorded':'unavailable'}/>}>
+  <p>A pre-registered combination of the National Blend of Models (NBM) and GFS MOS high-temperature forecasts. Each model is
+   bias-corrected, and the uncertainty is calibrated, before its probabilities are compared with each model alone. It is a
+   <strong> shadow forecast</strong>: it never sees market prices, never places or sizes an order, and its accuracy is not profit.</p>
+  <div className="table-wrap"><table className="data-table">
+   <caption className="quiet small-print">{HISTORICAL_2024.label}: holdout CRPS (lower is better), the pre-registered verdict, and the
+    combined-minus-corrected-NBM difference with its 95% interval.</caption>
+   <thead><tr><th>Horizon</th><th>Holdout days</th><th>Combined</th><th>NBM corrected</th><th>NBM alone</th><th>NBM native</th><th>Combined − NBM corrected</th><th>Verdict</th></tr></thead>
+   <tbody>{HISTORICAL_2024.rows.map(r=><tr key={r.anchor}><td>{LABEL[r.anchor]??r.anchor}</td><td>{r.holdoutDays}</td><td>{f3(r.crps.combined)}</td>
+    <td>{f3(r.crps.nbmCorrected)}</td><td>{f3(r.crps.nbmRaw)}</td><td>{f3(r.crps.nbmNative)}</td>
+    <td>{r.vsNbmCorrected?`${f3(r.vsNbmCorrected.mean)} [${f3(r.vsNbmCorrected.lower95)}, ${f3(r.vsNbmCorrected.upper95)}]`:'—'}</td>
+    <td>{r.disposition.replaceAll('_',' ').toLowerCase()}</td></tr>)}</tbody>
+  </table></div>
+  {fwd.state==='RECORDED'?<>
+   <KeyValues items={[
+    ...fwd.card.anchors.map(a=>[LABEL[a.anchor]??a.anchor,
+     `${a.frozen} frozen, ${a.graded} graded, ${a.missed} missed; CRPS ${f3(a.combinedCrps)} vs NBM corrected ${f3(a.nbmCorrectedCrps)}; ${a.disposition.replaceAll('_',' ').toLowerCase()}`] as [string,string]),
+    ['Shadow forecasting',fwd.card.paperForecasting.status==='READY'?'Running':'Not ready: '+fwd.card.paperForecasting.missing.join('; ')],
+    ['Owner review (50 graded forward days per horizon)',fwd.card.ownerReview.status==='READY'?'Ready for review':'Not yet: '+fwd.card.ownerReview.missing.join('; ')],
+    ['Exchange access','Disabled'],['Updated',fwd.card.at]]}/>
+  </>:<p>{fwd.state==='ARCHIVE_UNAVAILABLE'?'The shadow scorecard could not be read or verified; nothing is inferred.':
+   'No shadow forecast has been frozen yet. The first one is frozen before the next 6 AM or 9 AM EST cutoff after release.'}</p>}
+ </Panel>;
+}
 export default function PredictionMarketsKalshiPage(){
  return <>
   <PageHeading title="Kalshi research and paper"
@@ -82,6 +114,9 @@ export default function PredictionMarketsKalshiPage(){
     <p>Checking stored public weather research; no Kalshi API request is made.</p>
    </Panel>}>
     <IndependentWeatherPanels/>
+  </Suspense>
+  <Suspense fallback={<Panel title="Multi-source weather challenger (shadow)"><p>Reading the shadow forecast scorecard.</p></Panel>}>
+   <MultisourceShadowPanel/>
   </Suspense>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
    <p>The platform records independent NOAA research and offers a separate owner-controlled demo connection. The public weather panels use no exchange data. Production exchange-data access remains disabled pending authorization for the intended use.</p>

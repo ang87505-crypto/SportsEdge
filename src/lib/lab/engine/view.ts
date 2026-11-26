@@ -1,12 +1,12 @@
 /**
  * /lab view of the learning engine registry. Pure; reads only the recorded registry passed in.
  * Shows what is being tested, what is waiting for evidence, what is ready for owner review (never auto-promoted),
- * and why ideas were rejected, separately for sports and stocks.
+ * and why ideas were rejected, separately for sports, stocks and Kalshi weather.
  */
 import {STATUSES,type Registry,type Status} from './experiments.ts';
 import {SOURCE_REGISTER,type SourceStatus} from '../../research/sources.ts';
 
-export type EngineView={counts:Record<'sports'|'stocks',Record<Status,number>>;
+export type EngineView={counts:Record<'sports'|'stocks'|'weather',Record<Status,number>>;
  readyForReview:{id:string;domain:string;hypothesis:string;why:string}[];
  collecting:{id:string;domain:string;status:Status;why:string}[];
  rejected:{id:string;domain:string;why:string}[];
@@ -19,7 +19,7 @@ const lastReason=(e:Registry['experiments'][number])=>e.history.at(-1)?.reason??
 
 export function engineView(reg:Registry,jobs:Job[]=[]):EngineView{
  const zero=()=>Object.fromEntries(STATUSES.map(s=>[s,0])) as Record<Status,number>;
- const counts={sports:zero(),stocks:zero()};
+ const counts={sports:zero(),stocks:zero(),weather:zero()};
  for(const e of reg.experiments)counts[e.domain][e.status]++;
  const by=(f:(s:Status)=>boolean)=>reg.experiments.filter(e=>f(e.status));
  const sources={connected:[],implemented:[],proposed:[],blocked:[]} as Record<SourceStatus,string[]>;
