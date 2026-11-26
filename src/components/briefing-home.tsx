@@ -73,7 +73,7 @@ export async function BriefingBoard(){
     <div className="home-panel-foot"><span>Times in Mountain time</span><Link href="/automation" className="text-link">Automation</Link></div>
    </Panel>
   </div>
-  <Panel title="What the model is learning" className="briefing-learning" description="Sports props model, graded on real box scores">
+  <Panel title="What the model is learning" className="briefing-learning" description="Sports props model · last 14 days of captured lines, graded on real box scores">
    {l?<>
     <div className="briefing-learning-metrics">
      <Metric size="sm" label="Pick hit rate" value={pct(l.hitRate)} detail={`${l.graded} graded`}/>

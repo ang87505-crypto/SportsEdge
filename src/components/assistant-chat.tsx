@@ -113,7 +113,7 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    {TOPICS.map(t=><button key={t.label} type="button" className="chat-chip" disabled={busy} onClick={()=>void send(t.question)}>{t.label}</button>)}
   </div>
   <p className="quiet small-print">{checking?'Checking owner access…':access.ownerAccess?'Owner stock access is active for this tab.':'Stock account details require owner sign-in.'} <a href="/stocks/alpaca">Paper account / sign in</a></p>
-  <div className="chat-thread" role="log" aria-live="polite" aria-label="Conversation">
+  <div className={msgs.length===1&&!busy?"chat-thread is-empty":"chat-thread"} role="log" aria-live="polite" aria-label="Conversation">
    {msgs.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}>
     {m.private&&(checking||!access.ownerAccess)?<p>Private stock reply hidden. Sign in to view account details.</p>:<>
      <p style={{whiteSpace:'pre-line'}}>{m.text}</p>
@@ -123,16 +123,19 @@ export function AssistantChat({starters,intro}:{starters?:string[];intro?:string
    {busy&&<div className="chat-msg bot pending"><p>Reading the records…</p></div>}
    <div ref={end}/>
   </div>
-  {!busy&&last?.role==='bot'&&last.suggestions?.length?<div className="chat-chips" role="group" aria-label="Suggestions">
-   {last.suggestions.map(s=><button key={s} type="button" className="chat-chip" onClick={()=>void send(s)}>{s}</button>)}
-  </div>:null}
   <form className="chat-form" onSubmit={submit}>
    <label className="sr-only" htmlFor="chat-input">Ask SportsEdge</label>
-   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask about sports, stocks, Kalshi, research…"/>
+   <input id="chat-input" value={input} onChange={e=>setInput(e.target.value)} maxLength={300} autoComplete="off" placeholder="Ask SportsEdge…"/>
    <button type="submit" className="button" disabled={busy||!input.trim()}>Send</button>
    <button type="button" className="button button-secondary" onClick={reset}>New chat</button>
   </form>
+  {!busy&&last?.role==='bot'&&last.suggestions?.length?<details className="chat-examples" open={msgs.length>1}><summary>Example questions</summary><div className="chat-chips" role="group" aria-label="Suggestions">
+   {last.suggestions.map(s=><button key={s} type="button" className="chat-chip" onClick={()=>void send(s)}>{s}</button>)}
+  </div></details>:null}
+  <p className="quiet small-print chat-boundary">Answers use saved evidence. Chat cannot place bets or stock orders.</p>
+  <details className="chat-method"><summary>Sources, privacy and controls</summary>
   <p className="quiet small-print">Use <a href="/paper-betting/watch">Watch Only</a> to track lines without wagering. Answers use recorded evidence and read-only tools. A hosted conversational model is optional and disabled until the owner explicitly configures its shared cost budget; the built-in planner works without one. Independent NOAA results are not Kalshi wins. Chat cannot place bets or stock orders; Pause/Stop proposals require a separate owner confirmation. Chat history stays in this browser tab.</p>
+  </details>
  </div>;
 }
 /**
