@@ -118,6 +118,18 @@ test('stock release requires a manual real fill, clean same-session close, and o
   r=>r.daily[0].externalFlowCents=1,r=>r.runs.pop(),r=>r.status.realMoneyEnabled=true];
  for(const mutate of mutations){const r=clone(raw);mutate(r);assert.equal(stockReleaseGate(r,receipts,NOW).ready,false);}
 });
+test('rejected-candidate parsing (#222) never changes the stock release gate or throws on odd diagnostics',()=>{
+ const diags=[undefined,null,{},[],'x',42,{skipped:null},{skipped:[]},{skipped:'BAD'},{skipped:{AAA:'LOW_PRICE x'}},
+  {skipped:{aaa:'LOW_PRICE',BBB:7,CCC:'lower',DDD:'',EEE:{}}},{skipped:{AAA:'X'.repeat(500)}},
+  {skipped:Object.fromEntries(Array.from({length:600},(_,i)=>['S'+i,'NO_HISTORY_'+i]))}];
+ const fail=[r=>r,r=>r.runs[1].summary='BLOCKED',r=>r.daily[0].cashReconciled=false];
+ for(const [k,mutate] of fail.entries()){
+  const {raw,receipts}=stock();mutate(raw);const expected=stockReleaseGate(clone(raw),receipts,NOW);
+  assert.equal(expected.ready,k===0);
+  for(const d of diags){const r=clone(raw);if(d===undefined)delete r.decisions[0].diagnostics;else r.decisions[0].diagnostics=clone(d);
+   assert.deepEqual(stockReleaseGate(r,receipts,NOW),expected);}
+ }
+});
 test('only the reviewed PR head, file hashes and green complete checks are accepted',async()=>{
  assert.equal((await reviewPull(fakeGitHub().gh,pin)).ready,true);
  for(const change of [{pull:{head:{sha:'c'.repeat(40)}}},{pull:{mergeable:false}},
