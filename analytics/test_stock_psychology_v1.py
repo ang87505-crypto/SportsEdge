@@ -122,5 +122,46 @@ class PsychologyTests(unittest.TestCase):
             sp.FORWARD_FIRST_DECISION = old
 
 
+    def test_holdrank10_forward_rows_freeze_once_and_stay_separate_from_the_psychology_experiment(self):
+        sessions = self.sessions + ['2025-07-01']
+        series = {s: {k: v + [None] for k, v in col.items()} for s, col in self.series.items()}
+        old = sp.FORWARD_FIRST_DECISION
+        try:
+            sp.FORWARD_FIRST_DECISION = '2025-06-30'
+            last = self.sessions[-2]
+            psych = sp.freeze(sessions, series, self.universe, [], last, '2025-06-28T02:17:00Z', 'f' * 64)
+            hr = sp.freeze_holdrank10(sessions, series, self.universe, psych, last, '2025-06-28T02:17:00Z', 'f' * 64)
+            self.assertEqual(len(hr), 1)
+            self.assertEqual(hr[0]['experiment'], sp.HOLDRANK10_EXPERIMENT)
+            self.assertEqual(hr[0]['decision_session'], '2025-06-30')
+            self.assertEqual(hr[0]['rules']['spec']['buffer'], 10)
+            # With nothing held, the hold buffer changes nothing: picks equal the base variant's.
+            base = next(r for r in psych if r['variant'] == 'base')
+            self.assertEqual(hr[0]['picks'], base['picks'])
+            # A held name ranked 6-10 is kept by the buffer but not by the base rules.
+            k = sessions.index('2025-06-30')
+            sectors = {u['symbol']: u['sector'] for u in self.universe['securities']}
+            scores = {s: x for s in sectors if s in series and (x := wb.score(series[s], k, sp.BASE_SPEC['lookback'])) is not None}
+            ranked = sorted((s for s, x in scores.items() if x['eligible'] and x['trend'] and x['momentum'] > 0), key=lambda s: (-scores[s]['momentum'], s))
+            outside = [s for s in ranked[5:10] if s not in base['picks']]
+            if outside:
+                prior = dict(hr[0], decision_session='2025-06-23', picks=[outside[0]])
+                kept = sp.decide(sessions, series, self.universe, k, (), {outside[0]}, sp.HOLDRANK10_SPEC)
+                self.assertIn(outside[0], kept)
+                self.assertNotIn(outside[0], sp.decide(sessions, series, self.universe, k, (), {outside[0]}))
+                self.assertIn(outside[0], sp.freeze_holdrank10(sessions, series, self.universe, [prior], last, 'x', 'f' * 64)[0]['picks'])
+            # Append-only: the same week is never frozen twice; psychology rows are unaffected.
+            ledger = psych + hr
+            self.assertEqual(sp.freeze_holdrank10(sessions, series, self.universe, ledger, last, 'later', 'f' * 64), [])
+            self.assertEqual(sp.freeze(sessions, series, self.universe, sp.own_rows(ledger), last, 'later', 'f' * 64), [])
+            self.assertEqual(len(sp.own_rows(ledger)), 10)
+            self.assertEqual(sp.own_rows(ledger, sp.HOLDRANK10_EXPERIMENT), hr)
+            g = sp.grade(hr, sessions, series)
+            self.assertEqual(list(g['variants']), ['holdrank10'])
+            summary = sp.lab_summary(None, sp.own_rows(ledger), sp.grade(psych, sessions, series))
+            self.assertEqual(summary['forward']['frozenRows'], 10)
+        finally:
+            sp.FORWARD_FIRST_DECISION = old
+
 if __name__ == '__main__':
     unittest.main()
