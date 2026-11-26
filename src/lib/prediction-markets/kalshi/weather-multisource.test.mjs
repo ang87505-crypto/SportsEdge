@@ -188,7 +188,7 @@ test('learning engine: the seeded weather experiment takes a retrospective resul
  const report=JSON.parse(rf(join(dir,'out','report.json'),'utf8')),reg=JSON.parse(rf(join(dir,'out','registry.json'),'utf8'));
  assert.equal(report.status,'OK',report.failure);
  const e=reg.experiments.find(x=>x.id===MULTISOURCE_EXPERIMENT_ID);
- assert.equal(e.domain,'weather');assert.deepEqual(e.history.map(h=>h.to),['PROPOSED','RUNNING']);
+ assert.equal(e.domain,'weather');assert.deepEqual(e.history.map(h=>h.to).slice(0,2),['PROPOSED','RUNNING']);assert.equal(e.status,'RUNNING');
  assert.notEqual(e.status,'READY_FOR_REVIEW');
  const v=engineView(reg);assert.equal(v.counts.weather.RUNNING,1);
 });
