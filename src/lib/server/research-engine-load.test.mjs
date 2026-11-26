@@ -44,3 +44,15 @@ test('stale, future, tampered and missing evidence never becomes a current succe
   assert.equal(v.mode,'saved');assert.equal(v.stale,true);assert.equal(v.status,'UNAVAILABLE');assert.match(v.detail,/dated saved research/);
  }
 });
+
+test('engine attention: evidence gaps and sports alarms reach the page only as short, well-formed strings',async()=>{
+ const {readEngineAttention}=await import('./research-engine-load.ts');
+ const r=readEngineAttention({evidence:{inputs:{sports:'CONNECTED',stocks:'NOT_SUPPLIED',weather:'CONNECTED','<b>':'x'},
+  gaps:[{code:'STOCK_EVIDENCE_NOT_SUPPLIED',detail:'5 active stock experiments'},{code:'<script>',detail:'x'}]},
+  domains:{sports:{alarms:{status:'ALARM',alarms:[{code:'MISSING_OUTCOMES',detail:'20 of 480 locked lines'}]}}}});
+ assert.deepEqual(r.gaps.map(g=>g.code),['STOCK_EVIDENCE_NOT_SUPPLIED']);
+ assert.deepEqual(r.inputs,{sports:'CONNECTED',stocks:'NOT_SUPPLIED',weather:'CONNECTED'});
+ assert.deepEqual(r.alarms,{status:'ALARM',codes:['MISSING_OUTCOMES'],details:['20 of 480 locked lines']});
+ assert.equal(readEngineAttention({domains:{sports:{alarms:{status:'WEIRD'}}}}).alarms,null);
+ assert.equal(readEngineAttention(null),null);
+});

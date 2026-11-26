@@ -10,7 +10,26 @@ import {readSportsDrift,type DriftReport} from '../lab/engine/drift.ts';
 export const ENGINE_PUBLIC_ROOT='https://raw.githubusercontent.com/ang87505-crypto/SportsEdge/research-data/';
 const CACHE_MS=60_000;
 export type EngineSnapshot={mode:'live'|'saved';at:string|null;checkedAt:string;stale:boolean;status:'OK'|'FAILED'|'UNAVAILABLE';
- registry:Registry;jobs:Job[];receipt:EngineReceipt|null;scorecard:SportsScorecard|null;drift:DriftReport|null;detail:string};
+ registry:Registry;jobs:Job[];receipt:EngineReceipt|null;scorecard:SportsScorecard|null;drift:DriftReport|null;
+ /** What the latest run reports as missing (engine-evidence-v1) and the sports absolute alarms (sports-alarms-v1). */
+ attention:EngineAttention|null;detail:string};
+export type EngineAttention={gaps:{code:string;detail:string}[];inputs:Record<string,string>;
+ alarms:{status:string;codes:string[];details:string[]}|null};
+const text=(x:unknown,n:number)=>typeof x==='string'?x.slice(0,n):'';
+/** Defensive reader: only short, well-formed strings from the published report reach the page. */
+export function readEngineAttention(report:unknown):EngineAttention|null{
+ const r=report as {evidence?:{gaps?:unknown;inputs?:unknown};domains?:{sports?:{alarms?:{status?:unknown;alarms?:unknown}}}}|null;
+ if(!r||typeof r!=='object')return null;
+ const gaps=Array.isArray(r.evidence?.gaps)?(r.evidence!.gaps as {code?:unknown;detail?:unknown}[]).slice(0,10)
+  .filter(g=>typeof g?.code==='string'&&/^[A-Z_]{3,60}$/.test(g.code)).map(g=>({code:g.code as string,detail:text(g.detail,400)})):[];
+ const inputs=r.evidence?.inputs&&typeof r.evidence.inputs==='object'?Object.fromEntries(Object.entries(r.evidence.inputs as Record<string,unknown>)
+  .filter(([k,v])=>/^[a-z]{3,20}$/.test(k)&&typeof v==='string'&&/^[A-Z_]{3,40}$/.test(v)).slice(0,6)) as Record<string,string>:{};
+ const a=r.domains?.sports?.alarms;
+ const alarms=a&&typeof a.status==='string'&&['OK','ALARM','COLLECTING','IDLE'].includes(a.status)?{status:a.status,
+  codes:(Array.isArray(a.alarms)?a.alarms:[]).map((x:{code?:unknown})=>text(x?.code,40)).filter(Boolean).slice(0,8),
+  details:(Array.isArray(a.alarms)?a.alarms:[]).map((x:{detail?:unknown})=>text(x?.detail,300)).filter(Boolean).slice(0,8)}:null;
+ return {gaps,inputs,alarms};
+}
 let cache:{at:number;value:EngineSnapshot}|null=null;
 export function resetResearchEngineCache(){cache=null;}
 export async function loadResearchEngine(nowIso:string,fetcher:typeof fetch=fetch):Promise<EngineSnapshot>{
@@ -31,10 +50,10 @@ export async function loadResearchEngine(nowIso:string,fetcher:typeof fetch=fetc
   const scorecard=readSportsScorecard(report.domains?.sports?.scorecard);
   const stale=now-Date.parse(receipt.at)>48*3600_000;
   value={mode:'live',at:receipt.at,checkedAt:nowIso,stale,status:receipt.status,registry:verified.registry,jobs:engineJobs(receipts),receipt,scorecard:receipt.status==='OK'?scorecard:null,
-   drift:receipt.status==='OK'?readSportsDrift(report.domains?.sports?.drift):null,
+   drift:receipt.status==='OK'?readSportsDrift(report.domains?.sports?.drift):null,attention:readEngineAttention(report),
    detail:receipt.status==='FAILED'?'The latest evaluation failed; its last accepted registry is shown.':stale?'No published evaluation within 48 hours.':'Latest published evaluation; experiments remain subject to their registered evidence gates.'};
  }catch{
-  value={mode:'saved',at:seedJobs.at(-1)?.at??null,checkedAt:nowIso,stale:true,status:'UNAVAILABLE',registry:seedRegistry as Registry,jobs:seedJobs,receipt:null,scorecard:null,drift:null,
+  value={mode:'saved',at:seedJobs.at(-1)?.at??null,checkedAt:nowIso,stale:true,status:'UNAVAILABLE',registry:seedRegistry as Registry,jobs:seedJobs,receipt:null,scorecard:null,drift:null,attention:null,
    detail:'Current published evaluations are unavailable. These are dated saved research records, not proof of a running learning job.'};
  }
  cache={at:now,value};return value;

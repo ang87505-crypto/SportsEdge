@@ -115,6 +115,12 @@ async function EnginePanel(){
    {snapshot.at?`Recorded ${snapshot.at}. `:''}{snapshot.detail} Production-shadow comparisons below use predictions already saved before lock; they are separate from the nine-variant ablation lab above.
   </Callout>
   {snapshot.scorecard?<ProbabilityScorecard value={snapshot.scorecard}/>:<p className="home-panel-note">Detailed probability diagnostics will appear after an evaluation publishes the scorecard. Historical reports are retained.</p>}
+  {snapshot.attention&&(snapshot.attention.gaps.length||snapshot.attention.alarms?.codes.length)?
+   <Callout tone="warning" title="Needs attention (from the latest evaluation)">
+    <ul className="quiet">{snapshot.attention.alarms?.details.map((d,i)=><li key={'a'+i}><strong>{snapshot.attention!.alarms!.codes[i]?.replaceAll('_',' ').toLowerCase()}</strong>: {d}</li>)}
+     {snapshot.attention.gaps.map(g=><li key={g.code}><strong>{g.code.replaceAll('_',' ').toLowerCase()}</strong>: {g.detail}</li>)}</ul>
+    Review requests only; nothing here changes a model, pick, stake or order.
+   </Callout>:null}
   {snapshot.drift?<Callout tone={snapshot.drift.status==='REVIEW_REQUESTED'?'warning':'info'} title={`Adaptation watch: ${snapshot.drift.status.replaceAll('_',' ').toLowerCase()}`}>
    {snapshot.drift.reason} Recent 7 days: {snapshot.drift.recent.lines} lines / {snapshot.drift.recent.games} games. Previous 28 days: {snapshot.drift.reference.lines} lines / {snapshot.drift.reference.games} games. Alerts request review; training and promotion remain separate.
   </Callout>:null}
