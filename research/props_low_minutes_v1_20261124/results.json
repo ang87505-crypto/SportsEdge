@@ -1,0 +1,313 @@
+{
+ "generatedBy": "scripts/props-low-minutes-eval.ts",
+ "challenger": "props-nb-low-minutes-v1",
+ "status": "ONE pre-registered chronological evaluation on untouched seasons",
+ "folds": [
+  {
+   "label": "2013-14",
+   "adjustment": {
+    "m": 0.9341,
+    "s": 0.4754,
+    "n": 3861
+   },
+   "opponentBeta": {
+    "points": 0.8,
+    "rebounds": 0.9,
+    "assists": 1
+   },
+   "fitLines": 70461,
+   "testLines": 70227,
+   "lowMinuteLines": 11736,
+   "leakage": {
+    "fit": {
+     "checked": 938371,
+     "violations": 0
+    },
+    "test": {
+     "checked": 937684,
+     "violations": 0
+    }
+   },
+   "paired": {
+    "brier": {
+     "mean": -0.0016517489140273922,
+     "lo": -0.001902652431855636,
+     "hi": -0.001409821816055516,
+     "games": 1186,
+     "lines": 70227
+    },
+    "logLoss": {
+     "mean": -0.004469020833309328,
+     "lo": -0.0051013158255628155,
+     "hi": -0.0038633349614093345,
+     "games": 1186,
+     "lines": 70227
+    }
+   },
+   "segment": {
+    "brier": {
+     "mean": -0.009883893233248267,
+     "lo": -0.011315347569364453,
+     "hi": -0.008396217676358416,
+     "games": 1143,
+     "lines": 11736
+    },
+    "logLoss": {
+     "mean": -0.02674215457232568,
+     "lo": -0.030482744792123727,
+     "hi": -0.02304286064214469,
+     "games": 1143,
+     "lines": 11736
+    }
+   },
+   "segmentBaseline": {
+    "lines": 11736,
+    "games": 1143,
+    "meanConfidence": 0.647424,
+    "hitRate": 0.581033,
+    "gap": 0.066392,
+    "meanQ": 0.512926,
+    "meanY": 0.415303,
+    "bias": -0.097623,
+    "brier": 0.246295
+   },
+   "segmentChallenger": {
+    "lines": 11736,
+    "games": 1143,
+    "meanConfidence": 0.637108,
+    "hitRate": 0.60847,
+    "gap": 0.028638,
+    "meanQ": 0.456181,
+    "meanY": 0.415303,
+    "bias": -0.040877,
+    "brier": 0.236412
+   },
+   "combinedVsOpponent": {
+    "brier": {
+     "mean": -0.0016386255681460796,
+     "lo": -0.0018877851492141177,
+     "hi": -0.0013975631496112703,
+     "games": 1186,
+     "lines": 70227
+    },
+    "logLoss": {
+     "mean": -0.004453878879415095,
+     "lo": -0.00508262408666054,
+     "hi": -0.00384791190515647,
+     "games": 1186,
+     "lines": 70227
+    }
+   }
+  },
+  {
+   "label": "2014-15",
+   "adjustment": {
+    "m": 0.9089,
+    "s": 0.4423,
+    "n": 3912
+   },
+   "opponentBeta": {
+    "points": 0.9,
+    "rebounds": 0.8,
+    "assists": 0.8
+   },
+   "fitLines": 70227,
+   "testLines": 71250,
+   "lowMinuteLines": 10779,
+   "leakage": {
+    "fit": {
+     "checked": 937684,
+     "violations": 0
+    },
+    "test": {
+     "checked": 930758,
+     "violations": 0
+    }
+   },
+   "paired": {
+    "brier": {
+     "mean": -0.001277587307132466,
+     "lo": -0.0015443191712671786,
+     "hi": -0.0010116995261343102,
+     "games": 1188,
+     "lines": 71250
+    },
+    "logLoss": {
+     "mean": -0.003762212313818662,
+     "lo": -0.004415479382494351,
+     "hi": -0.003102243569631028,
+     "games": 1188,
+     "lines": 71250
+    }
+   },
+   "segment": {
+    "brier": {
+     "mean": -0.008444948105871436,
+     "lo": -0.010241133006460922,
+     "hi": -0.006724738842193863,
+     "games": 1117,
+     "lines": 10779
+    },
+    "logLoss": {
+     "mean": -0.024868506109989766,
+     "lo": -0.029262523984777862,
+     "hi": -0.020670367614019247,
+     "games": 1117,
+     "lines": 10779
+    }
+   },
+   "segmentBaseline": {
+    "lines": 10779,
+    "games": 1117,
+    "meanConfidence": 0.647721,
+    "hitRate": 0.581872,
+    "gap": 0.065849,
+    "meanQ": 0.519284,
+    "meanY": 0.431858,
+    "bias": -0.087425,
+    "brier": 0.247705
+   },
+   "segmentChallenger": {
+    "lines": 10779,
+    "games": 1117,
+    "meanConfidence": 0.639872,
+    "hitRate": 0.598107,
+    "gap": 0.041765,
+    "meanQ": 0.455153,
+    "meanY": 0.431858,
+    "bias": -0.023295,
+    "brier": 0.239261
+   },
+   "combinedVsOpponent": {
+    "brier": {
+     "mean": -0.0012771903889141395,
+     "lo": -0.001545919080304009,
+     "hi": -0.0010097979493567746,
+     "games": 1188,
+     "lines": 71250
+    },
+    "logLoss": {
+     "mean": -0.0037689506887340764,
+     "lo": -0.004426167448665098,
+     "hi": -0.003106325531121978,
+     "games": 1188,
+     "lines": 71250
+    }
+   }
+  },
+  {
+   "label": "2015-16",
+   "adjustment": {
+    "m": 0.9281,
+    "s": 0.4599,
+    "n": 3593
+   },
+   "opponentBeta": {
+    "points": 0.7,
+    "rebounds": 0.8,
+    "assists": 0.6
+   },
+   "fitLines": 71250,
+   "testLines": 71610,
+   "lowMinuteLines": 11127,
+   "leakage": {
+    "fit": {
+     "checked": 930758,
+     "violations": 0
+    },
+    "test": {
+     "checked": 956542,
+     "violations": 0
+    }
+   },
+   "paired": {
+    "brier": {
+     "mean": -0.0012037895589595215,
+     "lo": -0.001444230521754239,
+     "hi": -0.0009676125150495745,
+     "games": 1187,
+     "lines": 71610
+    },
+    "logLoss": {
+     "mean": -0.003509958060114877,
+     "lo": -0.004105865860694794,
+     "hi": -0.0028909561106074187,
+     "games": 1187,
+     "lines": 71610
+    }
+   },
+   "segment": {
+    "brier": {
+     "mean": -0.007747224797078398,
+     "lo": -0.009256346358172733,
+     "hi": -0.006214949216331555,
+     "games": 1121,
+     "lines": 11127
+    },
+    "logLoss": {
+     "mean": -0.022589026393891105,
+     "lo": -0.026532801927986637,
+     "hi": -0.01891528701141863,
+     "games": 1121,
+     "lines": 11127
+    }
+   },
+   "segmentBaseline": {
+    "lines": 11127,
+    "games": 1121,
+    "meanConfidence": 0.646488,
+    "hitRate": 0.584255,
+    "gap": 0.062233,
+    "meanQ": 0.511457,
+    "meanY": 0.431832,
+    "bias": -0.079624,
+    "brier": 0.246593
+   },
+   "segmentChallenger": {
+    "lines": 11127,
+    "games": 1121,
+    "meanConfidence": 0.638975,
+    "hitRate": 0.604925,
+    "gap": 0.03405,
+    "meanQ": 0.454073,
+    "meanY": 0.431832,
+    "bias": -0.022241,
+    "brier": 0.238846
+   },
+   "combinedVsOpponent": {
+    "brier": {
+     "mean": -0.0011990037555626605,
+     "lo": -0.0014373086975245821,
+     "hi": -0.0009620436631993135,
+     "games": 1187,
+     "lines": 71610
+    },
+    "logLoss": {
+     "mean": -0.003501087156897918,
+     "lo": -0.004100273945306595,
+     "hi": -0.002887407030084096,
+     "games": 1187,
+     "lines": 71610
+    }
+   }
+  }
+ ],
+ "pooled": {
+  "brier": {
+   "mean": -0.0013760991376089735,
+   "lo": -0.001519071864289609,
+   "hi": -0.0012199073291682418,
+   "games": 3561,
+   "lines": 213087
+  },
+  "logLoss": {
+   "mean": -0.0039103823795220306,
+   "lo": -0.004252745638204428,
+   "hi": -0.0035430405283858085,
+   "games": 3561,
+   "lines": 213087
+  }
+ },
+ "verdict": "QUALIFIES_FOR_FORWARD_TEST",
+ "baselineMeanBrier": 0.23673695311069692
+}

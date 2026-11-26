@@ -1,0 +1,141 @@
+{
+ "id": "props-nb-opponent-rate-v1",
+ "registeredBefore": "any 2016-17..2020-21 props line was scored by any study",
+ "baseline": "props-nb-minutes-rate-v1 (frozen; reproduced, never changed)",
+ "source": {
+  "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/<file>",
+  "license": "CC BY 4.0"
+ },
+ "design": {
+  "lines": "proxy: floor(median of last 10 played) + 0.5, from earlier games only",
+  "backtestParams": "league rates, priors and NB dispersion from the prior season (as every earlier proxy study)",
+  "opponentFactor": "defending team allowed per-minute stat / league per-minute stat, this season, games starting strictly before; unknown (no adjustment) before 10 games",
+  "challenger": "per-minute rate x opponentFactor^beta[stat], same negative binomial and minutes variance as the baseline",
+  "betaGrid": [
+   0.0,
+   0.1,
+   0.2,
+   0.3,
+   0.4,
+   0.5,
+   0.6,
+   0.7,
+   0.8,
+   0.9,
+   1.0,
+   1.1,
+   1.2,
+   1.3,
+   1.4,
+   1.5
+  ],
+  "betaFit": "per stat, minimum binary Brier on the fit season only; ties to the smaller beta"
+ },
+ "folds": [
+  {
+   "label": "2018-19",
+   "fit": {
+    "prior": {
+     "file": "player_box_2017.csv",
+     "sha256": "45d6fe8b7d91eede2ab4364522269306e8cf2acf2dcf15e6d0994aa7750ed941",
+     "season": "2016-17",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2018.csv",
+     "sha256": "c963c9ac9fea5a9f641b5e8ec2d20ae1b57a8b2bdb20bbe6696960a5278b9df3",
+     "season": "2017-18",
+     "role": "fit season: beta chosen here only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2018.csv",
+     "sha256": "c963c9ac9fea5a9f641b5e8ec2d20ae1b57a8b2bdb20bbe6696960a5278b9df3",
+     "season": "2017-18",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2019.csv",
+     "sha256": "5df73407e22c013e1602aec0c13223217523ca11966c28beac73b09c870128f0",
+     "season": "2018-19",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  },
+  {
+   "label": "2019-20",
+   "fit": {
+    "prior": {
+     "file": "player_box_2018.csv",
+     "sha256": "c963c9ac9fea5a9f641b5e8ec2d20ae1b57a8b2bdb20bbe6696960a5278b9df3",
+     "season": "2017-18",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2019.csv",
+     "sha256": "5df73407e22c013e1602aec0c13223217523ca11966c28beac73b09c870128f0",
+     "season": "2018-19",
+     "role": "fit season: beta chosen here only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2019.csv",
+     "sha256": "5df73407e22c013e1602aec0c13223217523ca11966c28beac73b09c870128f0",
+     "season": "2018-19",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2020.csv",
+     "sha256": "f822c3cf5a1e440cca81ab98aac5cc97f1fb0c2259cb0ab1a2cfd7cf5a47b473",
+     "season": "2019-20",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  },
+  {
+   "label": "2020-21",
+   "fit": {
+    "prior": {
+     "file": "player_box_2019.csv",
+     "sha256": "5df73407e22c013e1602aec0c13223217523ca11966c28beac73b09c870128f0",
+     "season": "2018-19",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2020.csv",
+     "sha256": "f822c3cf5a1e440cca81ab98aac5cc97f1fb0c2259cb0ab1a2cfd7cf5a47b473",
+     "season": "2019-20",
+     "role": "fit season: beta chosen here only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2020.csv",
+     "sha256": "f822c3cf5a1e440cca81ab98aac5cc97f1fb0c2259cb0ab1a2cfd7cf5a47b473",
+     "season": "2019-20",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2021.csv",
+     "sha256": "86b12342459b786450460000ad4de6a6c6a618ae064f6047e19565110bcc638f",
+     "season": "2020-21",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  }
+ ],
+ "uncertainty": {
+  "replicates": 2000,
+  "seed": 20261124,
+  "cluster": "game"
+ },
+ "decision": {
+  "primary": "paired binary Brier difference (challenger - baseline), pooled over the three test seasons",
+  "QUALIFIES_FOR_FORWARD_TEST": "pooled Brier difference 95% upper bound < 0 AND every test season mean Brier difference < 0 AND pooled log-loss difference mean < 0",
+  "WORSE": "pooled Brier difference 95% lower bound > 0",
+  "NO_CLEAR_EFFECT": "anything else",
+  "promotion": "none: a qualifying result only supports a separately approved forward shadow judged by the unchanged production REVIEW_GATE on real lines"
+ }
+}
