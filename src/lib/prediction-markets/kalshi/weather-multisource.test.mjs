@@ -147,6 +147,10 @@ test('CLI archive adapter: first next-morning report per day, WMO cross-check, i
  const r=parseCliArchive([{name:'b',text:later},{name:'a',text:first},{name:'c',text:badWmo},{name:'d',text:interim}]);
  assert.deepEqual(r.outcomes,[{station:S,localDate:'2026-11-13',observedHighF:52,observedAvailableAt:'2026-11-14T06:37:00.000Z',provenance:'IEM_AFOS_CLI_ARCHIVE'}]);
  assert.equal(r.issues.REPORT_REVISED_VALUE,1);assert.equal(r.issues.WMO_ISSUANCE_MISMATCH,1);assert.equal(r.issues.NWS_CLI_INTERIM_NOT_COMPLETE,1);
+ // Two different highs printed with the same issuance minute: the day is excluded, never guessed.
+ const same=parseCliArchive([{name:'a',text:first},{name:'a.dup2',text:first.replace('MAXIMUM         52','MAXIMUM         54')}]);
+ assert.deepEqual(same.outcomes,[]);assert.equal(same.issues.CONFLICTING_SAME_TIME_REPORT_EXCLUDED,1);
+ assert.equal(parseCliArchive([{name:'a',text:first},{name:'a.dup2',text:first}]).outcomes.length,1,'an identical repeat is harmless');
 });
 
 test('engine result is retrospective; paper forecasting needs only 30 verified training days, owner review needs 50 forward days',()=>{

@@ -72,7 +72,7 @@ export const stationKey=(icao:string)=>STATION_FROM_ICAO[icao]??icao;
 
 /** Archived CLINYC texts -> the first complete next-morning report per climate day. */
 export function parseCliArchive(products:readonly {name:string;text:string}[]){
- const issues:AdapterIssues={},best=new Map<string,DailyOutcome&{sourceDigest:string;name:string}>();
+ const issues:AdapterIssues={},best=new Map<string,DailyOutcome&{sourceDigest:string;name:string}>(),conflicted=new Set<string>();
  for(const p of products){
   const raw=String(p.text).replace(/\r\n/g,'\n');
   const issued=/^\s*(\d{3,4})\s+(AM|PM)\s+(EST|EDT)\s+\w{3}\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{1,2})\s+(\d{4})\s*$/m.exec(raw);
@@ -93,10 +93,18 @@ export function parseCliArchive(products:readonly {name:string;text:string}[]){
   const o={station:'KNYC_CENTRAL_PARK',localDate:c.reportDate,observedHighF:c.observedHighF,observedAvailableAt:c.issuedAt,
    provenance:'IEM_AFOS_CLI_ARCHIVE' as const,sourceDigest:c.sourceDigest,name:p.name};
   const prev=best.get(o.localDate);
-  if(prev){bump(issues,'LATER_OR_DUPLICATE_REPORT');if(prev.observedHighF!==o.observedHighF)bump(issues,'REPORT_REVISED_VALUE');
-   if(Date.parse(o.observedAvailableAt)>=Date.parse(prev.observedAvailableAt))continue;}
+  if(prev){
+   bump(issues,'LATER_OR_DUPLICATE_REPORT');
+   if(prev.observedHighF!==o.observedHighF){
+    bump(issues,'REPORT_REVISED_VALUE');
+    // Two different highs issued at the same minute: which is first is unknowable, so the day is excluded.
+    if(Date.parse(o.observedAvailableAt)===Date.parse(prev.observedAvailableAt)){conflicted.add(o.localDate);continue;}
+   }
+   if(Date.parse(o.observedAvailableAt)>=Date.parse(prev.observedAvailableAt))continue;
+  }
   best.set(o.localDate,o);
  }
+ for(const d of conflicted){best.delete(d);bump(issues,'CONFLICTING_SAME_TIME_REPORT_EXCLUDED');}
  const outcomes=[...best.values()].sort((a,b)=>a.localDate.localeCompare(b.localDate));
  return {outcomes:outcomes.map(o=>({station:o.station,localDate:o.localDate,observedHighF:o.observedHighF,observedAvailableAt:o.observedAvailableAt,provenance:o.provenance})) as DailyOutcome[],sources:outcomes.map(o=>({date:o.localDate,name:o.name,sourceDigest:o.sourceDigest})),issues};
 }

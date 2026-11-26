@@ -28,5 +28,21 @@ for f in $(jq -r '.files[].name' "$out/in/receipt.json"); do
 done
 cli=$(jq -r '.files[]|select(.name|endswith(".zip"))|.name' "$out/in/receipt.json")
 unzip -Z1 "$out/in/$cli" | safe
-unzip -q "$out/in/$cli" -d "$out/cli"
+# The archive can repeat an entry name (2024: CLINYC_202403080627.txt twice). Never overwrite: identical repeats are
+# dropped, differing repeats are kept as <name>.dupN so the parser sees every product and can refuse a conflict.
+python3 -I - "$out/in/$cli" "$out/cli" <<'PY'
+import hashlib, pathlib, re, sys, zipfile
+src, dst = sys.argv[1], pathlib.Path(sys.argv[2]); seen = {}; dup_same = dup_diff = 0
+with zipfile.ZipFile(src) as z:
+    infos = [i for i in z.infolist() if not i.is_dir()]
+    if sum(i.file_size for i in infos) > 64 * 1024 * 1024: sys.exit("oversized CLI archive")
+    for i in infos:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,120}", i.filename): sys.exit("unsafe zip entry")
+        data = z.read(i); h = hashlib.sha256(data).hexdigest(); prior = seen.setdefault(i.filename, [])
+        if h in prior: dup_same += 1; continue
+        name = i.filename if not prior else f"{i.filename}.dup{len(prior) + 1}"
+        if prior: dup_diff += 1
+        prior.append(h); (dst / name).write_bytes(data)
+print(f"cli entries {len(infos)}, identical repeats dropped {dup_same}, differing repeats kept {dup_diff}")
+PY
 echo "verified run $run artifact $id: $(jq -c '[.files[]|{name,sha256:(.sha256[0:12])}]' "$out/in/receipt.json")"
