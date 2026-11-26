@@ -6,6 +6,14 @@
       "schedule": "35 3 * * *"
     },
     {
+      "path": "/api/internal/scheduler/kalshi-weather-same-day",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/kalshi-weather-day-ahead",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/internal/paper-auto/kickoff",
       "schedule": "0 9 * * *"
     },

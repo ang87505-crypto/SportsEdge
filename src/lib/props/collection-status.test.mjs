@@ -88,3 +88,23 @@ test('next collection: legacy slot while ticks are off; the next capture window 
  assert.equal(nextCollectionAt({nowIso:'2026-11-12T12:00:00Z',ticksReleased:true,plans:[plan],captures:[]}),'2026-11-12T16:00:00.000Z');
  assert.equal(nextCollectionAt({nowIso:'2026-11-12T12:00:00Z',ticksReleased:true,plans:null,captures:null}),null);
 });
+
+test('missed game diagnosis uses event-specific in-window deferrals, not current budget or other games',()=>{
+ const plan={plan_version:CAPTURE_PLAN_V1.version,slate_date:'2026-11-24',provider_event_id:'evtMISS0001',home_team:'H',away_team:'A',
+  commence_time:'2026-11-25T01:10:00.000Z',selected:true,selection_rank:1,arm:'late',reason:'selected_anchor',planned_at:'2026-11-23T21:00:00Z'};
+ const tick=(id,at,deferred,status='completed')=>run(id,'collect-tick-'+at.slice(0,16),status,'NOTHING_DUE',at,at,null,{deferred});
+ const input={...base,nowIso:'2026-11-25T04:00:00Z',plans:[plan],captures:[],ticksReleased:true,credits:[]};
+ const why=runs=>collectionStatus({...input,runs}).missing.find(m=>m.what==='A @ H').why;
+ const inWindow='2026-11-24T23:38:00.000Z',outside='2026-11-24T21:00:00.000Z';
+ const defer={event:plan.provider_event_id,captureKey:'primary',reason:'DAILY_CAP'};
+ assert.match(why([tick(1,inWindow,[defer])]),/rolling 24-hour credit cap/);
+ assert.match(why([tick(1,inWindow,[{...defer,event:'different'}])]),/cause unverified/);
+ assert.match(why([tick(1,inWindow,[{...defer,captureKey:'recheck'}])]),/cause unverified/);
+ assert.match(why([tick(1,inWindow,[defer],'failed')]),/cause unverified/);
+ assert.match(why([tick(1,outside,[defer])]),/available receipts/);
+ assert.match(why([]),/history may be incomplete/);
+ const early=collectionStatus({...input,plans:[{...plan,arm:'early'}],runs:[tick(1,inWindow,[defer])]});
+ const missed=early.missing.find(m=>m.what==='A @ H');
+ assert.match(missed.why,/rolling 24-hour credit cap/);
+ assert.equal(missed.when,'2026-11-25T00:35:00.000Z');
+});

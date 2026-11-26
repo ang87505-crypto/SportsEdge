@@ -1,0 +1,10 @@
+{
+ "schema": "kalshi-weather-multisource-eval-runs-v1",
+ "note": "Retrieval runs (PR #226) evaluated by the unchanged pre-registered method. Results of earlier evaluations are preserved as committed files and never overwritten.",
+ "runs": [
+  {"label": "knyc-2025-09-to-11", "runId": "45752083379", "from": "2025-09-01", "to": "2025-11-30",
+   "note": "First run. Its receipt predates target bounds, so the range is stated here. Re-evaluated with conflicting duplicates excluded; the original result stays in eval-2025-09-to-11-knyc.json."},
+  {"label": "knyc-2024", "runId": "45756206033", "from": "2024-01-01", "to": "2024-12-31",
+   "note": "Full calendar year 2024, chosen by #226 so that the already-viewed autumn 2025 holdout is not reused as fresh evidence. The range must equal the receipt's target_start/target_end."}
+ ]
+}
