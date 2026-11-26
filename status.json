@@ -1,10 +1,10 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-26T23:52:33.080Z",
+ "generatedAt": "2026-11-26T23:53:16.543Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 45913456578,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913456578",
+  "id": 45913479851,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913479851",
   "event": "workflow_run"
  },
  "overall": {
@@ -892,33 +892,33 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 45913456578,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913456578",
+    "id": 45913479851,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913479851",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-26T23:52:25.000Z",
+    "startedAt": "2026-11-26T23:52:40.000Z",
     "finishedAt": null,
     "headSha": "fe966317c1a26bca36aae355c8f1c7dd6c607f83"
    },
    "lastRun": {
-    "id": 45913456578,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913456578",
+    "id": 45913479851,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913479851",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-26T23:52:25.000Z",
+    "startedAt": "2026-11-26T23:52:40.000Z",
     "finishedAt": null,
     "headSha": "fe966317c1a26bca36aae355c8f1c7dd6c607f83"
    },
    "lastSuccess": {
-    "id": 45909561442,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45909561442",
+    "id": 45913456578,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45913456578",
     "event": "workflow_run",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-26T23:12:43.000Z",
-    "finishedAt": "2026-11-26T23:13:18.000Z",
+    "startedAt": "2026-11-26T23:52:25.000Z",
+    "finishedAt": "2026-11-26T23:53:07.000Z",
     "headSha": "fe966317c1a26bca36aae355c8f1c7dd6c607f83"
    },
    "lastFailure": null,
@@ -1069,7 +1069,7 @@
    "watcherWindowEndedAt": "2026-11-21T07:00:00.000Z",
    "stockGate": {
     "ready": false,
-    "reason": "STOCK_ACCOUNT_NOT_CLEAN",
+    "reason": "STOCK_SUPERVISED_EXECUTE_REQUIRED",
     "pinnedHead": "9e23e6305eb0"
    },
    "rule": "Release only after a genuine owner-supervised first paper session passes the pinned gate. After the watcher window the owner reviews and merges; nothing merges automatically."
@@ -1083,91 +1083,91 @@
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-26T23:53:02.820Z",
+  "checkedAt": "2026-11-26T23:53:39.074Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 4889,
+    "ms": 3585,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 317,
+    "ms": 290,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 3285,
+    "ms": 2967,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 100,
+    "ms": 135,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 3168,
+    "ms": 2729,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 4545,
+    "ms": 136,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 162,
+    "ms": 62,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 240,
+    "ms": 51,
     "detail": "answered"
    },
    {
     "name": "Chat: health briefing",
     "ok": true,
-    "ms": 76,
+    "ms": 60,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 32,
+    "ms": 29,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 27,
+    "ms": 24,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 53,
+    "ms": 33,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 782,
+    "ms": 75,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 69,
+    "ms": 52,
     "detail": "HTTP 401"
    }
   ],
@@ -1265,7 +1265,7 @@
   },
   {
    "id": "stock-first-session",
-   "text": "PR #102 (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: not passed (STOCK_ACCOUNT_NOT_CLEAN).",
+   "text": "PR #102 (stock PAPER orders) is not released: it needs a genuine owner-supervised first paper session. Release gate: not passed (STOCK_SUPERVISED_EXECUTE_REQUIRED).",
    "action": "See docs/AUTOMATION_OPERATIONS_2026_11_10.md → \"First supervised stock paper session\". Nothing is automatic about this step."
   }
  ],
