@@ -17,7 +17,7 @@ export function parseEngineRegistry(v:unknown):Registry{
  if(!object(v)||v.schema!=='sportsedge-learning-registry-v1'||!Array.isArray(v.experiments)||v.experiments.length>2000)throw Error('ENGINE_BAD_REGISTRY');
  const reg=v as unknown as Registry,seen=new Set<string>();
  for(const e of reg.experiments){
-  if(!object(e)||!['sports','stocks'].includes(e.domain)||!Array.isArray(e.history)||!object(e.sampleRequirements))throw Error('ENGINE_BAD_EXPERIMENT');
+  if(!object(e)||!['sports','stocks','weather'].includes(e.domain)||!Array.isArray(e.history)||!object(e.sampleRequirements))throw Error('ENGINE_BAD_EXPERIMENT');
   validate(e);if(seen.has(e.id))throw Error('ENGINE_DUPLICATE_EXPERIMENT');seen.add(e.id);
  }
  return reg;

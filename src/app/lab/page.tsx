@@ -109,17 +109,24 @@ const ENGINE_TONE:Record<string,Tone>={RUNNING:'info',PROPOSED:'neutral',INSUFFI
 async function EnginePanel(){
  const snapshot=await loadResearchEngine(new Date().toISOString());
  const e=engineView(snapshot.registry,snapshot.jobs);
- const line=(d:'sports'|'stocks')=>Object.entries(e.counts[d]).filter(([,n])=>n).map(([s,n])=>`${s.replaceAll('_',' ').toLowerCase()} ${n}`).join(' · ');
+ const line=(d:'sports'|'stocks'|'weather')=>Object.entries(e.counts[d]).filter(([,n])=>n).map(([s,n])=>`${s.replaceAll('_',' ').toLowerCase()} ${n}`).join(' · ');
  return <Panel title="Learning engine (research only)" description="Every registered experiment, from the recorded registry. Nothing here changes a model, pick, stake or order; a ready experiment waits for the owner." actions={<Evidence kind="recorded"/>}>
   <Callout tone={snapshot.mode!=='live'||snapshot.stale||snapshot.status!=='OK'?'warning':'info'} title={snapshot.mode==='live'?'Published evaluation':'Saved research snapshot'}>
    {snapshot.at?`Recorded ${snapshot.at}. `:''}{snapshot.detail} Production-shadow comparisons below use predictions already saved before lock; they are separate from the nine-variant ablation lab above.
   </Callout>
   {snapshot.scorecard?<ProbabilityScorecard value={snapshot.scorecard}/>:<p className="home-panel-note">Detailed probability diagnostics will appear after an evaluation publishes the scorecard. Historical reports are retained.</p>}
+  {snapshot.attention&&(snapshot.attention.gaps.length||snapshot.attention.alarms?.codes.length||snapshot.attention.withoutProducer.length)?
+   <Callout tone="warning" title="Needs attention (from the latest evaluation)">
+    <ul className="quiet">{snapshot.attention.alarms?.details.map((d,i)=><li key={'a'+i}><strong>{snapshot.attention!.alarms!.codes[i]?.replaceAll('_',' ').toLowerCase()}</strong>: {d}</li>)}
+     {snapshot.attention.gaps.map(g=><li key={g.code}><strong>{g.code.replaceAll('_',' ').toLowerCase()}</strong>: {g.detail}</li>)}
+     {snapshot.attention.withoutProducer.length?<li><strong>no automatic evidence producer yet ({snapshot.attention.withoutProducer.length})</strong>: {snapshot.attention.withoutProducer.join(', ')}. These advance only when the owner records a result.</li>:null}</ul>
+    Review requests only; nothing here changes a model, pick, stake or order.
+   </Callout>:null}
   {snapshot.drift?<Callout tone={snapshot.drift.status==='REVIEW_REQUESTED'?'warning':'info'} title={`Adaptation watch: ${snapshot.drift.status.replaceAll('_',' ').toLowerCase()}`}>
    {snapshot.drift.reason} Recent 7 days: {snapshot.drift.recent.lines} lines / {snapshot.drift.recent.games} games. Previous 28 days: {snapshot.drift.reference.lines} lines / {snapshot.drift.reference.games} games. Alerts request review; training and promotion remain separate.
   </Callout>:null}
   <MetricGrid columns={3}>
-   <Metric label="Experiments recorded" value={String(e.total)} detail={`Sports: ${line('sports')}`}/>
+   <Metric label="Experiments recorded" value={String(e.total)} detail={`Sports: ${line('sports')}${line('weather')?` · Weather: ${line('weather')}`:''}`}/>
    <Metric label="Ready for owner review" value={String(e.readyForReview.length)} detail="Needs forward evidence meeting the registered minimums"/>
    <Metric label="Rejected and remembered" value={String(e.rejected.length)} detail={`Stocks: ${line('stocks')}`}/>
   </MetricGrid>

@@ -39,3 +39,27 @@ export async function loadPropsResearch(store:Pick<PropsStore,'select'>=propsSto
  }
  return {nowIso,windowStart,control:controls[0]??null,observations,predictions,picks,results,entryLegs};
 }
+
+/**
+ * Forecast-trace snapshot: EVERY model's predictions, every selection version's pick decisions and every entered leg
+ * in the window, with the chronology fields the trace needs. Read-only GETs; the research snapshot above stays
+ * baseline-only. Exceeding the row limit fails closed (RESEARCH_SNAPSHOT_LIMIT); nothing is sampled.
+ */
+export async function loadForecastTraceRaw(store:Pick<PropsStore,'select'>=propsStore(),nowIso=new Date().toISOString(),windowDays=30):Promise<ResearchRaw>{
+ const now=Date.parse(nowIso);if(!Number.isFinite(now)||!(windowDays>0&&windowDays<=90))throw new Error('RESEARCH_INVALID_CLOCK');
+ const windowStart=new Date(now-windowDays*86400_000).toISOString();
+ const bounds=(name:string)=>'&'+name+'=gte.'+encodeURIComponent(windowStart)+'&'+name+'=lte.'+encodeURIComponent(nowIso);
+ const [controls,observations,predictions,picks,results]=await Promise.all([
+  store.select<NonNullable<ResearchRaw['control']>>('props_control','select=state,reason&id=eq.1'),
+  readResearchRows<ResearchRaw['observations'][number]>(store,'props_observations',
+   'select=id,platform,provider_event_id,home_team,away_team,lock_at,player_name,stat,line,provider_last_update,ingested_at,recorded_at&is_fixture=eq.false'+bounds('recorded_at')+'&order=id.asc'),
+  readResearchRows<ResearchRaw['predictions'][number]>(store,'props_predictions',
+   'select=id,observation_id,model_version,status,athlete_id,p_more,p_less,p_tie,mean,data_cutoff,predicted_at'+bounds('predicted_at')+'&order=id.asc'),
+  readResearchRows<ResearchRaw['picks'][number]>(store,'props_picks','select=id,prediction_id,selection_version,status,side'+bounds('decided_at')+'&order=id.asc'),
+  readResearchRows<ResearchRaw['results'][number]>(store,'props_line_results','select=observation_id,revision,outcome,actual,graded_at'+bounds('graded_at')+'&order=id.asc'),
+ ]);
+ const recorded=picks.filter(p=>p.status==='recorded').map(p=>p.id),entryLegs:ResearchRaw['entryLegs']=[];
+ for(let i=0;i<recorded.length;i+=100)entryLegs.push(...await readResearchRows<ResearchRaw['entryLegs'][number]>(store,'props_entry_legs',
+  'select=entry_id,pick_id&pick_id=in.('+recorded.slice(i,i+100).join(',')+')&order=entry_id.asc,pick_id.asc'));
+ return {nowIso,windowStart,control:controls[0]??null,observations,predictions,picks,results,entryLegs};
+}
