@@ -4,30 +4,87 @@ on:
     paths:
       - '.github/workflows/kalshi-public-archive-pilot.yml'
   workflow_dispatch:
+    inputs:
+      start:
+        description: First target climate date (inclusive, YYYY-MM-DD)
+        required: true
+        default: '2024-01-01'
+        type: string
+      end:
+        description: Last target climate date (inclusive, YYYY-MM-DD)
+        required: true
+        default: '2024-12-31'
+        type: string
+      station:
+        description: KNYC only; CLINYC outcome binding is fixed
+        required: true
+        default: KNYC
+        type: string
+  workflow_call:
+    inputs:
+      start:
+        required: true
+        type: string
+      end:
+        required: true
+        type: string
+      station:
+        required: true
+        type: string
+    outputs:
+      artifact_name:
+        description: Name of receipt and raw archive artifact
+        value: ${{ jobs.retrieve.outputs.artifact_name }}
 permissions:
   contents: read
 jobs:
   retrieve:
+    concurrency:
+      group: independent-weather-archive-provider
+      cancel-in-progress: false
+    outputs:
+      artifact_name: ${{ steps.artifact.outputs.artifact_name }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Acquire bounded public NWS archive sample
+        env:
+          # PR checks use a bounded recent historical rehearsal, not a repeat of the full-year archive.
+          START_DATE: ${{ inputs.start || '2026-10-11' }}
+          END_DATE: ${{ inputs.end || '2026-11-25' }}
+          STATION: ${{ inputs.station || 'KNYC' }}
         run: |
           python3 - <<'PY'
-          import csv, datetime, hashlib, io, json, pathlib, urllib.parse, urllib.request, urllib.error, time, zipfile
+          import csv, datetime, hashlib, io, json, os, pathlib, re, urllib.parse, urllib.request, urllib.error, time, zipfile
 
           out = pathlib.Path("weather-archive-pilot")
           out.mkdir(exist_ok=True)
           root = "https://mesonet.agron.iastate.edu"
           limit = 16 * 1024 * 1024
           requests = []
-          # Separate calendar year, fixed before reading its outcomes. 2025 autumn pilot remains an immutable prior run; do not reuse its holdout as independent confirmation. Pad forecast bounds for day-ahead initializations.
+          # Only Central Park has a validated CLI outcome binding. Never label another station's data KNYC.
+          def parse_date(value):
+              if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+                  raise ValueError("invalid ISO climate date")
+              return datetime.date.fromisoformat(value)
+          start, end = parse_date(os.environ["START_DATE"]), parse_date(os.environ["END_DATE"])
+          if os.environ["STATION"] != "KNYC" or not 0 <= (end-start).days < 500:
+              raise ValueError("only KNYC and 1–500 inclusive target days supported")
+          utc_now = datetime.datetime.now(datetime.timezone.utc)
+          if start > utc_now.date() or end > utc_now.date()+datetime.timedelta(days=1):
+              raise ValueError("future range exceeds next-day forecast target")
+          day = datetime.timedelta(days=1)
+          stamp = lambda d: d.isoformat()+"T00:00Z"
           for model in ("GFS", "NBS"):
-              params = {"station": "KNYC", "model": model, "sts": "2023-12-30T00:00Z", "ets": "2025-01-02T00:00Z", "format": "csv"}
-              requests.append((model.lower()+"-2024-full-year.csv", "/cgi-bin/request/mos.py", params))
-          # Include the next morning's CLI for the last target date; ZIP keeps original product timestamps.
-          requests.append(("clin-yc-2024-full-year.zip", "/cgi-bin/afos/retrieve.py", {"pil":"CLINYC","center":"KOKX","fmt":"zip","sdate":"2024-01-02T00:00Z","edate":"2025-01-02T00:00Z","limit":"9999"}))
-          receipt = {"schema":"weather-archive-retrieval-pilot-v1","purpose":"raw retrieval only; not training pairs, calibrated probabilities or exchange data","retrieved_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"target_start":"2024-01-01","target_end":"2024-12-31","prior_pilot_run":45752083379,"admitted_training_pairs":0,"exchange_requests":0,"files":[]}
+              params = {"station":"KNYC","model":model,"sts":stamp(start-2*day),"ets":stamp(min(end+day,utc_now.date()+day)),"format":"csv"}
+              requests.append((model.lower()+"-"+start.isoformat()+"-"+end.isoformat()+".csv", "/cgi-bin/request/mos.py", params))
+          # Include next morning's report for the last requested date, without fetching future products.
+          cli_start=start+day
+          cli_end=min(end+2*day,utc_now.date()+day)
+          if cli_start>=cli_end:
+              raise ValueError("no observable CLI date window")
+          requests.append(("clin-yc-"+start.isoformat()+"-"+end.isoformat()+".zip", "/cgi-bin/afos/retrieve.py", {"pil":"CLINYC","center":"KOKX","fmt":"zip","sdate":stamp(cli_start),"edate":stamp(cli_end),"limit":"9999"}))
+          receipt = {"schema":"weather-archive-retrieval-pilot-v1","purpose":"raw retrieval only; not training pairs, calibrated probabilities or exchange data","started_at":utc_now.isoformat(),"target_start":start.isoformat(),"target_end":end.isoformat(),"station":"KNYC","admitted_training_pairs":0,"exchange_requests":0,"files":[]}
           cooldown = False
           for i, (name, endpoint, params) in enumerate(requests):
               url = root + endpoint + "?" + urllib.parse.urlencode(params)
@@ -66,7 +123,7 @@ jobs:
                           # Do not extract paths. Retain archive names for subsequent issue-clock validation.
                           row.update(raw_products=len(members),sample_member_names=[x.filename for x in members[:5]])
                   (out/name).write_bytes(data)
-                  row.update(status="RETRIEVED_UNVALIDATED",bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+                  row.update(status="RETRIEVED_UNVALIDATED",bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
               except urllib.error.HTTPError as exc:
                   row.update(status="FAILED",http_status=exc.code,error=str(exc)[:400])
                   if exc.code == 429:
@@ -76,6 +133,7 @@ jobs:
                   row.update(status="FAILED",error=str(exc)[:400])
               receipt["files"].append(row)
               print(json.dumps(row),flush=True)
+          receipt["retrieved_at"]=datetime.datetime.now(datetime.timezone.utc).isoformat()
           receipt["status"]="RETRIEVED_UNVALIDATED" if all(x["status"]=="RETRIEVED_UNVALIDATED" for x in receipt["files"]) else "INCOMPLETE"
           (out/"receipt.json").write_text(json.dumps(receipt,indent=2)+"\n")
           print(json.dumps(receipt),flush=True)
@@ -89,4 +147,7 @@ jobs:
           name: independent-weather-archive-pilot
           path: weather-archive-pilot/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+      - name: Declare artifact output
+        id: artifact
+        run: echo "artifact_name=independent-weather-archive-pilot" >> "$GITHUB_OUTPUT"
