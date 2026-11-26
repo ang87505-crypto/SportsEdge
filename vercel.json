@@ -144,6 +144,10 @@
     {
       "path": "/api/internal/scheduler/props-learn-weekly",
       "schedule": "0 16 * * 0"
+    },
+    {
+      "path": "/api/internal/moneyline-refresh",
+      "schedule": "0 11 * * *"
     }
   ],
   "git": {

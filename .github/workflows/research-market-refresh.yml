@@ -6,7 +6,12 @@ on:
     paths:
       - 'src/app/api/internal/research-cycle/**'
       - 'src/lib/server/research-cycle-handler*'
+      - 'src/app/api/internal/moneyline-refresh/**'
+      - 'src/lib/server/moneyline-refresh*'
+      - 'vercel.json'
       - '.github/workflows/research-market-refresh.yml'
+# Contract tests only: this workflow never collects market data or proves that fresh quotes were saved.
+# Fresh ingestion is shown by /api/sports quote timestamps and the moneyline-refresh receipt.
 permissions:
   contents: read
 jobs:
@@ -20,4 +25,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs
+      - run: node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/server/moneyline-refresh.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs
