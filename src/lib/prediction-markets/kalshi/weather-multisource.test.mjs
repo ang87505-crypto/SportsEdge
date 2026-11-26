@@ -122,6 +122,20 @@ test('IEM MOS adapter: the 00Z max is day D-1, NBS keeps XND, latency is applied
  assert.equal(utcIso('2025-09-01T00:00Z'),'2025-09-01T00:00:00.000Z');assert.equal(utcIso('nope'),null);
 });
 
+test('duplicate archive rows: identical copies collapse to one; conflicting copies are all excluded and listed, never chosen',()=>{
+ const h='station,model,runtime,ftime,txn,xnd,tmp';
+ const csv=[h,'KNYC,NBS,2025-10-14 07:00,2025-10-17 00:00,58,1,50','KNYC,NBS,2025-10-14 07:00,2025-10-17 00:00,59,1,50',
+  'KNYC,NBS,2025-10-14 13:00,2025-10-17 00:00,60,2,50','KNYC,NBS,2025-10-14 13:00,2025-10-17 00:00,60,2,51',
+  'KNYC,NBS,2025-10-14 19:00,2025-10-17 00:00,61,2,50','KNYC,NBS,2025-10-14 19:00,2025-10-17 00:00,61,3,50',
+  'KNYC,NBS,2025-10-15 01:00,2025-10-17 00:00,62,2,50'].join('\n');
+ const r=parseIemMosCsv(csv,'NBS','KNYC');
+ assert.deepEqual(r.forecasts.map(f=>[f.cycle.slice(0,16),f.valueF,f.sdF]),[['2025-10-14T13:00',60,2],['2025-10-15T01:00',62,2]],
+  'the conflicting TXN 58/59 group and the XND 2/3 group are excluded; a group differing only in an unused column is kept once');
+ assert.equal(r.issues.CONFLICTING_DUPLICATE_EXCLUDED,2);assert.equal(r.issues.DUPLICATE_IDENTICAL,1);
+ assert.deepEqual(r.conflicts.map(c=>[c.cycle.slice(0,16),c.values.map(v=>v.valueF+'/'+v.sdF)]),
+  [['2025-10-14T07:00',['58/1','59/1']],['2025-10-14T19:00',['61/2','61/3']]]);
+});
+
 const cli=(issued,wmo,dateLine,max)=>['CDUS41 KOKX '+wmo,'CLINYC','','CLIMATE REPORT','NATIONAL WEATHER SERVICE NEW YORK, NY',issued,'',
  '...................................','','...THE CENTRAL PARK NY CLIMATE SUMMARY FOR '+dateLine+'...','','CLIMATE NORMAL PERIOD 1991 TO 2020','',
  'WEATHER ITEM OBSERVED TIME RECORD YEAR NORMAL','TEMPERATURE (F)',' YESTERDAY','   MAXIMUM         '+max+'   1211 AM  73  1931',

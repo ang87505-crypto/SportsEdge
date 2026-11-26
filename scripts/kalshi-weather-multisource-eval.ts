@@ -1,51 +1,43 @@
 /**
  * Offline evaluation of knyc-multisource-emos-v1-research on archives retrieved by PR #226's workflow.
  * Makes no network request. Inputs are hashed and checked against #226's receipt before anything is parsed.
+ * Scored target dates are bounded by the receipt's target_start/target_end (or --from/--to for older receipts).
  *
- * node --experimental-strip-types scripts/kalshi-weather-multisource-eval.ts \
- *   --receipt dir/receipt.json --gfs dir/gfs.csv --nbs dir/nbs.csv --cli-zip dir/cli.zip --cli-dir extracted/ \
- *   --out report.json [--engine-result result.json]
+ * node --experimental-strip-types scripts/kalshi-weather-multisource-eval.ts --inputs <artifact dir> --cli-dir <unzipped CLI>
+ *   --out report.json [--engine-result result.json] [--from YYYY-MM-DD --to YYYY-MM-DD] [--label name]
  */
-import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync,readdirSync,statSync} from 'node:fs';
-import {join,basename} from 'node:path';
-import {parseIemMosCsv,parseCliArchive,stationKey} from '../src/lib/prediction-markets/kalshi/weather-archive-adapter.ts';
-import {ANCHORS,MEMBERS,buildAnchorDays,type MemberForecast} from '../src/lib/prediction-markets/kalshi/weather-multisource.ts';
+import {join} from 'node:path';
+import {loadVerifiedArchive} from '../src/lib/prediction-markets/kalshi/weather-archive-adapter.ts';
+import {ANCHORS,MEMBERS,buildAnchorDays} from '../src/lib/prediction-markets/kalshi/weather-multisource.ts';
 import {evaluateMultisource} from '../src/lib/prediction-markets/kalshi/weather-multisource-eval.ts';
 import {engineResult} from '../src/lib/prediction-markets/kalshi/weather-multisource-readiness.ts';
 
 const argv=process.argv,opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
 const need=(n:string)=>{const v=opt(n);if(!v)throw Error('missing --'+n);return v;};
-const sha=(b:Buffer)=>createHash('sha256').update(b).digest('hex');
-
-const receipt=opt('receipt')?JSON.parse(readFileSync(opt('receipt')!,'utf8')):null;
-const verified:Record<string,string>={};
-function load(path:string):Buffer{
- const b=readFileSync(path),h=sha(b);
- if(receipt){const f=(receipt.files??[]).find((x:{name:string})=>x.name===basename(path));
-  if(!f||f.sha256!==h)throw Error('INPUT_HASH_MISMATCH '+basename(path));}
- verified[basename(path)]=h;return b;
-}
-const gfs=load(need('gfs')).toString('utf8'),nbs=load(need('nbs')).toString('utf8');
-if(opt('cli-zip'))load(opt('cli-zip')!);
-const files:{name:string;text:string}[]=[];
+const inDir=need('inputs'),cliDir=need('cli-dir');
+const files=readdirSync(inDir).filter(n=>/^[a-z0-9][a-z0-9.-]{0,80}$/.test(n)&&n!=='receipt.json'&&statSync(join(inDir,n)).isFile())
+ .map(name=>({name,bytes:readFileSync(join(inDir,name))}));
+const cliProducts:{name:string;text:string}[]=[];
 (function walk(d:string){for(const n of readdirSync(d).sort()){const p=join(d,n),s=statSync(p);
- if(s.isDirectory())walk(p);else if(s.isFile()&&s.size<=200_000)files.push({name:p.slice(need('cli-dir').length+1),text:readFileSync(p,'latin1')});}})(need('cli-dir'));
-
-const station=stationKey('KNYC');
-const g=parseIemMosCsv(gfs,'GFS','KNYC'),n=parseIemMosCsv(nbs,'NBS','KNYC');
-const forecasts:MemberForecast[]=[...g.forecasts,...n.forecasts].map(f=>({...f,station}));
-const cli=parseCliArchive(files);
-const byAnchor=ANCHORS.map(a=>buildAnchorDays(forecasts,cli.outcomes,station,a));
+ if(s.isDirectory())walk(p);else if(s.isFile()&&s.size<=200_000)cliProducts.push({name:n,text:readFileSync(p,'latin1')});}})(cliDir);
+const a=loadVerifiedArchive({receiptText:readFileSync(join(inDir,'receipt.json'),'utf8'),files,cliProducts});
+const from=a.targetStart??opt('from'),to=a.targetEnd??opt('to');
+if(!from||!to)throw Error('TARGET_RANGE_REQUIRED');
+if((opt('from')&&opt('from')!==from)||(opt('to')&&opt('to')!==to))throw Error('TARGET_RANGE_DISAGREES_WITH_RECEIPT');
+const inRange=(d:string)=>d>=from&&d<=to;
+const forecasts=a.forecasts.filter(f=>inRange(f.targetLocalDate)),outcomes=a.outcomes.filter(o=>inRange(o.localDate));
+const byAnchor=ANCHORS.map(x=>buildAnchorDays(forecasts,outcomes,a.station,x));
 const report=evaluateMultisource(byAnchor);
-const data={inputsSha256:verified,cliFilesRead:files.length,outcomes:cli.outcomes.length,
- outcomeRange:cli.outcomes.length?[cli.outcomes[0].localDate,cli.outcomes.at(-1)!.localDate]:null,
+const data={label:opt('label'),targetRange:[from,to],rangeSource:a.targetStart?'receipt':'arguments',inputsSha256:a.inputsSha256,
+ cliFilesRead:cliProducts.length,outcomes:outcomes.length,outcomesOutsideRange:a.outcomes.length-outcomes.length,
+ outcomeRange:outcomes.length?[outcomes[0].localDate,outcomes.at(-1)!.localDate]:null,
  forecastsByMember:Object.fromEntries(MEMBERS.map(m=>[m,forecasts.filter(f=>f.member===m).length])),
- adapterIssues:{gfs:g.issues,nbs:n.issues,cli:cli.issues},
- daysWithMember:Object.fromEntries(ANCHORS.map((a,i)=>[a,Object.fromEntries(MEMBERS.map(m=>[m,byAnchor[i].filter(d=>d.members[m]).length]))])),
- outcomeSources:cli.sources};
+ adapterIssues:a.issues,conflictingDuplicates:a.conflicts,
+ daysWithMember:Object.fromEntries(ANCHORS.map((x,i)=>[x,Object.fromEntries(MEMBERS.map(m=>[m,byAnchor[i].filter(d=>d.members[m]).length]))])),
+ outcomeSources:a.outcomeSources.filter(o=>inRange(o.date))};
 writeFileSync(need('out'),JSON.stringify({...report,data},null,1)+'\n');
 if(opt('engine-result'))writeFileSync(opt('engine-result')!,JSON.stringify([engineResult(report)],null,1)+'\n');
 const summary={modelId:report.modelId,disposition:report.disposition,data:{...data,outcomeSources:undefined},
- anchors:report.anchors.map(a=>({...a,rows:undefined}))};
+ anchors:report.anchors.map(x=>({...x,rows:undefined}))};
 console.log('MULTISOURCE_EVAL_BEGIN');console.log(JSON.stringify(summary));console.log('MULTISOURCE_EVAL_END');

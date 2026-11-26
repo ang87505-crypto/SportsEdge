@@ -60,6 +60,8 @@ export type AnchorReport={anchor:Anchor;station:string;inputDays:number;skippedI
  holdoutRange:[string,string]|null;bestMemberChosenOnBacktest:BaselineId|null;
  backtest:Partial<Record<ModelId,Summary>>;holdout:Partial<Record<ModelId,Summary>>;
  holdoutCombinedMinusBestMember:{n:number;mean:number|null;lower95:number|null;upper95:number|null};
+ /** Descriptive only (the decision rule above is unchanged): paired HOLDOUT CRPS differences, combined minus each. */
+ holdoutPairs:Partial<Record<BaselineId,{n:number;mean:number|null;lower95:number|null;upper95:number|null}>>;
  checks:{enoughHoldout:boolean;beatsBestMember:boolean;beatsNbmNative:boolean|null;beatsClimatology:boolean;
   bootstrapUpperBelowZero:boolean;coverageWithinRange:boolean};
  disposition:'PROMISING'|'NO_CLEAR_EFFECT'|'REJECTED';reason:string;rows:EvalRow[]};
@@ -87,6 +89,11 @@ export function evaluateAnchor(days:readonly AnchorDay[],P=MULTISOURCE_POLICY,E=
  const best=corrected.sort((a,b)=>backtest[a]!.meanCrps!-backtest[b]!.meanCrps!||a.localeCompare(b))[0]??null;
  const paired=best?hold.filter(r=>r.scores[best]).map(r=>r.scores.COMBINED!.crps-r.scores[best]!.crps):[];
  const boot=blockBootstrap(paired,E);
+ const holdoutPairs:AnchorReport['holdoutPairs']={};
+ for(const m of ['NBM_RAW','NBM_CORRECTED','NBM_NATIVE','GFS_MOS_RAW','GFS_MOS_CORRECTED'] as BaselineId[]){
+  const d=hold.filter(r=>r.scores[m]).map(r=>r.scores.COMBINED!.crps-r.scores[m]!.crps);
+  if(d.length)holdoutPairs[m]={n:d.length,...blockBootstrap(d,E)};
+ }
  const on=(m:ModelId)=>{const both=hold.filter(r=>r.scores[m]);return both.length?
   {c:avg(both.map(r=>r.scores.COMBINED!.crps))!,o:avg(both.map(r=>r.scores[m]!.crps))!}:null;};
  const nbm=on('NBM_NATIVE'),clim=on('CLIMATOLOGY'),cov=holdout.COMBINED?.coverage80??null;
@@ -103,7 +110,7 @@ export function evaluateAnchor(days:readonly AnchorDay[],P=MULTISOURCE_POLICY,E=
  const range=(rs:EvalRow[]):[string,string]|null=>rs.length?[rs[0].date,rs.at(-1)!.date]:null;
  return {anchor,station,inputDays:ordered.length,skippedInsufficientHistory,skippedNoMember,skippedNoOutcome,scoredDays:rows.length,
   backtestDays:back.length,holdoutDays:hold.length,backtestRange:range(back),holdoutRange:range(hold),bestMemberChosenOnBacktest:best,
-  backtest,holdout,holdoutCombinedMinusBestMember:{n:paired.length,...boot},checks,disposition,reason,rows};
+  backtest,holdout,holdoutCombinedMinusBestMember:{n:paired.length,...boot},holdoutPairs,checks,disposition,reason,rows};
 }
 export type MultisourceEvalReport={schema:'kalshi-weather-multisource-eval-v1';modelId:typeof MULTISOURCE_MODEL_ID;evidence:'retrospective';
  anchors:AnchorReport[];disposition:'PROMISING'|'NO_CLEAR_EFFECT'|'REJECTED';promotionEligible:false;marketDataUsed:false;caveat:string};

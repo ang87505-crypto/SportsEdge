@@ -37,7 +37,8 @@ export function parseIemMosCsv(text:string,model:MosModel,station:string,P=MULTI
  const iSt=col('station'),iRun=col('runtime'),iF=col('ftime'),iMax=model==='GFS'?col('n_x'):col('txn'),iSd=model==='NBS'?col('xnd'):-1;
  if(iSt<0||iRun<0||iF<0||iMax<0)throw Error('WX_ADAPTER_MISSING_COLUMNS:'+header.join('|'));
  const member=model==='GFS'?'GFS_MOS' as const:'NBM' as const,latency=P.latencyHours[member]*3600_000;
- const out:MemberForecast[]=[],issues:AdapterIssues={},seen=new Set<string>();
+ const out:MemberForecast[]=[],issues:AdapterIssues={},groups=new Map<string,MemberForecast[]>();
+ const conflicts:{cycle:string;targetLocalDate:string;values:{valueF:number;sdF:number|null}[]}[]=[];
  for(const line of lines.slice(1)){
   const f=splitCsvLine(line);
   if(f.length!==header.length){bump(issues,'MALFORMED_ROW');continue;}
@@ -51,10 +52,20 @@ export function parseIemMosCsv(text:string,model:MosModel,station:string,P=MULTI
   if(iSd>=0){const s=f[iSd].trim();if(s!==''&&s!=='M'&&s!=='None'){const x=Number(s);if(Number.isFinite(x)&&x>=0&&x<=40)sdF=x;}}
   const targetLocalDate=new Date(Date.parse(ft)-DAY).toISOString().slice(0,10);
   if(Date.parse(ft)<=Date.parse(run)){bump(issues,'FORECAST_NOT_AHEAD');continue;}
-  const key=run+'|'+targetLocalDate;if(seen.has(key)){bump(issues,'DUPLICATE_ROW');continue;}seen.add(key);
-  out.push({member,station,targetLocalDate,cycle:run,availableAt:new Date(Date.parse(run)+latency).toISOString(),valueF,sdF});
+  const key=run+'|'+targetLocalDate,row={member,station,targetLocalDate,cycle:run,availableAt:new Date(Date.parse(run)+latency).toISOString(),valueF,sdF};
+  groups.set(key,[...(groups.get(key)??[]),row]);
  }
- return {forecasts:out,issues};
+ // Duplicate archive rows for the same cycle and valid time carry no revision clock, so which one is "right" is unknowable.
+ // Identical used values (max, and XND for NBM) collapse to one row. If they disagree, every copy is excluded and listed.
+ for(const rows of groups.values()){
+  if(rows.length===1){out.push(rows[0]);continue;}
+  const distinct=[...new Map(rows.map(r=>[r.valueF+'|'+r.sdF,{valueF:r.valueF,sdF:r.sdF}])).values()];
+  if(distinct.length===1){bump(issues,'DUPLICATE_IDENTICAL');out.push(rows[0]);continue;}
+  bump(issues,'CONFLICTING_DUPLICATE_EXCLUDED');
+  conflicts.push({cycle:rows[0].cycle,targetLocalDate:rows[0].targetLocalDate,values:distinct});
+ }
+ out.sort((a,b)=>a.cycle.localeCompare(b.cycle)||a.targetLocalDate.localeCompare(b.targetLocalDate));
+ return {forecasts:out,issues,conflicts};
 }
 const STATION_FROM_ICAO:Record<string,string>={KNYC:'KNYC_CENTRAL_PARK'};
 export const stationKey=(icao:string)=>STATION_FROM_ICAO[icao]??icao;
@@ -96,7 +107,8 @@ export function parseCliArchive(products:readonly {name:string;text:string}[]){
  * requests, is refused.
  */
 export function loadVerifiedArchive(x:{receiptText:string;files:{name:string;bytes:Uint8Array}[];cliProducts:{name:string;text:string}[];icao?:string}){
- const receipt=JSON.parse(x.receiptText) as {status?:string;exchange_requests?:number;retrieved_at?:string;files?:{name:string;sha256?:string}[]};
+ const receipt=JSON.parse(x.receiptText) as {status?:string;exchange_requests?:number;retrieved_at?:string;target_start?:string;target_end?:string;
+  files?:{name:string;sha256?:string;captured_at?:string}[]};
  if(receipt.status!=='RETRIEVED_UNVALIDATED'||receipt.exchange_requests!==0)throw Error('WX_ARCHIVE_RECEIPT_NOT_USABLE');
  const sha=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex'),inputsSha256:Record<string,string>={};
  for(const f of x.files){const r=(receipt.files??[]).find(z=>z.name===f.name),h=sha(f.bytes);
@@ -105,8 +117,12 @@ export function loadVerifiedArchive(x:{receiptText:string;files:{name:string;byt
  const gfsFile=x.files.find(f=>f.name.startsWith('gfs-')),nbsFile=x.files.find(f=>f.name.startsWith('nbs-'));
  if(!gfsFile||!nbsFile)throw Error('WX_ARCHIVE_MISSING_MOS');
  const g=parseIemMosCsv(text('gfs-'),'GFS',icao),n=parseIemMosCsv(text('nbs-'),'NBS',icao),cli=parseCliArchive(x.cliProducts);
- return {station,retrievedAt:receipt.retrieved_at??null,inputsSha256,
+ const DATE=/^\d{4}-\d{2}-\d{2}$/,capturedAt=(receipt.files??[]).map(f=>f.captured_at).filter((t):t is string=>!!t&&Number.isFinite(Date.parse(t)));
+ return {station,retrievedAt:receipt.retrieved_at??null,
+  /** Latest per-file capture time: every row used was held by then (actual retrieval, not a modeled runtime). */
+  capturedAt:capturedAt.length===(receipt.files??[]).length&&capturedAt.length?capturedAt.sort().at(-1)!:null,
+  targetStart:DATE.test(receipt.target_start??'')?receipt.target_start!:null,targetEnd:DATE.test(receipt.target_end??'')?receipt.target_end!:null,inputsSha256,
   inputsDigest:createHash('sha256').update(JSON.stringify(Object.entries(inputsSha256).sort())).digest('hex'),
   forecasts:[...g.forecasts,...n.forecasts].map(f=>({...f,station})),outcomes:cli.outcomes,outcomeSources:cli.sources,
-  issues:{gfs:g.issues,nbs:n.issues,cli:cli.issues}};
+  issues:{gfs:g.issues,nbs:n.issues,cli:cli.issues},conflicts:{gfs:g.conflicts,nbs:n.conflicts}};
 }
