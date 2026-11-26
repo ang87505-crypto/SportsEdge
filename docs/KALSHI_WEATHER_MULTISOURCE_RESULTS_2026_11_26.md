@@ -65,3 +65,55 @@ There are only **29** (day-ahead) and **30** (same-day) holdout days. The regist
   - the owner approves.
 
 None of these steps changes a parameter. Any change to the method needs a new model ID.
+
+## Full-year 2024 evaluation (added 2026-11-26)
+
+**Run:** CI [45760830405](https://github.com/ang87505-crypto/SportsEdge/actions/runs/45760830405), code `63f13ca`.
+- **Method:** the same pre-registered protocol, unchanged (`23762ccab292…df77`).
+- **Data:** PR #226's run [45756206033](https://github.com/ang87505-crypto/SportsEdge/actions/runs/45756206033), receipt-verified.
+- **Scope:** scored targets limited to the receipt's 2024-01-01 to 2024-12-31. #226 chose 2024 so the already-viewed autumn-2025 holdout is not reused as fresh evidence.
+- **Summary:** `research/kalshi_weather_multisource_v1_20261126/eval-2024-knyc.json`.
+
+**Verdict (pre-registered rule): `NO_CLEAR_EFFECT` at both horizons.** There are 166 holdout days each (2024-07-17 to 12-31). Every condition held except one: the bootstrap 95% upper bound of (combined − best corrected member) is not below 0.
+
+| Holdout CRPS (lower is better) | Day-ahead | Same-day |
+|---|---|---|
+| **Combined** | **1.223** | **0.983** |
+| NBM bias-corrected (best member on backtest) | 1.258 | 1.013 |
+| NBM native `N(TXN, XND)` | 1.268 | 1.073 |
+| NBM raw | 1.282 | 1.072 |
+| GFS MOS bias-corrected | 1.436 | 1.291 |
+| GFS MOS raw | 1.495 | 1.308 |
+| Trailing climatology | 4.993 | 4.787 |
+
+**Paired holdout differences, combined minus model** (mean [95% block-bootstrap interval]; descriptive):
+
+| Versus | Day-ahead | Same-day |
+|---|---|---|
+| NBM corrected | −0.035 [−0.093, +0.021] | −0.030 [−0.101, +0.070] |
+| NBM raw | −0.060 [−0.124, +0.018] | −0.089 [−0.168, +0.032] |
+| NBM native | −0.045 [−0.128, +0.055] | −0.090 [−0.167, +0.029] |
+| GFS MOS corrected | −0.213 [−0.302, −0.121] | −0.308 [−0.438, −0.209] |
+
+**Calibration.** Combined 80% coverage is 0.84 (day-ahead) and 0.89 (same-day), inside the registered [0.70, 0.90]. NBM native is 0.77 and 0.81.
+
+**Reading**
+- **Against NBM:** on a full year, the combination is numerically the most accurate distribution at both horizons, about 3% lower CRPS than corrected NBM. The improvement is not statistically established, and the registered rule correctly does not call it PROMISING.
+- **Against GFS MOS:** it clearly beats GFS MOS.
+- **Combining vs NBM alone:** most of NBM's own gap is closed by bias correction plus spread calibration. The combination adds a small, uncertain amount on top.
+- **No method change follows from this.** The challenger remains a shadow model. Evidence now accrues only through frozen forward forecasts; owner review needs 50 graded forward days per horizon.
+- **Not profitability:** none of this is trading profitability.
+
+**Data integrity (2024)**
+- **Forecasts:** no conflicting duplicate forecast rows.
+- **Outcomes:** 362 valid next-morning reports for 366 days. Refused:
+  - 365 evening interim reports;
+  - 3 with a WMO-header/printed-issuance mismatch;
+  - 3 missing a high;
+  - 2 wrong product;
+  - 1 wrong station/date;
+  - 1 not a next-morning report.
+- **Repeated reports:** 4 later or duplicate reports; the first one counts.
+- **Repeated zip entries:** the CLI zip repeats one entry name. The two differing copies were both kept and parsed, and nothing was overwritten.
+
+**Sep–Nov 2025 re-run** with conflicting duplicates excluded: one NBS group, 2025-10-14 07Z for 10-16 (TXN 58 vs 59), was excluded. Results are identical to the original, because that 3-day-old cycle was never selected. Both files are kept: `eval-2025-09-to-11-knyc.json` (original, unchanged) and `eval-2025-09-to-11-knyc-rerun.json`.
