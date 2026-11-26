@@ -10,56 +10,31 @@ tracking receipt checks; nothing here duplicates that work.
 **Finish line (Nov 30, core development complete) = Part A, operational readiness.** Algorithm validation (Part B) runs
 on its own evidence clock and is not a release blocker.
 
-## FINAL RELEASE QUEUE: functional release candidate (handoff, 2026-11-26 06:26 UTC)
+## FINAL RELEASE QUEUE (production main `17049b0`, after #228; 2026-11-26 07:00 UTC)
 
-**Reference candidate:** branch `claude/release-candidate-20261126` at **`725d605`**. It is main `9df0934` with every PR below merged in this order; none of the merges conflicted. It is for audit only. Merge the PRs themselves, at the listed heads.
+**Reference candidate:** branch `claude/release-candidate-20261126` at **`f527d2d`** = main + RC-1 + RC-2 + #216 + #223. No conflicts. Audit only; merge the PRs.
 
-### Integrated regression on `725d605`
-
-| Suite | Result |
+| Suite on `f527d2d` | Result |
 |---|---|
-| Node, every `*.test.mjs` | **1,212 passed, 0 failed**; 49 database-gated tests run below |
+| Node (every `*.test.mjs`) | **1,213 passed, 0 failed**; 49 database-gated tests run below |
 | PostgreSQL e2e (stocks, command) | **188/188** |
 | Props SQL harness | passes; **18** readiness cases |
 | Python | **471/471** |
-| ESLint | 0 errors (8 known warnings) |
+| ESLint | 0 errors |
 | `next build` | passed |
-| Experiment manifest | stock drift **0**. Props drift: `capture-plan.ts` and `props-tick.ts` (already on main) and `props-cycle.ts` (#216) |
-| Hosted CI | green on every head below. #228 `7703cd8`: 19 passed, including the real-archive rehearsal |
+| Hosted CI | RC-1 `b47aaf2` 10 passed; RC-2 `f14b8b7` 11 passed; #216 `f067645` 11 passed |
+| Production | `/`, `/prediction-markets/kalshi`, `/lab`, `/stocks/paper-auto`, `/paper-betting/props` and `/api/research/kalshi-health` return 200. The Kalshi shadow panel is live and correctly reports that no forecast is frozen yet |
 
-### Phase 1: merge before Sunday Nov 29, 6:00 PM MST
-
-| # | PR | Head | System | Owner action |
+| Order | PR | Head | Contents | Owner action |
 |---|---|---|---|---|
-| 1 | **#217** | `1329851` | Stocks | Approve its 2 Vercel crons (decision and close-mark backups), merge, confirm the deploy |
-| 2 | **#228** | `7703cd8` | Kalshi and NBA monitoring | ChatGPT's integration. Contains #227 `dc564e3`, #226 `57a6c4f` and #225 `2df057b` content. Reviewed. After deploy, Vercel shows `kalshi-weather-same-day` and `kalshi-weather-day-ahead` |
-| 3 | **#227** | `0044863` | Kalshi and engine | Follow-up commits only (`788854c`: ops job; `0044863`: `--stock-research` in the engine workflow). Merge after #228 |
-| 4 | **#221** | `5bb832d` | Sports and engine | NBA prediction tracing; engine evidence coverage; stock research ledgers into the engine; /lab "Needs attention" |
-| 5 | **#219** | `32f8e97` | Sports research record | Docs, scripts and registry; no production code |
-| 6 | **#223** | this | Docs | This queue |
-| 7 | #222 (optional now) | `4cf3ec5` | Stocks | Merge by **Sat Nov 28 04:00 UTC** to capture holdrank10's Nov 30 week; otherwise in Phase 2. The Autopilot panel is fail-safe |
-
-**Freeze from Sunday 6:00 PM MST** until the Nov 30 gate reads `STOCK_SUPERVISED_SESSION_VERIFIED`.
-
-### Phase 2: Monday Nov 30 and after the gate
-
-| # | Step |
-|---|---|
-| 8 | Run the supervised session from `docs/STOCK_PAPER_SESSION_2026_11_30.md` (#217): decision check by 6:15 AM, arm 7:00–7:25, execute **7:31–7:44 AM MST** from your own account on `release/stock-paper-orders`, Stop/Start by 1:30 PM, mark by 4:00 PM, then the operations monitor |
-| 9 | **#102** at `9e23e63`, by hand |
-| 10 | **#222** at `4cf3ec5`, if not merged in Phase 1 |
-| 11 | **#216** at `e0b86c2` (NBA forward-study release, contains #208), after a fresh hosted readiness run reads 13 rows READY and you approve the `props-cycle.ts` change. Take a new manifest snapshot afterwards |
-| 12 | **Close as merged-in-content or superseded:**<br>• #225 and #226, after #228 deploys;<br>• #208, #192, #195, #199, #200, #201, #202, #206 and #207, after #216;<br>• #211, #214, #215 and #187, and the other lists in section 6 below |
-
-### What is operational after Phase 1 (functional, not profitability)
-
-| System | Automatic evidence | Dashboard | Learning engine | Genuine remaining blockers |
-|---|---|---|---|---|
-| **Kalshi** | Shadow forecasts frozen once per horizon before 6 AM and 9 AM EST cutoffs (Vercel-timed, #226 retrieval, verified archives), graded next morning | Kalshi page: 2024 comparison and live shadow scorecard; ops job `kalshi-weather-shadow` | `--weather-forward`; experiment RUNNING; evidence shows weather CONNECTED | Owner review needs **50 graded forward days per horizon**. No market data; exchange disabled. 2024 verdict `NO_CLEAR_EFFECT` (combined about 3% better than corrected NBM, not established) |
-| **Stocks** | Decision, execute and mark backups; PAPER ledger; nightly lab ledgers (psychology, plus holdrank10 with #222) | Autopilot page (orders, evidence, research tracking with #222); ops monitor | `--stock-research` feeds graded forward weeks; REJECTED or FAILED never revived | The Nov 30 session and #102. 26 forward weeks for any strategy verdict. `lab-stock-v3` code is only in unmerged #165 |
-| **Sports** | Collection, grading and the safety brake (95/150, 63.3%); tracing of every prediction; missed-window diagnosis (#225 content in #228) | Props pages; /lab engine panel with alarms and gaps; ops status | Ledger, coverage, drift and alarms | #216's hosted readiness and props-cycle approval |
-
-**Kept intact:** risk controls, validation gates, the 30/50 training and review minimums, and every negative finding. No merge, migration, order or exchange activation was performed.
+| 1 | **#217 (RC-2, stocks)** | `f14b8b7` | #217 + #222: Nov 30 checklist, 2 backup crons, Autopilot research tracking, holdrank10 forward ledger | Approve the crons, merge **before Sun 6 PM MST** (by Sat 04:00 UTC to capture holdrank10's Nov 30 week), confirm the deploy. Then close #222 |
+| 2 | **#221 (RC-1, sports, engine, Kalshi monitoring)** | `b47aaf2` | #221 + #219 + #227's follow-ups: NBA tracing, engine evidence coverage, stock-research feed, /lab "Needs attention" including experiments without producers, `kalshi-weather-shadow` ops job. Leaves #228's Kalshi code byte-identical | Merge outside the freeze. Then close #219 and #227 |
+| 3 | **#223** | this | Queue | Merge any time |
+| — | Freeze | — | Sun Nov 29 6 PM MST until the gate reads `STOCK_SUPERVISED_SESSION_VERIFIED` | — |
+| 4 | Nov 30 session | — | `docs/STOCK_PAPER_SESSION_2026_11_30.md`; execute 7:31–7:44 AM MST | Owner |
+| 5 | **#102** | `9e23e63` | Stock PAPER orders release | After the gate |
+| 6 | **#216 (NBA forward studies)** | `f067645` | #208 + review fixes + main | After a fresh hosted readiness run reads 13 rows READY, plus approval of the `props-cycle.ts` drift and a new manifest snapshot. Then close #208 and its chain |
+| 7 | Close | — | #225 and #226 (shipped in #228); the superseded lists in section 6 below | Owner |
 
 ## 0a. Update, Nov 26 (later): Kalshi connected end to end; integrated regression
 
