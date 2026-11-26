@@ -11,7 +11,7 @@ const base=process.env.BASE_URL??'http://127.0.0.1:3100';
 const PRODUCTION=process.env.SMOKE_TARGET==='production';
 const output=process.env.BROWSER_QA_OUTPUT??'artifacts/browser-qa';
 const executable=process.env.CHROME_BIN??'google-chrome';
-const routes=['/','/lab','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/predictions','/paper-betting/watch','/paper-betting/props-research','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
+const routes=['/','/lab','/automation','/sports','/stocks','/paper-betting','/paper-betting/props','/paper-betting/predictions','/paper-betting/watch','/paper-betting/props-research','/prediction-markets/kalshi','/assistant','/progress','/testing','/guide','/stocks/alpaca','/stocks/paper-auto','/stocks/research','/stocks/journal','/research/nba','/research/epl','/research/backtest'];
 const widths=[320,390,768,1024,1440];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const profile=await mkdtemp(path.join(os.tmpdir(),'sportsedge-smoke-'));
@@ -393,6 +393,74 @@ try{
   await until(async()=>evaluate(send,`document.querySelector('nav[aria-label="Sports AI pages"] a[aria-current="page"]')?.getAttribute('href')==='/research/nba'`),'mobile section tabs');
   console.log('PASS section tabs: phone users can switch between Sports AI pages');
  }catch(error){const message='Motion and wayfinding: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
+ }
+ if(!PRODUCTION){
+  // Client-only fixture: no owner credential, database write or exchange request.
+  // Authentication of the real HTTP routes is tested separately.
+  try{
+   const {memoryStore,forecastFixture,NOW}=await import('../src/lib/server/kalshi-platform-test-kit.mjs');
+   const {loadKalshiPlatformView}=await import('../src/lib/server/kalshi-platform-view.ts');
+   const store=memoryStore(),forecast=forecastFixture();
+   store.get('kalshi_contract_forecasts').push({id:forecast.id,model_id:forecast.modelId,target_date:forecast.input.targetLocalDate,
+    as_of:forecast.asOf,document:JSON.stringify(forecast),recorded_at:NOW});
+   const fixture=await loadKalshiPlatformView(store,NOW,{});
+   fixture.demo.orders=[{id:'synthetic-browser-only',ticker:'KXHIGHNY-26NOV21-T65',side:'yes',kind:'SMOKE',createdAt:NOW,
+    status:'PARTIAL_FILL',filledMicros:500000,feesMicros:10000,settlement:null}];
+   fixture.demo.filledOrders=1;fixture.demo.attempts=1;
+   await send('Page.navigate',{url:base+'/prediction-markets/kalshi'});
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Owner sign-in required')`),'public Kalshi sign-in prompt');
+   await send('Network.setCookie',{name:'__Host-sportsedge-owner-hint',value:'1',url:base,path:'/',secure:true,sameSite:'Strict'});
+   if(!await evaluate(send,`document.cookie.includes('__Host-sportsedge-owner-hint=1')`))throw Error('Local browser owner hint was not set');
+   await evaluate(send,`(()=>{window.__kalshiActions=[];window.__kalshiRealFetch=window.fetch;
+    window.fetch=async(input,init)=>{if(String(input)==='/api/internal/kalshi-paper'){
+     if(init?.method==='POST'){const action=JSON.parse(init.body).action;window.__kalshiActions.push(action);
+      return Response.json(action==='check-demo-connection'?{status:'CHECKED',action,result:{status:'DEMO_CONNECTION_VERIFIED',
+       source:'KALSHI_DEMO',readOnly:true,cashMicros:100000000,checkedAt:${JSON.stringify(NOW)}}}:{status:'RECORDED'});}
+     if(window.__kalshiReadStatus==='transport')throw Error('SYNTHETIC_OWNER_READ_TRANSPORT');
+     if(window.__kalshiReadStatus)return Response.json({code:'SYNTHETIC_OWNER_READ_UNAVAILABLE'},{status:window.__kalshiReadStatus});
+     return Response.json(${JSON.stringify(fixture)});
+    }return window.__kalshiRealFetch(input,init);};return true;})()`);
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Collecting history')`),'Kalshi fixture rendered');
+   await evaluate(send,`(()=>{[...document.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='Demo account and automation controls').open=true;return true;})()`);
+   for(const width of [320,390,1440]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
+    const result=await evaluate(send,`(()=>{const buttons=[...document.querySelectorAll('button')];return {
+     disabled:['Start demo automation','Run one demo order test'].every(t=>buttons.find(b=>b.textContent===t)?.disabled),
+     partial:document.body.textContent.includes('partial fill')&&document.body.textContent.includes('0.50'),
+     overflow:document.documentElement.scrollWidth>innerWidth+3};})()`);
+    if(!result.disabled||!result.partial||result.overflow)throw Error('Kalshi fixture controls/table at '+width+': '+JSON.stringify(result));
+    if(width!==390){const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+     await writeFile(path.join(output,`kalshi-owner-fixture-${width}.png`),Buffer.from(shot.data,'base64'));}
+   }
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Run offline system check').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Synthetic system check saved.')`),'offline fixture action');
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Test demo connection').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Read-only demo connection verified. Available mock cash: $100.00')`),'read-only demo connection fixture action');
+   if(await evaluate(send,`JSON.stringify(window.__kalshiActions)`)!=='["offline-check","check-demo-connection"]')throw Error('Unexpected synthetic UI action');
+   if(!await evaluate(send,`[...document.querySelectorAll('button')].filter(b=>['Start demo automation','Run one demo order test'].includes(b.textContent)).every(b=>b.disabled)`))throw Error('Connection check enabled an order control');
+   await send('Network.deleteCookies',{name:'__Host-sportsedge-owner-hint',url:base});
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Owner sign-in required')`),'Kalshi fixture sign-out');
+   if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Connection balance remained visible after sign-out');
+   await send('Network.setCookie',{name:'__Host-sportsedge-owner-hint',value:'1',url:base,path:'/',secure:true,sameSite:'Strict'});
+   await evaluate(send,`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+   await until(async()=>evaluate(send,`document.body.textContent.includes('Collecting history')`),'Kalshi fixture sign-in without reloading');
+   if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Old connection balance returned after signing back in without reloading');
+   for(const [failure,prompt] of [[401,'Owner sign-in required'],[503,'Paper status unavailable'],['transport','Paper status unavailable']]){
+    await evaluate(send,`(()=>{[...document.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='Demo account and automation controls').open=true;
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Test demo connection').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`),'fresh connection before '+failure);
+    await evaluate(send,`(()=>{window.__kalshiReadStatus=${JSON.stringify(failure)};
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes(${JSON.stringify(prompt)})`),'owner read failure '+failure);
+    await evaluate(send,`(()=>{window.__kalshiReadStatus=0;
+     [...document.querySelectorAll('button')].find(b=>b.textContent==='Refresh paper status').click();return true;})()`);
+    await until(async()=>evaluate(send,`document.body.textContent.includes('Collecting history')`),'owner read recovery '+failure);
+    if(await evaluate(send,`document.body.textContent.includes('Read-only demo connection verified')`))throw Error('Old connection balance returned after owner read failure '+failure);
+   }
+   console.log('PASS Kalshi owner UI fixture: read-only demo connection, stopped order controls, private notice cleared across sign-out/sign-in and failed owner reads, partial fill table, offline action, 320/390/1440 layouts');
+  }catch(error){const message='Kalshi owner UI: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  }
  await writeFile(path.join(output,'results.json'),JSON.stringify({results,failures},null,2)+'\n');
  console.log(`Checked ${results.length} responsive route/viewport combinations; ${failures.length} failures.`);

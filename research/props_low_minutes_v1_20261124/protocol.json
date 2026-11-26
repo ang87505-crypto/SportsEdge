@@ -1,0 +1,129 @@
+{
+ "id": "props-nb-low-minutes-v1",
+ "registeredBefore": "any 2011-12..2015-16 props line was scored by any study",
+ "baseline": "props-nb-minutes-rate-v1 (frozen; reproduced, never changed)",
+ "source": {
+  "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/<file>",
+  "license": "CC BY 4.0"
+ },
+ "design": {
+  "lines": "proxy: floor(median of last 10 played) + 0.5, from earlier games only",
+  "backtestParams": "league rates, priors and NB dispersion from the prior season",
+  "segment": "baseline expected minutes strictly below 15 (fixed from the 2023-26 exploratory breakdown)",
+  "challenger": "below 15 expected minutes: the baseline negative binomial with expected minutes x m and minutes SD^2 = (m x SD)^2 + (s x expected)^2 (adjustedProbabilities); unchanged otherwise",
+  "fit": "m = mean(min(minutes,53)/expected) and s = sqrt(max(0, var(ratio) - mean model CV^2)) over unique low-minute player-games of the fit season (fitAdjustment); no line outcome is used"
+ },
+ "folds": [
+  {
+   "label": "2013-14",
+   "fit": {
+    "prior": {
+     "file": "player_box_2012.csv",
+     "sha256": "a32b85703ead80b02af6cd8822f5f42fc6c4ab7d8ae28826a5fce26bd4e28024",
+     "season": "2011-12",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2013.csv",
+     "sha256": "d8afa95359b4afe53d2e48f3366315b49b07179f3f1c38f2da903e21f4961715",
+     "season": "2012-13",
+     "role": "fit season: m and s from realized minutes only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2013.csv",
+     "sha256": "d8afa95359b4afe53d2e48f3366315b49b07179f3f1c38f2da903e21f4961715",
+     "season": "2012-13",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2014.csv",
+     "sha256": "ddd8cc52cbe8b95724fd4c2f61ecc9adf37d009233d8ad9c2230329f094d29ee",
+     "season": "2013-14",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  },
+  {
+   "label": "2014-15",
+   "fit": {
+    "prior": {
+     "file": "player_box_2013.csv",
+     "sha256": "d8afa95359b4afe53d2e48f3366315b49b07179f3f1c38f2da903e21f4961715",
+     "season": "2012-13",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2014.csv",
+     "sha256": "ddd8cc52cbe8b95724fd4c2f61ecc9adf37d009233d8ad9c2230329f094d29ee",
+     "season": "2013-14",
+     "role": "fit season: m and s from realized minutes only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2014.csv",
+     "sha256": "ddd8cc52cbe8b95724fd4c2f61ecc9adf37d009233d8ad9c2230329f094d29ee",
+     "season": "2013-14",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2015.csv",
+     "sha256": "5d1c0db7f86f7b0ce19330249375423f3f3183d09bc3a4e790647b25bc694538",
+     "season": "2014-15",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  },
+  {
+   "label": "2015-16",
+   "fit": {
+    "prior": {
+     "file": "player_box_2014.csv",
+     "sha256": "ddd8cc52cbe8b95724fd4c2f61ecc9adf37d009233d8ad9c2230329f094d29ee",
+     "season": "2013-14",
+     "role": "prior season for scoring the fit season"
+    },
+    "season": {
+     "file": "player_box_2015.csv",
+     "sha256": "5d1c0db7f86f7b0ce19330249375423f3f3183d09bc3a4e790647b25bc694538",
+     "season": "2014-15",
+     "role": "fit season: m and s from realized minutes only"
+    }
+   },
+   "test": {
+    "prior": {
+     "file": "player_box_2015.csv",
+     "sha256": "5d1c0db7f86f7b0ce19330249375423f3f3183d09bc3a4e790647b25bc694538",
+     "season": "2014-15",
+     "role": "prior season for scoring the test season"
+    },
+    "season": {
+     "file": "player_box_2016.csv",
+     "sha256": "ffd09dec990bc3226ab7fc02d8a80c4933832527a5ae8eb808d0f6513ec74397",
+     "season": "2015-16",
+     "role": "UNTOUCHED test season (never scored by any props study)"
+    }
+   }
+  }
+ ],
+ "uncertainty": {
+  "replicates": 2000,
+  "seed": 20261124,
+  "cluster": "game"
+ },
+ "decision": {
+  "primary": "paired binary Brier difference (challenger - baseline) on ALL lines, pooled over the three test seasons",
+  "QUALIFIES_FOR_FORWARD_TEST": "pooled Brier difference 95% upper bound < 0 AND every test season mean Brier difference < 0 AND pooled log-loss difference mean < 0",
+  "WORSE": "pooled Brier difference 95% lower bound > 0",
+  "NO_CLEAR_EFFECT": "anything else",
+  "descriptive": [
+   "low-minute segment Brier difference",
+   "low-minute segment gap and bias before/after",
+   "fitted m and s",
+   "combined with props-nb-opponent-rate-v1 (beta fit on the same fit season) versus opponent alone"
+  ],
+  "promotion": "none: a qualifying result only supports a separately approved forward shadow judged by the unchanged production REVIEW_GATE on real lines"
+ }
+}

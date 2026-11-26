@@ -1,0 +1,12 @@
+[
+ {
+  "experimentId": "lab-sports-availability-v1",
+  "result": {
+   "evidence": "retrospective",
+   "disposition": "NO_CLEAR_EFFECT",
+   "observations": 339,
+   "clusters": 58,
+   "reason": "2026-27 holdout (2026-10-25..2026-11-19 UTC), adjusted lines 339 in 58 games: Brier -0.001191 [-0.003556, +0.001012], log loss -0.002479 [-0.007557, +0.002154] (game bootstrap 2000, seed 20261120). Training fit: returning/recent players show less extra minutes spread (s 0.157) than clear players (s 0.250)."
+  }
+ }
+]

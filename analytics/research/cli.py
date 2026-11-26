@@ -365,16 +365,20 @@ def cmd_lab_forward(data: Path, out_dir: Path, today: str, now: datetime) -> dic
     future = rdata.fetch_calendar(alpaca(), start, (date.fromisoformat(today) + timedelta(days=10)).isoformat())
     sessions, series = rdata.assemble(sorted(set(md['sessions']) | set(future)), md['bars'])
     last_bar = max(d for d in md['sessions'] if any(series[s]['ac'][sessions.index(d)] is not None for s in ('SPY',) if s in series))
-    ledger = _lab_ledger(data)
+    ledger_all = _lab_ledger(data)
+    ledger, hr_ledger = sp.own_rows(ledger_all), sp.own_rows(ledger_all, sp.HOLDRANK10_EXPERIMENT)
     rows = sp.freeze(sessions, series, universe, ledger, last_bar, stamp(now), md['fingerprint'])
-    if rows:
+    hr_rows = sp.freeze_holdrank10(sessions, series, universe, hr_ledger, last_bar, stamp(now), md['fingerprint'])
+    if rows or hr_rows:
         (data / LAB_LEDGER).parent.mkdir(parents=True, exist_ok=True)
         with open(data / LAB_LEDGER, 'a', encoding='utf-8') as fh:
-            for r in rows:
+            for r in rows + hr_rows:
                 fh.write(json.dumps(r, sort_keys=True) + '\n')
     graded = sp.grade(ledger + rows, sessions, series)
-    out = {'kind': 'lab-forward', 'at': stamp(now), 'last_bar': last_bar, 'frozen_now': len(rows), 'ledger_rows': len(ledger) + len(rows),
-           'graded': graded, 'data': {'fingerprint': md['fingerprint'], 'missing': md.get('missing')}}
+    out = {'kind': 'lab-forward', 'at': stamp(now), 'last_bar': last_bar, 'frozen_now': len(rows) + len(hr_rows),
+           'ledger_rows': len(ledger_all) + len(rows) + len(hr_rows), 'graded': graded,
+           'holdrank10': sp.grade(hr_ledger + hr_rows, sessions, series),
+           'data': {'fingerprint': md['fingerprint'], 'missing': md.get('missing')}}
     path = write_new(out_dir / f"lab-forward-{stamp(now).replace(':', '')}.json", out)
     append_run(data, {'command': 'lab-forward', 'at': stamp(now), 'file': str(path), 'frozen_now': len(rows)})
     return out
@@ -519,7 +523,11 @@ def cmd_report(data: Path, now: datetime) -> Path:
     summary['daily'] = build_daily(latest(data / 'results', 'daily-historical'), latest(data / 'results', 'daily-forward'))
     from .. import stock_psychology_v1 as sp
     lab_fwd = latest(data / 'results', 'lab-forward')
-    summary['lab'] = sp.lab_summary(latest(data / 'results', 'lab-historical'), _lab_ledger(data), lab_fwd['graded'] if lab_fwd else None)
+    summary['lab'] = sp.lab_summary(latest(data / 'results', 'lab-historical'), sp.own_rows(_lab_ledger(data)), lab_fwd['graded'] if lab_fwd else None)
+    hr = (lab_fwd or {}).get('holdrank10') or {}
+    summary['labHoldrank10'] = {'experiment': sp.HOLDRANK10_EXPERIMENT, 'frozenRows': len(sp.own_rows(_lab_ledger(data), sp.HOLDRANK10_EXPERIMENT)),
+                                'forward': {k: {kk: v.get(kk) for kk in ('weeks', 'pending', 'total_return', 'status', 'latest_session')}
+                                            for k, v in (hr.get('variants') or {}).items()}}
     (data / 'summary.json').write_text(json.dumps(summary, indent=1, sort_keys=True), encoding='utf-8')
     path = data / 'reports' / f"{stamp(now)[:10]}-{stamp(now)[11:19].replace(':', '')}.md"
     path.parent.mkdir(parents=True, exist_ok=True)

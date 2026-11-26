@@ -1,0 +1,730 @@
+{
+ "generatedBy": "scripts/props-availability-eval.ts evaluate",
+ "protocol": "research/props_availability_v1_20261119/protocol.json",
+ "candidate": "props-nb-availability-v1",
+ "baseline": "props-nb-minutes-rate-v1 (src/data/props/model_v1.json, exactly as the live worker scores)",
+ "source": {
+  "file": "player_box_2027.csv",
+  "sha256": "f3c5d6cf0d0d58ebf5a17916820922058ea29cd762aff6147c88fa34daa7a848",
+  "regularSeasonRows": 5915
+ },
+ "adjustments": {
+  "RETURNING": {
+   "m": 0.9881,
+   "s": 0.1575
+  },
+  "RECENT": {
+   "m": 0.9758,
+   "s": 0.1574
+  }
+ },
+ "fitSources": [
+  {
+   "file": "player_box_2025.csv",
+   "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+   "regularSeasonRows": 32610
+  },
+  {
+   "file": "player_box_2026.csv",
+   "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89",
+   "regularSeasonRows": 32221
+  }
+ ],
+ "leakage": {
+  "checked": 66329,
+  "violations": 0
+ },
+ "identityCheckMaxGap": 0.000005492,
+ "bootstrap": {
+  "replicates": 2000,
+  "seed": 20261120,
+  "unit": "game"
+ },
+ "verdict": "NO_CLEAR_EFFECT",
+ "primary": {
+  "games": 58,
+  "lines": 339,
+  "brier": {
+   "difference": -0.001191,
+   "lower95": -0.003556,
+   "upper95": 0.001012
+  },
+  "logLoss": {
+   "difference": -0.002479,
+   "lower95": -0.007557,
+   "upper95": 0.002154
+  }
+ },
+ "window": [
+  "2026-10-25",
+  "2026-11-19"
+ ],
+ "categories": {
+  "RETURNING": {
+   "lines": 78,
+   "games": 16
+  },
+  "RECENT": {
+   "lines": 261,
+   "games": 48
+  },
+  "UNKNOWN": {
+   "lines": 1227,
+   "games": 142
+  },
+  "CLEAR": {
+   "lines": 8442,
+   "games": 180
+  }
+ },
+ "adjusted": {
+  "lines": 339,
+  "games": 58,
+  "base": {
+   "brier": 0.242072,
+   "logLoss": 0.676352
+  },
+  "full": {
+   "brier": 0.240881,
+   "logLoss": 0.673873
+  },
+  "mean": {
+   "brier": 0.241533,
+   "logLoss": 0.675262
+  },
+  "variance": {
+   "brier": 0.241347,
+   "logLoss": 0.674803
+  },
+  "fullVsBase": {
+   "games": 58,
+   "lines": 339,
+   "brier": {
+    "difference": -0.001191,
+    "lower95": -0.003556,
+    "upper95": 0.001012
+   },
+   "logLoss": {
+    "difference": -0.002479,
+    "lower95": -0.007557,
+    "upper95": 0.002154
+   }
+  },
+  "meanOnlyVsBase": {
+   "games": 58,
+   "lines": 339,
+   "brier": {
+    "difference": -0.00054,
+    "lower95": -0.00243,
+    "upper95": 0.001206
+   },
+   "logLoss": {
+    "difference": -0.001089,
+    "lower95": -0.00502,
+    "upper95": 0.002686
+   }
+  },
+  "varianceOnlyVsBase": {
+   "games": 58,
+   "lines": 339,
+   "brier": {
+    "difference": -0.000725,
+    "lower95": -0.001421,
+    "upper95": -0.000074
+   },
+   "logLoss": {
+    "difference": -0.001549,
+    "lower95": -0.003085,
+    "upper95": -0.000107
+   }
+  }
+ },
+ "byCategory": {
+  "RETURNING": {
+   "lines": 78,
+   "games": 16,
+   "base": {
+    "brier": 0.237167,
+    "logLoss": 0.667312
+   },
+   "full": {
+    "brier": 0.236013,
+    "logLoss": 0.664722
+   },
+   "mean": {
+    "brier": 0.236617,
+    "logLoss": 0.666216
+   },
+   "variance": {
+    "brier": 0.236499,
+    "logLoss": 0.665696
+   },
+   "fullVsBase": {
+    "games": 16,
+    "lines": 78,
+    "brier": {
+     "difference": -0.001154,
+     "lower95": -0.003397,
+     "upper95": 0.001418
+    },
+    "logLoss": {
+     "difference": -0.00259,
+     "lower95": -0.007251,
+     "upper95": 0.002785
+    }
+   },
+   "meanOnlyVsBase": {
+    "games": 16,
+    "lines": 78,
+    "brier": {
+     "difference": -0.000551,
+     "lower95": -0.001934,
+     "upper95": 0.001072
+    },
+    "logLoss": {
+     "difference": -0.001096,
+     "lower95": -0.004094,
+     "upper95": 0.002492
+    }
+   },
+   "varianceOnlyVsBase": {
+    "games": 16,
+    "lines": 78,
+    "brier": {
+     "difference": -0.000669,
+     "lower95": -0.001819,
+     "upper95": 0.000482
+    },
+    "logLoss": {
+     "difference": -0.001616,
+     "lower95": -0.004273,
+     "upper95": 0.001078
+    }
+   }
+  },
+  "RECENT": {
+   "lines": 261,
+   "games": 48,
+   "base": {
+    "brier": 0.243538,
+    "logLoss": 0.679053
+   },
+   "full": {
+    "brier": 0.242336,
+    "logLoss": 0.676608
+   },
+   "mean": {
+    "brier": 0.243002,
+    "logLoss": 0.677966
+   },
+   "variance": {
+    "brier": 0.242796,
+    "logLoss": 0.677524
+   },
+   "fullVsBase": {
+    "games": 48,
+    "lines": 261,
+    "brier": {
+     "difference": -0.001202,
+     "lower95": -0.004156,
+     "upper95": 0.00163
+    },
+    "logLoss": {
+     "difference": -0.002446,
+     "lower95": -0.008739,
+     "upper95": 0.003558
+    }
+   },
+   "meanOnlyVsBase": {
+    "games": 48,
+    "lines": 261,
+    "brier": {
+     "difference": -0.000536,
+     "lower95": -0.002918,
+     "upper95": 0.001775
+    },
+    "logLoss": {
+     "difference": -0.001087,
+     "lower95": -0.006189,
+     "upper95": 0.0038
+    }
+   },
+   "varianceOnlyVsBase": {
+    "games": 48,
+    "lines": 261,
+    "brier": {
+     "difference": -0.000742,
+     "lower95": -0.001564,
+     "upper95": 0.000022
+    },
+    "logLoss": {
+     "difference": -0.001529,
+     "lower95": -0.003386,
+     "upper95": 0.000153
+    }
+   }
+  }
+ },
+ "byStat": {
+  "points": {
+   "lines": 113,
+   "games": 58,
+   "base": {
+    "brier": 0.255058,
+    "logLoss": 0.704291
+   },
+   "full": {
+    "brier": 0.251888,
+    "logLoss": 0.697707
+   },
+   "mean": {
+    "brier": 0.253219,
+    "logLoss": 0.700585
+   },
+   "variance": {
+    "brier": 0.253559,
+    "logLoss": 0.701045
+   },
+   "fullVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.00317,
+     "lower95": -0.007609,
+     "upper95": 0.000899
+    },
+    "logLoss": {
+     "difference": -0.006584,
+     "lower95": -0.016006,
+     "upper95": 0.002172
+    }
+   },
+   "meanOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.00184,
+     "lower95": -0.005241,
+     "upper95": 0.0013
+    },
+    "logLoss": {
+     "difference": -0.003706,
+     "lower95": -0.010876,
+     "upper95": 0.002941
+    }
+   },
+   "varianceOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.001499,
+     "lower95": -0.002993,
+     "upper95": -0.000125
+    },
+    "logLoss": {
+     "difference": -0.003246,
+     "lower95": -0.006629,
+     "upper95": -0.000186
+    }
+   }
+  },
+  "rebounds": {
+   "lines": 113,
+   "games": 58,
+   "base": {
+    "brier": 0.243887,
+    "logLoss": 0.680507
+   },
+   "full": {
+    "brier": 0.242449,
+    "logLoss": 0.677494
+   },
+   "mean": {
+    "brier": 0.243236,
+    "logLoss": 0.679273
+   },
+   "variance": {
+    "brier": 0.243026,
+    "logLoss": 0.67858
+   },
+   "fullVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.001438,
+     "lower95": -0.004881,
+     "upper95": 0.001976
+    },
+    "logLoss": {
+     "difference": -0.003013,
+     "lower95": -0.010238,
+     "upper95": 0.004189
+    }
+   },
+   "meanOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.000651,
+     "lower95": -0.003443,
+     "upper95": 0.002142
+    },
+    "logLoss": {
+     "difference": -0.001234,
+     "lower95": -0.007322,
+     "upper95": 0.005092
+    }
+   },
+   "varianceOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": -0.000861,
+     "lower95": -0.001864,
+     "upper95": 0.000181
+    },
+    "logLoss": {
+     "difference": -0.001927,
+     "lower95": -0.004236,
+     "upper95": 0.000365
+    }
+   }
+  },
+  "assists": {
+   "lines": 113,
+   "games": 58,
+   "base": {
+    "brier": 0.227272,
+    "logLoss": 0.644257
+   },
+   "full": {
+    "brier": 0.228308,
+    "logLoss": 0.646417
+   },
+   "mean": {
+    "brier": 0.228144,
+    "logLoss": 0.645929
+   },
+   "variance": {
+    "brier": 0.227456,
+    "logLoss": 0.644783
+   },
+   "fullVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": 0.001036,
+     "lower95": -0.002171,
+     "upper95": 0.004392
+    },
+    "logLoss": {
+     "difference": 0.002161,
+     "lower95": -0.004778,
+     "upper95": 0.009232
+    }
+   },
+   "meanOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": 0.000872,
+     "lower95": -0.001974,
+     "upper95": 0.003732
+    },
+    "logLoss": {
+     "difference": 0.001672,
+     "lower95": -0.004601,
+     "upper95": 0.00791
+    }
+   },
+   "varianceOnlyVsBase": {
+    "games": 58,
+    "lines": 113,
+    "brier": {
+     "difference": 0.000185,
+     "lower95": -0.00064,
+     "upper95": 0.000993
+    },
+    "logLoss": {
+     "difference": 0.000527,
+     "lower95": -0.001212,
+     "upper95": 0.002228
+    }
+   }
+  }
+ },
+ "allLines": {
+  "lines": 10008,
+  "games": 180,
+  "base": {
+   "brier": 0.235333,
+   "logLoss": 0.664927
+  },
+  "full": {
+   "brier": 0.235293,
+   "logLoss": 0.664843
+  },
+  "mean": {
+   "brier": 0.235315,
+   "logLoss": 0.66489
+  },
+  "variance": {
+   "brier": 0.235309,
+   "logLoss": 0.664874
+  },
+  "fullVsBase": {
+   "games": 180,
+   "lines": 10008,
+   "brier": {
+    "difference": -0.00004,
+    "lower95": -0.000119,
+    "upper95": 0.000033
+   },
+   "logLoss": {
+    "difference": -0.000084,
+    "lower95": -0.000251,
+    "upper95": 0.00007
+   }
+  },
+  "meanOnlyVsBase": {
+   "games": 180,
+   "lines": 10008,
+   "brier": {
+    "difference": -0.000018,
+    "lower95": -0.000079,
+    "upper95": 0.00004
+   },
+   "logLoss": {
+    "difference": -0.000037,
+    "lower95": -0.000166,
+    "upper95": 0.000086
+   }
+  },
+  "varianceOnlyVsBase": {
+   "games": 180,
+   "lines": 10008,
+   "brier": {
+    "difference": -0.000025,
+    "lower95": -0.000049,
+    "upper95": -0.000002
+   },
+   "logLoss": {
+    "difference": -0.000052,
+    "lower95": -0.000106,
+    "upper95": -0.000003
+   }
+  }
+ },
+ "calibration": {
+  "adjusted": {
+   "base": {
+    "bands": [
+     {
+      "band": "0-0.20",
+      "n": 8,
+      "meanPredicted": 0.1798,
+      "observedMore": 0.25
+     },
+     {
+      "band": "0.2-0.35",
+      "n": 74,
+      "meanPredicted": 0.2989,
+      "observedMore": 0.3108
+     },
+     {
+      "band": "0.35-0.45",
+      "n": 98,
+      "meanPredicted": 0.4032,
+      "observedMore": 0.4796
+     },
+     {
+      "band": "0.45-0.55",
+      "n": 79,
+      "meanPredicted": 0.4958,
+      "observedMore": 0.3797
+     },
+     {
+      "band": "0.55-0.65",
+      "n": 60,
+      "meanPredicted": 0.596,
+      "observedMore": 0.4667
+     },
+     {
+      "band": "0.65-0.80",
+      "n": 19,
+      "meanPredicted": 0.7239,
+      "observedMore": 0.5789
+     },
+     {
+      "band": "0.8-1.00",
+      "n": 1,
+      "meanPredicted": 0.8312,
+      "observedMore": 1
+     }
+    ],
+    "ece": 0.0591,
+    "meanPredictedMore": 0.4501,
+    "observedMore": 0.4189,
+    "calibrationInTheLarge": 0.0312
+   },
+   "full": {
+    "bands": [
+     {
+      "band": "0-0.20",
+      "n": 9,
+      "meanPredicted": 0.1792,
+      "observedMore": 0.2222
+     },
+     {
+      "band": "0.2-0.35",
+      "n": 87,
+      "meanPredicted": 0.2972,
+      "observedMore": 0.3448
+     },
+     {
+      "band": "0.35-0.45",
+      "n": 95,
+      "meanPredicted": 0.3993,
+      "observedMore": 0.4632
+     },
+     {
+      "band": "0.45-0.55",
+      "n": 83,
+      "meanPredicted": 0.4915,
+      "observedMore": 0.4096
+     },
+     {
+      "band": "0.55-0.65",
+      "n": 49,
+      "meanPredicted": 0.5891,
+      "observedMore": 0.4286
+     },
+     {
+      "band": "0.65-0.80",
+      "n": 15,
+      "meanPredicted": 0.7175,
+      "observedMore": 0.6667
+     },
+     {
+      "band": "0.8-1.00",
+      "n": 1,
+      "meanPredicted": 0.8143,
+      "observedMore": 1
+     }
+    ],
+    "ece": 0.0624,
+    "meanPredictedMore": 0.4326,
+    "observedMore": 0.4189,
+    "calibrationInTheLarge": 0.0137
+   }
+  },
+  "allLines": {
+   "base": {
+    "bands": [
+     {
+      "band": "0-0.20",
+      "n": 270,
+      "meanPredicted": 0.1568,
+      "observedMore": 0.1741
+     },
+     {
+      "band": "0.2-0.35",
+      "n": 1958,
+      "meanPredicted": 0.2915,
+      "observedMore": 0.2993
+     },
+     {
+      "band": "0.35-0.45",
+      "n": 2632,
+      "meanPredicted": 0.4022,
+      "observedMore": 0.3959
+     },
+     {
+      "band": "0.45-0.55",
+      "n": 2456,
+      "meanPredicted": 0.4982,
+      "observedMore": 0.4882
+     },
+     {
+      "band": "0.55-0.65",
+      "n": 1458,
+      "meanPredicted": 0.5967,
+      "observedMore": 0.5514
+     },
+     {
+      "band": "0.65-0.80",
+      "n": 964,
+      "meanPredicted": 0.7086,
+      "observedMore": 0.6006
+     },
+     {
+      "band": "0.8-1.00",
+      "n": 270,
+      "meanPredicted": 0.867,
+      "observedMore": 0.7185
+     }
+    ],
+    "ece": 0.0293,
+    "meanPredictedMore": 0.4679,
+    "observedMore": 0.4447,
+    "calibrationInTheLarge": 0.0231
+   },
+   "full": {
+    "bands": [
+     {
+      "band": "0-0.20",
+      "n": 271,
+      "meanPredicted": 0.1569,
+      "observedMore": 0.1734
+     },
+     {
+      "band": "0.2-0.35",
+      "n": 1971,
+      "meanPredicted": 0.2915,
+      "observedMore": 0.3009
+     },
+     {
+      "band": "0.35-0.45",
+      "n": 2629,
+      "meanPredicted": 0.402,
+      "observedMore": 0.3952
+     },
+     {
+      "band": "0.45-0.55",
+      "n": 2460,
+      "meanPredicted": 0.498,
+      "observedMore": 0.489
+     },
+     {
+      "band": "0.55-0.65",
+      "n": 1447,
+      "meanPredicted": 0.5965,
+      "observedMore": 0.5508
+     },
+     {
+      "band": "0.65-0.80",
+      "n": 960,
+      "meanPredicted": 0.7085,
+      "observedMore": 0.6021
+     },
+     {
+      "band": "0.8-1.00",
+      "n": 270,
+      "meanPredicted": 0.8669,
+      "observedMore": 0.7185
+     }
+    ],
+    "ece": 0.0291,
+    "meanPredictedMore": 0.4673,
+    "observedMore": 0.4447,
+    "calibrationInTheLarge": 0.0225
+   }
+  }
+ },
+ "limitations": [
+  "Proxy lines, not PrizePicks lines; probability quality only, no returns.",
+  "Only players who played are scored (platforms void DNPs).",
+  "Early-season holdout (four weeks); adjusted lines are a small share, so intervals are wide.",
+  "Absence reasons are ESPN box-score wording from earlier games; pre-game injury status is unknown and never used."
+ ]
+}

@@ -3,13 +3,15 @@ import {Suspense} from 'react';
 import {connection} from 'next/server';
 import {PageHeading,Panel,Evidence,KeyValues} from '@/components/ui';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '@/lib/prediction-markets/kalshi/weather-memory-view';
+import {KalshiPaperPanel} from '@/components/kalshi-paper-panel';
+import {HISTORICAL_2024,loadMultisourceShadow} from '@/lib/prediction-markets/kalshi/weather-multisource-view';
 
 /**
  * Only independent archived NOAA weather data is read from the research-data branch.
- * NO Kalshi API calls, credentials, orders, market previews or account data.
+ * Public panels read NOAA only. The separate owner panel reads private paper records.
  */
 export const metadata={title:'Prediction markets research · SportsEdge',
- description:'Kalshi integration research status; no live collection or real-money trading.'};
+ description:'Independent weather research, private paper records and demo readiness. Production trading is disabled.'};
 
 async function IndependentWeatherPanels(){
  // Read current time only at request time, never while Cache Components prerenders.
@@ -69,31 +71,67 @@ async function IndependentWeatherPanels(){
   </Panel>
  </>;
 }
+
+const f3=(x:number|null)=>x===null?'—':x.toFixed(3);
+const LABEL:Record<string,string>={SAME_DAY:'Same day (frozen by 6 AM EST)',DAY_AHEAD:'Day ahead (frozen by 9 AM EST the day before)'};
+/** Multi-source challenger: committed 2024 evaluation plus the newest shadow PAPER scorecard. Research only. */
+async function MultisourceShadowPanel(){
+ await connection();
+ const fwd=await loadMultisourceShadow();
+ return <Panel title="Multi-source weather challenger (shadow)" actions={<Evidence kind={fwd.state==='RECORDED'?'recorded':'unavailable'}/>}>
+  <p>A pre-registered combination of the National Blend of Models (NBM) and GFS MOS high-temperature forecasts. Each model is
+   bias-corrected, and the uncertainty is calibrated, before its probabilities are compared with each model alone. It is a
+   <strong> shadow forecast</strong>: it never sees market prices, never places or sizes an order, and its accuracy is not profit.</p>
+  <div className="table-wrap"><table className="data-table">
+   <caption className="quiet small-print">{HISTORICAL_2024.label}: holdout CRPS (lower is better), the pre-registered verdict, and the
+    combined-minus-corrected-NBM difference with its 95% interval.</caption>
+   <thead><tr><th>Horizon</th><th>Holdout days</th><th>Combined</th><th>NBM corrected</th><th>NBM alone</th><th>NBM native</th><th>Combined − NBM corrected</th><th>Verdict</th></tr></thead>
+   <tbody>{HISTORICAL_2024.rows.map(r=><tr key={r.anchor}><td>{LABEL[r.anchor]??r.anchor}</td><td>{r.holdoutDays}</td><td>{f3(r.crps.combined)}</td>
+    <td>{f3(r.crps.nbmCorrected)}</td><td>{f3(r.crps.nbmRaw)}</td><td>{f3(r.crps.nbmNative)}</td>
+    <td>{r.vsNbmCorrected?`${f3(r.vsNbmCorrected.mean)} [${f3(r.vsNbmCorrected.lower95)}, ${f3(r.vsNbmCorrected.upper95)}]`:'—'}</td>
+    <td>{r.disposition.replaceAll('_',' ').toLowerCase()}</td></tr>)}</tbody>
+  </table></div>
+  {fwd.state==='RECORDED'?<>
+   <KeyValues items={[
+    ...fwd.card.anchors.map(a=>[LABEL[a.anchor]??a.anchor,
+     `${a.frozen} frozen, ${a.graded} graded, ${a.missed} missed; CRPS ${f3(a.combinedCrps)} vs NBM corrected ${f3(a.nbmCorrectedCrps)}; ${a.disposition.replaceAll('_',' ').toLowerCase()}`] as [string,string]),
+    ['Shadow forecasting',fwd.card.paperForecasting.status==='READY'?'Running':'Not ready: '+fwd.card.paperForecasting.missing.join('; ')],
+    ['Owner review (50 graded forward days per horizon)',fwd.card.ownerReview.status==='READY'?'Ready for review':'Not yet: '+fwd.card.ownerReview.missing.join('; ')],
+    ['Exchange access','Disabled'],['Updated',fwd.card.at]]}/>
+  </>:<p>{fwd.state==='ARCHIVE_UNAVAILABLE'?'The shadow scorecard could not be read or verified; nothing is inferred.':
+   'No shadow forecast has been frozen yet. The first one is frozen before the next 6 AM or 9 AM EST cutoff after release.'}</p>}
+ </Panel>;
+}
 export default function PredictionMarketsKalshiPage(){
  return <>
-  <PageHeading title="Prediction markets research"
-   description="Kalshi weather and economics research is being developed separately from SportsEdge's live sports and stock PAPER systems."
+  <PageHeading title="Kalshi research and paper"
+   description="Follow independent weather forecasts, paper-system checks and your separate exchange demo account."
    action={<Link className="button button-secondary" href="/">Back to command center</Link>}/>
-  <div className="virtual-banner" role="note"><strong>Research prototype only.</strong> No Kalshi account connected.
-   No live quotes, orders, deposits, real-money trades or authenticated exchange actions.</div>
+  <div className="virtual-banner" role="note"><strong>Research and demo only.</strong> Production exchange access is disabled.
+   Demo connection status and any mock-fund orders appear in the owner workspace.</div>
+  <KalshiPaperPanel/>
   <Suspense fallback={<Panel title="Independent NOAA weather memory">
     <p>Checking stored public weather research; no Kalshi API request is made.</p>
    </Panel>}>
     <IndependentWeatherPanels/>
   </Suspense>
+  <Suspense fallback={<Panel title="Multi-source weather challenger (shadow)"><p>Reading the shadow forecast scorecard.</p></Panel>}>
+   <MultisourceShadowPanel/>
+  </Suspense>
   <Panel title="Kalshi integration" actions={<Evidence kind="unavailable"/>}>
-   <p>The K0 research scaffold is integrated on main: offline market normalization, hypothetical fee-aware paper forecasts, strict settlement checks and evaluation are implemented. The scheduled collector currently archives independent NOAA forecasts only. It does not fetch Kalshi quotes. Exchange-data ingestion, storage and use in this software remain disabled pending written authorization for this specific research use.</p>
+   <p>The platform records independent NOAA research and offers a separate owner-controlled demo connection. The public weather panels use no exchange data. Production exchange-data access remains disabled pending authorization for the intended use.</p>
    <KeyValues items={[
     ['Market data','Code-only; live access disabled pending rights review'],
     ['First research categories','NYC weather and US CPI, offline research only'],
     ['Independent weather replay','Chronological NWS forecasts vs verified station highs; no market input'],
     ['Independent CPI source','BLS CPI-U current published series; release vintages not reconstructed'],
     ['Independent forecast source','NWS hourly grid API; not the official station result'],
-    ['Trading','Disabled — no credentials or trade endpoint'],
-    ['Kalshi market-data schedule','None; exchange collection is disabled'],
+    ['Production trading','Disabled'],
+    ['Demo trading','Requires separate credentials, reviewed access and owner Start'],
+    ['Paper worker','Daily research updates; model demo orders only while armed and eligible'],
     ['Independent NOAA schedule','Active; government-source research only'],
     ['Profitability','Unmeasured; no proven edge'],
-    ['New Mexico eligibility','Sports contracts contested; not approved for real-money use']
+    ['Initial demo scope','NYC daily high temperature only']
    ]}/>
   </Panel>
   <Panel title="What must happen before activation" className="mt-12">

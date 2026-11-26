@@ -8,7 +8,9 @@
  */
 import {canonicalJson,sha256} from '../../props/normalize.ts';
 
-export type Domain='sports'|'stocks';
+export type Domain='sports'|'stocks'|'weather';
+/** Kalshi weather research joined 2026-11-26 (knyc-multisource-emos-v1); the engine proposes no weather hypotheses itself. */
+export const DOMAINS:readonly Domain[]=['sports','stocks','weather'];
 export const STATUSES=['PROPOSED','RUNNING','INSUFFICIENT_DATA','FAILED','PROMISING','READY_FOR_REVIEW','REJECTED'] as const;
 export type Status=typeof STATUSES[number];
 
@@ -56,7 +58,7 @@ export function validate(e:Experiment):void{
  for(const k of REQUIRED)if(e[k]===undefined||e[k]===null||e[k]==='')throw new EngineError('MISSING_'+String(k).toUpperCase());
  if(!/^[a-z0-9][a-z0-9.-]{2,80}$/.test(e.id))throw new EngineError('BAD_ID');
  if(!STATUSES.includes(e.status))throw new EngineError('BAD_STATUS');
- if(!['sports','stocks'].includes(e.domain))throw new EngineError('BAD_DOMAIN');
+ if(!DOMAINS.includes(e.domain))throw new EngineError('BAD_DOMAIN');
  if(!e.hypothesisKey.startsWith(e.domain+':'))throw new EngineError('DOMAIN_MISMATCH');
  if(!Number.isFinite(Date.parse(e.dataCutoff)))throw new EngineError('BAD_CUTOFF');
  for(const n of Object.values(e.sampleRequirements))if(!Number.isSafeInteger(n)||n<0)throw new EngineError('BAD_SAMPLE_REQUIREMENTS');
@@ -102,6 +104,24 @@ export function transition(reg:Registry,id:string,to:Status,reason:string,at:str
   history:[...e.history,{at,from:e.status,to,reason,inputFingerprint}]};
  const experiments=[...reg.experiments];experiments[i]=next;
  return {registry:{...reg,experiments},changed:true};
+}
+
+/**
+ * Apply an evaluation outcome. nextStatus() may ask a PROPOSED experiment to move straight to a status that the
+ * lifecycle only allows after RUNNING (INSUFFICIENT_DATA, PROMISING, READY_FOR_REVIEW). Rather than throwing, which
+ * fails and reverts the whole engine run for every experiment, record "PROPOSED -> RUNNING (evaluation started)"
+ * first, then the outcome. Anything still illegal after that throws, as before. Idempotent per input fingerprint.
+ */
+export function advance(reg:Registry,id:string,to:Status,reason:string,at:string,inputFingerprint:string|null,
+ result?:Record<string,unknown>,disposition?:string):{registry:Registry;changed:boolean}{
+ const e=reg.experiments.find(x=>x.id===id);
+ if(!e)throw new EngineError('UNKNOWN_EXPERIMENT');
+ if(inputFingerprint&&e.history.some(h=>h.inputFingerprint===inputFingerprint))return {registry:reg,changed:false};
+ if(e.status==='PROPOSED'&&!TRANSITIONS.PROPOSED.includes(to)&&TRANSITIONS.RUNNING.includes(to)){
+  const started=transition(reg,id,'RUNNING','Evaluation started; first result recorded in the next entry.',at,null);
+  return {registry:transition(started.registry,id,to,reason,at,inputFingerprint,result,disposition).registry,changed:true};
+ }
+ return transition(reg,id,to,reason,at,inputFingerprint,result,disposition);
 }
 
 /** Ideas the engine must not propose again (rejected) or that are already being tested. */

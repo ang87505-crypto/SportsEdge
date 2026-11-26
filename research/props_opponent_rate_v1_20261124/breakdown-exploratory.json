@@ -1,0 +1,2729 @@
+{
+ "generatedBy": "scripts/props-error-breakdown.ts",
+ "status": "EXPLORATORY: every season here was inspected by earlier studies; findings motivate a hypothesis, they are not evidence",
+ "calibrator": {
+  "applied": "retrospective (fit on 2022-23 only)",
+  "digest": "48d148d8f08a32d5f3b61afedd1d9991acfd0a0bea249a5f749f9eddabbb8257"
+ },
+ "definitions": {
+  "gap": "mean confidence of the chosen side minus its hit rate (positive = overconfident)",
+  "bias": "mean(y - q) on P(more): positive = the stat lands above the line more often than predicted",
+  "opponent": "opponent allowed per-minute rate / league per-minute rate, this season, games strictly before; null before 10 games"
+ },
+ "bootstrap": {
+  "replicates": 1000,
+  "seed": 20261124,
+  "cluster": "game"
+ },
+ "seasons": {
+  "2023-24": {
+   "sources": [
+    {
+     "file": "player_box_2023.csv",
+     "sha256": "1b797107d4a0b2fbc98862bd283b9e807a05aa11c671b89a471b25591a589493",
+     "role": "prior"
+    },
+    {
+     "file": "player_box_2024.csv",
+     "sha256": "c52a708ac80542baa0711f166154e0a647543036854e29aa903bd2fc27b49ae2",
+     "role": "scored"
+    }
+   ],
+   "leakage": {
+    "checked": 900783,
+    "violations": 0
+   },
+   "pushes": 0,
+   "lines": 70341,
+   "baseline": {
+    "overall": {
+     "all": {
+      "lines": 70341,
+      "games": 1189,
+      "meanConfidence": 0.619164,
+      "hitRate": 0.597077,
+      "gap": 0.022087,
+      "meanQ": 0.470275,
+      "meanY": 0.451131,
+      "bias": -0.019144,
+      "brier": 0.23845
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 17851,
+      "games": 1189,
+      "meanConfidence": 0.524626,
+      "hitRate": 0.523612,
+      "gap": 0.001013,
+      "meanQ": 0.497125,
+      "meanY": 0.491009,
+      "bias": -0.006116,
+      "brier": 0.249416
+     },
+     "b 0.55-0.60": {
+      "lines": 16512,
+      "games": 1189,
+      "meanConfidence": 0.574376,
+      "hitRate": 0.56577,
+      "gap": 0.008606,
+      "meanQ": 0.478136,
+      "meanY": 0.482074,
+      "bias": 0.003937,
+      "brier": 0.24561
+     },
+     "c 0.60-0.65": {
+      "lines": 13806,
+      "games": 1189,
+      "meanConfidence": 0.623994,
+      "hitRate": 0.602347,
+      "gap": 0.021648,
+      "meanQ": 0.452737,
+      "meanY": 0.431914,
+      "bias": -0.020823,
+      "brier": 0.239964
+     },
+     "d 0.65-0.70": {
+      "lines": 10065,
+      "games": 1188,
+      "meanConfidence": 0.673707,
+      "hitRate": 0.653651,
+      "gap": 0.020055,
+      "meanQ": 0.428801,
+      "meanY": 0.405663,
+      "bias": -0.023138,
+      "brier": 0.22676
+     },
+     "e 0.70-0.80": {
+      "lines": 9255,
+      "games": 1184,
+      "meanConfidence": 0.740044,
+      "hitRate": 0.690005,
+      "gap": 0.050038,
+      "meanQ": 0.42703,
+      "meanY": 0.392437,
+      "bias": -0.034593,
+      "brier": 0.216435
+     },
+     "f 0.80+": {
+      "lines": 2852,
+      "games": 1044,
+      "meanConfidence": 0.862064,
+      "hitRate": 0.711431,
+      "gap": 0.150633,
+      "meanQ": 0.628305,
+      "meanY": 0.466339,
+      "bias": -0.161965,
+      "brier": 0.233734
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 43916,
+      "games": 1189,
+      "meanConfidence": 0.619239,
+      "hitRate": 0.616882,
+      "gap": 0.002357,
+      "meanQ": 0.380761,
+      "meanY": 0.383118,
+      "bias": 0.002357,
+      "brier": 0.230441
+     },
+     "more": {
+      "lines": 26425,
+      "games": 1189,
+      "meanConfidence": 0.619039,
+      "hitRate": 0.564163,
+      "gap": 0.054877,
+      "meanQ": 0.619039,
+      "meanY": 0.564163,
+      "bias": -0.054877,
+      "brier": 0.251761
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 11529,
+      "games": 1126,
+      "meanConfidence": 0.658053,
+      "hitRate": 0.573944,
+      "gap": 0.084109,
+      "meanQ": 0.534797,
+      "meanY": 0.440541,
+      "bias": -0.094256,
+      "brier": 0.252147
+     },
+     "b 15-25": {
+      "lines": 24810,
+      "games": 1189,
+      "meanConfidence": 0.626277,
+      "hitRate": 0.601532,
+      "gap": 0.024746,
+      "meanQ": 0.47585,
+      "meanY": 0.450464,
+      "bias": -0.025387,
+      "brier": 0.23694
+     },
+     "c 25-32": {
+      "lines": 18810,
+      "games": 1186,
+      "meanConfidence": 0.606134,
+      "hitRate": 0.602977,
+      "gap": 0.003157,
+      "meanQ": 0.445572,
+      "meanY": 0.458639,
+      "bias": 0.013067,
+      "brier": 0.234673
+     },
+     "d 32+": {
+      "lines": 15192,
+      "games": 1180,
+      "meanConfidence": 0.594169,
+      "hitRate": 0.600053,
+      "gap": -0.005884,
+      "meanQ": 0.44279,
+      "meanY": 0.450961,
+      "bias": 0.008171,
+      "brier": 0.235199
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17776,
+      "games": 1189,
+      "meanConfidence": 0.631528,
+      "hitRate": 0.607617,
+      "gap": 0.023911,
+      "meanQ": 0.453634,
+      "meanY": 0.446388,
+      "bias": -0.007245,
+      "brier": 0.234803
+     },
+     "b 0.7-0.9x": {
+      "lines": 17944,
+      "games": 1189,
+      "meanConfidence": 0.624984,
+      "hitRate": 0.586213,
+      "gap": 0.038771,
+      "meanQ": 0.506653,
+      "meanY": 0.455974,
+      "bias": -0.050679,
+      "brier": 0.24344
+     },
+     "c 0.9-1.1x": {
+      "lines": 13462,
+      "games": 1189,
+      "meanConfidence": 0.616244,
+      "hitRate": 0.593745,
+      "gap": 0.022499,
+      "meanQ": 0.485217,
+      "meanY": 0.45179,
+      "bias": -0.033427,
+      "brier": 0.239903
+     },
+     "d 1.1-1.4x": {
+      "lines": 10186,
+      "games": 1188,
+      "meanConfidence": 0.607732,
+      "hitRate": 0.59729,
+      "gap": 0.010441,
+      "meanQ": 0.448881,
+      "meanY": 0.457883,
+      "bias": 0.009002,
+      "brier": 0.236962
+     },
+     "e 1.4x+": {
+      "lines": 10973,
+      "games": 1189,
+      "meanConfidence": 0.603813,
+      "hitRate": 0.601659,
+      "gap": 0.002154,
+      "meanQ": 0.439272,
+      "meanY": 0.443817,
+      "bias": 0.004545,
+      "brier": 0.235797
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36693,
+      "games": 1189,
+      "meanConfidence": 0.565914,
+      "hitRate": 0.564386,
+      "gap": 0.001528,
+      "meanQ": 0.441969,
+      "meanY": 0.442918,
+      "bias": 0.00095,
+      "brier": 0.244064
+     },
+     "b 0.25-0.5": {
+      "lines": 20973,
+      "games": 1189,
+      "meanConfidence": 0.631353,
+      "hitRate": 0.615792,
+      "gap": 0.015561,
+      "meanQ": 0.458863,
+      "meanY": 0.44748,
+      "bias": -0.011383,
+      "brier": 0.232791
+     },
+     "c 0.5-0.75": {
+      "lines": 8640,
+      "games": 1184,
+      "meanConfidence": 0.714196,
+      "hitRate": 0.650116,
+      "gap": 0.064081,
+      "meanQ": 0.527136,
+      "meanY": 0.471065,
+      "bias": -0.056071,
+      "brier": 0.226815
+     },
+     "d 0.75-1": {
+      "lines": 2763,
+      "games": 1034,
+      "meanConfidence": 0.803049,
+      "hitRate": 0.682229,
+      "gap": 0.12082,
+      "meanQ": 0.616699,
+      "meanY": 0.481723,
+      "bias": -0.134977,
+      "brier": 0.229393
+     },
+     "e >=1": {
+      "lines": 1272,
+      "games": 724,
+      "meanConfidence": 0.90936,
+      "hitRate": 0.686321,
+      "gap": 0.22304,
+      "meanQ": 0.770695,
+      "meanY": 0.546384,
+      "bias": -0.224311,
+      "brier": 0.268536
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5130,
+      "games": 566,
+      "meanConfidence": 0.664024,
+      "hitRate": 0.600195,
+      "gap": 0.063829,
+      "meanQ": 0.510109,
+      "meanY": 0.442885,
+      "bias": -0.067224,
+      "brier": 0.243266
+     },
+     "b 6-10": {
+      "lines": 7614,
+      "games": 747,
+      "meanConfidence": 0.63305,
+      "hitRate": 0.591673,
+      "gap": 0.041377,
+      "meanQ": 0.49675,
+      "meanY": 0.446414,
+      "bias": -0.050335,
+      "brier": 0.243272
+     },
+     "c 11-20": {
+      "lines": 57597,
+      "games": 1070,
+      "meanConfidence": 0.613333,
+      "hitRate": 0.597514,
+      "gap": 0.015819,
+      "meanQ": 0.463227,
+      "meanY": 0.452489,
+      "bias": -0.010738,
+      "brier": 0.237384
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 6819,
+      "games": 444,
+      "meanConfidence": 0.620304,
+      "hitRate": 0.617099,
+      "gap": 0.003204,
+      "meanQ": 0.456096,
+      "meanY": 0.404018,
+      "bias": -0.052077,
+      "brier": 0.230882
+     },
+     "b 0.94-0.98": {
+      "lines": 16174,
+      "games": 849,
+      "meanConfidence": 0.617865,
+      "hitRate": 0.594658,
+      "gap": 0.023207,
+      "meanQ": 0.477174,
+      "meanY": 0.438914,
+      "bias": -0.038259,
+      "brier": 0.240492
+     },
+     "c 0.98-1.02": {
+      "lines": 21218,
+      "games": 947,
+      "meanConfidence": 0.616497,
+      "hitRate": 0.594919,
+      "gap": 0.021578,
+      "meanQ": 0.4771,
+      "meanY": 0.454803,
+      "bias": -0.022298,
+      "brier": 0.239551
+     },
+     "d 1.02-1.06": {
+      "lines": 13711,
+      "games": 765,
+      "meanConfidence": 0.617774,
+      "hitRate": 0.588287,
+      "gap": 0.029488,
+      "meanQ": 0.473321,
+      "meanY": 0.469842,
+      "bias": -0.00348,
+      "brier": 0.240562
+     },
+     "e >=1.06 (generous)": {
+      "lines": 6869,
+      "games": 410,
+      "meanConfidence": 0.622308,
+      "hitRate": 0.581453,
+      "gap": 0.040855,
+      "meanQ": 0.464025,
+      "meanY": 0.478527,
+      "bias": 0.014502,
+      "brier": 0.243121
+     },
+     "z unknown (<10 games)": {
+      "lines": 5550,
+      "games": 114,
+      "meanConfidence": 0.631287,
+      "hitRate": 0.628829,
+      "gap": 0.002458,
+      "meanQ": 0.441707,
+      "meanY": 0.45045,
+      "bias": 0.008743,
+      "brier": 0.226591
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.62671,
+      "hitRate": 0.608607,
+      "gap": 0.018104,
+      "meanQ": 0.429037,
+      "meanY": 0.422229,
+      "bias": -0.006809,
+      "brier": 0.231922
+     },
+     "points": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.619717,
+      "hitRate": 0.580586,
+      "gap": 0.039131,
+      "meanQ": 0.517134,
+      "meanY": 0.483729,
+      "bias": -0.033405,
+      "brier": 0.24726
+     },
+     "rebounds": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.611065,
+      "hitRate": 0.602039,
+      "gap": 0.009026,
+      "meanQ": 0.464653,
+      "meanY": 0.447435,
+      "bias": -0.017219,
+      "brier": 0.236168
+     }
+    }
+   },
+   "calibrated": {
+    "overall": {
+     "all": {
+      "lines": 70341,
+      "games": 1189,
+      "meanConfidence": 0.59904,
+      "hitRate": 0.596892,
+      "gap": 0.002147,
+      "meanQ": 0.451737,
+      "meanY": 0.451131,
+      "bias": -0.000606,
+      "brier": 0.235791
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 17851,
+      "games": 1189,
+      "meanConfidence": 0.520958,
+      "hitRate": 0.522884,
+      "gap": -0.001926,
+      "meanQ": 0.490618,
+      "meanY": 0.491009,
+      "bias": 0.000391,
+      "brier": 0.249431
+     },
+     "b 0.55-0.60": {
+      "lines": 16512,
+      "games": 1189,
+      "meanConfidence": 0.562509,
+      "hitRate": 0.56577,
+      "gap": -0.003261,
+      "meanQ": 0.470043,
+      "meanY": 0.482074,
+      "bias": 0.01203,
+      "brier": 0.24576
+     },
+     "c 0.60-0.65": {
+      "lines": 13806,
+      "games": 1189,
+      "meanConfidence": 0.607496,
+      "hitRate": 0.602347,
+      "gap": 0.005149,
+      "meanQ": 0.440875,
+      "meanY": 0.431914,
+      "bias": -0.008961,
+      "brier": 0.238732
+     },
+     "d 0.65-0.70": {
+      "lines": 10065,
+      "games": 1188,
+      "meanConfidence": 0.654983,
+      "hitRate": 0.653651,
+      "gap": 0.001332,
+      "meanQ": 0.404718,
+      "meanY": 0.405663,
+      "bias": 0.000945,
+      "brier": 0.224986
+     },
+     "e 0.70-0.80": {
+      "lines": 9255,
+      "games": 1184,
+      "meanConfidence": 0.701475,
+      "hitRate": 0.690005,
+      "gap": 0.011469,
+      "meanQ": 0.393731,
+      "meanY": 0.392437,
+      "bias": -0.001294,
+      "brier": 0.211285
+     },
+     "f 0.80+": {
+      "lines": 2852,
+      "games": 1044,
+      "meanConfidence": 0.728488,
+      "hitRate": 0.711431,
+      "gap": 0.017057,
+      "meanQ": 0.509141,
+      "meanY": 0.466339,
+      "bias": -0.042802,
+      "brier": 0.19611
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 43916,
+      "games": 1189,
+      "meanConfidence": 0.617676,
+      "hitRate": 0.616313,
+      "gap": 0.001363,
+      "meanQ": 0.382472,
+      "meanY": 0.383118,
+      "bias": 0.000646,
+      "brier": 0.230501
+     },
+     "more": {
+      "lines": 26425,
+      "games": 1189,
+      "meanConfidence": 0.568068,
+      "hitRate": 0.564617,
+      "gap": 0.003451,
+      "meanQ": 0.566849,
+      "meanY": 0.564163,
+      "bias": -0.002686,
+      "brier": 0.244581
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 11529,
+      "games": 1126,
+      "meanConfidence": 0.613911,
+      "hitRate": 0.576633,
+      "gap": 0.037278,
+      "meanQ": 0.49136,
+      "meanY": 0.440541,
+      "bias": -0.050819,
+      "brier": 0.239177
+     },
+     "b 15-25": {
+      "lines": 24810,
+      "games": 1189,
+      "meanConfidence": 0.603675,
+      "hitRate": 0.603104,
+      "gap": 0.000572,
+      "meanQ": 0.45444,
+      "meanY": 0.450464,
+      "bias": -0.003977,
+      "brier": 0.234321
+     },
+     "c 25-32": {
+      "lines": 18810,
+      "games": 1186,
+      "meanConfidence": 0.594488,
+      "hitRate": 0.600585,
+      "gap": -0.006097,
+      "meanQ": 0.435982,
+      "meanY": 0.458639,
+      "bias": 0.022657,
+      "brier": 0.235409
+     },
+     "d 32+": {
+      "lines": 15192,
+      "games": 1180,
+      "meanConfidence": 0.58582,
+      "hitRate": 0.597551,
+      "gap": -0.011732,
+      "meanQ": 0.43676,
+      "meanY": 0.450961,
+      "bias": 0.014201,
+      "brier": 0.236093
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17776,
+      "games": 1189,
+      "meanConfidence": 0.612713,
+      "hitRate": 0.608236,
+      "gap": 0.004478,
+      "meanQ": 0.434769,
+      "meanY": 0.446388,
+      "bias": 0.01162,
+      "brier": 0.23268
+     },
+     "b 0.7-0.9x": {
+      "lines": 17944,
+      "games": 1189,
+      "meanConfidence": 0.594993,
+      "hitRate": 0.585711,
+      "gap": 0.009282,
+      "meanQ": 0.477908,
+      "meanY": 0.455974,
+      "bias": -0.021934,
+      "brier": 0.237707
+     },
+     "c 0.9-1.1x": {
+      "lines": 13462,
+      "games": 1189,
+      "meanConfidence": 0.592758,
+      "hitRate": 0.594711,
+      "gap": -0.001953,
+      "meanQ": 0.465321,
+      "meanY": 0.45179,
+      "bias": -0.013531,
+      "brier": 0.236669
+     },
+     "d 1.1-1.4x": {
+      "lines": 10186,
+      "games": 1188,
+      "meanConfidence": 0.594021,
+      "hitRate": 0.594051,
+      "gap": -0.000029,
+      "meanQ": 0.440379,
+      "meanY": 0.457883,
+      "bias": 0.017505,
+      "brier": 0.236561
+     },
+     "e 1.4x+": {
+      "lines": 10973,
+      "games": 1189,
+      "meanConfidence": 0.595871,
+      "hitRate": 0.602114,
+      "gap": -0.006243,
+      "meanQ": 0.430306,
+      "meanY": 0.443817,
+      "bias": 0.013511,
+      "brier": 0.235901
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36693,
+      "games": 1189,
+      "meanConfidence": 0.563096,
+      "hitRate": 0.562914,
+      "gap": 0.000182,
+      "meanQ": 0.441328,
+      "meanY": 0.442918,
+      "bias": 0.00159,
+      "brier": 0.244128
+     },
+     "b 0.25-0.5": {
+      "lines": 20973,
+      "games": 1189,
+      "meanConfidence": 0.615517,
+      "hitRate": 0.617747,
+      "gap": -0.002229,
+      "meanQ": 0.439888,
+      "meanY": 0.44748,
+      "bias": 0.007592,
+      "brier": 0.23243
+     },
+     "c 0.5-0.75": {
+      "lines": 8640,
+      "games": 1184,
+      "meanConfidence": 0.659086,
+      "hitRate": 0.650116,
+      "gap": 0.00897,
+      "meanQ": 0.478494,
+      "meanY": 0.471065,
+      "bias": -0.00743,
+      "brier": 0.221464
+     },
+     "d 0.75-1": {
+      "lines": 2763,
+      "games": 1034,
+      "meanConfidence": 0.707963,
+      "hitRate": 0.682229,
+      "gap": 0.025733,
+      "meanQ": 0.530314,
+      "meanY": 0.481723,
+      "bias": -0.048591,
+      "brier": 0.208156
+     },
+     "e >=1": {
+      "lines": 1272,
+      "games": 724,
+      "meanConfidence": 0.719767,
+      "hitRate": 0.686321,
+      "gap": 0.033446,
+      "meanQ": 0.594921,
+      "meanY": 0.546384,
+      "bias": -0.048537,
+      "brier": 0.208031
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5130,
+      "games": 566,
+      "meanConfidence": 0.623862,
+      "hitRate": 0.605653,
+      "gap": 0.018209,
+      "meanQ": 0.471931,
+      "meanY": 0.442885,
+      "bias": -0.029046,
+      "brier": 0.231745
+     },
+     "b 6-10": {
+      "lines": 7614,
+      "games": 747,
+      "meanConfidence": 0.603854,
+      "hitRate": 0.593906,
+      "gap": 0.009948,
+      "meanQ": 0.468561,
+      "meanY": 0.446414,
+      "bias": -0.022146,
+      "brier": 0.237014
+     },
+     "c 11-20": {
+      "lines": 57597,
+      "games": 1070,
+      "meanConfidence": 0.596192,
+      "hitRate": 0.596507,
+      "gap": -0.000314,
+      "meanQ": 0.447714,
+      "meanY": 0.452489,
+      "bias": 0.004775,
+      "brier": 0.235989
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 6819,
+      "games": 444,
+      "meanConfidence": 0.604031,
+      "hitRate": 0.621352,
+      "gap": -0.017321,
+      "meanQ": 0.440075,
+      "meanY": 0.404018,
+      "bias": -0.036057,
+      "brier": 0.228262
+     },
+     "b 0.94-0.98": {
+      "lines": 16174,
+      "games": 849,
+      "meanConfidence": 0.595551,
+      "hitRate": 0.594596,
+      "gap": 0.000954,
+      "meanQ": 0.457774,
+      "meanY": 0.438914,
+      "bias": -0.01886,
+      "brier": 0.236574
+     },
+     "c 0.98-1.02": {
+      "lines": 21218,
+      "games": 947,
+      "meanConfidence": 0.596299,
+      "hitRate": 0.592374,
+      "gap": 0.003925,
+      "meanQ": 0.456992,
+      "meanY": 0.454803,
+      "bias": -0.00219,
+      "brier": 0.236848
+     },
+     "d 1.02-1.06": {
+      "lines": 13711,
+      "games": 765,
+      "meanConfidence": 0.597476,
+      "hitRate": 0.589162,
+      "gap": 0.008314,
+      "meanQ": 0.45436,
+      "meanY": 0.469842,
+      "bias": 0.015482,
+      "brier": 0.238134
+     },
+     "e >=1.06 (generous)": {
+      "lines": 6869,
+      "games": 410,
+      "meanConfidence": 0.601508,
+      "hitRate": 0.581307,
+      "gap": 0.0202,
+      "meanQ": 0.447128,
+      "meanY": 0.478527,
+      "bias": 0.031399,
+      "brier": 0.240466
+     },
+     "z unknown (<10 games)": {
+      "lines": 5550,
+      "games": 114,
+      "meanConfidence": 0.614361,
+      "hitRate": 0.629189,
+      "gap": -0.014828,
+      "meanQ": 0.427606,
+      "meanY": 0.45045,
+      "bias": 0.022844,
+      "brier": 0.227139
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.613377,
+      "hitRate": 0.611166,
+      "gap": 0.002211,
+      "meanQ": 0.419036,
+      "meanY": 0.422229,
+      "bias": 0.003193,
+      "brier": 0.231274
+     },
+     "points": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.578469,
+      "hitRate": 0.57952,
+      "gap": -0.001051,
+      "meanQ": 0.49277,
+      "meanY": 0.483729,
+      "bias": -0.009041,
+      "brier": 0.241143
+     },
+     "rebounds": {
+      "lines": 23447,
+      "games": 1189,
+      "meanConfidence": 0.605273,
+      "hitRate": 0.599991,
+      "gap": 0.005282,
+      "meanQ": 0.443405,
+      "meanY": 0.447435,
+      "bias": 0.004029,
+      "brier": 0.234954
+     }
+    }
+   },
+   "opponentResidualSlope": {
+    "points": {
+     "baseline": {
+      "slope": 0.45146101002738476,
+      "lo": 0.30535431259152956,
+      "hi": 0.5951117830629906,
+      "lines": 21597,
+      "games": 1087
+     },
+     "calibrated": {
+      "slope": 0.44328521044245106,
+      "lo": 0.2997513962669595,
+      "hi": 0.5855585952109602,
+      "lines": 21597,
+      "games": 1087
+     }
+    },
+    "rebounds": {
+     "baseline": {
+      "slope": 0.4818779593387633,
+      "lo": 0.3333539020706011,
+      "hi": 0.628640049141428,
+      "lines": 21597,
+      "games": 1087
+     },
+     "calibrated": {
+      "slope": 0.4827493935287379,
+      "lo": 0.33438768060696245,
+      "hi": 0.6287926431716128,
+      "lines": 21597,
+      "games": 1087
+     }
+    },
+    "assists": {
+     "baseline": {
+      "slope": 0.36762627116391144,
+      "lo": 0.25288206222405385,
+      "hi": 0.4760375461195618,
+      "lines": 21597,
+      "games": 1087
+     },
+     "calibrated": {
+      "slope": 0.3702687193232304,
+      "lo": 0.2544880353371875,
+      "hi": 0.476612903072924,
+      "lines": 21597,
+      "games": 1087
+     }
+    },
+    "all": {
+     "baseline": {
+      "slope": 0.4167043630039791,
+      "lo": 0.3251360238577836,
+      "hi": 0.5001414578522864,
+      "lines": 64791,
+      "games": 1087
+     },
+     "calibrated": {
+      "slope": 0.4178737326198381,
+      "lo": 0.326532715406672,
+      "hi": 0.5001965007585573,
+      "lines": 64791,
+      "games": 1087
+     }
+    }
+   },
+   "lowMinutesGapCalibrated": {
+    "mean": 0.03727800309237609,
+    "lo": 0.0277805278929557,
+    "hi": 0.046534882640283715,
+    "games": 1126,
+    "lines": 11529
+   }
+  },
+  "2024-25": {
+   "sources": [
+    {
+     "file": "player_box_2024.csv",
+     "sha256": "c52a708ac80542baa0711f166154e0a647543036854e29aa903bd2fc27b49ae2",
+     "role": "prior"
+    },
+    {
+     "file": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+     "role": "scored"
+    }
+   ],
+   "leakage": {
+    "checked": 876522,
+    "violations": 0
+   },
+   "pushes": 0,
+   "lines": 70137,
+   "baseline": {
+    "overall": {
+     "all": {
+      "lines": 70137,
+      "games": 1189,
+      "meanConfidence": 0.619656,
+      "hitRate": 0.597274,
+      "gap": 0.022382,
+      "meanQ": 0.472956,
+      "meanY": 0.453897,
+      "bias": -0.019059,
+      "brier": 0.238466
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 17860,
+      "games": 1189,
+      "meanConfidence": 0.524787,
+      "hitRate": 0.522396,
+      "gap": 0.002391,
+      "meanQ": 0.496659,
+      "meanY": 0.48729,
+      "bias": -0.009369,
+      "brier": 0.249239
+     },
+     "b 0.55-0.60": {
+      "lines": 16633,
+      "games": 1189,
+      "meanConfidence": 0.574812,
+      "hitRate": 0.566224,
+      "gap": 0.008588,
+      "meanQ": 0.479189,
+      "meanY": 0.472434,
+      "bias": -0.006755,
+      "brier": 0.245523
+     },
+     "c 0.60-0.65": {
+      "lines": 13612,
+      "games": 1189,
+      "meanConfidence": 0.623977,
+      "hitRate": 0.607258,
+      "gap": 0.016719,
+      "meanQ": 0.459155,
+      "meanY": 0.449824,
+      "bias": -0.009331,
+      "brier": 0.238687
+     },
+     "d 0.65-0.70": {
+      "lines": 9561,
+      "games": 1189,
+      "meanConfidence": 0.673243,
+      "hitRate": 0.65056,
+      "gap": 0.022684,
+      "meanQ": 0.431024,
+      "meanY": 0.408744,
+      "bias": -0.02228,
+      "brier": 0.22757
+     },
+     "e 0.70-0.80": {
+      "lines": 9427,
+      "games": 1188,
+      "meanConfidence": 0.740391,
+      "hitRate": 0.694601,
+      "gap": 0.04579,
+      "meanQ": 0.424085,
+      "meanY": 0.394929,
+      "bias": -0.029155,
+      "brier": 0.214337
+     },
+     "f 0.80+": {
+      "lines": 3044,
+      "games": 1044,
+      "meanConfidence": 0.859775,
+      "hitRate": 0.692838,
+      "gap": 0.166937,
+      "meanQ": 0.644596,
+      "meanY": 0.499343,
+      "bias": -0.145253,
+      "brier": 0.244644
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 43338,
+      "games": 1189,
+      "meanConfidence": 0.618708,
+      "hitRate": 0.616018,
+      "gap": 0.00269,
+      "meanQ": 0.381292,
+      "meanY": 0.383982,
+      "bias": 0.00269,
+      "brier": 0.231298
+     },
+     "more": {
+      "lines": 26799,
+      "games": 1189,
+      "meanConfidence": 0.62119,
+      "hitRate": 0.566961,
+      "gap": 0.054228,
+      "meanQ": 0.62119,
+      "meanY": 0.566961,
+      "bias": -0.054228,
+      "brier": 0.250056
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 10878,
+      "games": 1115,
+      "meanConfidence": 0.6562,
+      "hitRate": 0.562971,
+      "gap": 0.093229,
+      "meanQ": 0.549349,
+      "meanY": 0.446498,
+      "bias": -0.102852,
+      "brier": 0.259017
+     },
+     "b 15-25": {
+      "lines": 25911,
+      "games": 1187,
+      "meanConfidence": 0.626945,
+      "hitRate": 0.604222,
+      "gap": 0.022723,
+      "meanQ": 0.475199,
+      "meanY": 0.458222,
+      "bias": -0.016977,
+      "brier": 0.234968
+     },
+     "c 25-32": {
+      "lines": 19311,
+      "games": 1186,
+      "meanConfidence": 0.607651,
+      "hitRate": 0.603853,
+      "gap": 0.003798,
+      "meanQ": 0.446356,
+      "meanY": 0.456683,
+      "bias": 0.010327,
+      "brier": 0.234343
+     },
+     "d 32+": {
+      "lines": 14037,
+      "games": 1151,
+      "meanConfidence": 0.594398,
+      "hitRate": 0.60198,
+      "gap": -0.007583,
+      "meanQ": 0.446208,
+      "meanY": 0.447816,
+      "bias": 0.001609,
+      "brier": 0.234667
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17187,
+      "games": 1189,
+      "meanConfidence": 0.631123,
+      "hitRate": 0.60121,
+      "gap": 0.029913,
+      "meanQ": 0.457981,
+      "meanY": 0.454122,
+      "bias": -0.003859,
+      "brier": 0.236046
+     },
+     "b 0.7-0.9x": {
+      "lines": 19002,
+      "games": 1189,
+      "meanConfidence": 0.623893,
+      "hitRate": 0.592938,
+      "gap": 0.030956,
+      "meanQ": 0.501792,
+      "meanY": 0.457899,
+      "bias": -0.043893,
+      "brier": 0.242218
+     },
+     "c 0.9-1.1x": {
+      "lines": 13410,
+      "games": 1189,
+      "meanConfidence": 0.618709,
+      "hitRate": 0.59657,
+      "gap": 0.02214,
+      "meanQ": 0.485516,
+      "meanY": 0.449292,
+      "bias": -0.036224,
+      "brier": 0.239578
+     },
+     "d 1.1-1.4x": {
+      "lines": 10519,
+      "games": 1189,
+      "meanConfidence": 0.60845,
+      "hitRate": 0.598441,
+      "gap": 0.010009,
+      "meanQ": 0.450184,
+      "meanY": 0.455081,
+      "bias": 0.004897,
+      "brier": 0.235978
+     },
+     "e 1.4x+": {
+      "lines": 10019,
+      "games": 1189,
+      "meanConfidence": 0.604982,
+      "hitRate": 0.598463,
+      "gap": 0.006519,
+      "meanQ": 0.451051,
+      "meanY": 0.450843,
+      "bias": -0.000207,
+      "brier": 0.236622
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36122,
+      "games": 1189,
+      "meanConfidence": 0.564715,
+      "hitRate": 0.563369,
+      "gap": 0.001347,
+      "meanQ": 0.443371,
+      "meanY": 0.442833,
+      "bias": -0.000538,
+      "brier": 0.244339
+     },
+     "b 0.25-0.5": {
+      "lines": 20976,
+      "games": 1189,
+      "meanConfidence": 0.630475,
+      "hitRate": 0.615179,
+      "gap": 0.015296,
+      "meanQ": 0.464005,
+      "meanY": 0.450515,
+      "bias": -0.01349,
+      "brier": 0.232408
+     },
+     "c 0.5-0.75": {
+      "lines": 8764,
+      "games": 1186,
+      "meanConfidence": 0.715013,
+      "hitRate": 0.655637,
+      "gap": 0.059376,
+      "meanQ": 0.518739,
+      "meanY": 0.470333,
+      "bias": -0.048406,
+      "brier": 0.224902
+     },
+     "d 0.75-1": {
+      "lines": 2948,
+      "games": 1068,
+      "meanConfidence": 0.804005,
+      "hitRate": 0.676052,
+      "gap": 0.127953,
+      "meanQ": 0.631643,
+      "meanY": 0.52171,
+      "bias": -0.109933,
+      "brier": 0.234545
+     },
+     "e >=1": {
+      "lines": 1327,
+      "games": 722,
+      "meanConfidence": 0.90487,
+      "hitRate": 0.676714,
+      "gap": 0.228156,
+      "meanQ": 0.764883,
+      "meanY": 0.549359,
+      "bias": -0.215523,
+      "brier": 0.272617
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5148,
+      "games": 603,
+      "meanConfidence": 0.665632,
+      "hitRate": 0.612665,
+      "gap": 0.052967,
+      "meanQ": 0.515432,
+      "meanY": 0.454157,
+      "bias": -0.061275,
+      "brier": 0.239783
+     },
+     "b 6-10": {
+      "lines": 7725,
+      "games": 744,
+      "meanConfidence": 0.631859,
+      "hitRate": 0.588867,
+      "gap": 0.042992,
+      "meanQ": 0.500421,
+      "meanY": 0.469773,
+      "bias": -0.030648,
+      "brier": 0.243038
+     },
+     "c 11-20": {
+      "lines": 57264,
+      "games": 1073,
+      "meanConfidence": 0.613877,
+      "hitRate": 0.597024,
+      "gap": 0.016852,
+      "meanQ": 0.465432,
+      "meanY": 0.451732,
+      "bias": -0.0137,
+      "brier": 0.23773
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 6374,
+      "games": 419,
+      "meanConfidence": 0.619699,
+      "hitRate": 0.614685,
+      "gap": 0.005014,
+      "meanQ": 0.461113,
+      "meanY": 0.400533,
+      "bias": -0.06058,
+      "brier": 0.233267
+     },
+     "b 0.94-0.98": {
+      "lines": 13967,
+      "games": 808,
+      "meanConfidence": 0.61698,
+      "hitRate": 0.603064,
+      "gap": 0.013916,
+      "meanQ": 0.476048,
+      "meanY": 0.440825,
+      "bias": -0.035223,
+      "brier": 0.237865
+     },
+     "c 0.98-1.02": {
+      "lines": 24674,
+      "games": 981,
+      "meanConfidence": 0.618757,
+      "hitRate": 0.588555,
+      "gap": 0.030202,
+      "meanQ": 0.479096,
+      "meanY": 0.456635,
+      "bias": -0.022461,
+      "brier": 0.24061
+     },
+     "d 1.02-1.06": {
+      "lines": 11526,
+      "games": 715,
+      "meanConfidence": 0.618158,
+      "hitRate": 0.592487,
+      "gap": 0.025671,
+      "meanQ": 0.481643,
+      "meanY": 0.476575,
+      "bias": -0.005068,
+      "brier": 0.240386
+     },
+     "e >=1.06 (generous)": {
+      "lines": 7986,
+      "games": 479,
+      "meanConfidence": 0.620802,
+      "hitRate": 0.593539,
+      "gap": 0.027263,
+      "meanQ": 0.461314,
+      "meanY": 0.482219,
+      "bias": 0.020905,
+      "brier": 0.239193
+     },
+     "z unknown (<10 games)": {
+      "lines": 5610,
+      "games": 113,
+      "meanConfidence": 0.631671,
+      "hitRate": 0.616578,
+      "gap": 0.015094,
+      "meanQ": 0.450434,
+      "meanY": 0.448128,
+      "bias": -0.002306,
+      "brier": 0.231453
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.623039,
+      "hitRate": 0.608067,
+      "gap": 0.014972,
+      "meanQ": 0.439912,
+      "meanY": 0.424612,
+      "bias": -0.0153,
+      "brier": 0.232761
+     },
+     "points": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.622373,
+      "hitRate": 0.58467,
+      "gap": 0.037703,
+      "meanQ": 0.513514,
+      "meanY": 0.486548,
+      "bias": -0.026966,
+      "brier": 0.245924
+     },
+     "rebounds": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.613556,
+      "hitRate": 0.599085,
+      "gap": 0.014472,
+      "meanQ": 0.465441,
+      "meanY": 0.450533,
+      "bias": -0.014909,
+      "brier": 0.236712
+     }
+    }
+   },
+   "calibrated": {
+    "overall": {
+     "all": {
+      "lines": 70137,
+      "games": 1189,
+      "meanConfidence": 0.59885,
+      "hitRate": 0.598343,
+      "gap": 0.000506,
+      "meanQ": 0.453775,
+      "meanY": 0.453897,
+      "bias": 0.000122,
+      "brier": 0.235874
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 17860,
+      "games": 1189,
+      "meanConfidence": 0.521335,
+      "hitRate": 0.526596,
+      "gap": -0.00526,
+      "meanQ": 0.490053,
+      "meanY": 0.48729,
+      "bias": -0.002762,
+      "brier": 0.249098
+     },
+     "b 0.55-0.60": {
+      "lines": 16633,
+      "games": 1189,
+      "meanConfidence": 0.56274,
+      "hitRate": 0.566224,
+      "gap": -0.003484,
+      "meanQ": 0.470525,
+      "meanY": 0.472434,
+      "bias": 0.001909,
+      "brier": 0.245395
+     },
+     "c 0.60-0.65": {
+      "lines": 13612,
+      "games": 1189,
+      "meanConfidence": 0.606205,
+      "hitRate": 0.607258,
+      "gap": -0.001054,
+      "meanQ": 0.446294,
+      "meanY": 0.449824,
+      "bias": 0.00353,
+      "brier": 0.238121
+     },
+     "d 0.65-0.70": {
+      "lines": 9561,
+      "games": 1189,
+      "meanConfidence": 0.65409,
+      "hitRate": 0.65056,
+      "gap": 0.00353,
+      "meanQ": 0.406982,
+      "meanY": 0.408744,
+      "bias": 0.001761,
+      "brier": 0.226098
+     },
+     "e 0.70-0.80": {
+      "lines": 9427,
+      "games": 1188,
+      "meanConfidence": 0.702731,
+      "hitRate": 0.694601,
+      "gap": 0.00813,
+      "meanQ": 0.392624,
+      "meanY": 0.394929,
+      "bias": 0.002306,
+      "brier": 0.210078
+     },
+     "f 0.80+": {
+      "lines": 3044,
+      "games": 1044,
+      "meanConfidence": 0.722851,
+      "hitRate": 0.692838,
+      "gap": 0.030013,
+      "meanQ": 0.519215,
+      "meanY": 0.499343,
+      "bias": -0.019873,
+      "brier": 0.206805
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 43338,
+      "games": 1189,
+      "meanConfidence": 0.617098,
+      "hitRate": 0.615695,
+      "gap": 0.001403,
+      "meanQ": 0.383051,
+      "meanY": 0.383982,
+      "bias": 0.000931,
+      "brier": 0.231304
+     },
+     "more": {
+      "lines": 26799,
+      "games": 1189,
+      "meanConfidence": 0.569338,
+      "hitRate": 0.570282,
+      "gap": -0.000944,
+      "meanQ": 0.568147,
+      "meanY": 0.566961,
+      "bias": -0.001186,
+      "brier": 0.243263
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 10878,
+      "games": 1115,
+      "meanConfidence": 0.609119,
+      "hitRate": 0.565085,
+      "gap": 0.044033,
+      "meanQ": 0.50267,
+      "meanY": 0.446498,
+      "bias": -0.056173,
+      "brier": 0.243548
+     },
+     "b 15-25": {
+      "lines": 25911,
+      "games": 1187,
+      "meanConfidence": 0.604346,
+      "hitRate": 0.606538,
+      "gap": -0.002192,
+      "meanQ": 0.454029,
+      "meanY": 0.458222,
+      "bias": 0.004194,
+      "brier": 0.233578
+     },
+     "c 25-32": {
+      "lines": 19311,
+      "games": 1186,
+      "meanConfidence": 0.595623,
+      "hitRate": 0.60349,
+      "gap": -0.007867,
+      "meanQ": 0.436415,
+      "meanY": 0.456683,
+      "bias": 0.020267,
+      "brier": 0.234994
+     },
+     "d 32+": {
+      "lines": 14037,
+      "games": 1151,
+      "meanConfidence": 0.585185,
+      "hitRate": 0.601909,
+      "gap": -0.016725,
+      "meanQ": 0.439299,
+      "meanY": 0.447816,
+      "bias": 0.008517,
+      "brier": 0.235374
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17187,
+      "games": 1189,
+      "meanConfidence": 0.6117,
+      "hitRate": 0.600687,
+      "gap": 0.011014,
+      "meanQ": 0.438283,
+      "meanY": 0.454122,
+      "bias": 0.015839,
+      "brier": 0.23402
+     },
+     "b 0.7-0.9x": {
+      "lines": 19002,
+      "games": 1189,
+      "meanConfidence": 0.59504,
+      "hitRate": 0.593516,
+      "gap": 0.001524,
+      "meanQ": 0.47445,
+      "meanY": 0.457899,
+      "bias": -0.01655,
+      "brier": 0.237012
+     },
+     "c 0.9-1.1x": {
+      "lines": 13410,
+      "games": 1189,
+      "meanConfidence": 0.594444,
+      "hitRate": 0.599478,
+      "gap": -0.005034,
+      "meanQ": 0.465053,
+      "meanY": 0.449292,
+      "bias": -0.015762,
+      "brier": 0.236156
+     },
+     "d 1.1-1.4x": {
+      "lines": 10519,
+      "games": 1189,
+      "meanConfidence": 0.594318,
+      "hitRate": 0.599867,
+      "gap": -0.005549,
+      "meanQ": 0.440909,
+      "meanY": 0.455081,
+      "bias": 0.014173,
+      "brier": 0.235667
+     },
+     "e 1.4x+": {
+      "lines": 10019,
+      "games": 1189,
+      "meanConfidence": 0.594685,
+      "hitRate": 0.600359,
+      "gap": -0.005675,
+      "meanQ": 0.439555,
+      "meanY": 0.450843,
+      "bias": 0.011289,
+      "brier": 0.236733
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36122,
+      "games": 1189,
+      "meanConfidence": 0.561932,
+      "hitRate": 0.564642,
+      "gap": -0.00271,
+      "meanQ": 0.44258,
+      "meanY": 0.442833,
+      "bias": 0.000252,
+      "brier": 0.244337
+     },
+     "b 0.25-0.5": {
+      "lines": 20976,
+      "games": 1189,
+      "meanConfidence": 0.61357,
+      "hitRate": 0.616562,
+      "gap": -0.002991,
+      "meanQ": 0.444477,
+      "meanY": 0.450515,
+      "bias": 0.006038,
+      "brier": 0.232208
+     },
+     "c 0.5-0.75": {
+      "lines": 8764,
+      "games": 1186,
+      "meanConfidence": 0.662022,
+      "hitRate": 0.655637,
+      "gap": 0.006385,
+      "meanQ": 0.472722,
+      "meanY": 0.470333,
+      "bias": -0.002389,
+      "brier": 0.220441
+     },
+     "d 0.75-1": {
+      "lines": 2948,
+      "games": 1068,
+      "meanConfidence": 0.705916,
+      "hitRate": 0.676052,
+      "gap": 0.029865,
+      "meanQ": 0.54051,
+      "meanY": 0.52171,
+      "bias": -0.018801,
+      "brier": 0.215033
+     },
+     "e >=1": {
+      "lines": 1327,
+      "games": 722,
+      "meanConfidence": 0.716017,
+      "hitRate": 0.676714,
+      "gap": 0.039303,
+      "meanQ": 0.587676,
+      "meanY": 0.549359,
+      "bias": -0.038316,
+      "brier": 0.211654
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5148,
+      "games": 603,
+      "meanConfidence": 0.623436,
+      "hitRate": 0.612471,
+      "gap": 0.010965,
+      "meanQ": 0.475589,
+      "meanY": 0.454157,
+      "bias": -0.021432,
+      "brier": 0.231292
+     },
+     "b 6-10": {
+      "lines": 7725,
+      "games": 744,
+      "meanConfidence": 0.602149,
+      "hitRate": 0.595728,
+      "gap": 0.006421,
+      "meanQ": 0.47193,
+      "meanY": 0.469773,
+      "bias": -0.002156,
+      "brier": 0.238264
+     },
+     "c 11-20": {
+      "lines": 57264,
+      "games": 1073,
+      "meanConfidence": 0.596194,
+      "hitRate": 0.597426,
+      "gap": -0.001232,
+      "meanQ": 0.449365,
+      "meanY": 0.451732,
+      "bias": 0.002367,
+      "brier": 0.235963
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 6374,
+      "games": 419,
+      "meanConfidence": 0.600718,
+      "hitRate": 0.615312,
+      "gap": -0.014594,
+      "meanQ": 0.44522,
+      "meanY": 0.400533,
+      "bias": -0.044686,
+      "brier": 0.230473
+     },
+     "b 0.94-0.98": {
+      "lines": 13967,
+      "games": 808,
+      "meanConfidence": 0.597148,
+      "hitRate": 0.605785,
+      "gap": -0.008637,
+      "meanQ": 0.456321,
+      "meanY": 0.440825,
+      "bias": -0.015496,
+      "brier": 0.234817
+     },
+     "c 0.98-1.02": {
+      "lines": 24674,
+      "games": 981,
+      "meanConfidence": 0.596553,
+      "hitRate": 0.590419,
+      "gap": 0.006134,
+      "meanQ": 0.458733,
+      "meanY": 0.456635,
+      "bias": -0.002098,
+      "brier": 0.23715
+     },
+     "d 1.02-1.06": {
+      "lines": 11526,
+      "games": 715,
+      "meanConfidence": 0.595705,
+      "hitRate": 0.5924,
+      "gap": 0.003305,
+      "meanQ": 0.460741,
+      "meanY": 0.476575,
+      "bias": 0.015834,
+      "brier": 0.237975
+     },
+     "e >=1.06 (generous)": {
+      "lines": 7986,
+      "games": 479,
+      "meanConfidence": 0.602411,
+      "hitRate": 0.590158,
+      "gap": 0.012253,
+      "meanQ": 0.44452,
+      "meanY": 0.482219,
+      "bias": 0.037699,
+      "brier": 0.238449
+     },
+     "z unknown (<10 games)": {
+      "lines": 5610,
+      "games": 113,
+      "meanConfidence": 0.612454,
+      "hitRate": 0.619251,
+      "gap": -0.006797,
+      "meanQ": 0.43422,
+      "meanY": 0.448128,
+      "bias": 0.013908,
+      "brier": 0.231046
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.608643,
+      "hitRate": 0.610805,
+      "gap": -0.002162,
+      "meanQ": 0.428181,
+      "meanY": 0.424612,
+      "bias": -0.003569,
+      "brier": 0.232031
+     },
+     "points": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.580926,
+      "hitRate": 0.584071,
+      "gap": -0.003145,
+      "meanQ": 0.489292,
+      "meanY": 0.486548,
+      "bias": -0.002745,
+      "brier": 0.240008
+     },
+     "rebounds": {
+      "lines": 23379,
+      "games": 1189,
+      "meanConfidence": 0.60698,
+      "hitRate": 0.600154,
+      "gap": 0.006826,
+      "meanQ": 0.443853,
+      "meanY": 0.450533,
+      "bias": 0.00668,
+      "brier": 0.235582
+     }
+    }
+   },
+   "opponentResidualSlope": {
+    "points": {
+     "baseline": {
+      "slope": 0.42639767986671395,
+      "lo": 0.2661040482971366,
+      "hi": 0.5992693748428026,
+      "lines": 21509,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.4452514191420509,
+      "lo": 0.2768277029766469,
+      "hi": 0.6209956493240848,
+      "lines": 21509,
+      "games": 1086
+     }
+    },
+    "rebounds": {
+     "baseline": {
+      "slope": 0.4182761401958765,
+      "lo": 0.2567876733537543,
+      "hi": 0.5945356471426317,
+      "lines": 21509,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.4207440636140428,
+      "lo": 0.2588161931066169,
+      "hi": 0.6001831075567776,
+      "lines": 21509,
+      "games": 1086
+     }
+    },
+    "assists": {
+     "baseline": {
+      "slope": 0.4399322314476967,
+      "lo": 0.3400162254375468,
+      "hi": 0.5396931781908484,
+      "lines": 21509,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.4400327856443278,
+      "lo": 0.3392185607806886,
+      "hi": 0.5387122942049395,
+      "lines": 21509,
+      "games": 1086
+     }
+    },
+    "all": {
+     "baseline": {
+      "slope": 0.43209939472459213,
+      "lo": 0.34182590944726055,
+      "hi": 0.5228407756397917,
+      "lines": 64527,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.43739547819638297,
+      "lo": 0.3464459328711052,
+      "hi": 0.5292074253182351,
+      "lines": 64527,
+      "games": 1086
+     }
+    }
+   },
+   "lowMinutesGapCalibrated": {
+    "mean": 0.04403329712015747,
+    "lo": 0.0343008868682606,
+    "hi": 0.05421159853110851,
+    "games": 1115,
+    "lines": 10878
+   }
+  },
+  "2025-26": {
+   "sources": [
+    {
+     "file": "player_box_2025.csv",
+     "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7",
+     "role": "prior"
+    },
+    {
+     "file": "player_box_2026.csv",
+     "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89",
+     "role": "scored"
+    }
+   ],
+   "leakage": {
+    "checked": 880704,
+    "violations": 0
+   },
+   "pushes": 0,
+   "lines": 71595,
+   "baseline": {
+    "overall": {
+     "all": {
+      "lines": 71595,
+      "games": 1189,
+      "meanConfidence": 0.619145,
+      "hitRate": 0.595028,
+      "gap": 0.024117,
+      "meanQ": 0.469064,
+      "meanY": 0.450227,
+      "bias": -0.018837,
+      "brier": 0.237769
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 18145,
+      "games": 1189,
+      "meanConfidence": 0.524691,
+      "hitRate": 0.513254,
+      "gap": 0.011436,
+      "meanQ": 0.496823,
+      "meanY": 0.49391,
+      "bias": -0.002913,
+      "brier": 0.249778
+     },
+     "b 0.55-0.60": {
+      "lines": 16692,
+      "games": 1189,
+      "meanConfidence": 0.574518,
+      "hitRate": 0.562485,
+      "gap": 0.012033,
+      "meanQ": 0.480416,
+      "meanY": 0.470705,
+      "bias": -0.009711,
+      "brier": 0.246117
+     },
+     "c 0.60-0.65": {
+      "lines": 14036,
+      "games": 1189,
+      "meanConfidence": 0.623943,
+      "hitRate": 0.602807,
+      "gap": 0.021136,
+      "meanQ": 0.454884,
+      "meanY": 0.445854,
+      "bias": -0.00903,
+      "brier": 0.23986
+     },
+     "d 0.65-0.70": {
+      "lines": 10257,
+      "games": 1187,
+      "meanConfidence": 0.673156,
+      "hitRate": 0.648143,
+      "gap": 0.025014,
+      "meanQ": 0.428733,
+      "meanY": 0.405187,
+      "bias": -0.023546,
+      "brier": 0.228477
+     },
+     "e 0.70-0.80": {
+      "lines": 9684,
+      "games": 1189,
+      "meanConfidence": 0.739829,
+      "hitRate": 0.699917,
+      "gap": 0.039912,
+      "meanQ": 0.415632,
+      "meanY": 0.375774,
+      "bias": -0.039858,
+      "brier": 0.211896
+     },
+     "f 0.80+": {
+      "lines": 2781,
+      "games": 1027,
+      "meanConfidence": 0.859615,
+      "hitRate": 0.723481,
+      "gap": 0.136134,
+      "meanQ": 0.626177,
+      "meanY": 0.489752,
+      "bias": -0.136426,
+      "brier": 0.223122
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 44763,
+      "games": 1189,
+      "meanConfidence": 0.620022,
+      "hitRate": 0.615799,
+      "gap": 0.004223,
+      "meanQ": 0.379978,
+      "meanY": 0.384201,
+      "bias": 0.004223,
+      "brier": 0.230124
+     },
+     "more": {
+      "lines": 26832,
+      "games": 1189,
+      "meanConfidence": 0.617682,
+      "hitRate": 0.560376,
+      "gap": 0.057306,
+      "meanQ": 0.617682,
+      "meanY": 0.560376,
+      "bias": -0.057306,
+      "brier": 0.250523
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 10632,
+      "games": 1106,
+      "meanConfidence": 0.655407,
+      "hitRate": 0.568096,
+      "gap": 0.08731,
+      "meanQ": 0.552167,
+      "meanY": 0.445636,
+      "bias": -0.106531,
+      "brier": 0.255683
+     },
+     "b 15-25": {
+      "lines": 28464,
+      "games": 1189,
+      "meanConfidence": 0.623796,
+      "hitRate": 0.600513,
+      "gap": 0.023283,
+      "meanQ": 0.471595,
+      "meanY": 0.454574,
+      "bias": -0.017021,
+      "brier": 0.234486
+     },
+     "c 25-32": {
+      "lines": 21282,
+      "games": 1187,
+      "meanConfidence": 0.606269,
+      "hitRate": 0.598675,
+      "gap": 0.007594,
+      "meanQ": 0.440027,
+      "meanY": 0.452166,
+      "bias": 0.012139,
+      "brier": 0.235397
+     },
+     "d 32+": {
+      "lines": 11217,
+      "games": 1126,
+      "meanConfidence": 0.597402,
+      "hitRate": 0.599715,
+      "gap": -0.002313,
+      "meanQ": 0.438961,
+      "meanY": 0.439868,
+      "bias": 0.000907,
+      "brier": 0.23362
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17216,
+      "games": 1189,
+      "meanConfidence": 0.62835,
+      "hitRate": 0.604844,
+      "gap": 0.023505,
+      "meanQ": 0.459395,
+      "meanY": 0.446387,
+      "bias": -0.013008,
+      "brier": 0.234266
+     },
+     "b 0.7-0.9x": {
+      "lines": 18650,
+      "games": 1189,
+      "meanConfidence": 0.623869,
+      "hitRate": 0.589383,
+      "gap": 0.034486,
+      "meanQ": 0.504771,
+      "meanY": 0.458231,
+      "bias": -0.04654,
+      "brier": 0.241433
+     },
+     "c 0.9-1.1x": {
+      "lines": 14897,
+      "games": 1189,
+      "meanConfidence": 0.616771,
+      "hitRate": 0.588105,
+      "gap": 0.028666,
+      "meanQ": 0.475883,
+      "meanY": 0.457072,
+      "bias": -0.018811,
+      "brier": 0.240079
+     },
+     "d 1.1-1.4x": {
+      "lines": 11149,
+      "games": 1189,
+      "meanConfidence": 0.608082,
+      "hitRate": 0.588932,
+      "gap": 0.01915,
+      "meanQ": 0.447228,
+      "meanY": 0.446497,
+      "bias": -0.00073,
+      "brier": 0.236981
+     },
+     "e 1.4x+": {
+      "lines": 9683,
+      "games": 1188,
+      "meanConfidence": 0.610071,
+      "hitRate": 0.606114,
+      "gap": 0.003957,
+      "meanQ": 0.432129,
+      "meanY": 0.435402,
+      "bias": 0.003273,
+      "brier": 0.234291
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36912,
+      "games": 1189,
+      "meanConfidence": 0.5656,
+      "hitRate": 0.559276,
+      "gap": 0.006324,
+      "meanQ": 0.442342,
+      "meanY": 0.446359,
+      "bias": 0.004017,
+      "brier": 0.244541
+     },
+     "b 0.25-0.5": {
+      "lines": 21779,
+      "games": 1189,
+      "meanConfidence": 0.631633,
+      "hitRate": 0.61495,
+      "gap": 0.016683,
+      "meanQ": 0.459075,
+      "meanY": 0.43946,
+      "bias": -0.019615,
+      "brier": 0.231625
+     },
+     "c 0.5-0.75": {
+      "lines": 8967,
+      "games": 1189,
+      "meanConfidence": 0.714496,
+      "hitRate": 0.64782,
+      "gap": 0.066677,
+      "meanQ": 0.517514,
+      "meanY": 0.457232,
+      "bias": -0.060282,
+      "brier": 0.228032
+     },
+     "d 0.75-1": {
+      "lines": 2725,
+      "games": 1032,
+      "meanConfidence": 0.802864,
+      "hitRate": 0.693578,
+      "gap": 0.109286,
+      "meanQ": 0.622102,
+      "meanY": 0.512661,
+      "bias": -0.109442,
+      "brier": 0.223441
+     },
+     "e >=1": {
+      "lines": 1212,
+      "games": 730,
+      "meanConfidence": 0.906971,
+      "hitRate": 0.713696,
+      "gap": 0.193274,
+      "meanQ": 0.759843,
+      "meanY": 0.569307,
+      "bias": -0.190537,
+      "brier": 0.246169
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5241,
+      "games": 585,
+      "meanConfidence": 0.662436,
+      "hitRate": 0.618584,
+      "gap": 0.043851,
+      "meanQ": 0.50898,
+      "meanY": 0.438848,
+      "bias": -0.070133,
+      "brier": 0.233948
+     },
+     "b 6-10": {
+      "lines": 7983,
+      "games": 764,
+      "meanConfidence": 0.630987,
+      "hitRate": 0.584492,
+      "gap": 0.046495,
+      "meanQ": 0.497781,
+      "meanY": 0.463986,
+      "bias": -0.033795,
+      "brier": 0.244272
+     },
+     "c 11-20": {
+      "lines": 58371,
+      "games": 1070,
+      "meanConfidence": 0.613638,
+      "hitRate": 0.594353,
+      "gap": 0.019285,
+      "meanQ": 0.461552,
+      "meanY": 0.449367,
+      "bias": -0.012185,
+      "brier": 0.237223
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 8800,
+      "games": 541,
+      "meanConfidence": 0.618185,
+      "hitRate": 0.610341,
+      "gap": 0.007844,
+      "meanQ": 0.457101,
+      "meanY": 0.391591,
+      "bias": -0.06551,
+      "brier": 0.232403
+     },
+     "b 0.94-0.98": {
+      "lines": 12675,
+      "games": 718,
+      "meanConfidence": 0.617701,
+      "hitRate": 0.596055,
+      "gap": 0.021646,
+      "meanQ": 0.477216,
+      "meanY": 0.430848,
+      "bias": -0.046368,
+      "brier": 0.239205
+     },
+     "c 0.98-1.02": {
+      "lines": 21738,
+      "games": 923,
+      "meanConfidence": 0.619001,
+      "hitRate": 0.589751,
+      "gap": 0.029251,
+      "meanQ": 0.474687,
+      "meanY": 0.45938,
+      "bias": -0.015307,
+      "brier": 0.239841
+     },
+     "d 1.02-1.06": {
+      "lines": 15227,
+      "games": 774,
+      "meanConfidence": 0.618064,
+      "hitRate": 0.586721,
+      "gap": 0.031344,
+      "meanQ": 0.469481,
+      "meanY": 0.470414,
+      "bias": 0.000933,
+      "brier": 0.240179
+     },
+     "e >=1.06 (generous)": {
+      "lines": 7485,
+      "games": 449,
+      "meanConfidence": 0.617211,
+      "hitRate": 0.585838,
+      "gap": 0.031372,
+      "meanQ": 0.467429,
+      "meanY": 0.49499,
+      "bias": 0.027561,
+      "brier": 0.240025
+     },
+     "z unknown (<10 games)": {
+      "lines": 5670,
+      "games": 113,
+      "meanConfidence": 0.629868,
+      "hitRate": 0.623633,
+      "gap": 0.006235,
+      "meanQ": 0.448882,
+      "meanY": 0.436155,
+      "bias": -0.012727,
+      "brier": 0.225494
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.624956,
+      "hitRate": 0.610895,
+      "gap": 0.014061,
+      "meanQ": 0.433194,
+      "meanY": 0.419149,
+      "bias": -0.014044,
+      "brier": 0.231271
+     },
+     "points": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.622932,
+      "hitRate": 0.576535,
+      "gap": 0.046398,
+      "meanQ": 0.504921,
+      "meanY": 0.484224,
+      "bias": -0.020697,
+      "brier": 0.246314
+     },
+     "rebounds": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.609547,
+      "hitRate": 0.597653,
+      "gap": 0.011893,
+      "meanQ": 0.469076,
+      "meanY": 0.447308,
+      "bias": -0.021769,
+      "brier": 0.235721
+     }
+    }
+   },
+   "calibrated": {
+    "overall": {
+     "all": {
+      "lines": 71595,
+      "games": 1189,
+      "meanConfidence": 0.599233,
+      "hitRate": 0.596662,
+      "gap": 0.002572,
+      "meanQ": 0.451191,
+      "meanY": 0.450227,
+      "bias": -0.000964,
+      "brier": 0.235327
+     }
+    },
+    "confidence": {
+     "a 0.50-0.55": {
+      "lines": 18145,
+      "games": 1189,
+      "meanConfidence": 0.521381,
+      "hitRate": 0.519702,
+      "gap": 0.001679,
+      "meanQ": 0.490024,
+      "meanY": 0.49391,
+      "bias": 0.003886,
+      "brier": 0.249568
+     },
+     "b 0.55-0.60": {
+      "lines": 16692,
+      "games": 1189,
+      "meanConfidence": 0.562249,
+      "hitRate": 0.562485,
+      "gap": -0.000236,
+      "meanQ": 0.471872,
+      "meanY": 0.470705,
+      "bias": -0.001168,
+      "brier": 0.245793
+     },
+     "c 0.60-0.65": {
+      "lines": 14036,
+      "games": 1189,
+      "meanConfidence": 0.606574,
+      "hitRate": 0.602807,
+      "gap": 0.003767,
+      "meanQ": 0.443315,
+      "meanY": 0.445854,
+      "bias": 0.002539,
+      "brier": 0.238997
+     },
+     "d 0.65-0.70": {
+      "lines": 10257,
+      "games": 1187,
+      "meanConfidence": 0.654,
+      "hitRate": 0.648143,
+      "gap": 0.005857,
+      "meanQ": 0.405981,
+      "meanY": 0.405187,
+      "bias": -0.000794,
+      "brier": 0.226355
+     },
+     "e 0.70-0.80": {
+      "lines": 9684,
+      "games": 1189,
+      "meanConfidence": 0.703659,
+      "hitRate": 0.699917,
+      "gap": 0.003741,
+      "meanQ": 0.386159,
+      "meanY": 0.375774,
+      "bias": -0.010385,
+      "brier": 0.206746
+     },
+     "f 0.80+": {
+      "lines": 2781,
+      "games": 1027,
+      "meanConfidence": 0.726504,
+      "hitRate": 0.723481,
+      "gap": 0.003023,
+      "meanQ": 0.506639,
+      "meanY": 0.489752,
+      "bias": -0.016887,
+      "brier": 0.193679
+     }
+    },
+    "direction": {
+     "less": {
+      "lines": 44763,
+      "games": 1189,
+      "meanConfidence": 0.618104,
+      "hitRate": 0.617296,
+      "gap": 0.000809,
+      "meanQ": 0.382036,
+      "meanY": 0.384201,
+      "bias": 0.002165,
+      "brier": 0.23001
+     },
+     "more": {
+      "lines": 26832,
+      "games": 1189,
+      "meanConfidence": 0.567751,
+      "hitRate": 0.562239,
+      "gap": 0.005512,
+      "meanQ": 0.56656,
+      "meanY": 0.560376,
+      "bias": -0.006185,
+      "brier": 0.244197
+     }
+    },
+    "expectedMinutes": {
+     "a <15": {
+      "lines": 10632,
+      "games": 1106,
+      "meanConfidence": 0.608054,
+      "hitRate": 0.5712,
+      "gap": 0.036854,
+      "meanQ": 0.504985,
+      "meanY": 0.445636,
+      "bias": -0.059349,
+      "brier": 0.241341
+     },
+     "b 15-25": {
+      "lines": 28464,
+      "games": 1189,
+      "meanConfidence": 0.602715,
+      "hitRate": 0.602234,
+      "gap": 0.00048,
+      "meanQ": 0.452331,
+      "meanY": 0.454574,
+      "bias": 0.002243,
+      "brier": 0.233305
+     },
+     "c 25-32": {
+      "lines": 21282,
+      "games": 1187,
+      "meanConfidence": 0.595695,
+      "hitRate": 0.599333,
+      "gap": -0.003637,
+      "meanQ": 0.432274,
+      "meanY": 0.452166,
+      "bias": 0.019892,
+      "brier": 0.235758
+     },
+     "d 32+": {
+      "lines": 11217,
+      "games": 1126,
+      "meanConfidence": 0.588751,
+      "hitRate": 0.601587,
+      "gap": -0.012836,
+      "meanQ": 0.433201,
+      "meanY": 0.439868,
+      "bias": 0.006667,
+      "brier": 0.23394
+     }
+    },
+    "perMinuteRate": {
+     "a <0.7x league": {
+      "lines": 17216,
+      "games": 1189,
+      "meanConfidence": 0.609388,
+      "hitRate": 0.604786,
+      "gap": 0.004602,
+      "meanQ": 0.44008,
+      "meanY": 0.446387,
+      "bias": 0.006307,
+      "brier": 0.232343
+     },
+     "b 0.7-0.9x": {
+      "lines": 18650,
+      "games": 1189,
+      "meanConfidence": 0.594597,
+      "hitRate": 0.590992,
+      "gap": 0.003605,
+      "meanQ": 0.477104,
+      "meanY": 0.458231,
+      "bias": -0.018873,
+      "brier": 0.236551
+     },
+     "c 0.9-1.1x": {
+      "lines": 14897,
+      "games": 1189,
+      "meanConfidence": 0.594647,
+      "hitRate": 0.591126,
+      "gap": 0.003521,
+      "meanQ": 0.458355,
+      "meanY": 0.457072,
+      "bias": -0.001283,
+      "brier": 0.237248
+     },
+     "d 1.1-1.4x": {
+      "lines": 11149,
+      "games": 1189,
+      "meanConfidence": 0.595466,
+      "hitRate": 0.592878,
+      "gap": 0.002588,
+      "meanQ": 0.438536,
+      "meanY": 0.446497,
+      "bias": 0.007961,
+      "brier": 0.236254
+     },
+     "e 1.4x+": {
+      "lines": 9683,
+      "games": 1188,
+      "meanConfidence": 0.601502,
+      "hitRate": 0.606011,
+      "gap": -0.004509,
+      "meanQ": 0.424587,
+      "meanY": 0.435402,
+      "bias": 0.010815,
+      "brier": 0.234251
+     }
+    },
+    "lineDistanceZ": {
+     "a <0.25": {
+      "lines": 36912,
+      "games": 1189,
+      "meanConfidence": 0.56268,
+      "hitRate": 0.562202,
+      "gap": 0.000478,
+      "meanQ": 0.441763,
+      "meanY": 0.446359,
+      "bias": 0.004596,
+      "brier": 0.244479
+     },
+     "b 0.25-0.5": {
+      "lines": 21779,
+      "games": 1189,
+      "meanConfidence": 0.615217,
+      "hitRate": 0.615363,
+      "gap": -0.000146,
+      "meanQ": 0.440715,
+      "meanY": 0.43946,
+      "bias": -0.001255,
+      "brier": 0.230966
+     },
+     "c 0.5-0.75": {
+      "lines": 8967,
+      "games": 1189,
+      "meanConfidence": 0.662304,
+      "hitRate": 0.64782,
+      "gap": 0.014484,
+      "meanQ": 0.472438,
+      "meanY": 0.457232,
+      "bias": -0.015206,
+      "brier": 0.221873
+     },
+     "d 0.75-1": {
+      "lines": 2725,
+      "games": 1032,
+      "meanConfidence": 0.705822,
+      "hitRate": 0.693578,
+      "gap": 0.012244,
+      "meanQ": 0.533219,
+      "meanY": 0.512661,
+      "bias": -0.020558,
+      "brier": 0.206617
+     },
+     "e >=1": {
+      "lines": 1212,
+      "games": 730,
+      "meanConfidence": 0.718975,
+      "hitRate": 0.713696,
+      "gap": 0.005278,
+      "meanQ": 0.584939,
+      "meanY": 0.569307,
+      "bias": -0.015632,
+      "brier": 0.199061
+     }
+    },
+    "historyGames": {
+     "a 3-5": {
+      "lines": 5241,
+      "games": 585,
+      "meanConfidence": 0.622748,
+      "hitRate": 0.622782,
+      "gap": -0.000034,
+      "meanQ": 0.471927,
+      "meanY": 0.438848,
+      "bias": -0.033079,
+      "brier": 0.226132
+     },
+     "b 6-10": {
+      "lines": 7983,
+      "games": 764,
+      "meanConfidence": 0.602185,
+      "hitRate": 0.587624,
+      "gap": 0.014562,
+      "meanQ": 0.470354,
+      "meanY": 0.463986,
+      "bias": -0.006368,
+      "brier": 0.238685
+     },
+     "c 11-20": {
+      "lines": 58371,
+      "games": 1070,
+      "meanConfidence": 0.596718,
+      "hitRate": 0.595553,
+      "gap": 0.001166,
+      "meanQ": 0.446708,
+      "meanY": 0.449367,
+      "bias": 0.002659,
+      "brier": 0.235693
+     }
+    },
+    "opponent": {
+     "a <0.94 (stingy)": {
+      "lines": 8800,
+      "games": 541,
+      "meanConfidence": 0.603543,
+      "hitRate": 0.614659,
+      "gap": -0.011116,
+      "meanQ": 0.440923,
+      "meanY": 0.391591,
+      "bias": -0.049332,
+      "brier": 0.229593
+     },
+     "b 0.94-0.98": {
+      "lines": 12675,
+      "games": 718,
+      "meanConfidence": 0.595117,
+      "hitRate": 0.598185,
+      "gap": -0.003068,
+      "meanQ": 0.458421,
+      "meanY": 0.430848,
+      "bias": -0.027573,
+      "brier": 0.235063
+     },
+     "c 0.98-1.02": {
+      "lines": 21738,
+      "games": 923,
+      "meanConfidence": 0.596806,
+      "hitRate": 0.590993,
+      "gap": 0.005814,
+      "meanQ": 0.456182,
+      "meanY": 0.45938,
+      "bias": 0.003198,
+      "brier": 0.237068
+     },
+     "d 1.02-1.06": {
+      "lines": 15227,
+      "games": 774,
+      "meanConfidence": 0.598505,
+      "hitRate": 0.586261,
+      "gap": 0.012244,
+      "meanQ": 0.451527,
+      "meanY": 0.470414,
+      "bias": 0.018888,
+      "brier": 0.238156
+     },
+     "e >=1.06 (generous)": {
+      "lines": 7485,
+      "games": 449,
+      "meanConfidence": 0.600528,
+      "hitRate": 0.586774,
+      "gap": 0.013754,
+      "meanQ": 0.449033,
+      "meanY": 0.49499,
+      "bias": 0.045956,
+      "brier": 0.239445
+     },
+     "z unknown (<10 games)": {
+      "lines": 5670,
+      "games": 113,
+      "meanConfidence": 0.611297,
+      "hitRate": 0.628042,
+      "gap": -0.016745,
+      "meanQ": 0.433777,
+      "meanY": 0.436155,
+      "bias": 0.002378,
+      "brier": 0.225109
+     }
+    },
+    "stat": {
+     "assists": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.611352,
+      "hitRate": 0.612487,
+      "gap": -0.001135,
+      "meanQ": 0.422633,
+      "meanY": 0.419149,
+      "bias": -0.003483,
+      "brier": 0.230559
+     },
+     "points": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.583299,
+      "hitRate": 0.579342,
+      "gap": 0.003957,
+      "meanQ": 0.483294,
+      "meanY": 0.484224,
+      "bias": 0.000929,
+      "brier": 0.240931
+     },
+     "rebounds": {
+      "lines": 23865,
+      "games": 1189,
+      "meanConfidence": 0.603049,
+      "hitRate": 0.598156,
+      "gap": 0.004893,
+      "meanQ": 0.447646,
+      "meanY": 0.447308,
+      "bias": -0.000338,
+      "brier": 0.234491
+     }
+    }
+   },
+   "opponentResidualSlope": {
+    "points": {
+     "baseline": {
+      "slope": 0.7694889529382346,
+      "lo": 0.6156874377530485,
+      "hi": 0.9352363506274516,
+      "lines": 21975,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.790455833309585,
+      "lo": 0.6363813287252258,
+      "hi": 0.9598459033460426,
+      "lines": 21975,
+      "games": 1086
+     }
+    },
+    "rebounds": {
+     "baseline": {
+      "slope": 0.5266068522643874,
+      "lo": 0.41700840430314556,
+      "hi": 0.6450872108558879,
+      "lines": 21975,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.5276731862147398,
+      "lo": 0.4180728636677279,
+      "hi": 0.6449239776702305,
+      "lines": 21975,
+      "games": 1086
+     }
+    },
+    "assists": {
+     "baseline": {
+      "slope": 0.4274050796872235,
+      "lo": 0.3168276198073029,
+      "hi": 0.5343990130715632,
+      "lines": 21975,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.4313284355050029,
+      "lo": 0.3199478948392584,
+      "hi": 0.538882872415542,
+      "lines": 21975,
+      "games": 1086
+     }
+    },
+    "all": {
+     "baseline": {
+      "slope": 0.525245249288077,
+      "lo": 0.4399670149052641,
+      "hi": 0.6113081627068389,
+      "lines": 65925,
+      "games": 1086
+     },
+     "calibrated": {
+      "slope": 0.5315646776714643,
+      "lo": 0.4453326747975151,
+      "hi": 0.6180430409180004,
+      "lines": 65925,
+      "games": 1086
+     }
+    }
+   },
+   "lowMinutesGapCalibrated": {
+    "mean": 0.03685415917281394,
+    "lo": 0.02696312804987767,
+    "hi": 0.04723650096093261,
+    "games": 1106,
+    "lines": 10632
+   }
+  }
+ }
+}

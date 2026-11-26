@@ -1,0 +1,109 @@
+name: Kalshi weather multisource PAPER forecasts
+# Shadow PAPER forecasts and grading for the pre-registered knyc-multisource-emos-v1-research challenger.
+# - Trigger: the Vercel scheduler (on time within its hour) dispatches one run per anchor:
+#     SAME_DAY  09:xx UTC  -> capture window 08:30-10:52 UTC, anchor 11:00 UTC (6 AM EST)
+#     DAY_AHEAD 12:xx UTC  -> capture window 11:30-13:52 UTC, anchor 14:00 UTC (9 AM EST the day before)
+#   A GitHub cron is a backup only. A run outside its window, or for an anchor already frozen, stops in preflight
+#   BEFORE any retrieval, so each anchor costs at most one retrieval per day.
+# - Retrieval: PR #226's reusable workflow (workflow_call start/end/station), trailing 45 days. Its artifact is verified
+#   (entry names, receipt SHA-256) before extraction. The freeze uses rows held at the receipt's actual capture time.
+# - Freeze: one immutable forecast for this run's anchor only. Grading: every forecast whose CLI report is now public.
+#   Append-only on research-data. PAPER only: no market data, no account, no orders, no stakes; exchange access disabled.
+#   Historical or shadow forecast accuracy is not paper P&L.
+on:
+  schedule:
+    - cron: '41 9 * * *'    # SAME_DAY backup (Vercel dispatches 09:xx)
+    - cron: '41 12 * * *'   # DAY_AHEAD backup (Vercel dispatches 12:xx)
+  workflow_dispatch:
+    inputs:
+      anchor:
+        description: Which horizon to freeze
+        type: choice
+        required: true
+        options: [SAME_DAY, DAY_AHEAD]
+permissions:
+  contents: read
+concurrency:
+  # Backup schedule and manual Vercel dispatch for the same anchor must share a lock.
+  group: kalshi-weather-multisource-paper-${{ inputs.anchor || (github.event.schedule == '41 9 * * *' && 'SAME_DAY' || 'DAY_AHEAD') }}
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      INPUT_ANCHOR: ${{ inputs.anchor }}
+      SCHEDULE: ${{ github.event.schedule }}
+    outputs:
+      go: ${{ steps.p.outputs.go }}
+      anchor: ${{ steps.p.outputs.anchor }}
+      start: ${{ steps.p.outputs.start }}
+      end: ${{ steps.p.outputs.end }}
+    steps:
+      - id: p
+        shell: bash
+        run: |
+          set -euo pipefail
+          anchor="$INPUT_ANCHOR"
+          if [ -z "$anchor" ]; then case "$SCHEDULE" in '41 9 * * *') anchor=SAME_DAY;; '41 12 * * *') anchor=DAY_AHEAD;; *) echo "unknown trigger"; exit 1;; esac; fi
+          [[ "$anchor" =~ ^(SAME_DAY|DAY_AHEAD)$ ]] || { echo "invalid anchor"; exit 1; }
+          today=$(date -u -d '-5 hours' +%F)                      # Central Park climate day (UTC-5 all year)
+          if [ "$anchor" = SAME_DAY ]; then target=$today; at="${today}T11:00:00Z"
+          else target=$(date -u -d "$today +1 day" +%F); at="${today}T14:00:00Z"; fi
+          now=$(date -u +%s); a=$(date -u -d "$at" +%s)
+          echo "anchor=$anchor" >> "$GITHUB_OUTPUT"
+          go=true; why="freeze $target $anchor (anchor $at)"
+          if [ "$now" -lt $((a-150*60)) ]; then go=false; why="before the capture window for $at"; fi
+          if [ "$now" -gt $((a-8*60)) ]; then go=false; why="too late to retrieve and freeze before $at (recorded as missed, never backfilled)"; fi
+          path="kalshi-independent/nyc-weather/multisource-v1/forecasts/$target-$anchor.json"
+          if [ "$go" = true ] && gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=research-data" --silent 2>/dev/null; then go=false; why="already frozen"; fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "start=$(date -u -d "$target -45 days" +%F)" >> "$GITHUB_OUTPUT"
+          echo "end=$target" >> "$GITHUB_OUTPUT"
+          echo "Preflight: $why" | tee -a "$GITHUB_STEP_SUMMARY"
+  retrieve:
+    needs: preflight
+    if: needs.preflight.outputs.go == 'true'
+    uses: ./.github/workflows/kalshi-public-archive-pilot.yml
+    with:
+      start: ${{ needs.preflight.outputs.start }}
+      end: ${{ needs.preflight.outputs.end }}
+      station: KNYC
+  paper:
+    needs: [preflight, retrieve]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: research-data
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ANCHOR: ${{ needs.preflight.outputs.anchor }}
+      ARTIFACT: ${{ needs.retrieve.outputs.artifact_name }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Unit tests (synthetic data only)
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource*.test.mjs
+      - name: Verify this run's retrieval artifact before extracting it
+        run: bash .github/scripts/weather-archive-fetch.sh current "$ARTIFACT" "$RUNNER_TEMP/wx"
+      - name: Check out append-only research-data
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Freeze this anchor, grade published outcomes, write the forward scorecard
+        run: |
+          set -o pipefail
+          node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-paper.ts --anchor "$ANCHOR" \
+            --inputs "$RUNNER_TEMP/wx/in" --cli-dir "$RUNNER_TEMP/wx/cli" --data research-data | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit only new paper records
+        run: bash .github/scripts/research-data-branch.sh commit "kalshi weather multisource paper $ANCHOR ${{ github.run_id }}"

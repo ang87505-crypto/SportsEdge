@@ -1,0 +1,66 @@
+{
+ "id": "props-nb-availability-v1",
+ "status": "pre-registered before any category statistic, fit or holdout outcome was computed",
+ "rulesDocument": "docs/PROPS_CHALLENGER_AVAILABILITY_PREREG_2026_11_19.md",
+ "baseline": {"model": "props-nb-minutes-rate-v1", "artifact": "src/data/props/model_v1.json", "unchanged": true},
+ "hypothesisKey": "sports:recent-stated-absence-availability",
+ "relatedButDistinct": {
+  "sports:minutes-uncertainty-shrinkage": "tested (lab-sports-challengers-v2-uncertainty): shrinks toward 0.5 by minutes CV; no availability event",
+  "sports:short-history-shrinkage": "tested: games-of-history shrinkage",
+  "sports:role-minutes-adjustment": "tested (props-nb-role-minutes-v1): follows a 3-game minutes trend",
+  "sports:injury-rotation-availability": "blocked: needs a licensed timestamped pre-game injury feed; this experiment uses no pre-game injury status"
+ },
+ "sources": {
+  "prior": {"file": "player_box_2025.csv", "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7", "role": "2024-25 priors for the training pipeline"},
+  "training": {"file": "player_box_2026.csv", "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89", "role": "2025-26: the only data used to fit the four adjustment numbers"},
+  "holdout": {"file": "player_box_2027.csv", "sha256": "f3c5d6cf0d0d58ebf5a17916820922058ea29cd762aff6147c88fa34daa7a848", "role": "2026-27 regular season 2026-10-20 to 2026-11-18; outcomes not opened before this protocol and the fitted numbers are committed"},
+  "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/<file>"
+ },
+ "availabilityCategories": {
+  "window": "the player's current team's 5 most recent games strictly before the predicted game, counting only games at or after the player's first listed appearance for that team",
+  "statusInTeamGame": {
+   "PLAYED": "row present, did_not_play false",
+   "ABSENT_STATED": "row present, did_not_play true, reason non-empty and not COACH'S DECISION (injury, illness, rest, personal, suspension, not with team, any other stated reason)",
+   "ABSENT_COACH": "row present, did_not_play true, reason COACH'S DECISION",
+   "UNLISTED": "no row for the player in that team game: unknown, never assumed available or absent"
+  },
+  "RETURNING": "status in the team's most recent game is ABSENT_STATED",
+  "RECENT": "not RETURNING, and some game in the window is ABSENT_STATED",
+  "UNKNOWN": "neither of the above, and some game in the window is UNLISTED",
+  "CLEAR": "otherwise",
+  "adjusted": ["RETURNING", "RECENT"]
+ },
+ "adjustment": {
+  "minutes": "expMinutes' = m_c x expMinutes; sdMinutes'^2 = (m_c x sdMinutes)^2 + (s_c x expMinutes)^2",
+  "distribution": "same negative binomial as the baseline: mean = rate x expMinutes', variance = mean + mean^2/k_stat + rate^2 x sdMinutes'^2",
+  "rate": "unchanged (per-minute production is not adjusted)"
+ },
+ "fit": {
+  "data": "2025-26 regular season only (player_box_2026.csv), layer 1 with 2024-25 priors and dispersion fit through 2025-12-31, as in the existing exploratory pipeline",
+  "unit": "one row per played player-game the baseline scores (points at line 0.5 defines scorability; minutes inputs are the same for every stat)",
+  "ratio": "r = min(actual minutes, 53) / baseline expMinutes",
+  "m_c": "mean of r in category c",
+  "s_c": "sqrt(max(0, variance of r - mean of (sdMinutes / expMinutes)^2)) in category c",
+  "rounding": "4 decimals",
+  "categoriesFit": ["RETURNING", "RECENT"],
+  "reported": ["CLEAR", "UNKNOWN"]
+ },
+ "variants": {
+  "full": "m_c and s_c",
+  "mean-only": "m_c, s_c = 0 (ablation)",
+  "variance-only": "m_c = 1, s_c (ablation)"
+ },
+ "lines": "proxy lines floor(median of last 10 played) + 0.5 from earlier games only, as in every earlier props study",
+ "scores": "binary non-tie P(more) = pMore / (pMore + pLess); Brier; log loss (clamped 1e-6); calibration bands [0,0.2,0.35,0.45,0.55,0.65,0.8,1]; ECE over 10 equal-width bins; calibration-in-the-large (mean P(more) minus observed more rate)",
+ "uncertainty": {"method": "paired bootstrap resampling whole games (ESPN game id)", "replicates": 2000, "seed": 20261120, "interval": "2.5% and 97.5% percentiles"},
+ "primary": "holdout, adjusted lines (RETURNING and RECENT) pooled across points, rebounds and assists: full variant minus baseline",
+ "decisionRule": {
+  "INSUFFICIENT_DATA": "fewer than 150 adjusted holdout lines or fewer than 30 distinct games",
+  "IMPROVES": "Brier difference upper 95% < 0 AND log-loss difference point estimate < 0",
+  "WORSE": "Brier difference lower 95% > 0",
+  "NO_CLEAR_EFFECT": "otherwise",
+  "note": "The ablation, per-category, per-stat, all-lines and exploratory results are descriptive and cannot change the verdict. Nothing is promoted by any verdict."
+ },
+ "exploratory": "2025-26 chronological split, previously inspected season: fit the four numbers on games through 2026-01-31, score 2026-02-01 to the end of the regular season. Descriptive only.",
+ "notUsed": ["pre-game injury reports (not collected; see the rules document)", "teammate availability (unknown before tip-off without a pre-game report)", "any same-game information"]
+}
