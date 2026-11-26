@@ -1,10 +1,10 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-26T02:09:01.241Z",
+ "generatedAt": "2026-11-26T02:09:38.100Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
-  "id": 45740464452,
-  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464452",
+  "id": 45740519038,
+  "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740519038",
   "event": "workflow_run"
  },
  "overall": {
@@ -495,34 +495,25 @@
    "status": "OK",
    "detail": "Last run succeeded.",
    "workflowState": "active",
-   "running": {
-    "id": 45740464438,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464438",
-    "event": "workflow_run",
-    "status": "in_progress",
-    "conclusion": null,
-    "startedAt": "2026-11-26T02:08:55.000Z",
-    "finishedAt": null,
-    "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
-   },
+   "running": null,
    "lastRun": {
     "id": 45740464438,
     "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464438",
     "event": "workflow_run",
-    "status": "in_progress",
-    "conclusion": null,
+    "status": "completed",
+    "conclusion": "success",
     "startedAt": "2026-11-26T02:08:55.000Z",
-    "finishedAt": null,
+    "finishedAt": "2026-11-26T02:09:23.000Z",
     "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
    },
    "lastSuccess": {
-    "id": 45734031708,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45734031708",
-    "event": "schedule",
+    "id": 45740464438,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464438",
+    "event": "workflow_run",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-26T01:11:26.000Z",
-    "finishedAt": "2026-11-26T01:11:53.000Z",
+    "startedAt": "2026-11-26T02:08:55.000Z",
+    "finishedAt": "2026-11-26T02:09:23.000Z",
     "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
    },
    "lastFailure": null,
@@ -726,33 +717,33 @@
    "detail": "Last run succeeded.",
    "workflowState": "active",
    "running": {
-    "id": 45740464452,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464452",
+    "id": 45740519038,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740519038",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-26T02:08:55.000Z",
+    "startedAt": "2026-11-26T02:09:25.000Z",
     "finishedAt": null,
     "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
    },
    "lastRun": {
-    "id": 45740464452,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464452",
+    "id": 45740519038,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740519038",
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-26T02:08:55.000Z",
+    "startedAt": "2026-11-26T02:09:25.000Z",
     "finishedAt": null,
     "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
    },
    "lastSuccess": {
-    "id": 45734096422,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45734096422",
+    "id": 45740464452,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/45740464452",
     "event": "workflow_run",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-26T01:11:58.000Z",
-    "finishedAt": "2026-11-26T01:12:40.000Z",
+    "startedAt": "2026-11-26T02:08:55.000Z",
+    "finishedAt": "2026-11-26T02:09:33.000Z",
     "headSha": "9df0934a74b43f5e6b5e12486d7350d8a1c088e7"
    },
    "lastFailure": null,
@@ -769,7 +760,7 @@
    "consecutiveFailures": 0,
    "slots7d": {
     "due": 41,
-    "missed": 24,
+    "missed": 25,
     "lastMissedAt": "2026-11-25T05:07:00.000Z"
    },
    "nextPlanned": [
@@ -910,98 +901,98 @@
   },
   "kalshi": {
    "schemaVersion": "kalshi-research-health-v1",
-   "checkedAt": "2026-11-26T02:09:12.331Z",
+   "checkedAt": "2026-11-26T02:09:49.405Z",
    "state": "OK",
    "issues": []
   }
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-26T02:09:28.313Z",
+  "checkedAt": "2026-11-26T02:10:01.434Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 5250,
+    "ms": 4606,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 372,
+    "ms": 423,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 3046,
+    "ms": 3340,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 75,
+    "ms": 181,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 2862,
+    "ms": 3348,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 3948,
+    "ms": 164,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 116,
+    "ms": 147,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 52,
+    "ms": 91,
     "detail": "answered"
    },
    {
     "name": "Chat: health briefing",
     "ok": true,
-    "ms": 69,
+    "ms": 108,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 29,
+    "ms": 73,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 27,
+    "ms": 68,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 58,
+    "ms": 85,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 796,
+    "ms": 174,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 65,
+    "ms": 63,
     "detail": "HTTP 401"
    }
   ],
