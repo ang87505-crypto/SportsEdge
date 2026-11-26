@@ -10,6 +10,34 @@ tracking receipt checks; nothing here duplicates that work.
 **Finish line (Nov 30, core development complete) = Part A, operational readiness.** Algorithm validation (Part B) runs
 on its own evidence clock and is not a release blocker.
 
+## 0a. Update, Nov 26 (later): Kalshi connected end to end; integrated regression
+
+**Integrated regression.** Commit `2608799` merges main `9df0934` with all ten queued PRs: #217, #221, #222, #216, #225, #226 (`57a6c4f`), #227, #219, #223 and #102's dependencies.
+
+| Suite | Result |
+|---|---|
+| Node | **1,209 passed, 0 failed**; 49 database-gated tests skipped there and run below |
+| PostgreSQL e2e | **188/188** |
+| SQL harness | passes; 18 readiness cases |
+| Python | **471/471** |
+| ESLint | 0 errors |
+| `next build` | passed |
+| Hosted CI | every queued PR green; #227 at `dc564e3`: 16 passed |
+
+#219 and #227 no longer conflict.
+
+**Kalshi (#227 with #226)**
+- **2024 full-year evaluation** (pre-registered rule): `NO_CLEAR_EFFECT`. The combined model has the lowest holdout CRPS, but its edge over corrected NBM (about 3%) has a 95% interval that includes zero.
+- **Conflicting duplicate records** are excluded, never chosen.
+- **Shadow paper forecasting** is integrated with #226's `workflow_call`:
+  - Vercel-timed, one independent freeze per horizon, with preflight skips (at most one retrieval per horizon per day);
+  - archives verified before extraction;
+  - actual capture times recorded.
+- **Kalshi page panel** shows the 2024 comparison and the forward scorecard.
+- **Learning engine:** the weather experiment is RUNNING. Review needs 50 graded forward days per horizon.
+
+**Release order for Kalshi:** #226, then #227, outside the freeze. The first shadow forecasts are frozen at the next 09:xx/12:xx UTC slot after the Vercel deploy.
+
 ## 0. Update, Nov 26: three-system status and the integrated regression
 
 **Integrated regression.** Commit `e66048c` merges main `9df0934` with every queued PR: #217, #221, #222, #216, #225, #226, #227, #219 and #223. The only conflict was #219 + #227 in the engine registry, resolved by keeping both entries.
@@ -196,9 +224,9 @@ Merge as records after Nov 30, or keep open. **Do not delete their branches.**
 
 | PR | Status |
 |---|---|
-| **#226** (ChatGPT) | Historical archive retrieval. Its Sep–Nov 2025 run succeeded and feeds #227. **Changes requested** (inputs, `workflow_call`, retention, 15-month backfill) before #227's paper workflow can run |
+| **#226** (ChatGPT) | Reusable retrieval (`workflow_call`) plus full 2024 archive; requested changes done. Verified and consumed by #227. Merge first, outside the freeze |
 | **#225** (ChatGPT) | Missed-window diagnosis and ops visibility for the Kalshi offline check. **Releasable**; merge any time outside the freeze |
-| **#227** | Pre-registered multi-source challenger, research only. First result: `NO_CLEAR_EFFECT` (29–30 holdout days, below 50). It does not beat NBM alone. It adds a `weather` domain to the engine and changes the /lab view. Merge outside the freeze. #219 and #227 both append to `research/engine/registry.json`, so whichever merges second needs a one-line resolution |
+| **#227** | Pre-registered challenger with shadow paper forecasting. 2024 result: `NO_CLEAR_EFFECT`; combined about 3% better than corrected NBM, not established. Adds a `weather` engine domain, the /lab and Kalshi page views, and two Vercel scheduler slots. Merge after #226, outside the freeze. No conflict with #219 |
 
 ### Owner's call: new features or research, outside "finish the platform"
 
