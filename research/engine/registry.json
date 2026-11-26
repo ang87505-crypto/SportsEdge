@@ -1225,6 +1225,90 @@
    ]
   },
   {
+   "id": "lab-weather-knyc-multisource-emos-v1",
+   "domain": "weather",
+   "hypothesisKey": "weather:knyc-multisource-emos-high-temperature",
+   "hypothesis": "A bias-corrected, spread-calibrated combination of NWS, NBM, GFS MOS and HRRR daily-high forecasts gives a better whole-degree distribution of the Central Park CLI high than the best single corrected model, NBM's own N(TXN, XND) and trailing climatology (CRPS), at a day-ahead and a same-day horizon.",
+   "dataDependencies": [
+    "IEM MOS archive: GFS MOS and NBM NBS for KNYC (retrieved by PR #226's workflow; read-only)",
+    "IEM AFOS archive: CLINYC next-morning reports (PR #226)",
+    "live NWS hourly grid forecast (existing collector, forward only)"
+   ],
+   "frozen": {
+    "features": [
+     "NBM TXN",
+     "NBM XND",
+     "GFS MOS X",
+     "NWS grid max",
+     "HRRR 2 m max (when an archive exists)"
+    ],
+    "parameters": {
+     "protocol": "research/kalshi_weather_multisource_v1_20261126/protocol.json",
+     "protocolSha256": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+     "windowDays": 30,
+     "minTrainingDays": 30,
+     "shrinkToEqual": 0.5,
+     "anchors": [
+      "DAY_AHEAD D-1 14:00Z",
+      "SAME_DAY D 11:00Z"
+     ],
+     "split": "first half BACKTEST, second half HOLDOUT"
+    }
+   },
+   "dataCutoff": "2026-11-26T04:01:56Z",
+   "codeFingerprint": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+   "datasetFingerprints": [
+    {
+     "name": "eval-2024-knyc.json",
+     "sha256": "f3640fd9a18fbbe830fbcc2104900f239350b5a3e5a2a924c68cfe8caa01b888"
+    }
+   ],
+   "metrics": {
+    "primary": "whole-degree CRPS on HOLDOUT vs the BACKTEST-chosen best corrected member",
+    "secondary": [
+     "MAE",
+     "log loss",
+     "event Brier on the independent ladder",
+     "80% interval coverage",
+     "PIT"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 50,
+    "minDates": 50
+   },
+   "baseline": "best single bias-corrected member; NBM_NATIVE; CLIMATOLOGY",
+   "costAssumptions": null,
+   "decisionRule": "docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md: PROMISING only with >=50 holdout days, CRPS below the best member, NBM native and climatology, bootstrap 95% upper bound of the difference < 0 and 80% coverage in [0.70,0.90]; REJECTED if the lower bound > 0. Forecast accuracy only, never profitability.",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 166,
+    "dates": 166,
+    "evaluation": "research/kalshi_weather_multisource_v1_20261126/eval-2024-knyc.json"
+   },
+   "disposition": "NO_CLEAR_EFFECT (2024 retrospective: about 3% lower CRPS than corrected NBM, not established)",
+   "source": "existing",
+   "registeredAt": "2026-11-26T04:01:56Z",
+   "history": [
+    {
+     "at": "2026-11-26T04:01:56Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any outcome was read (docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-26T05:20:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Pre-registered 2024 evaluation (CI run 45760830405, #226 run 45756206033, 166 holdout days per horizon): NO_CLEAR_EFFECT. Combined holdout CRPS 1.223 day-ahead / 0.983 same-day vs corrected NBM 1.258 / 1.013; combined minus corrected NBM -0.035 [-0.093, +0.021] and -0.030 [-0.101, +0.070]; 80% coverage 0.84 / 0.89. Retrospective only; shadow PAPER forecasts and 50 graded forward days per horizon are required before review.",
+     "inputFingerprint": "f3640fd9a18fbbe830fbcc2104900f239350b5a3e5a2a924c68cfe8caa01b888"
+    }
+   ]
+  },
+  {
    "id": "lab-stock-holdrank10-wholeshare",
    "domain": "stocks",
    "hypothesisKey": "stocks:rank-hold-buffer-whole-shares",

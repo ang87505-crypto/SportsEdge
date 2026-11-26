@@ -1,5 +1,9 @@
 name: Kalshi paper-only research verification
 on:
+  # Independent of the production worker: synthetic bookkeeping only, no exchange access.
+  schedule:
+    - cron: '43 4 * * *'
+  workflow_dispatch:
   pull_request:
     paths:
       - 'src/lib/prediction-markets/kalshi/**'
@@ -22,3 +26,36 @@ jobs:
         run: |
           node --experimental-strip-types --test src/lib/prediction-markets/kalshi/*.test.mjs
           node --experimental-strip-types --test scripts/kalshi-independent-weather-collect.test.mjs
+      - name: Verify synthetic ledger replay and record engineering receipt
+        shell: bash
+        run: |
+          node --experimental-strip-types --input-type=module <<'NODE' | tee -a "$GITHUB_STEP_SUMMARY"
+          import assert from 'node:assert/strict';
+          import {createHash} from 'node:crypto';
+          import {buildKalshiFixtureReplay} from './src/lib/prediction-markets/kalshi/paper-fixture.ts';
+          import {replayPaperLedger} from './src/lib/prediction-markets/kalshi/paper-ledger.ts';
+          // A pure fixture: a future exchange call is a failure, not a simulated fill.
+          let requests = 0;
+          globalThis.fetch = () => { requests++; throw Error('OFFLINE_CHECK_NETWORK_FORBIDDEN'); };
+          const fixture = buildKalshiFixtureReplay();
+          assert.equal(fixture.kind, 'SYNTHETIC_OFFLINE_REPLAY');
+          assert.equal(requests, 0);
+          assert.equal(fixture.networkRequests, 0);
+          for (const view of Object.values(fixture.stages)) assert.equal(view.mode, 'OFFLINE_FIXTURE');
+          assert.equal(fixture.stages.open.balanceMicros, 10_000_000);
+          assert.equal(fixture.stages.open.reservedMicros, 924_500);
+          assert.equal(fixture.stages.settled.balanceMicros, 11_075_500);
+          assert.equal(fixture.stages.settled.reservedMicros, 0);
+          assert.equal(fixture.stages.corrected.balanceMicros, 9_075_500);
+          assert.equal(fixture.stages.corrected.reservedMicros, 0);
+          const journal = JSON.stringify(fixture.journal);
+          assert.deepEqual(replayPaperLedger(JSON.parse(journal)), fixture.stages.corrected);
+          assert.equal(requests, 0);
+          console.log(JSON.stringify({
+            kind: 'SYNTHETIC_OFFLINE_ENGINEERING_CHECK',
+            result: 'PASS', checkedAt: new Date().toISOString(), commit: process.env.GITHUB_SHA,
+            journalSha256: createHash('sha256').update(journal).digest('hex'),
+            checks: ['reservation', 'winning settlement', 'correction', 'replay'],
+            networkRequests: requests, exchangeOrders: 0, performanceEvidence: false
+          }));
+          NODE

@@ -1,0 +1,71 @@
+{
+ "schema": "kalshi-weather-multisource-protocol-v1",
+ "modelId": "knyc-multisource-emos-v1-research",
+ "registeredAt": "2026-11-26T04:01:56Z",
+ "registeredBeforeOutcomes": "No historical outcome, CLI report or archive produced by PR #226 had been read when this file was committed. Every constant below is fixed; changing any of them requires a new model ID.",
+ "target": {
+  "quantity": "NWS CLI daily maximum temperature, whole degrees F",
+  "station": "KNYC_CENTRAL_PARK",
+  "climateDay": "local standard time, UTC-5 all year: [D 05:00Z, D+1 05:00Z)",
+  "historicalOutcomeProvenance": "IEM_AFOS_CLI_ARCHIVE: the first CLINYC product issued at or after D+1 05:00Z that reports day D; observedAvailableAt is that product's issuance time. Distinct from the live collector's NWS_CLI_PRELIMINARY_CENTRAL_PARK, and never admitted into nws-empirical-error-pmf-v1 training.",
+  "settlementCaveat": "Kalshi settles on the first official non-preliminary report (The Weather Company, then NWS). A CLI-based backtest is forecast accuracy, not settlement or profitability."
+ },
+ "members": {
+  "NWS": {"source": "official NWS hourly grid, max of 24 hourly temperatures in the climate day", "availableAt": "SportsEdge capture time", "window": "climate day", "history": "none admitted (NDFD archive unvalidated); forward only via the existing live collector"},
+  "NBM": {"source": "National Blend of Models NBS text bulletin TXN (max) with XND standard deviation", "availableAt": "cycle + 2 h", "window": "12Z-06Z", "history": "IEM MOS archive (PR #226)"},
+  "GFS_MOS": {"source": "GFS MOS MAV X (daytime maximum)", "availableAt": "cycle + 5 h", "window": "7 AM-7 PM LST (12Z-00Z)", "history": "IEM MOS archive (PR #226)"},
+  "HRRR": {"source": "HRRR 2 m temperature, max over the climate-day hours covered by a 48 h cycle (00/06/12/18Z)", "availableAt": "cycle + 3 h", "window": "climate day, truncated to the cycle's 48 h", "history": "none admitted until a validated grid-point extraction exists"},
+  "selection": "For each member and anchor: the latest cycle with availableAt <= anchor, at most 30 h old, whose bulletin contains the max element valid for day D. Otherwise the member is missing for that day."
+ },
+ "anchors": {
+  "DAY_AHEAD": "D-1 14:00Z (9 AM EST the day before)",
+  "SAME_DAY": "D 11:00Z (6 AM EST the same day)",
+  "rule": "Each anchor is a separate forecast horizon with its own trailing training set. Horizon = hours from the anchor to D 05:00Z (forecastLeadHours)."
+ },
+ "training": {
+  "minTrainingDays": 30,
+  "trailingWindowDays": 30,
+  "admission": "a training day counts only if its outcome's observedAvailableAt < the anchor of the day being forecast, and it has the same anchor; the 30 most recent such days form the window",
+  "stationSpecific": "every quantity below is fitted per station and per anchor; stations never share parameters"
+ },
+ "model": {
+  "biasCorrection": "per member: b_i = mean(observed - f_i) over the window days where member i was present (seasonal bias is tracked by the 30-day trailing window); corrected g_i = f_i + b_i",
+  "weights": "w_i = 0.5 * (1/m) + 0.5 * (1/MSE_i) / sum_j(1/MSE_j), MSE_i of g_i over the window; m = members present today; renormalised over present members",
+  "mean": "mu = sum_i w_i g_i",
+  "spread": "s2 = sum_i w_i (g_i - mu)^2 + (XND^2 if NBM present else 0)",
+  "variance": "sigma^2 = a + b * s2, (a, b) chosen by minimum CRPS over the window on the grid a in {1,2,...,36} F^2, b in {0,0.25,...,2}; ties to smaller a then smaller b; sigma floor 1.0 F",
+  "discretisation": "P(high = k) = Phi((k+0.5-mu)/sigma) - Phi((k-0.5-mu)/sigma) on [round(mu)-25, round(mu)+25], edge cells hold the open tails; integer ppm, at least 1 ppm per cell, summing to exactly 1,000,000 (same rule as nws-empirical-error-pmf-v1)",
+  "contracts": "contract and event probabilities come from the existing contract-math strike ranges (strikeIntegerRange) and the same tail-cell refusal rule"
+ },
+ "baselines": {
+  "MEMBER_RAW": "each member alone, uncorrected, Gaussian with sigma = its window RMSE (floor 1.0)",
+  "MEMBER_CORRECTED": "each member alone, bias-corrected as above, sigma = window RMSE of g_i (floor 1.0)",
+  "NBM_NATIVE": "N(TXN, max(XND, 1.0)), no correction: the blend's own published uncertainty",
+  "CLIMATOLOGY": "N(mean, sd) of the window's observed highs (floor 1.0)"
+ },
+ "evaluation": {
+  "walkForward": "every day with >= 30 admitted window days and >= 1 member present is forecast from the window only; nothing is refit on later days",
+  "split": "scored days in date order: the first floor(n/2) are BACKTEST, the rest are HOLDOUT. The best single corrected member is chosen on BACKTEST only (lowest mean CRPS) and then compared on HOLDOUT",
+  "metrics": {
+   "primary": "CRPS of the integer pmf (ranked probability score over whole degrees)",
+   "secondary": ["MAE of the point forecast round(mu)", "log loss of the observed whole degree", "mean event Brier on independentLadder(round(mu))", "80% central interval coverage", "PIT histogram (10 bins)"]
+  },
+  "uncertainty": "moving-block bootstrap of the paired daily CRPS difference, block 7 days, 2000 replicates, seed 20261126",
+  "minHoldoutDaysForReview": 50
+ },
+ "decisionRule": {
+  "PROMISING": "on HOLDOUT, per anchor: holdout days >= 50; combined mean CRPS below the BACKTEST-chosen best corrected member, below NBM_NATIVE and below CLIMATOLOGY; the bootstrap 95% upper bound of (combined - best member) CRPS < 0; 80% coverage within [0.70, 0.90]",
+  "REJECTED": "holdout days >= 50 and the bootstrap 95% lower bound of (combined - best member) CRPS > 0",
+  "NO_CLEAR_EFFECT": "anything else, including fewer than 50 holdout days",
+  "evidenceType": "retrospective: the learning engine caps it at PROMISING; READY_FOR_REVIEW needs forward frozen evidence",
+  "notProfitability": "No Kalshi price, quote, fee or fill is used. Nothing here measures trading edge or profitability."
+ },
+ "paperTestReadiness": {
+  "requires": [
+   "a forward capture of NBM and GFS MOS bulletins frozen before each anchor (not built here; collection belongs to the existing collector owner)",
+   ">= 30 forward-frozen days per anchor (existing minimum)",
+   ">= 50 forward holdout days meeting the decision rule (existing review gate)",
+   "owner approval; exchange access stays disabled until the owner enables it"
+  ]
+ }
+}
