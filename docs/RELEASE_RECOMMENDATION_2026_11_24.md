@@ -10,31 +10,56 @@ tracking receipt checks; nothing here duplicates that work.
 **Finish line (Nov 30, core development complete) = Part A, operational readiness.** Algorithm validation (Part B) runs
 on its own evidence clock and is not a release blocker.
 
-## FINAL RELEASE QUEUE (production main `17049b0`, after #228; 2026-11-26 07:00 UTC)
+## FINAL RELEASE QUEUE AND ASTRA HANDOFF (production main `17049b0`; 2026-11-26 08:25 UTC)
 
-**Reference candidate:** branch `claude/release-candidate-20261126` at **`f527d2d`** = main + RC-1 + RC-2 + #216 + #223. No conflicts. Audit only; merge the PRs.
-
-| Suite on `f527d2d` | Result |
-|---|---|
-| Node (every `*.test.mjs`) | **1,213 passed, 0 failed**; 49 database-gated tests run below |
-| PostgreSQL e2e (stocks, command) | **188/188** |
-| Props SQL harness | passes; **18** readiness cases |
-| Python | **471/471** |
-| ESLint | 0 errors |
-| `next build` | passed |
-| Hosted CI | RC-1 `b47aaf2` 10 passed; RC-2 `f14b8b7` 11 passed; #216 `f067645` 11 passed |
-| Production | `/`, `/prediction-markets/kalshi`, `/lab`, `/stocks/paper-auto`, `/paper-betting/props` and `/api/research/kalshi-health` return 200. The Kalshi shadow panel is live and correctly reports that no forecast is frozen yet |
+### Release candidates for owner approval
 
 | Order | PR | Head | Contents | Owner action |
 |---|---|---|---|---|
-| 1 | **#217 (RC-2, stocks)** | `f14b8b7` | #217 + #222: Nov 30 checklist, 2 backup crons, Autopilot research tracking, holdrank10 forward ledger | Approve the crons, merge **before Sun 6 PM MST** (by Sat 04:00 UTC to capture holdrank10's Nov 30 week), confirm the deploy. Then close #222 |
-| 2 | **#221 (RC-1, sports, engine, Kalshi monitoring)** | `b47aaf2` | #221 + #219 + #227's follow-ups: NBA tracing, engine evidence coverage, stock-research feed, /lab "Needs attention" including experiments without producers, `kalshi-weather-shadow` ops job. Leaves #228's Kalshi code byte-identical | Merge outside the freeze. Then close #219 and #227 |
-| 3 | **#223** | this | Queue | Merge any time |
-| — | Freeze | — | Sun Nov 29 6 PM MST until the gate reads `STOCK_SUPERVISED_SESSION_VERIFIED` | — |
-| 4 | Nov 30 session | — | `docs/STOCK_PAPER_SESSION_2026_11_30.md`; execute 7:31–7:44 AM MST | Owner |
-| 5 | **#102** | `9e23e63` | Stock PAPER orders release | After the gate |
-| 6 | **#216 (NBA forward studies)** | `f067645` | #208 + review fixes + main | After a fresh hosted readiness run reads 13 rows READY, plus approval of the `props-cycle.ts` drift and a new manifest snapshot. Then close #208 and its chain |
-| 7 | Close | — | #225 and #226 (shipped in #228); the superseded lists in section 6 below | Owner |
+| 1 | **#217 RC-2 (stocks)** | `f14b8b7` | #217 + #222: Nov 30 checklist and fallbacks, 2 backup crons, Autopilot research tracking, holdrank10 forward ledger | Approve the crons and merge **before Sun Nov 29 6 PM MST** (by Sat 04:00 UTC for holdrank10's Nov 30 week). Confirm the Vercel deploy |
+| 2 | **#221 RC-1 (sports, engine, ops, Kalshi monitoring)** | this PR's head | #221 + #219 + #227 follow-ups + #223. NBA tracing; engine evidence coverage; stock-research feed; experiments without producers; /lab "Needs attention"; ops fixes (props-tick judged by Vercel hours, research-source-memory and kalshi-weather-shadow tracked). #228's Kalshi code is untouched | Merge outside the freeze |
+| 3 | **#102** | `9e23e63` | Stock PAPER orders release | Only after the Nov 30 gate reads `STOCK_SUPERVISED_SESSION_VERIFIED` |
+| 4 | **#216** | `f067645` | NBA forward studies (contains #208) | After a hosted readiness run reads 13 rows READY, approval of `props-cycle.ts`, and a new manifest snapshot |
+
+**Close once merged:** #219, #222, #223 and #227 (inside RC-1/RC-2); #225 and #226 (shipped in #228); #208 and its chain (after #216); the superseded lists in section 6.
+
+### Regression on the integrated candidate `ac36dff` (main + RC-1 + RC-2 + #216)
+
+| Suite | Result |
+|---|---|
+| Node (every `*.test.mjs`) | **1,213 passed, 0 failed** |
+| PostgreSQL e2e | **188/188**. Re-run after a worker restart had stopped PostgreSQL mid-run; that run's 5 failures were connection errors |
+| Props SQL harness | passes; 18 readiness cases |
+| Python | **471/471** |
+| ESLint | 0 errors |
+| `next build` | passed |
+| Stock frozen-file drift | 0 |
+| Production | main pages and the Kalshi health endpoint return 200 |
+
+### For Astra: genuine functional defects
+
+1. **NOAA collector timing.** The forecast phase of `kalshi-independent-weather-memory.yml` (cron 01:11 UTC) runs 16–21 h late, and ops correctly shows `kalshi-weather: MISSED_SLOT`. Records stay valid: they are captured before their target day. A Vercel backup would fix the timing, but moving capture about 6 h earlier sits at the edge of the frozen v1 model's ±6 h horizon matching. Decide with the owner; do not change it silently.
+2. **Research source `sec-form345-dataset`.** HTTP 404 for SEC `2026q2_form345.zip` and `2026q3_form345.zip` since Nov 10, an ops blocker. Likely a file-naming or publication-lag change at the SEC. It affects Form 4 research only, no production strategy.
+3. **#228 rehearsal.** It reads run 45758616949's artifact, which expires about Dec 26. Repoint it or skip on expiry.
+4. **Experiments without evidence producers** (listed on /lab). `lab-stock-v3-*` code exists only in unmerged #165; several sports ablation and challenger experiments advance only on owner-supplied results.
+5. **Stock lab Nov 23 week lost** (Nov 21 `APPEND_ONLY_VIOLATION`; fixed on main by #203). Verify that the Sat Nov 28 04:43 UTC research-collect run freezes the Nov 30 week.
+6. **Verify the first automatic Kalshi shadow freeze** (Vercel 09:xx UTC slot), then the next-morning grade and the Kalshi panel update.
+
+### Cosmetic or cleanup
+
+- 8 existing ESLint warnings.
+- The one-off `daily-shadow-test.yml` (Nov 10) can be retired.
+- This document's history sections can be trimmed.
+- PR descriptions of the consolidated PRs.
+
+### Future validation (time-gated, not defects)
+
+| System | Requirement |
+|---|---|
+| Kalshi shadow | 50 graded forward days per horizon before owner review. 2024 verdict `NO_CLEAR_EFFECT` |
+| Stocks | Nov 30 supervised session, then #102. 26 forward weeks before any strategy verdict |
+| NBA | Shadow and challenger samples to their registered minimums |
+| Profitability | Not measured anywhere. Market data is unauthorised; exchange access stays disabled |
 
 ## 0a. Update, Nov 26 (later): Kalshi connected end to end; integrated regression
 
