@@ -16,6 +16,11 @@ on:
         type: choice
         options: ['1', '2', '3']
         default: '1'
+      corporate_actions:
+        description: Also archive Alpaca corporate actions (read-only GETs, the live bridge's endpoint) and reconcile them with the backtest's adjusted prices
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -48,10 +53,38 @@ jobs:
           python -m analytics.stock_weekly_backtest_v1 run --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/results.json" --markdown "$RUNNER_TEMP/results.md" --round "$ROUND"
           cat "$RUNNER_TEMP/results.md" >> "$GITHUB_STEP_SUMMARY"
           echo "RESULTS_JSON_BEGIN"; python -c "import json,sys;d=json.load(open(sys.argv[1]));[v.pop('spec',None) for v in d['variants'].values()];print(json.dumps(d,separators=(',',':')))" "$RUNNER_TEMP/results.json"; echo "RESULTS_JSON_END"
+      # Data-quality audit and forward-window report (docs/STOCK_DATA_QUALITY_AUDIT_2026_11_20.md): no network, no writes
+      # outside the runner; prints JSON between markers for the run log.
+      - name: Data-quality audit and forward report (no network)
+        if: always()
+        run: |
+          [ -f "$RUNNER_TEMP/bars.json.gz" ] || { echo "no bars downloaded; audit skipped"; exit 0; }
+          python -m analytics.stock_data_audit_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/audit.json"
+          python -m analytics.stock_forward_protocol_v1 --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --output "$RUNNER_TEMP/forward.json"
+          echo "AUDIT_JSON_BEGIN"; python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),separators=(',',':')))" "$RUNNER_TEMP/audit.json"; echo "AUDIT_JSON_END"
+          echo "FORWARD_JSON_BEGIN"; python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),separators=(',',':')))" "$RUNNER_TEMP/forward.json"; echo "FORWARD_JSON_END"
+      # Corporate-action reconciliation (docs/STOCK_CORPORATE_ACTION_RECONCILIATION_2026_11_21.md): opt-in, read-only
+      # GETs to /v1/corporate-actions (the endpoint the live bridge already uses), then an offline comparison. No orders,
+      # no database, no new source. Prints JSON between markers for the run log.
+      - name: Corporate-action archive and reconciliation (opt-in)
+        if: ${{ always() && inputs.corporate_actions }}
+        env:
+          ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
+          ALPACA_PAPER_AUTO_SECRET_KEY: ${{ secrets.ALPACA_PAPER_AUTO_SECRET_KEY }}
+        run: |
+          [ -f "$RUNNER_TEMP/bars.json.gz" ] || { echo "no bars downloaded; reconciliation skipped"; exit 0; }
+          python -m analytics.stock_corporate_actions_recon_v1 fetch --universe "$UNIVERSE" --end "$END" --output "$RUNNER_TEMP/actions.json.gz"
+          python -m analytics.stock_corporate_actions_recon_v1 reconcile --universe "$UNIVERSE" --data "$RUNNER_TEMP/bars.json.gz" --archive "$RUNNER_TEMP/actions.json.gz" --output "$RUNNER_TEMP/reconciliation-private.json" --public-output "$RUNNER_TEMP/reconciliation.json"
+          echo "RECON_JSON_BEGIN"; python -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),separators=(',',':')))" "$RUNNER_TEMP/reconciliation.json"; echo "RECON_JSON_END"
+      # Retain derived reports after all producers finish. Raw provider pages and identifiers stay out of this artifact.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stock-weekly-backtest-${{ inputs.end }}-round${{ inputs.round }}
-          path: ${{ runner.temp }}/results.*
+          path: |
+            ${{ runner.temp }}/results.*
+            ${{ runner.temp }}/audit.json
+            ${{ runner.temp }}/forward.json
+            ${{ runner.temp }}/reconciliation.json
           if-no-files-found: ignore
           retention-days: 30

@@ -1,0 +1,30 @@
+{
+ "generatedBy": "scripts/props-monotone-cal-eval.ts forward",
+ "protocol": "research/props_monotone_cal_v1_20261120/protocol.json",
+ "challenger": "props-nb-monotone-cal-v1",
+ "arm": "prospective forward window (production artifact)",
+ "windowStart": "2026-11-19T12:00:00Z",
+ "minimum": {
+  "lines": 5000,
+  "games": 150
+ },
+ "source": {
+  "file": "player_box_2027.csv",
+  "sha256": "0cf1a388e12599f4b91bfd8113473f145d97296f3232d15d8843c32e8d1e5198",
+  "regularSeasonRows": 6020
+ },
+ "calibratorDigest": "8b84007d37b9084a7cd486fe3f387bf6d2ac0062d6b230d48f79310924f4a633",
+ "leakage": {
+  "checked": 1175,
+  "violations": 0
+ },
+ "pushes": 0,
+ "verdict": "INSUFFICIENT_EVIDENCE",
+ "lines": 246,
+ "games": 4,
+ "limitations": [
+  "Proxy lines, not platform lines: probability quality only, no returns or profitability.",
+  "Only players who played are scored (platforms void DNPs).",
+  "Recalibration uses only the baseline probability and the stat; it cannot recover information the baseline lacks."
+ ]
+}

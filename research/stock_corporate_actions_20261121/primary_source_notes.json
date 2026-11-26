@@ -1,0 +1,40 @@
+{
+  "schema": "sportsedge-corporate-action-source-notes-v1",
+  "reviewed_at": "2026-11-21T04:20:05Z",
+  "purpose": "Documentation and review only; never a price correction, historical model input or trading decision",
+  "sources": [
+    {
+      "id": "rtx-company-2020-04-03-separation-merger",
+      "url": "https://investors.rtx.com/static-files/85ca725e-6423-4c7a-b0d7-0782b152fc6e",
+      "publisher": "RTX investor relations, company Form 8-K",
+      "section": "Item 2.01, Completion of the Separation and the Distributions; Completion of the Merger",
+      "facts": {
+        "effective_date": "2020-04-03",
+        "record_date": "2020-03-19",
+        "carrier_shares_per_utc_share": 1,
+        "otis_shares_per_utc_share": 0.5,
+        "raytheon_company_exchange_ratio": 2.3348,
+        "ticker_change": "UTX to RTX"
+      },
+      "review_conclusion": "Carrier/Otis distributions are confirmed. The vendor's reverse-split label remains unverified and is not a replacement for the documented distributions.",
+      "limits": "The spun-off securities' valuations and a corrected total return are not established here."
+    },
+    {
+      "id": "costco-sec-2017-special-dividend",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000119312517139196/d323475d8k.htm",
+      "publisher": "SEC EDGAR, Costco Form 8-K signed April 26, 2017",
+      "section": "Item 8.01, Other Events",
+      "facts": {
+        "announcement_date": "2017-04-25",
+        "special_cash_dividend_per_share_usd": 7,
+        "record_date": "2017-05-10",
+        "payment_date": "2017-05-26"
+      },
+      "review_conclusion": "The special dividend is confirmed; its record date is not asserted to be its ex-date.",
+      "limits": "This does not establish the exact source of the vendor's ratio mismatch or repair a price series."
+    }
+  ],
+  "raw_source_bodies_archived": false,
+  "historical_availability_for_model_use_verified": false,
+  "provider_records_or_recorded_returns_modified": false
+}
