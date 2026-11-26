@@ -195,8 +195,8 @@ function learningOf(x:BriefingInput):Briefing['learning']{
  const m=v.model;
  const challengers=(m?.challengers??[]).filter(c=>c.version!==m?.active).map(c=>({version:c.version,state:c.state,gradedLines:c.gradedLines}));
  const parts:string[]=[];
- if(hit!==null&&conf!==null)parts.push(`Recorded picks hit ${(hit*100).toFixed(1)}% (${v.accuracy.correct} of ${v.accuracy.graded}) against an average stated confidence of ${(conf*100).toFixed(1)}%.`);
- else parts.push('No graded picks yet.');
+ if(hit!==null&&conf!==null)parts.push(`Recorded picks hit ${(hit*100).toFixed(1)}% (${v.accuracy.correct} of ${v.accuracy.graded}) against an average stated confidence of ${(conf*100).toFixed(1)}%. These statistics cover the last 14 days of captured lines.`);
+ else parts.push('No graded picks in the last 14 days of captured lines.');
  if(overconfident)parts.push('The model has been overconfident so far; challengers are being tested on later games before anything can change.');
  if(v.accuracy.graded<MIN_GRADED_PICKS)parts.push(`The sample is small (${v.accuracy.graded} graded); a few results can swing these numbers.`);
  return {activeModel:m?.active??null,lastTrainedAt:m?.lastTrainedAt??null,graded:v.accuracy.graded,hitRate:hit,meanConfidence:conf,

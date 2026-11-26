@@ -83,11 +83,14 @@ export default function Sports(){
     </>}
   </div>
 
+  {feed.status==='ready'&&now>0&&newest&&(ageHours(newest,now)??0)>STALE_HOURS&&
+   <Callout tone="warning" title="Stored odds need a refresh">The newest saved sportsbook quote is {age(newest,now)}. Prices below are historical snapshots. Reloading this page reads the saved feed; it does not collect new quotes.</Callout>}
+
   {feed.status==='loading'?<div className="game-grid"><Loading label="Loading games"/><Loading label="Loading games"/></div>:
    feed.status==='error'?<Panel><Empty title="Stored odds are unavailable" action={<button type="button" className="button button-secondary" onClick={retryFeed}>Try again</button>}>The saved odds service did not respond. No prices are shown in place of real data. Your paper ledger is separate and unaffected.</Empty></Panel>:
    visible.length===0?<Panel><Empty title={games.length?'No games match these filters':'No upcoming games stored'}
      action={games.length?<button type="button" className="button button-secondary" onClick={()=>{setSearch('');setFilter('all');}}>Clear filters</button>:undefined}>
-     {games.length?'Try another team name or show all games.':`There are no scheduled ${sport==='nba'?'NBA':'EPL'} games with stored data right now. Check the other sport or come back after the next collection run.`}</Empty></Panel>:
+     {games.length?'Try another team name or show all games.':`There are no scheduled ${sport==='nba'?'NBA':'EPL'} games in the saved feed. New fixtures must be collected before they can appear here.`}</Empty></Panel>:
    <div className="game-grid">{visible.map(g=><GameCard key={g.id} game={g} sport={sport} forecast={sport==='nba'?forecastsByGame.get(g.id)??null:null} shadow={sport==='nba'&&hasShadow?shadowByGame.get(g.id)??null:undefined} now={now}/>)}</div>}
 
   {feed.status==='ready'&&feed.data.quoteLimitReached&&<Callout tone="warning" title="Quote limit reached">This read hit its 1,000-quote limit, so some books may be missing from the comparison.</Callout>}

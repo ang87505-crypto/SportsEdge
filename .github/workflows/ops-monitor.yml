@@ -26,6 +26,7 @@ on:
   pull_request:
     paths:
       - scripts/ops-monitor*
+      - scripts/weather-shadow-monitor.test.mjs
       - config/ops/**
       - .github/workflows/ops-monitor.yml
       - .github/scripts/ops-status-branch.sh
@@ -49,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test scripts/ops-monitor.test.mjs scripts/data-branches.test.mjs
+      - run: node --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs scripts/data-branches.test.mjs
   monitor:
     if: github.event_name != 'pull_request' && github.repository == 'ang87505-crypto/SportsEdge'
     runs-on: ubuntu-latest
@@ -68,7 +69,7 @@ jobs:
         with:
           node-version: '24'
       - name: Recheck the monitor before giving it credentials
-        run: node --test scripts/ops-monitor.test.mjs
+        run: node --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs
       - name: Check jobs, receipts, credentials and the live site
         env:
           GH_TOKEN: ${{ github.token }}

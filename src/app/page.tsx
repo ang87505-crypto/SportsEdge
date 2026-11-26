@@ -22,8 +22,9 @@ function BoardFallback(){
 export default function Home(){
  return <div className="command">
   <section className="command-head" aria-labelledby="home-title">
-   <h1 id="home-title">Ask SportsEdge</h1>
-   <p>Ask about virtual sports picks, the stock PAPER account, independent Kalshi research, what our models learned, and automated jobs. Every answer uses saved evidence; no real-money orders can be placed here.</p>
+   <p className="command-kicker">SPORTSEDGE / RESEARCH OPERATIONS</p>
+   <h1 id="home-title">Command center</h1>
+   <p>Follow sports, stock PAPER, weather research and model learning. Ask for results, status or next steps.</p>
   </section>
   <Suspense fallback={<StripFallback/>}><CommandStrip/></Suspense>
   <div className="command-main">
