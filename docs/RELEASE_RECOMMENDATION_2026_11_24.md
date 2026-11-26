@@ -97,7 +97,7 @@ Feeding stock and lab evidence automatically is Part B integration work. It is n
 
 | Order | PR | Condition |
 |---|---|---|
-| 1 | **#224** | Merged by ChatGPT or the owner |
+| 1 | ~~#224~~ | **Merged** to main (`9df0934`) on Nov 26. The queued PRs below still merge cleanly |
 | 2 | **#221** | — |
 | 3 | **#217** | You approve its two crons. Confirm the Vercel deploy |
 | 4 | **#219**, **#223** | Docs, research record, registry |
@@ -160,6 +160,13 @@ Merge as records after Nov 30, or keep open. **Do not delete their branches.**
 - **#204, #205:** Nov 21 baseline and cross-review documents. #205's readiness SQL is superseded by #216's stricter query, but these documents are not in #216 (this corrects my earlier note).
 - **#212:** Oct 30 NBA batch document. I have not reviewed it in depth.
 
+### Kalshi weather research (added Nov 26; not part of the Nov 30 finish line)
+
+| PR | Status |
+|---|---|
+| **#226** (ChatGPT) | Historical archive retrieval. Its Sep–Nov 2025 run succeeded and feeds #227 |
+| **#227** | Pre-registered multi-source challenger, research only. First result: `NO_CLEAR_EFFECT` (29–30 holdout days, below 50). It does not beat NBM alone. It adds a `weather` domain to the engine and changes the /lab view. Merge outside the freeze. #219 and #227 both append to `research/engine/registry.json`, so whichever merges second needs a one-line resolution |
+
 ### Owner's call: new features or research, outside "finish the platform"
 
 Defer or close:
@@ -179,7 +186,7 @@ Defer or close:
 
 ### Part A: operational readiness (the Nov 30 finish line)
 
-1. [ ] **By Sun 6:00 PM MST:** merge #224, #221, #217 (and approve its crons), #219, #223. Optionally #216.
+1. [ ] **By Sun 6:00 PM MST:** merge #221, #217 (and approve its crons), #219, #223. Optionally #216. (#224 is merged.)
 2. [ ] **Freeze** from Sun 6:00 PM MST until step 4.
 3. [ ] **Mon Nov 30:** follow `docs/STOCK_PAPER_SESSION_2026_11_30.md` (#217) step by step:
    - decision check by 6:15 AM;
@@ -201,5 +208,6 @@ Defer or close:
 - **Stock strategy:** 26+ forward weeks against matched-exposure SPY. Add a `--stock-weeks` producer as reviewed integration work before then.
 - **Engine feeds for the 15 owner-supplied-only experiments:** connect the forward lab report after #216 has recorded data.
 - **Kalshi:** 30 pairs and 50 holdout, unchanged. ChatGPT owns it.
+- **Kalshi multi-source challenger (#227):** needs at least a year of archive from #226 for 50 holdout days per horizon. Forward NBM/GFS MOS capture is required before paper testing.
 - **Ops follow-ups** (ChatGPT): register `kalshi-paper-verify` in `config/ops/jobs.json`.
 - **Next props release:** the `Number.isFinite` guard in the frozen `rules.ts`.
