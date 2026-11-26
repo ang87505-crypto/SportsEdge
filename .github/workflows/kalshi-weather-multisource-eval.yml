@@ -1,0 +1,72 @@
+name: Kalshi weather multisource challenger (offline evaluation)
+# Evaluates the pre-registered knyc-multisource-emos-v1-research challenger on archives that PR #226's
+# "Independent weather archive retrieval pilot" workflow already retrieved. It downloads that run's artifact,
+# checks every file against the run's own SHA-256 receipt, and evaluates offline.
+# It makes no request to IEM, NOAA or Kalshi. No secrets, no exchange access, no writes outside this run.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/kalshi-weather-multisource-eval.yml'
+      - 'scripts/kalshi-weather-multisource-eval.ts'
+      - 'src/lib/prediction-markets/kalshi/weather-multisource*'
+      - 'src/lib/prediction-markets/kalshi/weather-archive-adapter.ts'
+      - 'research/kalshi_weather_multisource_v1_20261126/**'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Run id of a successful "Independent weather archive retrieval pilot" run (PR #226)
+        required: true
+        default: '45752083379'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: kalshi-weather-multisource-eval
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_RUN_ID: ${{ inputs.source_run_id || '45752083379' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Unit tests (synthetic data only)
+        run: node --experimental-strip-types --no-warnings --test src/lib/prediction-markets/kalshi/weather-multisource.test.mjs
+      - name: Download the retrieval run's artifact (no external host)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]{1,20}$ ]] || { echo "invalid run id"; exit 1; }
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" --jq '.name + "|" + .conclusion')" = "Independent weather archive retrieval pilot|success"
+          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" -n independent-weather-archive-pilot -D "$RUNNER_TEMP/in"
+          ls -la "$RUNNER_TEMP/in"
+          jq -e '.status=="RETRIEVED_UNVALIDATED" and .exchange_requests==0' "$RUNNER_TEMP/in/receipt.json"
+      - name: Evaluate offline against the receipt's hashes
+        run: |
+          set -euo pipefail
+          IN="$RUNNER_TEMP/in"
+          GFS=$(jq -r '.files[]|select(.name|startswith("gfs-"))|.name' "$IN/receipt.json")
+          NBS=$(jq -r '.files[]|select(.name|startswith("nbs-"))|.name' "$IN/receipt.json")
+          CLI=$(jq -r '.files[]|select(.name|endswith(".zip"))|.name' "$IN/receipt.json")
+          for f in "$GFS" "$NBS" "$CLI"; do [[ "$f" =~ ^[a-z0-9][a-z0-9.-]{0,80}$ ]] || { echo "unexpected file name"; exit 1; }; done
+          mkdir -p "$RUNNER_TEMP/cli" "$RUNNER_TEMP/out"
+          unzip -q "$IN/$CLI" -d "$RUNNER_TEMP/cli"
+          head -c 400 "$IN/$GFS"; echo; head -c 400 "$IN/$NBS"; echo
+          node --experimental-strip-types --no-warnings scripts/kalshi-weather-multisource-eval.ts \
+            --receipt "$IN/receipt.json" --gfs "$IN/$GFS" --nbs "$IN/$NBS" --cli-zip "$IN/$CLI" --cli-dir "$RUNNER_TEMP/cli" \
+            --out "$RUNNER_TEMP/out/report.json" --engine-result "$RUNNER_TEMP/out/engine-result.json" | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: kalshi-weather-multisource-eval
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 30

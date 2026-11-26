@@ -1298,6 +1298,72 @@
      "inputFingerprint": "c525ffab94b96dbd78c5577634ab36521b23dc1867a9b9aa66ef41fd8a566558"
     }
    ]
+  },
+  {
+   "id": "lab-weather-knyc-multisource-emos-v1",
+   "domain": "weather",
+   "hypothesisKey": "weather:knyc-multisource-emos-high-temperature",
+   "hypothesis": "A bias-corrected, spread-calibrated combination of NWS, NBM, GFS MOS and HRRR daily-high forecasts gives a better whole-degree distribution of the Central Park CLI high than the best single corrected model, NBM's own N(TXN, XND) and trailing climatology (CRPS), at a day-ahead and a same-day horizon.",
+   "dataDependencies": [
+    "IEM MOS archive: GFS MOS and NBM NBS for KNYC (retrieved by PR #226's workflow; read-only)",
+    "IEM AFOS archive: CLINYC next-morning reports (PR #226)",
+    "live NWS hourly grid forecast (existing collector, forward only)"
+   ],
+   "frozen": {
+    "features": [
+     "NBM TXN",
+     "NBM XND",
+     "GFS MOS X",
+     "NWS grid max",
+     "HRRR 2 m max (when an archive exists)"
+    ],
+    "parameters": {
+     "protocol": "research/kalshi_weather_multisource_v1_20261126/protocol.json",
+     "protocolSha256": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+     "windowDays": 30,
+     "minTrainingDays": 30,
+     "shrinkToEqual": 0.5,
+     "anchors": [
+      "DAY_AHEAD D-1 14:00Z",
+      "SAME_DAY D 11:00Z"
+     ],
+     "split": "first half BACKTEST, second half HOLDOUT"
+    }
+   },
+   "dataCutoff": "2026-11-26T04:01:56Z",
+   "codeFingerprint": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+   "datasetFingerprints": [],
+   "metrics": {
+    "primary": "whole-degree CRPS on HOLDOUT vs the BACKTEST-chosen best corrected member",
+    "secondary": [
+     "MAE",
+     "log loss",
+     "event Brier on the independent ladder",
+     "80% interval coverage",
+     "PIT"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 50,
+    "minDates": 50
+   },
+   "baseline": "best single bias-corrected member; NBM_NATIVE; CLIMATOLOGY",
+   "costAssumptions": null,
+   "decisionRule": "docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md: PROMISING only with >=50 holdout days, CRPS below the best member, NBM native and climatology, bootstrap 95% upper bound of the difference < 0 and 80% coverage in [0.70,0.90]; REJECTED if the lower bound > 0. Forecast accuracy only, never profitability.",
+   "status": "PROPOSED",
+   "result": null,
+   "disposition": null,
+   "source": "existing",
+   "registeredAt": "2026-11-26T04:01:56Z",
+   "history": [
+    {
+     "at": "2026-11-26T04:01:56Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any outcome was read (docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md)",
+     "inputFingerprint": null
+    }
+   ]
   }
  ]
 }

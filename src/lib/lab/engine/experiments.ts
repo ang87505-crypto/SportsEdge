@@ -8,7 +8,9 @@
  */
 import {canonicalJson,sha256} from '../../props/normalize.ts';
 
-export type Domain='sports'|'stocks';
+export type Domain='sports'|'stocks'|'weather';
+/** Kalshi weather research joined 2026-11-26 (knyc-multisource-emos-v1); the engine proposes no weather hypotheses itself. */
+export const DOMAINS:readonly Domain[]=['sports','stocks','weather'];
 export const STATUSES=['PROPOSED','RUNNING','INSUFFICIENT_DATA','FAILED','PROMISING','READY_FOR_REVIEW','REJECTED'] as const;
 export type Status=typeof STATUSES[number];
 
@@ -56,7 +58,7 @@ export function validate(e:Experiment):void{
  for(const k of REQUIRED)if(e[k]===undefined||e[k]===null||e[k]==='')throw new EngineError('MISSING_'+String(k).toUpperCase());
  if(!/^[a-z0-9][a-z0-9.-]{2,80}$/.test(e.id))throw new EngineError('BAD_ID');
  if(!STATUSES.includes(e.status))throw new EngineError('BAD_STATUS');
- if(!['sports','stocks'].includes(e.domain))throw new EngineError('BAD_DOMAIN');
+ if(!DOMAINS.includes(e.domain))throw new EngineError('BAD_DOMAIN');
  if(!e.hypothesisKey.startsWith(e.domain+':'))throw new EngineError('DOMAIN_MISMATCH');
  if(!Number.isFinite(Date.parse(e.dataCutoff)))throw new EngineError('BAD_CUTOFF');
  for(const n of Object.values(e.sampleRequirements))if(!Number.isSafeInteger(n)||n<0)throw new EngineError('BAD_SAMPLE_REQUIREMENTS');
