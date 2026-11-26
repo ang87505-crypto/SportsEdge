@@ -10,7 +10,39 @@ tracking receipt checks; nothing here duplicates that work.
 **Finish line (Nov 30, core development complete) = Part A, operational readiness.** Algorithm validation (Part B) runs
 on its own evidence clock and is not a release blocker.
 
-## 1. Work completed in this round
+## 0. Update, Nov 26: three-system status and the integrated regression
+
+**Integrated regression.** Commit `e66048c` merges main `9df0934` with every queued PR: #217, #221, #222, #216, #225, #226, #227, #219 and #223. The only conflict was #219 + #227 in the engine registry, resolved by keeping both entries.
+
+| Suite | Result |
+|---|---|
+| Node, every `*.test.mjs` | **1,205 passed, 0 failed**; 49 database-gated tests skipped there and run below |
+| PostgreSQL e2e (stocks, command) | **188/188** |
+| Props SQL harness | passes; **18** readiness cases |
+| Python | **471/471** |
+| ESLint | 0 errors (the same 8 known warnings) |
+| `next build` | passed |
+| Hosted CI | green on #222 (`4cf3ec5`) and #227 (`a8af9ae`) |
+
+**Reviews posted:**
+- **#225:** releasable. Missed-window diagnosis uses only event-specific, in-window receipts, and the new ops job closes the #224 visibility gap.
+- **#226:** retrieval verified and consumed by #227. Changes requested for operation:
+  - `start`/`end`/`station` inputs;
+  - `workflow_call`;
+  - retention ≥ 30 days;
+  - one backfill run, 2025-09-01 to 2026-11-25.
+
+| System | Finished | Operational now | Exact remaining blockers |
+|---|---|---|---|
+| **Kalshi** | #227: pre-registered challenger, receipt-verified historical evaluation, calibration (coverage, PIT) and per-model comparisons, automatic paper freeze, grading and forward scorecard, engine `--weather-forward` | The live NOAA collector and ChatGPT's v1 paper worker. Its forecast slot runs 16–21 h late, but forecasts still land before their target day | (1) **#226** adds `workflow_call` and inputs and runs the 15-month backfill (ChatGPT). (2) Owner merges #226 then #227. Paper forecasting then starts the next morning, because the 30 training days come from history. (3) Owner review needs 50 graded forward days. Exchange stays disabled |
+| **Stocks** | #217 timeline and fallbacks; #222 tracking and the holdrank10 forward ledger | Decision, execute and monitor backups (Nov 25 runs on time); release branch at `9e23e63`; nightly research ledgers | (1) Approve and deploy #217 before Sun 6 PM MST. (2) Nov 30 session. (3) #102 after the gate. The `lab-stock-v3` strategies need #165 merged to collect forward evidence. The Nov 23 lab week is lost (Nov 21 `APPEND_ONLY_VIOLATION`, fixed on main by #203) |
+| **Sports** | #216 (one NBA release), #221 (tracing and engine evidence) | Collection, settles and the safety brake (95/150, 63.3%, not tripped); 744 graded lines, 27 games; 0 overdue outcomes | #216: hosted readiness READY plus the `props-cycle.ts` approval. #225's missed-window diagnosis needs no budget change |
+
+**Execution readiness vs profitability.** Every "operational" item above is about execution readiness: on-time runs, frozen records, grading and gates. None of it is evidence of profit.
+- Stock profitability needs 26+ forward weeks against matched-exposure SPY.
+- Kalshi forecast skill is not trading profitability; that needs market data, which is not authorised.
+
+## 1. Work completed in the previous round
 
 | PR | Head | Change |
 |---|---|---|
@@ -108,7 +140,7 @@ Feeding stock and lab evidence automatically is Part B integration work. It is n
 | Order | PR | Condition |
 |---|---|---|
 | 6 | **#102** | At exactly `9e23e63`. GitHub reports it mergeable |
-| 7 | **#222** | — |
+| 7 | **#222** | Since `4cf3ec5` it also freezes holdrank10 forward picks. Merging by **Sat Nov 28 04:00Z** captures the Nov 30 week; after Nov 30, the first week is Dec 7. Its Autopilot panel is fail-safe |
 | 8 | **#216** | If not merged before. Then close **#208**, **#192**, **#195**, **#199**, **#200**, **#201**, **#202**, **#206** and **#207**: their heads are git ancestors of #216 |
 
 ### Close: superseded or stale (verified)
@@ -164,7 +196,8 @@ Merge as records after Nov 30, or keep open. **Do not delete their branches.**
 
 | PR | Status |
 |---|---|
-| **#226** (ChatGPT) | Historical archive retrieval. Its Sep–Nov 2025 run succeeded and feeds #227 |
+| **#226** (ChatGPT) | Historical archive retrieval. Its Sep–Nov 2025 run succeeded and feeds #227. **Changes requested** (inputs, `workflow_call`, retention, 15-month backfill) before #227's paper workflow can run |
+| **#225** (ChatGPT) | Missed-window diagnosis and ops visibility for the Kalshi offline check. **Releasable**; merge any time outside the freeze |
 | **#227** | Pre-registered multi-source challenger, research only. First result: `NO_CLEAR_EFFECT` (29–30 holdout days, below 50). It does not beat NBM alone. It adds a `weather` domain to the engine and changes the /lab view. Merge outside the freeze. #219 and #227 both append to `research/engine/registry.json`, so whichever merges second needs a one-line resolution |
 
 ### Owner's call: new features or research, outside "finish the platform"
@@ -208,6 +241,6 @@ Defer or close:
 - **Stock strategy:** 26+ forward weeks against matched-exposure SPY. Add a `--stock-weeks` producer as reviewed integration work before then.
 - **Engine feeds for the 15 owner-supplied-only experiments:** connect the forward lab report after #216 has recorded data.
 - **Kalshi:** 30 pairs and 50 holdout, unchanged. ChatGPT owns it.
-- **Kalshi multi-source challenger (#227):** needs at least a year of archive from #226 for 50 holdout days per horizon. Forward NBM/GFS MOS capture is required before paper testing.
+- **Kalshi multi-source challenger (#227):** the historical decision needs #226's 15-month backfill (about 200 holdout days per horizon). Paper forecasting starts at #227's merge. Owner review needs 50 graded forward days.
 - **Ops follow-ups** (ChatGPT): register `kalshi-paper-verify` in `config/ops/jobs.json`.
 - **Next props release:** the `Number.isFinite` guard in the frozen `rules.ts`.
