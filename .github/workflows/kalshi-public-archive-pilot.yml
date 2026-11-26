@@ -21,13 +21,13 @@ jobs:
           root = "https://mesonet.agron.iastate.edu"
           limit = 16 * 1024 * 1024
           requests = []
-          # Fixed sample selected before reading any outcomes. Preserve each model separately.
+          # Separate calendar year, fixed before reading its outcomes. 2025 autumn pilot remains an immutable prior run; do not reuse its holdout as independent confirmation. Pad forecast bounds for day-ahead initializations.
           for model in ("GFS", "NBS"):
-              params = {"station": "KNYC", "model": model, "sts": "2025-09-01T00:00Z", "ets": "2025-12-01T00:00Z", "format": "csv"}
-              requests.append((model.lower()+"-2025-sep-nov.csv", "/cgi-bin/request/mos.py", params))
+              params = {"station": "KNYC", "model": model, "sts": "2023-12-30T00:00Z", "ets": "2025-01-02T00:00Z", "format": "csv"}
+              requests.append((model.lower()+"-2024-full-year.csv", "/cgi-bin/request/mos.py", params))
           # Include the next morning's CLI for the last target date; ZIP keeps original product timestamps.
-          requests.append(("clin-yc-2025-sep-nov.zip", "/cgi-bin/afos/retrieve.py", {"pil":"CLINYC","center":"KOKX","fmt":"zip","sdate":"2025-09-01T00:00Z","edate":"2025-12-02T00:00Z","limit":"9999"}))
-          receipt = {"schema":"weather-archive-retrieval-pilot-v1","purpose":"raw retrieval only; not training pairs, calibrated probabilities or exchange data","retrieved_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"admitted_training_pairs":0,"exchange_requests":0,"files":[]}
+          requests.append(("clin-yc-2024-full-year.zip", "/cgi-bin/afos/retrieve.py", {"pil":"CLINYC","center":"KOKX","fmt":"zip","sdate":"2024-01-02T00:00Z","edate":"2025-01-02T00:00Z","limit":"9999"}))
+          receipt = {"schema":"weather-archive-retrieval-pilot-v1","purpose":"raw retrieval only; not training pairs, calibrated probabilities or exchange data","retrieved_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"target_start":"2024-01-01","target_end":"2024-12-31","prior_pilot_run":45752083379,"admitted_training_pairs":0,"exchange_requests":0,"files":[]}
           cooldown = False
           for i, (name, endpoint, params) in enumerate(requests):
               url = root + endpoint + "?" + urllib.parse.urlencode(params)
