@@ -4,8 +4,12 @@
  * Outcomes also come from the existing live collector's CLI files. This makes no network request, uses no market
  * data and places no order.
  *
- * node --experimental-strip-types scripts/kalshi-weather-multisource-paper.ts --inputs <artifact dir> --cli-dir <unzipped CLI>
- *   --data research-data [--now ISO]
+ * node --experimental-strip-types scripts/kalshi-weather-multisource-paper.ts --anchor SAME_DAY|DAY_AHEAD --inputs <artifact dir>
+ *   --cli-dir <unzipped CLI> --data research-data [--now ISO]
+ *
+ * Each run freezes only ITS anchor's target, and only inside the bounded capture window [anchor - 150 min, anchor].
+ * The inputs must be an actual retrieval that completed (receipt per-file captured_at) within 3 h before the freeze.
+ * Rows used are those held at that capture time. Every run also grades any forecast whose outcome is now published.
  *
  * Layout under research-data/kalshi-independent/nyc-weather/multisource-v1/:
  *   forecasts/<date>-<ANCHOR>.json   frozen at or before the anchor, never rewritten
@@ -17,7 +21,7 @@ import {join,dirname} from 'node:path';
 import {loadVerifiedArchive} from '../src/lib/prediction-markets/kalshi/weather-archive-adapter.ts';
 import {verifyCentralParkCli} from '../src/lib/prediction-markets/kalshi/nws-cli.ts';
 import {centralParkStandardDate} from '../src/lib/prediction-markets/kalshi/weather-model.ts';
-import {ANCHORS,anchorAt,buildAnchorDays,type DailyOutcome} from '../src/lib/prediction-markets/kalshi/weather-multisource.ts';
+import {ANCHORS,anchorAt,buildAnchorDays,type Anchor,type DailyOutcome} from '../src/lib/prediction-markets/kalshi/weather-multisource.ts';
 import {freezeMultisourcePaper,gradeMultisourcePaper,verifyPaperForecast,forwardSummary,type PaperGrade} from '../src/lib/prediction-markets/kalshi/weather-multisource-paper.ts';
 import {paperReadiness,forwardEngineResult} from '../src/lib/prediction-markets/kalshi/weather-multisource-readiness.ts';
 
@@ -25,7 +29,9 @@ const argv=process.argv,opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0
 const need=(n:string)=>{const v=opt(n);if(!v)throw Error('missing --'+n);return v;};
 const now=opt('now')??new Date().toISOString();
 if(!Number.isFinite(Date.parse(now)))throw Error('invalid --now');
-const MAX_INPUT_AGE_H=3;
+const MAX_INPUT_AGE_H=3,WINDOW_MIN=150;
+const runAnchor=need('anchor') as Anchor;
+if(!ANCHORS.includes(runAnchor))throw Error('invalid --anchor');
 
 // ---- verified inputs
 const inDir=need('inputs'),receiptText=readFileSync(join(inDir,'receipt.json'),'utf8');
@@ -35,7 +41,8 @@ const cliProducts:{name:string;text:string}[]=[];
 (function walk(d:string){for(const n of readdirSync(d).sort()){const p=join(d,n),s=statSync(p);
  if(s.isDirectory())walk(p);else if(s.isFile()&&s.size<=200_000)cliProducts.push({name:n,text:readFileSync(p,'latin1')});}})(need('cli-dir'));
 const archive=loadVerifiedArchive({receiptText,files,cliProducts});
-const age=(Date.parse(now)-Date.parse(archive.retrievedAt??''))/3600e3;
+// Actual retrieval completion, never a modeled publication time.
+const age=(Date.parse(now)-Date.parse(archive.capturedAt??''))/3600e3;
 const freshInputs=Number.isFinite(age)&&age>=0&&age<=MAX_INPUT_AGE_H;
 
 // ---- outcomes: archive CLI plus the existing live collector's CLI files; a disagreement excludes the day
@@ -60,17 +67,19 @@ const outcomes=[...merged.values()];
 const write=(path:string,v:unknown)=>{mkdirSync(dirname(path),{recursive:true});
  try{writeFileSync(path,JSON.stringify(v,null,1)+'\n',{flag:'wx'});return true;}catch(e){if((e as NodeJS.ErrnoException).code==='EEXIST')return false;throw e;}};
 const today=centralParkStandardDate(now),tomorrow=new Date(Date.parse(today+'T00:00:00Z')+86400e3).toISOString().slice(0,10);
-const known=archive.forecasts.filter(f=>Date.parse(f.availableAt)<=Date.parse(now));
+const heldAt=Math.min(Date.parse(now),Date.parse(archive.capturedAt??now));
+const known=archive.forecasts.filter(f=>Date.parse(f.availableAt)<=heldAt);
 const seen=outcomes.filter(o=>Date.parse(o.observedAvailableAt)<=Date.parse(now));
 const frozenNow:string[]=[],skipped:Record<string,string>={};
-for(const anchor of ANCHORS){
+for(const anchor of [runAnchor]){
  const date=anchor==='SAME_DAY'?today:tomorrow,key=`${date}-${anchor}`,path=join(out,'forecasts',key+'.json');
  if(existsSync(path)){skipped[key]='ALREADY_FROZEN';continue;}
  if(Date.parse(now)>Date.parse(anchorAt(date,anchor))){skipped[key]='ANCHOR_PASSED';continue;}
+ if(Date.parse(now)<Date.parse(anchorAt(date,anchor))-WINDOW_MIN*60e3){skipped[key]='BEFORE_CAPTURE_WINDOW';continue;}
  if(!freshInputs){skipped[key]=`INPUTS_NOT_FRESH (${Number.isFinite(age)?age.toFixed(2)+' h':'unknown'})`;continue;}
  const days=buildAnchorDays(known,seen,archive.station,anchor);
  if(!days.some(d=>d.localDate===date)){skipped[key]='NO_MEMBER_BULLETIN';continue;}
- if(write(path,freezeMultisourcePaper(days,date,anchor,now,archive.inputsDigest)))frozenNow.push(key);
+ if(write(path,freezeMultisourcePaper(days,date,anchor,now,archive.inputsDigest,archive.capturedAt!)))frozenNow.push(key);
 }
 
 // ---- grade every frozen forecast whose outcome is now published
@@ -87,7 +96,8 @@ const summary=forwardSummary(records,grades,now);
 const latest=(a:string)=>records.filter(r=>r.anchor===a).at(-1);
 const readiness=paperReadiness({verifiedInputs:true,forward:summary,
  trainingDaysByAnchor:Object.fromEntries(ANCHORS.map(a=>[a,latest(a)?.trainingDays??0]))});
-const card={schema:'kalshi-weather-multisource-paper-scorecard-v1',at:now,inputsDigest:archive.inputsDigest,inputsRetrievedAt:archive.retrievedAt,
+const card={schema:'kalshi-weather-multisource-paper-scorecard-v1',at:now,anchor:runAnchor,inputsDigest:archive.inputsDigest,
+ inputsRetrievedAt:archive.retrievedAt,inputsCapturedAt:archive.capturedAt,
  frozenNow,gradedNow,skipped,outcomeConflicts:[...new Set(conflicts)],summary,readiness,engineResult:forwardEngineResult(summary)};
 write(join(out,'scorecards',now.slice(0,16).replace(':','')+'Z.json'),card);
 console.log('MULTISOURCE_PAPER_BEGIN');console.log(JSON.stringify(card));console.log('MULTISOURCE_PAPER_END');

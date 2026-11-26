@@ -24,7 +24,9 @@ const sha=(x:unknown)=>createHash('sha256').update(JSON.stringify(x)).digest('he
 const ms=(s:string)=>Date.parse(s);
 
 export type PaperForecastRecord={schema:typeof PAPER_SCHEMA;id:string;modelId:typeof MULTISOURCE_MODEL_ID;station:string;localDate:string;
- anchor:Anchor;anchorAt:string;frozenAt:string;inputsDigest:string;status:'FROZEN'|'AWAITING_VERIFIED_HISTORY';blocker:string|null;
+ anchor:Anchor;anchorAt:string;frozenAt:string;inputsDigest:string;
+ /** When the retrieval actually completed (receipt per-file captured_at), not a modeled publication time. */
+ inputsCapturedAt:string;status:'FROZEN'|'AWAITING_VERIFIED_HISTORY';blocker:string|null;
  trainingDays:number;trainingDigest:string|null;members:AnchorDay['members'];weights:Record<string,number>;bias:Record<string,number>;
  mu:number|null;sigma:number|null;distribution:Pmf|null;
  ladder:{strikes:ReturnType<typeof independentLadder>;probabilityYesPpm:number[]}|null;
@@ -34,11 +36,13 @@ export type PaperForecastRecord={schema:typeof PAPER_SCHEMA;id:string;modelId:ty
  * Freeze the paper forecast for one target. `days` must be built from member bulletins and outcomes as captured.
  * Anything that became available after `frozenAt` is excluded here.
  */
-export function freezeMultisourcePaper(days:readonly AnchorDay[],localDate:string,anchor:Anchor,frozenAt:string,inputsDigest:string):PaperForecastRecord{
+export function freezeMultisourcePaper(days:readonly AnchorDay[],localDate:string,anchor:Anchor,frozenAt:string,inputsDigest:string,
+ inputsCapturedAt:string=frozenAt):PaperForecastRecord{
  const official=anchorAt(localDate,anchor);
  if(!Number.isFinite(ms(frozenAt)))throw Error('WX_MS_PAPER_INVALID_TIME');
  if(ms(frozenAt)>ms(official))throw Error('WX_MS_PAPER_AFTER_ANCHOR');
  if(!/^[a-f0-9]{64}$/.test(inputsDigest))throw Error('WX_MS_PAPER_INVALID_DIGEST');
+ if(!(ms(inputsCapturedAt)<=ms(frozenAt)))throw Error('WX_MS_PAPER_INPUTS_AFTER_FREEZE');
  const target=days.find(d=>d.localDate===localDate&&d.anchor===anchor);
  if(!target)throw Error('WX_MS_PAPER_NO_TARGET');
  // The freeze time is the as-of: training outcomes must have been public before it.
@@ -48,7 +52,7 @@ export function freezeMultisourcePaper(days:readonly AnchorDay[],localDate:strin
  const ladder=f.distribution?(()=>{const strikes=independentLadder(Math.round(f.mu!));
   return {strikes,probabilityYesPpm:pmfEventProbabilitiesPpm(f.distribution,strikes)};})():null;
  const base:Omit<PaperForecastRecord,'id'>={schema:PAPER_SCHEMA,modelId:MULTISOURCE_MODEL_ID,station:target.station,localDate,anchor,
-  anchorAt:official,frozenAt:asOf.anchorAt,inputsDigest,status:f.distribution?'FROZEN':'AWAITING_VERIFIED_HISTORY',blocker:f.blocker,
+  anchorAt:official,frozenAt:asOf.anchorAt,inputsDigest,inputsCapturedAt:new Date(ms(inputsCapturedAt)).toISOString(),status:f.distribution?'FROZEN':'AWAITING_VERIFIED_HISTORY',blocker:f.blocker,
   trainingDays:f.trainingDays,trainingDigest:f.trainingDigest,members:target.members,
   weights:f.weights as Record<string,number>,bias:f.bias as Record<string,number>,mu:f.mu,sigma:f.sigma,distribution:f.distribution,ladder,
   baselines:f.distribution?baselinePmfs(window,asOf):{},marketDataUsed:false,exchangeAccess:'DISABLED'};
@@ -61,6 +65,7 @@ export function verifyPaperForecast(raw:unknown):PaperForecastRecord{
  const {id,...base}=r;
  if(sha(base)!==id)throw Error('WX_MS_PAPER_DIGEST_MISMATCH');
  if(ms(r.frozenAt)>ms(r.anchorAt)||anchorAt(r.localDate,r.anchor)!==r.anchorAt)throw Error('WX_MS_PAPER_AFTER_ANCHOR');
+ if(!(ms(r.inputsCapturedAt)<=ms(r.frozenAt)))throw Error('WX_MS_PAPER_INPUTS_AFTER_FREEZE');
  return r;
 }
 

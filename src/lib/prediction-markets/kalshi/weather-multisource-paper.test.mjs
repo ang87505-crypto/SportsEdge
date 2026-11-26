@@ -35,6 +35,9 @@ test('a paper forecast is frozen only at or before its anchor, from history, and
  assert.deepEqual(verifyPaperForecast(JSON.parse(JSON.stringify(f))),f);
  assert.throws(()=>verifyPaperForecast({...f,mu:f.mu+1}),/DIGEST_MISMATCH/);
  assert.throws(()=>freezeMultisourcePaper(days,target,'DAY_AHEAD','2026-11-13T14:00:01.000Z',DIG),/WX_MS_PAPER_AFTER_ANCHOR/);
+ assert.throws(()=>freezeMultisourcePaper(days,target,'DAY_AHEAD','2026-11-13T13:10:00.000Z',DIG,'2026-11-13T13:11:00.000Z'),/INPUTS_AFTER_FREEZE/,
+  'inputs must have been actually retrieved before the freeze');
+ assert.throws(()=>verifyPaperForecast({...f,inputsCapturedAt:'2026-11-13T13:20:00.000Z'}),/DIGEST_MISMATCH|INPUTS_AFTER_FREEZE/);
  // Yesterday's outcome (published 06:37Z today) is admitted only when the freeze is after its publication.
  const early=freezeMultisourcePaper(days,target,'DAY_AHEAD','2026-11-13T06:00:00.000Z',DIG),late=freezeMultisourcePaper(days,target,'DAY_AHEAD','2026-11-13T13:00:00.000Z',DIG);
  assert.notEqual(early.trainingDigest,late.trainingDigest,'the training window is as-of the freeze time');
@@ -88,33 +91,38 @@ function fixture(retrievedAt,lastDay){
  for(const [d,t] of Object.entries(truth))if(addDays(d,1)<=lastDay)writeFileSync(join(cli,d+'.txt'),cliText(d,t));
  const h=p=>createHash('sha256').update(readFileSync(join(inp,p))).digest('hex');
  writeFileSync(join(inp,'receipt.json'),JSON.stringify({status:'RETRIEVED_UNVALIDATED',exchange_requests:0,retrieved_at:retrievedAt,
-  files:['gfs-w.csv','nbs-w.csv','cli-w.zip'].map(name=>({name,sha256:h(name)}))}));
+  files:['gfs-w.csv','nbs-w.csv','cli-w.zip'].map(name=>({name,sha256:h(name),captured_at:retrievedAt}))}));
  return {dir,inp,cli,data,truth};
 }
-const run=(x,now)=>{const o=execFileSync(process.execPath,['--experimental-strip-types','--no-warnings','scripts/kalshi-weather-multisource-paper.ts',
- '--inputs',x.inp,'--cli-dir',x.cli,'--data',x.data,'--now',now],{cwd:ROOT,encoding:'utf8'});
+const run=(x,anchor,now)=>{const o=execFileSync(process.execPath,['--experimental-strip-types','--no-warnings','scripts/kalshi-weather-multisource-paper.ts',
+ '--anchor',anchor,'--inputs',x.inp,'--cli-dir',x.cli,'--data',x.data,'--now',now],{cwd:ROOT,encoding:'utf8'});
  return JSON.parse(o.split('\n')[o.split('\n').indexOf('MULTISOURCE_PAPER_BEGIN')+1]);};
 
-test('end to end: the daily job freezes both anchors before them, refuses late or stale runs, grades next day, never rewrites',()=>{
- const x=fixture('2026-11-28T10:00:00Z','2026-11-29');
+test('end to end: each run freezes only its own anchor inside its window, refuses early/late/stale runs, never rewrites, grades next day',()=>{
+ const x=fixture('2026-11-28T09:12:00Z','2026-11-29');
  const base=join(x.data,'kalshi-independent','nyc-weather','multisource-v1');
- const a=run(x,'2026-11-28T10:10:00.000Z');
- assert.deepEqual(a.frozenNow.sort(),['2026-11-28-SAME_DAY','2026-11-29-DAY_AHEAD']);
- assert.equal(a.readiness.paperForecasting.status,'READY');assert.equal(a.readiness.ownerReview.status,'NOT_READY');assert.equal(a.readiness.exchange,'DISABLED');
+ const a=run(x,'SAME_DAY','2026-11-28T09:15:00.000Z');
+ assert.deepEqual(a.frozenNow,['2026-11-28-SAME_DAY'],'the same-day run never freezes tomorrow\'s day-ahead forecast early');
+ assert.equal(a.readiness.paperForecasting.status,'NOT_READY','DAY_AHEAD has no record yet');assert.equal(a.readiness.exchange,'DISABLED');
+ const rec=JSON.parse(readFileSync(join(base,'forecasts','2026-11-28-SAME_DAY.json'),'utf8'));
+ assert.equal(rec.inputsCapturedAt,'2026-11-28T09:12:00.000Z');assert.equal(rec.frozenAt,'2026-11-28T09:15:00.000Z');
  const before=readFileSync(join(base,'forecasts','2026-11-28-SAME_DAY.json'),'utf8');
- const again=run(x,'2026-11-28T10:20:00.000Z');assert.deepEqual(again.frozenNow,[]);assert.equal(again.skipped['2026-11-28-SAME_DAY'],'ALREADY_FROZEN');
+ assert.equal(run(x,'SAME_DAY','2026-11-28T09:25:00.000Z').skipped['2026-11-28-SAME_DAY'],'ALREADY_FROZEN');
  assert.equal(readFileSync(join(base,'forecasts','2026-11-28-SAME_DAY.json'),'utf8'),before,'never rewritten');
- // Stale inputs (retrieved more than 3 h earlier) never produce a fresh forecast.
- const stale=fixture('2026-11-28T04:00:00Z','2026-11-29');
- assert.match(run(stale,'2026-11-28T10:10:00.000Z').skipped['2026-11-28-SAME_DAY'],/INPUTS_NOT_FRESH/);
- // After the anchor: refused, and counted as missed later.
- assert.equal(run(fixture('2026-11-28T11:30:00Z','2026-11-29'),'2026-11-28T11:30:00.000Z').skipped['2026-11-28-SAME_DAY'],'ANCHOR_PASSED');
+ assert.equal(run(x,'DAY_AHEAD','2026-11-28T09:25:00.000Z').skipped['2026-11-29-DAY_AHEAD'],'BEFORE_CAPTURE_WINDOW');
+ const y=fixture('2026-11-28T12:14:00Z','2026-11-29');
+ const b=run({...y,data:x.data},'DAY_AHEAD','2026-11-28T12:18:00.000Z');
+ assert.deepEqual(b.frozenNow,['2026-11-29-DAY_AHEAD']);assert.equal(b.readiness.paperForecasting.status,'READY');
+ assert.equal(b.readiness.ownerReview.status,'NOT_READY','owner review still needs 50 graded forward days');
+ // Stale inputs (captured more than 3 h earlier) and a run after the anchor are refused.
+ assert.match(run(fixture('2026-11-28T04:00:00Z','2026-11-29'),'SAME_DAY','2026-11-28T09:15:00.000Z').skipped['2026-11-28-SAME_DAY'],/INPUTS_NOT_FRESH/);
+ assert.equal(run(fixture('2026-11-28T11:20:00Z','2026-11-29'),'SAME_DAY','2026-11-28T11:30:00.000Z').skipped['2026-11-28-SAME_DAY'],'ANCHOR_PASSED');
  // Next day: the archived CLI report for Nov 28 (published Nov 29 06:37Z, after the freeze) grades it.
- const y=fixture('2026-11-29T10:00:00Z','2026-11-30');
- const b=run({...y,data:x.data},'2026-11-29T10:05:00.000Z');
- assert.ok(b.gradedNow.includes('2026-11-28-SAME_DAY'),JSON.stringify(b.gradedNow));
+ const z=fixture('2026-11-29T09:10:00Z','2026-11-30');
+ const c=run({...z,data:x.data},'SAME_DAY','2026-11-29T09:14:00.000Z');
+ assert.ok(c.gradedNow.includes('2026-11-28-SAME_DAY'),JSON.stringify(c.gradedNow));assert.deepEqual(c.frozenNow,['2026-11-29-SAME_DAY']);
  assert.ok(existsSync(join(base,'grades','2026-11-28-SAME_DAY.json')));
- assert.equal(b.engineResult.result.evidence,'forward');assert.equal(readdirSync(join(base,'scorecards')).length>=3,true);
+ assert.equal(c.engineResult.result.evidence,'forward');assert.ok(readdirSync(join(base,'scorecards')).length>=3);
 });
 
 test('learning engine reads the newest forward scorecard and records forward evidence without skipping review gates',()=>{
