@@ -25,3 +25,11 @@ class Summary(unittest.TestCase):
         self.assertEqual(src['lastBatch']['items'], 4)
         self.assertEqual([f['key'] for f in src['lastBatch']['failed']], ['2026q2', '2026q3'])
         self.assertTrue(src['lastBatch']['failed'][0]['error'].startswith('HTTP_404'))
+    def test_successful_last_file_cannot_hide_a_failed_file_in_the_same_batch(self):
+        at='2026-11-27T18:00:00Z'
+        rows=[{'source_id':'TEST-345','key':'2026q2','retrieved_at':at,'status':'FETCH_FAILED','error':'HTTP_404'},
+              {'source_id':'TEST-345','key':'2026q3','retrieved_at':at,'status':'OK','error':None}]
+        src=build_summary(None,None,rows,[],at)['sources'][0]
+        self.assertEqual(src['status'],'FETCH_FAILED')
+        self.assertEqual(src['lastSuccessAt'],at)
+        self.assertEqual(src['lastBatch']['failed'],[{'key':'2026q2','error':'HTTP_404'}])

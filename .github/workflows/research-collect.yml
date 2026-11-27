@@ -8,25 +8,83 @@ on:
   schedule:
     - cron: '17 2 * * 2-6'   # 02:17 UTC Tue-Sat, after each US session
   workflow_dispatch:
+  pull_request:
+    paths:
+      - analytics/research/sec_form345.py
+      - analytics/research/test_sec_form345.py
+      - analytics/research/summary.py
+      - analytics/research/test_summary.py
+      - .github/workflows/research-collect.yml
   push:
-    branches: [research/stock-strategy-research-20261109]
+    branches: [main, research/stock-strategy-research-20261109]
     paths:
       - analytics/research/qmom.py
       - analytics/research/sec13f.py
       - analytics/research/figi.py
       - analytics/research/store.py
       - analytics/research/fetch.py
+      - analytics/research/sec_form345.py
+      - analytics/research/test_sec_form345.py
+      - analytics/research/summary.py
+      - analytics/research/test_summary.py
       - .github/workflows/research-collect.yml
       - .github/scripts/research-data-branch.sh
 permissions:
-  contents: write   # pushes to the research-data branch only
+  contents: read
 concurrency:
   group: research-data
   cancel-in-progress: false
 jobs:
+  sec-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m unittest analytics.research.test_sec_form345 analytics.research.test_summary -v
+  # A source repair on main does not rerun the stock market-data/rebalance simulations. It fetches at most
+  # the SEC index plus two missing quarter archives, then regenerates source health from saved results.
+  sec-source-repair:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify source contracts before giving the collector its contact identity
+        run: python -m unittest analytics.research.test_sec_form345 analytics.research.test_summary -v
+      - name: Check out the append-only research-data branch
+        id: source_data
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Repair the public SEC quarter archives
+        env:
+          SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+        run: python -m analytics.research.sec_form345 --data research-data
+      - name: Report actual source outcomes, including a failed repair
+        if: always() && steps.source_data.outcome == 'success'
+        run: python -m analytics.research.cli report --data research-data >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve new receipts and previous failure history
+        if: always() && steps.source_data.outcome == 'success'
+        run: bash .github/scripts/research-data-branch.sh commit "SEC archive source repair ${{ github.run_id }}"
   collect:
+    if: github.event_name != 'pull_request' && !(github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write   # pushes to the research-data branch only
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -44,6 +102,12 @@ jobs:
         env:
           SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
         run: python -m analytics.research.cli collect --data research-data
+      - name: Verify or collect the latest closed SEC insider quarters
+        # Independent optional research input. Its recorded failure must not stop unrelated forward ledgers.
+        continue-on-error: true
+        env:
+          SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
+        run: python -m analytics.research.sec_form345 --data research-data
       - name: Advance the forward PAPER ledgers (read-only market data)
         env:
           ALPACA_PAPER_AUTO_KEY_ID: ${{ secrets.ALPACA_PAPER_AUTO_KEY_ID }}
