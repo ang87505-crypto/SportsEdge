@@ -40,13 +40,20 @@ select extname, extversion from pg_extension where extname in ('pg_net', 'pg_cro
 
 rollback;
 
--- Questions the reviewer answers from the output (activation stays blocked until each is answered):
---  a. research_dispatch(boolean) exists, takes the probe flag first and returns a scalar (run id or void), not a set.
---  b. It queues its request with net.http_post (pg_net), so a rolled-back transaction sends nothing.
---  c. research_reserve_credit(text) enforces 8 per rolling 24 h and 240 per rolling 30 d for each call, and whether
---     it requires a claimed run. (After the migration it is only ever called inside a claimed research-cycle run,
---     which is the context in which it has already worked; the answer is still recorded.)
---  d. research_claim accepts only a queued run less than ten minutes old and marks it claimed (single use).
---  e. research_finish stores the summary against p_id (the receipt is tied to the run).
---  f. No object named research_refresh_slots or research_refresh_slot_dispatch exists yet.
---  g. anon and authenticated cannot execute any research_* function.
+-- Contract status (ChatGPT's read-only production review, 2026-11-27):
+--  a. VERIFIED: research_dispatch(boolean) RETURNS bigint. It returns NULL, creating no run, when its 25-minute
+--     cooldown prevents a dispatch. The migration now checks the return type and refuses to install otherwise.
+--  b. To confirm in the output: it queues its request with net.http_post (pg_net), so a rolled-back transaction
+--     sends nothing.
+--  c. VERIFIED: research_reserve_credit caps are shared across both sports (8 reservations per rolling 24 h, 240 per
+--     rolling 30 d). After the migration it is only ever called inside a claimed research-cycle run.
+--  d. To confirm in the output: research_claim accepts only a queued run less than ten minutes old, single use.
+--  e. To confirm in the output: research_finish stores the summary against p_id.
+--  f. VERIFIED: research_refresh_slots and research_refresh_slot_dispatch do not exist yet.
+--  g. VERIFIED: anon and authenticated cannot execute the research_* functions; service_role cannot execute
+--     research_dispatch directly. The wrapper keeps that: SECURITY DEFINER, executable by service_role only.
+-- After applying the migration, re-run this file. Expect:
+--  * research_refresh_slot_dispatch(text) returning jsonb, security_definer = t;
+--  * service_role can_execute = t for the wrapper and f for research_dispatch;
+--  * anon/authenticated f for both;
+--  * research_refresh_slots with run_id bigint NOT NULL CHECK (run_id > 0).

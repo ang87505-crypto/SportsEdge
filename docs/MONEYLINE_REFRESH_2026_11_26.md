@@ -1,6 +1,6 @@
 # NBA/EPL moneyline refresh: why the board went stale, and the gated repair (2026-11-26)
 
-PR #229, branch `claude/moneyline-refresh-20261126`, merged with `main` at `fe96631` (#230). The release switch is **OFF**. Nothing in this PR has been applied to a hosted database, scheduled, deployed or run against the provider.
+PR #229, branch `claude/moneyline-refresh-20261126`, merged with `main` at `7af4bf6` (#230, #231). The release switch is **OFF**. Nothing in this PR has been applied to a hosted database, scheduled, deployed or run against the provider.
 
 ## Production evidence before any change (2026-11-26 20:22 UTC)
 
@@ -27,28 +27,47 @@ PR #229, branch `claude/moneyline-refresh-20261126`, merged with `main` at `fe96
 
 ```
 Vercel cron 11:00 UTC ─► /api/internal/moneyline-refresh            (switch OFF → returns before any network call)
-                           │ one RPC, no provider call, no credit reservation
+                           │ one RPC as service_role; no provider call, no credit reservation
                            ▼
         research_refresh_slot_dispatch('moneyline-h2h-<UTC date>')  (NEW, additive migration, not applied)
-          one transaction: INSERT slot ON CONFLICT DO NOTHING ─► if new: existing research_dispatch(false)
+          per-slot advisory lock ─► slot exists? → duplicate_slot (its run_id)
+                                 └► run_id := existing research_dispatch(false)   -- RETURNS bigint, NULL in cooldown
+                                      NULL / ≤ 0 → not_dispatched, NOTHING recorded, slot stays open
+                                      > 0       → INSERT slot(run_id) → dispatched
                            │ pg_net (sent only if the transaction commits)
                            ▼
         existing /api/internal/research-cycle: research_claim (single use, 10 min)
-          → research_reserve_credit('nba'), ('soccer')   (existing 8/24h, 240/30d caps)
+          → research_reserve_credit('nba'), ('soccer')   (existing caps, shared by both sports: 8/24h, 240/30d)
           → collector → per-sport receipt → research_finish(run id, status, summary)
 ```
 
-### 1. Duplicate prevention
+### Verified production contract (ChatGPT's read-only database review, 2026-11-27)
 
-The old "newest quote under 20 h" check is gone: it was a read-then-write and could race.
+- `research_dispatch(boolean)` **RETURNS bigint**: the new run id. It legitimately returns **NULL**, creating no run, when its **25-minute cooldown** prevents a dispatch.
+- `research_reserve_credit` caps are **shared across both sports**: 8 reservations per rolling 24 h and 240 per rolling 30 days. A run reserves two.
+- Execute permissions:
+  - `anon` and `authenticated` cannot execute the installed research functions;
+  - `service_role` cannot execute `research_dispatch` directly. The wrapper keeps that restriction: it is SECURITY DEFINER and only `service_role` may execute it.
+- The slot table and the wrapper are not installed in production.
 
-The new slot is atomic:
-- Concurrent firings for one UTC day serialise on the slot's primary key. Exactly one of them commits a dispatch.
-- If `research_dispatch` raises, the slot row rolls back with it. A later firing that day may then dispatch once.
-- A committed dispatch spends the slot even if its run later fails. A failed run is never retried automatically.
-- Downstream, `research_claim` makes the capability single-use. Duplicate `pg_net` deliveries or replays of the same run therefore get 404, with no reserve and no collect.
+**Release blocker found at `4c55ea3`, now fixed.** The previous wrapper:
+1. inserted the slot first;
+2. converted the dispatcher's result to text, turning NULL into `''`;
+3. committed the slot and reported `dispatched`.
 
-Taken together, one scheduled slot can reserve credits at most once (two requests), and only inside a claimed run.
+A cooldown NULL therefore consumed the day's slot without creating a run, and blocked any retry that day. Running the `4c55ea3` migration against the new production-shaped stub reproduces it: `{"status":"dispatched","dispatch":""}` with 1 slot committed.
+
+### 1. Duplicate prevention and the NULL contract
+
+- The migration refuses to install unless `research_dispatch(boolean)` exists and returns `bigint`: `PREREQUISITE_MISSING` or `CONTRACT_MISMATCH`.
+- Calls for one slot serialise on `pg_advisory_xact_lock`. The primary key is a backstop.
+- The dispatcher is called first. A slot row is written **only together with a positive run id**: `run_id bigint NOT NULL CHECK (run_id > 0)`. A committed slot therefore always names a real run.
+- **NULL or a non-positive id → `not_dispatched`.** Nothing is recorded, and the slot stays open for a later call the same day. The cron reports it as `not_dispatched` (HTTP 409, `slotAvailable: true`), never as success.
+- **An exception rolls back everything:** the dispatcher's run, the slot and the pg_net request. A later call may dispatch once.
+- **A recorded run spends the slot,** even after its cooldown ends and even if the run later fails, so one slot reserves credits at most once.
+- Downstream, `research_claim` makes each capability single-use. Replayed or duplicate deliveries get 404, with no reserve and no collect.
+
+**Operational note.** A manual `research_dispatch(false)` less than 25 minutes before 11:00 UTC makes that day's firing `not_dispatched`. The slot stays open, but the Vercel cron fires only once a day. The owner can re-request the route within 11:xx UTC, or wait for the next day.
 
 ### 2. Freshness and receipts, per sport
 
@@ -86,48 +105,60 @@ The receipt is therefore tied to the claimed run, not to whichever row has a rec
 
 ### 3. The `research_reserve_credit` contract
 
-**Blocked: the definition cannot be inspected from here.** The `research_*` functions were installed directly in the production database and are not in the repository on any branch. This session has no database credentials.
+**Verified** in the read-only review: shared 8/24h and 240/30d caps. The design calls it only inside a claimed research-cycle run, which is the context of the successful Oct 30 run 3.
 
-The design no longer depends on how the function behaves outside a run: it is only called inside a claimed research-cycle run, which is the context of the successful run 3 on Oct 30.
+`database/verify/research_refresh_contract_readonly.sql` records which points are verified (a, c, f, g) and which the owner still confirms from the output:
+- (b) the dispatcher uses `net.http_post`;
+- (d) single-use, ten-minute claim;
+- (e) `research_finish` stores the summary against the run id.
 
-The exact read-only check is `database/verify/research_refresh_contract_readonly.sql`. It is a catalogue-only `BEGIN READ ONLY … ROLLBACK` that returns:
-- the definitions, return types, owners and execute grants of `research_dispatch`, `research_claim`, `research_finish` and `research_reserve_credit`;
-- the `research_*` columns and constraints;
-- whether `pg_net` and `pg_cron` are installed.
-
-The file ends with the seven questions (a–g) that the reviewer must answer before activation. It was dry-run locally against the stub database.
+It also lists the results to expect after the migration is applied.
 
 ## Changed files
 
 | File | Change |
 | --- | --- |
-| `database/migrations/20261126_research_refresh_slots_v1.sql` | New, additive and **not applied**. Adds the `research_refresh_slots` table (RLS on, no browser access) and the `research_refresh_slot_dispatch(text)` function (security definer, today's UTC slot only, execute granted to `service_role` only). It changes no existing object. |
+| `database/migrations/20261126_research_refresh_slots_v1.sql` | New, additive and **not applied**. Adds the bigint contract guard, the `research_refresh_slots` table (`run_id bigint NOT NULL CHECK > 0`, RLS, select-only for `service_role`) and the `research_refresh_slot_dispatch(text)` function (security definer, advisory lock, today's UTC slot only, execute for `service_role` only). It changes no existing object. |
 | `src/lib/server/moneyline-refresh.ts`, `src/app/api/internal/moneyline-refresh/route.ts` | The cron handler only claims the slot through the RPC. Switch `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled=false`. |
 | `src/lib/server/collect/dual-track-core.ts` (new), `odds-collector.ts` | Collector logic moved into a testable core. Provider requests are unchanged (2 h2h calls, `regions=us`, american odds). Each sport now gets its own store, read-back by ID and receipt. |
 | `src/lib/ingestion/track-receipt.ts` (new) | Pure per-sport classification and run status |
 | `src/lib/server/research-cycle-handler.ts` | Run status and `research_finish` status now come from the per-sport receipts. Claim, reserve and auth logic are unchanged. |
 | `vercel.json` | One cron: `0 11 * * *`. It is a recorded (not frozen) manifest file. |
 | `.github/workflows/research-market-refresh.yml` | Runs the new tests. Adds a `slot-sql` job (disposable local PostgreSQL). Its comment says it does not prove fresh data. |
-| `database/tests/research_refresh_slots_v1_{stub,test}.sql`, `…_race.sh`, `scripts/verify-research-refresh-sql.sh` | SQL contract, replay and race tests against a **stub** `research_dispatch` |
+| `database/tests/research_refresh_slots_v1_{stub,test}.sql`, `…_race.sh`, `scripts/verify-research-refresh-sql.sh` | SQL contract, replay and race tests against a **production-shaped** stub: BIGINT, NULL during a 25-minute cooldown, not executable by `service_role` |
 | `database/verify/research_refresh_contract_readonly.sql` | The owner's read-only production check |
 
-## Validation (local, 2026-11-26)
+## Validation
 
-- **`scripts/verify-research-refresh-sql.sh`** (PostgreSQL 16):
-  - contract test, including grants, malformed slots, other-day slots and replay after failure and after success;
-  - race A: 20 concurrent firings → 1 `dispatched`, 19 `duplicate_slot`, 1 stub dispatch;
-  - race B: 20 concurrent firings where the first dispatch fails → 1 `failed (rolled back)`, 1 `dispatched`, 18 `duplicate_slot`, 1 stub dispatch;
-  - a `void`-returning dispatcher → PASS;
-  - re-applying the migration is idempotent.
-- **New tests:**
-  - collector core: 8 (both saved, EPL empty slate, unchanged, fresh NBA beside unchanged EPL, partial store failure, missing read-back, read-back outage, provider failure before any write);
-  - track receipts: 3;
-  - moneyline handler: 12 (switch off, auth/hour/env, 12-way overlap → 1 dispatch, replay after failure, mismatched replies);
-  - research-cycle: 4 (per-sport receipts tied to the run id, unknown report shape, 10 concurrent deliveries → 1 reserve pair and 1 collect, replay after a failed run).
-- Full JavaScript suite: 1221 tests, 1173 pass, 48 skipped, 0 fail.
+Tested SHA: see the PR description (the head that contains this section).
+
+- **`scripts/verify-research-refresh-sql.sh`** (PostgreSQL 16, production-shaped stub):
+  - **Install guards:** the migration is refused without `research_dispatch`, and refused over a void-returning one.
+  - **Single session:**
+    - malformed and other-day slots are refused;
+    - **NULL/cooldown** → `not_dispatched`, 0 slots, no new run (and again on a second call);
+    - **retry after the cooldown** → `dispatched` with the stub's positive run id, recorded in the slot;
+    - **replay** → `duplicate_slot` with the same run id, including after the cooldown has expired;
+    - **exception** → run, slot and request all rolled back, then the retry dispatches;
+    - run ids 0 and −7 → `not_dispatched`, slot open.
+  - **Grants:**
+    - anon/authenticated cannot execute the wrapper;
+    - `service_role` executes the wrapper (called as `service_role` → `dispatched`);
+    - `service_role` calling `research_dispatch` directly → refused;
+    - `service_role` cannot write slots.
+  - **Races, as `service_role`, 20 concurrent firings each:**
+    - A: plain → 1 dispatched / 19 duplicate (1 run, 1 slot);
+    - B: the first dispatch fails after creating its run → 1 rolled back / 1 dispatched / 18 duplicate (1 run, 1 slot);
+    - C1: during the cooldown → 20 `not_dispatched` (0 slots);
+    - C2: after the cooldown → 1 dispatched / 19 duplicate.
+- **Regression:** the `4c55ea3` wrapper fails the NULL case (reproduced above).
+- **Contract suite:** 70/70, including:
+  - moneyline handler: 13 (NULL is never success, concurrent cooldown firings, retry then replay, exception replay, only positive integer run ids count, migration contract checks);
+  - collector core: 8; receipts: 3; research-cycle: 4 (per-sport receipts unchanged).
+- **Full JavaScript suite:** 1233 tests, 1185 pass, 48 skipped, 0 fail.
 - `tsc`: clean. `eslint`: clean. `next build`: passes.
-- Python analytics: OK. Props SQL: all 7 suites pass, plus 9 integration tests.
-- `experiment-manifest verify`: the only recorded-file change from this branch is `vercel.json`. Frozen drift in `capture-plan.ts` and `props-tick.ts` already exists on `main`.
+- `experiment-manifest verify`: the only recorded-file change from this branch is `vercel.json`. Frozen props drift already exists on `main`.
+- No #230/#231 UI, briefing or ops-configuration file is changed.
 
 ## Runtime status
 
@@ -148,10 +179,11 @@ A green workflow or a page reload does not show fresh ingestion. Fresh ingestion
 1. **Restore the board now, within existing authorization (no deploy).** In the SQL editor of `fzyjazhvkstvwwzjhlrr`:
    - optionally run `select research_dispatch(true);` first (probe, 0 credits);
    - then run `select research_dispatch(false);` once (2 credits);
-   - check the run's `research_runs` row and `/api/sports`.
+   - a NULL result means the 25-minute cooldown is active: wait and run it once more;
+   - check the returned run id's `research_runs` row and `/api/sports`.
 
    The run uses the code currently deployed, so its summary does not yet contain the per-sport receipts.
-2. Run `database/verify/research_refresh_contract_readonly.sql`, then send the output for review against questions a–g.
+2. Confirm the remaining contract points (b, d, e) from `database/verify/research_refresh_contract_readonly.sql`. Points a, c, f and g were verified in ChatGPT's read-only review.
 3. If approved:
    - merge #229 (inert while the switch is off);
    - apply the migration in the SQL editor;
@@ -160,8 +192,8 @@ A green workflow or a page reload does not show fresh ingestion. Fresh ingestion
    - flip `MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled` in a separate reviewed PR;
    - deploy **before** the freeze starts (Sun 2026-11-29 18:00 MST = 2026-11-30 01:00 UTC), or after it ends.
 5. **First firing (11:00 UTC):**
-   - the Vercel log shows `dispatched` with the slot;
-   - `research_refresh_slots` has one row for the day;
+   - the Vercel log shows `dispatched` with the slot and a positive `runId`, or `not_dispatched` if a manual run happened less than 25 minutes earlier;
+   - `research_refresh_slots` has one row for the day, whose `run_id` matches a `research_runs` row;
    - the run summary shows the outcome for each sport;
    - a manual re-request of the route the same day returns `duplicate_slot`.
 6. **Rollback.** Set the switch back to `false`. Slots and snapshots are append-only.

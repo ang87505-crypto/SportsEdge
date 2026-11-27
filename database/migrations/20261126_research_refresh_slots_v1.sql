@@ -1,36 +1,55 @@
 -- research_refresh_slots_v1: at most one moneyline (h2h) refresh dispatch per UTC day.
 --
 -- PROPOSAL. Not applied anywhere. The owner applies it to the research project (fzyjazhvkstvwwzjhlrr) only after
--- running database/verify/research_refresh_contract_readonly.sql and confirming the prerequisites listed there.
+-- review, and re-runs database/verify/research_refresh_contract_readonly.sql afterwards.
 --
--- Additive only:
--- * It creates one table and one function. No existing table, function, grant, budget or cap is changed.
--- * It calls the existing public.research_dispatch(false) exactly as an operator does by hand. That function issues
---   the single-use, ten-minute capability and queues the pg_net request to /api/internal/research-cycle. There,
---   research_claim, research_reserve_credit (8 per rolling 24 h, 240 per rolling 30 d) and research_finish run
---   unchanged. Credits are therefore only ever reserved inside a claimed run, the only context in which
---   research_reserve_credit has been exercised (run 3, 2026-10-30).
+-- Verified production contract (read-only review of the installed functions, 2026-11-27):
+-- * public.research_dispatch(boolean) RETURNS bigint: the new run id.
+-- * It returns NULL when its 25-minute cooldown prevents a dispatch. In that case no run exists.
+-- * Credit caps (research_reserve_credit) are shared across both sports: 8 reservations per rolling 24 h and
+--   240 per rolling 30 d.
+-- * anon and authenticated cannot execute the research_* functions. service_role cannot execute
+--   research_dispatch directly. That restriction is preserved: only this SECURITY DEFINER wrapper calls it.
+-- * Neither research_refresh_slots nor research_refresh_slot_dispatch exists in production yet.
 --
--- Atomicity:
--- * The slot row and the dispatch happen in one transaction. Concurrent calls for the same slot serialise on the
---   primary key: the first commits and dispatches; the others see the conflict and dispatch nothing.
--- * If research_dispatch raises, the whole transaction rolls back. The slot stays free and no pg_net request is
---   sent (pg_net: "HTTP requests are not started until the transaction is committed",
---   https://supabase.github.io/pg_net/api/), so a retry within the same day may dispatch once.
--- * Once a dispatch has committed, the slot is spent even if the downstream run later fails. A failed run is
---   reviewed through its research_runs receipt and is never retried automatically, so one slot can reserve
---   credits at most once (two requests).
+-- Additive only. One table and one function. No existing table, function, grant, budget or cap is changed.
+-- The wrapper calls research_dispatch(false) exactly as an operator does by hand. That issues the single-use,
+-- ten-minute capability and queues the pg_net request to /api/internal/research-cycle, where research_claim →
+-- research_reserve_credit → collect → research_finish run unchanged. Credits are only ever reserved inside a
+-- claimed run.
+--
+-- Slot rules:
+-- * A slot row is written ONLY together with a positive run id returned by research_dispatch, so a committed slot
+--   always names a real run.
+-- * NULL (cooldown) or any non-positive result writes nothing and returns not_dispatched. The day's slot stays
+--   available, and a later call the same day may dispatch.
+-- * An exception rolls back the whole call. No slot is written, and pg_net sends nothing: "HTTP requests are not
+--   started until the transaction is committed", https://supabase.github.io/pg_net/api/.
+-- * Concurrent calls for one slot serialise on a transaction-scoped advisory lock, so only the first can
+--   dispatch; the others then see its committed row and return duplicate_slot. The primary key is a backstop:
+--   a second insert would raise and roll back its own dispatch.
+-- * Once a run is recorded, the slot is spent even if that run later fails. Failed runs are reviewed through
+--   their research_runs receipt and never retried automatically, so one slot reserves credits at most once.
+
+do $$
+begin
+  if to_regprocedure('public.research_dispatch(boolean)') is null then
+    raise exception 'PREREQUISITE_MISSING: public.research_dispatch(boolean)';
+  end if;
+  if pg_get_function_result('public.research_dispatch(boolean)'::regprocedure) <> 'bigint' then
+    raise exception 'CONTRACT_MISMATCH: research_dispatch(boolean) must return bigint, found %',
+      pg_get_function_result('public.research_dispatch(boolean)'::regprocedure);
+  end if;
+end $$;
 
 create table if not exists public.research_refresh_slots (
   slot_key text primary key
     check (slot_key ~ '^moneyline-h2h-[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
   claimed_at timestamptz not null default now(),
-  -- research_dispatch's own return value as text (its run id, if it returns one). It is set inside the same
-  -- transaction, so a committed row always records what was dispatched.
-  dispatch_result text not null
+  run_id bigint not null check (run_id > 0)
 );
 alter table public.research_refresh_slots enable row level security;
-revoke all on table public.research_refresh_slots from public, anon, authenticated;
+revoke all on table public.research_refresh_slots from public, anon, authenticated, service_role;
 grant select on table public.research_refresh_slots to service_role;
 
 create or replace function public.research_refresh_slot_dispatch(p_slot text)
@@ -40,7 +59,8 @@ security definer
 set search_path = public, pg_temp
 as $$
 declare
-  v_result text;
+  v_existing bigint;
+  v_run bigint;
 begin
   if p_slot is null or p_slot !~ '^moneyline-h2h-[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
     raise exception 'INVALID_SLOT' using errcode = '22023';
@@ -49,16 +69,21 @@ begin
   if substring(p_slot from 15)::date <> (now() at time zone 'utc')::date then
     raise exception 'SLOT_NOT_TODAY' using errcode = '22023';
   end if;
-  insert into public.research_refresh_slots (slot_key, dispatch_result)
-  values (p_slot, '')
-  on conflict (slot_key) do nothing;
-  if not found then
-    return jsonb_build_object('status', 'duplicate_slot', 'slot', p_slot);
+  -- Held until commit or rollback. A waiter's next statement sees the holder's committed row (READ COMMITTED,
+  -- which PostgREST uses).
+  perform pg_advisory_xact_lock(hashtextextended('research_refresh_slots:' || p_slot, 0));
+  select run_id into v_existing from public.research_refresh_slots where slot_key = p_slot;
+  if found then
+    return jsonb_build_object('status', 'duplicate_slot', 'slot', p_slot, 'run_id', v_existing);
   end if;
-  -- The existing dispatcher, unchanged. Cast to text so any scalar return type (bigint run id, void) is recorded.
-  v_result := coalesce(public.research_dispatch(false)::text, '');
-  update public.research_refresh_slots set dispatch_result = v_result where slot_key = p_slot;
-  return jsonb_build_object('status', 'dispatched', 'slot', p_slot, 'dispatch', v_result);
+  v_run := public.research_dispatch(false);
+  if v_run is null or v_run <= 0 then
+    -- Cooldown (NULL) or an unexpected non-positive id: nothing dispatched, nothing recorded, slot still open.
+    return jsonb_build_object('status', 'not_dispatched', 'slot', p_slot,
+      'reason', case when v_run is null then 'dispatcher_returned_null' else 'dispatcher_returned_non_positive' end);
+  end if;
+  insert into public.research_refresh_slots (slot_key, run_id) values (p_slot, v_run);
+  return jsonb_build_object('status', 'dispatched', 'slot', p_slot, 'run_id', v_run);
 end;
 $$;
 revoke all on function public.research_refresh_slot_dispatch(text) from public, anon, authenticated;
