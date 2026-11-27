@@ -2,6 +2,12 @@
 import {MONEYLINE_HEALTH_ISSUES} from '../src/lib/moneyline-health.ts';
 const stamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v));
 const count=v=>Number.isSafeInteger(v)&&v>=0;
+/** A remote receipt may be created during the read. Judge freshness after I/O, against the current local clock. */
+export async function readMoneylineJob(job,{released,readHealth,now=Date.now}){
+ let health=null;
+ if(released){try{health=await readHealth();}catch{/* unavailable is explicit below; never retry or dispatch */}}
+ return moneylineJob(job,health,now(),released);
+}
 export function moneylineJob(job,health,nowMs,released){
  const base={id:job.id,label:job.label,area:job.area,required:released===true,note:job.note??null,
   historyUrl:'https://github.com/ang87505-crypto/SportsEdge/blob/main/docs/MONEYLINE_WATCH_RELEASE_2026_11_26.md',

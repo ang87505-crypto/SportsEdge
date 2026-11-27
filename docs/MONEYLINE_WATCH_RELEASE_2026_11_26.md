@@ -2,6 +2,8 @@
 
 ## Approved activation update — 2026-11-27
 
+Final live acceptance found a monitor timing defect: a newly generated remote receipt was compared with the monitor's earlier process-start timestamp and could be falsely rejected as future-dated. The moneyline reader now checks the local clock after the metadata read. Offline regression cases cover a receipt generated during I/O, genuinely future/stale evidence, the OFF/no-request path and an unavailable read without retry. Daily collection and its release gates are unchanged by this monitor repair.
+
 The owner approved this data-only release in the SportsEdge conversation. The private `research_refresh_slots_v1` migration was applied to `fzyjazhvkstvwwzjhlrr` at approximately 05:11 UTC. Post-migration checks verified RLS, no browser-role access, select-only service-role table access and restricted wrapper execution. The four existing research function definitions and their grants remained unchanged.
 
 PR #234 merged as `c0137fac9fd491c4174ec14cff8b32eb5e102746` and production deployment `dpl_5qE3XTBoEm9jzffxtuT6uuqRhtuz` was confirmed READY with the schedule still OFF.

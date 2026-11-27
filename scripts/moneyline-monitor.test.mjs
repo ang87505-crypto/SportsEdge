@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {moneylineJob} from './moneyline-monitor.mjs';
+import {moneylineJob,readMoneylineJob} from './moneyline-monitor.mjs';
 import {moneylineHealth} from '../src/lib/moneyline-health.ts';
 import {moneylineReceiptFixture as receipt} from '../src/lib/moneyline-health-fixture.mjs';
 const NOW='2026-11-28T13:00:00.000Z',now=Date.parse(NOW),job={id:'moneyline-refresh',label:'Moneyline',area:'sports',crons:['0 11 * * *']};
@@ -22,4 +22,25 @@ test('unavailable, stale, future, contradictory and release-mismatched health is
  for(const h of [null,{...health(),checkedAt:'2026-11-28T12:49:00Z'},{...health(),checkedAt:'2026-11-28T13:00:01Z'},
   {...health(),run:null},{...health(),enabled:false},{...health(),issues:['MISSING_SLOT']},{...health(),issues:['UNKNOWN_CODE']}])
   assert.equal(moneylineJob(job,h,now,true).status,'STALE');
+});
+test('a receipt created during the metadata read is judged against the clock after the read',async()=>{
+ let clock=now;
+ const h={...health(),checkedAt:new Date(now+1000).toISOString()};
+ const j=await readMoneylineJob(job,{released:true,now:()=>clock,readHealth:async()=>{clock+=2000;return h;}});
+ assert.equal(j.status,'OK');assert.equal(j.required,true);
+});
+test('post-read timing still rejects genuinely future or stale receipts',async()=>{
+ for(const checkedAt of [new Date(now+2001).toISOString(),new Date(now-11*60_000).toISOString()]){
+  let clock=now;
+  const j=await readMoneylineJob(job,{released:true,now:()=>clock,readHealth:async()=>{clock+=2000;return {...health(),checkedAt};}});
+  assert.equal(j.status,'STALE');
+ }
+});
+test('the reader performs no request while OFF and does not retry an unavailable read',async()=>{
+ let reads=0;
+ const readHealth=async()=>{reads++;throw Error('unavailable');};
+ assert.equal((await readMoneylineJob(job,{released:false,now:()=>now,readHealth})).status,'RELEASED_OFF');
+ assert.equal(reads,0);
+ assert.equal((await readMoneylineJob(job,{released:true,now:()=>now,readHealth})).status,'STALE');
+ assert.equal(reads,1);
 });
