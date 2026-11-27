@@ -1,0 +1,33 @@
+--- a/src/lib/server/moneyline-refresh.ts
++++ b/src/lib/server/moneyline-refresh.ts
+@@ -23,8 +23,8 @@
+ import {timingSafeEqual} from 'node:crypto';
+ import {researchCycleEnvironmentReady} from './research-cycle-handler.ts';
+ 
+-/** NOT owner-approved. Flip to true only in a reviewed PR after the owner approves the daily schedule. */
+-export const MONEYLINE_REFRESH_RELEASE={scheduledRunsEnabled:false,paperOnly:true,realMoneyEnabled:false} as const;
++/** Data-only activation. Apply this prepared change only after the owner approves this reviewed release. */
++export const MONEYLINE_REFRESH_RELEASE={scheduledRunsEnabled:true,paperOnly:true,realMoneyEnabled:false} as const;
+ /** 11:00 UTC: before EPL's earliest kickoffs (12:30 UTC) and the same night's NBA tip-offs (23:00-03:30 UTC).
+  * No other Odds API job runs in this hour (props collect/ticks run 13:00-02:00 UTC). Must match vercel.json. */
+ export const MONEYLINE_REFRESH_SLOT={hourUtc:11,cron:'0 11 * * *',path:'/api/internal/moneyline-refresh'} as const;
+--- a/src/lib/server/moneyline-refresh.test.mjs
++++ b/src/lib/server/moneyline-refresh.test.mjs
+@@ -28,13 +28,13 @@
+ }
+ const deps=(over={})=>({now:()=>at,released:true,dispatchSlot:async()=>{throw Error('unexpected');},...over});
+ 
+-test('the release switch is off: no owner approval is recorded for a daily schedule',()=>{
+- assert.equal(MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,false);
++test('the approved data schedule is on while real money remains off',()=>{
++ assert.equal(MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,true);
+  assert.equal(MONEYLINE_REFRESH_RELEASE.realMoneyEnabled,false);
+ });
+-test('with the shipped switch a correctly timed, authorised firing makes no network call',async()=>{
++test('an explicit OFF override still makes no network call',async()=>{
+  const db=slotDb();
+- const r=await handleMoneylineRefresh(req(),env,deps({released:undefined,dispatchSlot:db.dispatchSlot}));
++ const r=await handleMoneylineRefresh(req(),env,deps({released:false,dispatchSlot:db.dispatchSlot}));
+  assert.equal((await body(r)).reason,'moneyline_schedule_off');assert.equal(db.runs,0);assert.equal(db.slots.size,0);
+ });
+ test('auth, method, query, environment and slot hour are checked before anything else',async()=>{
