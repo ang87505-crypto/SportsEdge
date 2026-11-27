@@ -1,7 +1,7 @@
 import 'server-only';
 import Link from 'next/link';
 import {connection} from 'next/server';
-import {Badge,Evidence,Metric,Panel,StatusDot} from '@/components/ui';
+import {Badge,Evidence,Metric,MetricGrid,Panel,StatusDot} from '@/components/ui';
 import {loadBriefing} from '@/lib/server/briefing-load';
 import {OP_STATES,briefingTime} from '@/lib/briefing/briefing';
 import {mtShort} from '@/lib/props/summary';
@@ -45,7 +45,7 @@ export async function BriefingNow(){
 export async function BriefingBoard(){
  await connection();
  const b=await loadBriefing();
- const m=b.money,pp=m.prizepicks,l=b.learning;
+ const m=b.money,pp=m.prizepicks,l=b.learning,e=b.engine;
  return <>
   <div className="home-grid briefing-grid">
    <Panel title="Today" description="Recorded today, Mountain time" flush>
@@ -73,6 +73,20 @@ export async function BriefingBoard(){
     <div className="home-panel-foot"><span>Times in Mountain time</span><Link href="/automation" className="text-link">Automation</Link></div>
    </Panel>
   </div>
+  <Panel title="Learning engine" className="briefing-engine" description="Sports, stocks and weather research · registered evidence gates">
+   {e?<>
+    <p className="home-panel-note"><Badge tone={e.current?'info':'warning'}>{e.current?'Verified evaluation':e.status==='FAILED'?'Evaluation failed':'Current evaluation unavailable'}</Badge>
+     {' '}{e.total} registered experiments{e.at?` · evaluated ${mtShort(e.at)}`:''}</p>
+    {e.current?<MetricGrid columns={4}>
+     <Metric size="sm" label="Automatic evidence paths" value={e.coverage?`${e.coverage.automatic} / ${e.coverage.active}`:'Unknown'} detail="Among active experiments"/>
+     <Metric size="sm" label="Separately supplied results" value={e.coverage?String(e.coverage.ownerSuppliedOnly):'Unknown'} detail="These do not advance automatically"/>
+     <Metric size="sm" label="Ready for owner review" value={String(e.readyForReview)} detail="Registered forward requirements apply"/>
+     <Metric size="sm" label="Failed / rejected" value={`${e.failed} / ${e.rejected}`} detail="Findings retained in the registry"/>
+    </MetricGrid>:<p className="home-panel-note">Saved registry: {e.failed} failed and {e.rejected} rejected findings retained. Current feed coverage and review readiness are unverified.</p>}
+    <p className="home-panel-note">{e.note}</p>
+   </>:<p className="home-panel-note">The latest verified learning evaluation could not be read. Automatic evidence coverage and review readiness are unknown.</p>}
+   <div className="home-panel-foot"><span>An automatic path does not mean every experiment gained new results today.</span><Link href="/lab" className="text-link">Open AI Learning Lab</Link></div>
+  </Panel>
   <Panel title="What the model is learning" className="briefing-learning" description="Sports props model · last 14 days of captured lines, graded on real box scores">
    {l?<>
     <div className="briefing-learning-metrics">

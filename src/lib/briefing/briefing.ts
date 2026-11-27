@@ -11,11 +11,13 @@ import {nextRuns} from '../stocks/autopilot-view.ts';
 import {propsSummary,whyLine} from '../props/summary.ts';
 import type {OpsView,OpsJob} from '../ops/status.ts';
 import type {ResearchView} from '../research/stock-summary.ts';
+import type {EngineSnapshot} from '../server/research-engine-load.ts';
+import {PAPER_AUTO_RELEASE} from '../stocks/paper-auto-release.ts';
 
 export type Tone='positive'|'warning'|'negative'|'neutral'|'info';
 
-/** The eight operating states every system is reported in. A failure is never one of the healthy states. */
-export type OpState='EXECUTING'|'NOTHING_QUALIFIES'|'WAITING_FOR_DATA'|'BUDGET_EXHAUSTED'|'OWNER_PAUSED'|'UNAVAILABLE'|'SAFETY_STOPPED'|'OWNER_ACTION';
+/** Shared operating states. A warning or missing receipt is never presented as healthy execution. */
+export type OpState='EXECUTING'|'NOTHING_QUALIFIES'|'WAITING_FOR_DATA'|'BUDGET_EXHAUSTED'|'OWNER_PAUSED'|'UNAVAILABLE'|'SAFETY_STOPPED'|'OWNER_ACTION'|'ATTENTION';
 export const OP_STATES:Record<OpState,{label:string;tone:Tone;meaning:string}>={
  EXECUTING:{label:'Working',tone:'positive',meaning:'Healthy and doing its job.'},
  NOTHING_QUALIFIES:{label:'Nothing qualifies',tone:'info',meaning:'Healthy; the data arrived but nothing met the rules.'},
@@ -25,8 +27,9 @@ export const OP_STATES:Record<OpState,{label:string;tone:Tone;meaning:string}>={
  UNAVAILABLE:{label:'Temporarily unavailable',tone:'negative',meaning:'A record or provider could not be read, or a step failed.'},
  SAFETY_STOPPED:{label:'Safety stop',tone:'negative',meaning:'An automatic safety rule stopped it; it never restarts itself.'},
  OWNER_ACTION:{label:'Needs you',tone:'warning',meaning:'Waiting on a step only the owner can take.'},
+ ATTENTION:{label:'Needs attention',tone:'warning',meaning:'A timing or evidence gap needs checking; saved research is not discarded.'},
 };
-export type SystemState={id:'props'|'stocks';name:string;state:OpState;reason:string;href:string};
+export type SystemState={id:'props'|'stocks'|'kalshi'|'learning';name:string;state:OpState;reason:string;href:string};
 
 const NO_PICKS_STATE:Record<NoPicks['code'],OpState>={HAS_PICKS:'EXECUTING',LOCKED_AWAITING_RESULTS:'EXECUTING',PAUSED:'OWNER_PAUSED',
  WAITING_FOR_WINDOW:'WAITING_FOR_DATA',NO_GAMES_PLANNED:'WAITING_FOR_DATA',WAITING_FOR_COLLECTION:'WAITING_FOR_DATA',NO_LINES_POSTED:'WAITING_FOR_DATA',
@@ -47,11 +50,60 @@ export function stocksPublicState(ops:OpsView|null):SystemState{
  const base={id:'stocks' as const,name:'Stock PAPER autopilot',href:'/stocks/paper-auto'};
  const s=ops?.status;
  if(!s)return {...base,state:'UNAVAILABLE',reason:'The operations monitor has not published a status, so stock automation cannot be confirmed.'};
+ if(ops!.monitorStale)return {...base,state:'UNAVAILABLE',reason:'The operations check is more than 8 hours old. Current stock automation cannot be confirmed.'};
  const failing=s.jobs.filter(j=>j.area==='stocks'&&j.required&&['FAILING','STALE','DISABLED'].includes(j.status));
  if(failing.length)return {...base,state:'UNAVAILABLE',reason:failing.map(j=>`${j.label}: ${j.detail}`).join(' ')};
  const gate=s.blockers.find(b=>b.id==='stock-first-session');
- if(gate)return {...base,state:'OWNER_ACTION',reason:'Weekly plans are recorded; paper orders stay off until your supervised first session passes the release gate.'};
- return {...base,state:'EXECUTING',reason:'Stock jobs are healthy. Account details are owner-only.'};
+ if(gate)return {...base,state:'OWNER_ACTION',reason:'Paper orders stay off until your supervised first session passes the release gate.'};
+ if(!PAPER_AUTO_RELEASE.brokerWritesEnabled)return {...base,state:'OWNER_ACTION',reason:'The paper-order release switch is off. Planning and monitoring can continue; releasing orders requires owner approval.'};
+ const jobs=s.jobs.filter(j=>j.area==='stocks'&&j.required);
+ if(!jobs.length||jobs.some(j=>!['OK','RUNNING'].includes(j.status)))return {...base,state:'UNAVAILABLE',reason:'Complete, healthy stock-job receipts are unavailable. Current account activity cannot be confirmed.'};
+ return {...base,state:'EXECUTING',reason:'Stock planning and monitoring jobs are healthy. Account activity and owner controls must be checked on the private stock page.'};
+}
+
+/** Public workflow evidence only. No exchange, balance, order or private account read. */
+export function kalshiPublicState(ops:OpsView|null):SystemState{
+ const base={id:'kalshi' as const,name:'Kalshi weather research',href:'/prediction-markets/kalshi'};
+ if(!ops?.status||ops.monitorStale)return {...base,state:'UNAVAILABLE',reason:'A current operations check is unavailable. Weather collection is not assumed to be running. Exchange access remains disabled.'};
+ const jobs=['kalshi-weather','kalshi-weather-shadow'].map(id=>ops.status!.jobs.find(j=>j.id===id));
+ if(jobs.some(j=>!j))return {...base,state:'UNAVAILABLE',reason:'Weather workflow coverage is incomplete in the monitor. Open the research page for saved forecasts and grading progress. Exchange access remains disabled.'};
+ const bad=jobs.filter(j=>j&&!['OK','RUNNING','PENDING_FIRST_RUN','MISSED_SLOT','RAN_LATE'].includes(j.status));
+ if(bad.length)return {...base,state:'UNAVAILABLE',reason:bad.map(j=>`${j!.label}: ${j!.detail}`).join(' ')+' Exchange access remains disabled.'};
+ const delayed=jobs.filter(j=>['MISSED_SLOT','RAN_LATE'].includes(j!.status)||(j!.stuckQueued??0)>0);
+ if(delayed.length)return {...base,state:'ATTENTION',reason:delayed.map(j=>`${j!.label}: ${j!.detail}`).join(' ')+' Saved forecast records remain available separately. Exchange access remains disabled.'};
+ if(jobs.some(j=>j!.status==='PENDING_FIRST_RUN'||!j!.lastSuccess))return {...base,state:'WAITING_FOR_DATA',reason:'Waiting for successful weather-workflow receipts. Saved forecasts and graded days are tracked separately; exchange access remains disabled.'};
+ return {...base,state:'EXECUTING',reason:'Weather workflow receipts are healthy. Forecasts and graded forward days are shown on the research page; workflow success is not evidence of trading performance. Exchange access remains disabled.'};
+}
+
+export type EngineBriefing={at:string|null;current:boolean;status:EngineSnapshot['status'];total:number;readyForReview:number;failed:number;rejected:number;
+ coverage:{active:number;automatic:number;ownerSuppliedOnly:number}|null;note:string};
+
+/** A display projection of the verified archive. No registry, threshold or lifecycle changes. */
+export function engineBriefing(snapshot:EngineSnapshot|null|undefined,nowIso:string):EngineBriefing|null{
+ if(!snapshot)return null;
+ const at=snapshot.at,age=at?Date.parse(nowIso)-Date.parse(at):NaN;
+ const current=snapshot.mode==='live'&&snapshot.status==='OK'&&!snapshot.stale&&Number.isFinite(age)&&age>=0&&age<=48*3600_000;
+ const experiments=snapshot.registry.experiments;
+ const active=experiments.filter(e=>!['FAILED','REJECTED','READY_FOR_REVIEW'].includes(e.status));
+ const c=snapshot.attention?.coverage;
+ const without=snapshot.attention?.withoutProducer??[];
+ const coverage=current&&c&&c.total===experiments.length&&c.active===active.length&&c.automatic+c.ownerSuppliedOnly===c.active&&
+  c.ownerSuppliedOnly===without.length&&without.every(id=>active.some(e=>e.id===id))
+  ?{active:c.active,automatic:c.automatic,ownerSuppliedOnly:c.ownerSuppliedOnly}:null;
+ const readyForReview=experiments.filter(e=>e.status==='READY_FOR_REVIEW').length;
+ const note=!current?snapshot.status==='FAILED'?'The latest evaluation failed. Saved registry counts do not confirm current learning progress.':
+  'Current evaluation evidence is unavailable or old. Saved registry counts do not confirm a running learning job.':
+  coverage?`${coverage.automatic} of ${coverage.active} active experiments have an automatic evidence path; ${coverage.ownerSuppliedOnly} depend on separately supplied results. ${readyForReview} ready for owner review. Nothing is promoted automatically.`:
+  'The latest evaluation was verified, but automatic evidence coverage could not be confirmed. Nothing is promoted automatically.';
+ return {at,current,status:snapshot.status,total:experiments.length,readyForReview,
+  failed:experiments.filter(e=>e.status==='FAILED').length,rejected:experiments.filter(e=>e.status==='REJECTED').length,coverage,note};
+}
+
+export function learningPublicState(engine:EngineBriefing|null):SystemState{
+ const base={id:'learning' as const,name:'AI learning engine',href:'/lab'};
+ if(!engine?.current)return {...base,state:'UNAVAILABLE',reason:engine?.note??'A verified current evaluation is unavailable. Saved research is not proof of an active learning job.'};
+ if(!engine.coverage)return {...base,state:'ATTENTION',reason:engine.note};
+ return {...base,state:engine.readyForReview?'OWNER_ACTION':'WAITING_FOR_DATA',reason:engine.note};
 }
 
 const MT_DAY=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'});
@@ -66,6 +118,7 @@ export type Briefing={
  asOf:string;
  health:{tone:Tone;headline:string;detail:string;checkedAt:string|null;stale:boolean;problems:string[];siteOk:boolean|null;deployment:string|null};
  systems:SystemState[];
+ engine:EngineBriefing|null;
  today:TodayItem[];
  money:{prizepicks:{balanceCents:number;startCents:number;netCents:number;weekNetCents:number;weekSettled:number;
   /** Entries whose games were on the previous Mountain-time date (the NBA slate), settled with a known payout. */
@@ -81,7 +134,7 @@ export type Briefing={
 };
 export type BriefingInput={nowIso:string;
  props:{raw:Raw;pp:PropsView;p6:PropsView;collection:CollectionStatus|null;noPicks:NoPicks}|null;
- ops:OpsView|null;research:ResearchView|null;
+ ops:OpsView|null;research:ResearchView|null;engine?:EngineSnapshot|null;
  /** Planned schedule times (never runs), e.g. the weekly stock pick. */
  planned?:NextItem[]};
 
@@ -96,18 +149,20 @@ function health(ops:OpsView|null):Briefing['health']{
  // A run GitHub never started is a warning (the monitor's own rating), not a failure.
  const warn=(j:OpsJob)=>['MISSED_SLOT','RAN_LATE'].includes(j.status)||(j.stuckQueued??0)>0;
  const failing=s.jobs.filter(j=>j.required&&bad(j));
- const warnings=s.jobs.filter(j=>!failing.includes(j)&&(warn(j)||(!j.required&&bad(j))));
+ const warnings=s.jobs.filter(j=>!failing.includes(j)&&(warn(j)||j.status==='PENDING_FIRST_RUN'||(!j.required&&bad(j))));
  const siteBad=s.site.checks.filter(c=>!c.ok);
  const problems=[...failing.map(j=>`${j.label}: ${j.detail}`),...siteBad.map(c=>`Live check failed: ${c.name}`),
   ...warnings.map(j=>`${j.label}: ${j.detail}`)];
  const dep=s.site.deployment&&s.site.deployment.state!=='UNKNOWN'?s.site.deployment.detail:null;
  const depBad=!!s.site.deployment&&!['MATCHES_MAIN','UNKNOWN'].includes(s.site.deployment.state);
- const tone:Tone=failing.length||siteBad.length?'negative':warnings.length||depBad||ops!.monitorStale?'warning':'positive';
- const headline=tone==='negative'?'Something needs attention':tone==='warning'?'Running, with warnings':'Everything is running';
+ const incomplete=!s.jobs.some(j=>j.required)||!s.site.checks.length;
+ const tone:Tone=failing.length||siteBad.length?'negative':warnings.length||depBad||ops!.monitorStale||incomplete||s.blockers.length||s.overall.state!=='OK'?'warning':'positive';
+ const headline=tone==='negative'?'Something needs attention':ops!.monitorStale?'Status needs a fresh check':incomplete?'Status incomplete':tone==='warning'?'Running, with warnings':'Reported jobs are healthy';
  const detail=failing.length||siteBad.length?`${failing.length} required job${failing.length===1?'':'s'} failing; ${siteBad.length} live check${siteBad.length===1?'':'s'} failing.`:
   `${s.jobs.filter(j=>j.required&&j.status==='OK').length} of ${s.jobs.filter(j=>j.required).length} required jobs healthy; ${s.site.checks.length-siteBad.length} of ${s.site.checks.length} live site checks passed.`+
   (warnings.length?` ${warnings.length} warning${warnings.length===1?'':'s'}.`:'');
- return {tone,headline,detail:detail+(ops!.monitorStale?' This check is more than 8 hours old.':''),checkedAt:s.generatedAt,stale:ops!.monitorStale,problems,
+ return {tone,headline,detail:detail+(s.blockers.length?` ${s.blockers.length} item${s.blockers.length===1?' needs':'s need'} attention.`:'')+
+  (incomplete?' Complete job and live-site evidence is unavailable.':'')+(ops!.monitorStale?' This check is more than 8 hours old.':''),checkedAt:s.generatedAt,stale:ops!.monitorStale,problems,
   siteOk:s.site.ok,deployment:dep};
 }
 
@@ -219,8 +274,9 @@ function nextOf(x:BriefingInput):NextItem[]{
 
 export function buildBriefing(x:BriefingInput):Briefing{
  const r=x.research?.summary;
+ const engine=engineBriefing(x.engine,x.nowIso);
  return {asOf:x.nowIso,health:health(x.ops),
-  systems:[propsState(x.props?{control:x.props.raw.control,noPicks:x.props.noPicks}:null),stocksPublicState(x.ops)],
+  systems:[propsState(x.props?{control:x.props.raw.control,noPicks:x.props.noPicks}:null),stocksPublicState(x.ops),kalshiPublicState(x.ops),learningPublicState(engine)],engine,
   today:today(x),money:moneyOf(x),learning:learningOf(x),
   research:{stocks:r?{overall:r.overall,daily:r.daily?.overall??null,generatedAt:r.generatedAt,saved:x.research?.mode==='saved'}:null},
   upcoming:x.props?propsSummary(x.props.pp).upcoming.slice(0,5).map(u=>({player:u.player,side:u.side,line:u.line,stat:u.stat,probability:u.probability,game:u.game,lockAt:u.lockAt,

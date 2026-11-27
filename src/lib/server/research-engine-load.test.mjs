@@ -58,3 +58,14 @@ test('engine attention: evidence gaps and sports alarms reach the page only as s
  assert.equal(readEngineAttention({domains:{sports:{alarms:{status:'WEIRD'}}}}).alarms,null);
  assert.equal(readEngineAttention(null),null);
 });
+
+test('automatic coverage accepts complete bounded counts and rejects inconsistent, missing or duplicate evidence',async()=>{
+ const {readEngineAttention}=await import('./research-engine-load.ts');
+ const good={total:4,active:2,automatic:1,ownerSuppliedOnly:[{id:'needs-results'}]};
+ const read=e=>readEngineAttention({evidence:{experiments:e}}).coverage;
+ assert.deepEqual(read(good),{total:4,active:2,automatic:1,ownerSuppliedOnly:1});
+ assert.deepEqual(read({total:0,active:0,automatic:0,ownerSuppliedOnly:[]}),{total:0,active:0,automatic:0,ownerSuppliedOnly:0});
+ for(const bad of [{},{...good,automatic:undefined},{...good,active:5},{...good,automatic:2},{...good,automatic:-1},
+  {...good,automatic:0.5},{...good,ownerSuppliedOnly:undefined},{...good,ownerSuppliedOnly:[{id:'<bad>'}]},
+  {...good,active:3,ownerSuppliedOnly:[{id:'needs-results'},{id:'needs-results'}]}])assert.equal(read(bad),null);
+});

@@ -10,8 +10,14 @@ import {stockAnswer,researchAnswer} from '../assistant/stock-answer.ts';
 import {loadStockResearch,resetStockResearchCache} from './stock-research-load.ts';
 import {parseStockResearch} from '../research/stock-summary.ts';
 import saved from '../../data/research/stock-strategy-summary.json' with {type:'json'};
+import {loadLabFrom} from './lab-load-core.ts';
+import retro from '../../../research/lab_sports_ablation_20261112/report.json' with {type:'json'};
+import retroStaking from '../../../research/lab_staking_20261112/report.json' with {type:'json'};
 const NOW='2026-11-09T23:00:00Z';
 const ENV={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+const engineSnapshot=()=>({mode:'live',status:'OK',stale:false,at:NOW,registry:{schema:'sportsedge-learning-registry-v1',experiments:[
+ {id:'lab-test-auto',status:'RUNNING'},{id:'lab-test-owner',status:'INSUFFICIENT_DATA'}]},
+ attention:{coverage:{total:2,active:2,automatic:1,ownerSuppliedOnly:1},withoutProducer:['lab-test-owner']}});
 function setup(owner=false){
  const calls={sports:0,accounts:0,broker:0,research:0};
  return {calls,ports:{access:{ownerAccess:owner,ownerExpiresAt:owner?Date.parse(NOW)+60000:null},
@@ -24,6 +30,34 @@ async function ask(message,s,context=null,env=ENV){
  const r=await handleSiteAssistant({contentType:'application/json',text:async()=>JSON.stringify({message,context})},env,NOW,s.ports);
  return {http:r.status,...await r.json()};
 }
+
+test('public health and improvement answers share evidence coverage without reading private stock ports',async()=>{
+ const s=setup();let engineReads=0;s.ports.engine=async()=>{engineReads++;return engineSnapshot();};
+ const health=await ask('Is everything running?',s);
+ assert.match(health.reply.text,/Kalshi weather research/);assert.match(health.reply.text,/AI learning engine/);
+ assert.match(health.reply.text,/1 of 2 active experiments have an automatic evidence path/);
+ const improving=await ask('How is the algorithm improving?',s);
+ assert.match(improving.reply.text,/separately supplied results/);assert.match(improving.reply.text,/Nothing is promoted automatically/);
+ assert.equal(engineReads,2);assert.equal(s.calls.accounts,0);assert.equal(s.calls.broker,0);
+ await ask('How much virtual money did we make this week?',s);
+ assert.equal(engineReads,2,'money queries do not add an unrelated engine archive read');
+});
+
+test('an unavailable learning archive cannot hide sports evidence or leak an exception',async()=>{
+ const s=setup();s.ports.engine=async()=>{throw Error('SECRET_TEST_FAILURE');};
+ const result=await ask('How is the algorithm improving?',s);
+ assert.match(result.reply.text,/Automatic evidence coverage cannot be confirmed/);
+ assert.match(result.reply.text,/Recorded picks hit/);assert.doesNotMatch(result.reply.text,/SECRET_TEST_FAILURE/);
+ assert.equal(s.calls.accounts,0);assert.equal(s.calls.broker,0);
+});
+
+test('the home learning question gets the same public coverage before the detailed lab answer',async()=>{
+ const s=setup();s.ports.engine=async()=>engineSnapshot();s.ports.lab=async()=>loadLabFrom(null,NOW,retro,retroStaking);
+ const result=await ask('What did our AI learn yesterday?',s);
+ assert.match(result.reply.text,/^Learning engine: 1 of 2 active experiments/);
+ assert.match(result.reply.text,/Nothing new was learned in the last day/);
+ assert.equal(s.calls.accounts,0);assert.equal(s.calls.broker,0);
+});
 function mark(session,equityCents,extra={}){
  return {session,capturedAt:session+'T22:00:00Z',equityCents,cashCents:equityCents,longMarketValueCents:0,
  externalFlowCents:0,feesCents:0,dividendsCents:0,benchmarkSymbol:'SPY',benchmarkClose:'500',
