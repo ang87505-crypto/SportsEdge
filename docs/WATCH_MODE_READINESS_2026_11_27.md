@@ -39,10 +39,10 @@ Moving this schedule earlier could change the frozen v1 horizon cohort. That rem
 ## How to observe
 
 - [Overview](https://sports-edge-eta.vercel.app/), [Automation](https://sports-edge-eta.vercel.app/automation), [Learning Lab](https://sports-edge-eta.vercel.app/lab) and Ask SportsEdge share the published receipts. Public data caches can briefly lag a new receipt; compare displayed timestamps.
-- The existing operations monitor runs every four hours and after watched jobs. Its existing GitHub alert issue reports operational failures; owner-pending releases remain listed separately. The monitor never places orders, resumes systems or promotes a model.
+- The existing operations monitor runs every four hours and after watched jobs. Its existing GitHub alert issue reports operational failures, including an unreadable/UNKNOWN job history; unknown evidence cannot roll up as healthy. Owner-pending releases remain listed separately. The monitor never places orders, resumes systems or promotes a model.
 - A missing forecast is missing evidence. Keep it missing rather than recreating a historical prediction. Preserve failed/rejected experiments and all archived findings.
 - Validation continues on its registered evidence clock: weather requires 50 graded forward days per horizon for review, stocks 26 forward weeks, NBA its registered line/date/game/decision minimums. Neither observation-mode readiness nor paper results establish profitability.
 
 ## Acceptance
 
-Focused monitor/source/append-only contracts: 59 tests passed locally. Final release requires exact-head hosted CI, a READY main deployment, a fresh production operations snapshot containing verified `dailyEvidence`, and successful page/chat/owner-protection probes. Actual post-deployment receipts are recorded in the release PR; a green code check alone is insufficient.
+Focused monitor/source/append-only contracts: 60 tests passed locally. Final release requires exact-head hosted CI, a READY main deployment, a fresh production operations snapshot containing verified `dailyEvidence`, and successful page/chat/owner-protection probes. Actual post-deployment receipts are recorded in the release PR; a green code check alone is insufficient.

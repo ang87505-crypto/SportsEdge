@@ -239,7 +239,9 @@ function blockers(jobs,props,research,release,site,creds){
  const out=[];
  const add=(id,text,action)=>out.push({id,text,action});
  for(const j of jobs){
-  if(['FAILING','DISABLED','STALE'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,`Open ${j.historyUrl} and read the latest failed run.`);
+  if(['FAILING','DISABLED','STALE','UNKNOWN'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,
+   j.status==='UNKNOWN'?`Run history could not be verified. Check GitHub Actions access at ${j.historyUrl} and the next monitor receipt.`:
+   `Open ${j.historyUrl} and read the latest failed run.`);
   if(j.id==='stock-kickoff'&&['MISSED_SLOT','STALE'].includes(j.status))
    add('kickoff',`${j.label}: no early dispatch seen after the latest 09:00 UTC weekday cron.`,
     'Vercel → sports-edge project → Settings → Environment Variables (Production): check CRON_SECRET and SPORTSEDGE_GITHUB_DISPATCH_TOKEN (fine-grained token with Actions: write on this repository, not expired).');
