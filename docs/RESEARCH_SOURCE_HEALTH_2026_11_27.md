@@ -26,6 +26,17 @@ The generic operations job currently judges all four primary/backup cron firings
 
 ## Verification and release acceptance
 
+Production repair #237 merged as `3291c653d289c8e141d9e84c969892939311273f`, after six hosted workflows and 453 analytics tests passed. Source-only run `46044893157` succeeded and appended research-data commit `8d4eec3a0522a9ab8db0256fa20ef641b74cad0f`:
+
+| Quarter | Original ZIP bytes | SHA-256 |
+| --- | ---: | --- |
+| 2026q2 | 11,498,860 | `11f1b2bbbdcbe6347a34437c02d04202fda0eca1dbb023726e4b56504b802e27` |
+| 2026q3 | 8,660,776 | `a4e6a681cfcfa43a3d9e4ca9cfec1fd26a59d0a01eac7e9f7b5a0122092c90f3` |
+
+Both validate all eight tables and CRCs. Conservative availability is `2026-11-27T17:50:18Z`; `pointInTimeUsable=false` remains explicit. Independent saved-byte verification matched both manifest hashes, preserved the 305,061-byte original manifest prefix and both old SEC failures, and replayed the actual cache with zero requests and zero retimed receipts. The production run made exactly three GETs. The source summary and operations snapshot at `17:50:37.323Z` report SEC `OK`, with no failed quarter or SEC-source blocker. Production deployment `dpl_FNVJoMtAn5EQ1kjPNknqmegA4Mc8` is READY at the merge SHA.
+
+Acceptance also caught the generic workflow monitor counting that source-only main-push success as a full nightly stock-research run. The follow-up restricts the nightly job's evidence to `schedule` and `workflow_dispatch`; source-only failures and successes remain visible in source health. Event filtering is enforced in the tested job evaluator. A repair cannot cover a nightly slot, refresh an old forward-ledger success or hide a full-run failure. Manual full runs remain eligible. No cron or collection horizon changes.
+
 Run synthetic source/summary tests and the complete analytics suite. Hosted checks must run on the exact candidate head. A successful code check is not a successful download: final acceptance requires new real archive receipts for both closed quarters, their hashes and conservative availability, a research summary without the old unresolved-quarter warning, and a refreshed operations snapshot. All broker/exchange and scientific release controls remain unchanged.
 
 Primary sources inspected Nov 27:

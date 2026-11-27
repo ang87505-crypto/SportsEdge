@@ -62,7 +62,6 @@ async function evaluate(job){
  try{
   const d=await workflowData(job.workflow);
   let runs=d.runs;
-  if(job.events)runs=runs.filter(r=>job.events.includes(r.event));
   if(job.startedWithinMinutes){
    // Only runs that began shortly after one of this job's own planned times are its evidence.
    const [lo,hi]=job.startedWithinMinutes;

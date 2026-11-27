@@ -113,6 +113,9 @@ export function runView(r) {
  * (GitHub sometimes starts a scheduled run many hours late). The work happened, late; it still counts as a missed slot.
  */
 export function evaluateJob(job, { workflowState, runs, crons, nowMs, activeSinceMs = -Infinity }) {
+  // One workflow can run different work for different events. A source-only push must not
+  // refresh a nightly ledger's success, hide a nightly failure or cover its scheduled slot.
+  if (job.events) runs = runs.filter(r => job.events.includes(r.event));
   const graceMs = (job.graceMinutes ?? 120) * MINUTE;
   const coverBeforeMs = (job.coverBeforeMinutes ?? 0) * MINUTE;
   const completed = runs.filter(r => r.status === 'completed');

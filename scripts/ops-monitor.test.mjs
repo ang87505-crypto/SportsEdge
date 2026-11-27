@@ -47,6 +47,42 @@ test('workflow cron extraction reads every workflow in the repository', () => {
 const job = {id: 'j', staleAfterHours: 30, graceMinutes: 120, required: true};
 const daily = ['10 22 * * *'];
 
+test('SEC source-only repairs cannot hide a failed or stale full nightly research run', () => {
+  const configured=JSON.parse(readFileSync(new URL('../config/ops/jobs.json',import.meta.url),'utf8'))
+    .jobs.find(j=>j.id==='research-collect');
+  const crons=workflowCrons(readFileSync(new URL('../.github/workflows/research-collect.yml',import.meta.url),'utf8'));
+  const opts={workflowState:'active',crons,nowMs:T('2026-11-27T18:00Z')};
+  const repair=run('2026-11-27T17:50Z','success','push');
+  const failed=run('2026-11-27T10:58Z','failure');
+  const old=run('2026-11-20T10:58Z');
+  const failure=evaluateJob(configured,{...opts,runs:[repair,failed,old]});
+  assert.equal(failure.status,'FAILING');
+  assert.equal(failure.lastRun.id,failed.id);
+  assert.equal(failure.lastSuccess.id,old.id);
+  const stale=evaluateJob(configured,{...opts,runs:[repair,old]});
+  assert.equal(stale.status,'STALE');
+  assert.equal(stale.lastSuccess.id,old.id);
+  const empty=evaluateJob(configured,{...opts,runs:[repair]});
+  assert.equal(empty.status,'PENDING_FIRST_RUN');
+  assert.equal(empty.lastSuccess,null);
+});
+
+test('source-only success cannot cover a nightly slot; optional repair failure cannot fail a full run', () => {
+  const configured=JSON.parse(readFileSync(new URL('../config/ops/jobs.json',import.meta.url),'utf8'))
+    .jobs.find(j=>j.id==='research-collect');
+  const opts={workflowState:'active',crons:['17 2 * * 2-6'],nowMs:T('2026-11-27T08:00Z')};
+  const before=run('2026-11-26T02:30Z');
+  const repair=run('2026-11-27T02:30Z','success','push');
+  const missed=evaluateJob(configured,{...opts,runs:[repair,before]});
+  assert.equal(missed.status,'MISSED_SLOT');
+  assert.equal(missed.lastSuccess.id,before.id);
+  const manual=run('2026-11-27T02:40Z','success','workflow_dispatch');
+  const healthy=evaluateJob(configured,{...opts,runs:[{...repair,conclusion:'failure'},manual,before]});
+  assert.equal(healthy.status,'OK');
+  assert.equal(healthy.lastSuccess.id,manual.id);
+  assert.equal(healthy.lastFailure,null);
+});
+
 test('a planned time is never an execution: no runs means PENDING_FIRST_RUN with planned times only', () => {
   const e = evaluateJob(job, {workflowState: 'active', runs: [], crons: daily, nowMs: T('2026-11-10T12:00Z')});
   assert.equal(e.status, 'PENDING_FIRST_RUN');
