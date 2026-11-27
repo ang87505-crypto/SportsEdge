@@ -11,7 +11,7 @@ import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
 import {compareDeployment} from '../src/lib/deployment-identity.ts';
 import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
 import {MONEYLINE_REFRESH_RELEASE} from '../src/lib/server/moneyline-refresh.ts';
-import {moneylineJob} from './moneyline-monitor.mjs';
+import {readMoneylineJob} from './moneyline-monitor.mjs';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -54,11 +54,8 @@ async function workflowData(file){
 }
 async function evaluate(job){
  if(job.receiptSource==='moneyline'){
-  let health=null;
-  if(MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled){
-   try{const r=await getJson(cfg.site+'/api/research/moneyline-health',{attempts:1});if(r.ok)health=r.json;}catch{/* explicit unavailable state below */}
-  }
-  return moneylineJob(job,health,nowMs,MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled);
+  return readMoneylineJob(job,{released:MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,
+   readHealth:async()=>{const r=await getJson(cfg.site+'/api/research/moneyline-health',{attempts:1});return r.ok?r.json:null;}});
  }
  const base={id:job.id,label:job.label,area:job.area,required:!!job.required,workflow:job.workflow,note:job.note??null,
   historyUrl:`https://github.com/${REPO}/actions/workflows/${job.workflow}`};
