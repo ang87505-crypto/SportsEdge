@@ -4,6 +4,10 @@ import {createHash} from 'node:crypto';
 import {handleResearchCycle,researchCycleEnvironmentReady} from './research-cycle-handler.ts';
 
 const token='a'.repeat(64);
+const track=(name,outcome)=>({track:name,outcome,providerGames:1,gamesStored:1,pricesOffered:2,oddsInserted:outcome==='saved'?2:0,
+  oddsVerified:outcome==='saved'?2:0,newestSourceObservedAt:'2026-11-27T10:55:00.000Z',rejectedEvents:0,skippedLive:0,skippedMarkets:0});
+const receipt=(nba,soccer)=>({status:'collector-says',capturedAt:'2026-11-27T11:00:05.000Z',
+  tracks:{nba:track('nba',nba),soccer:track('soccer',soccer)},quotaRemaining:400});
 function request(body={runId:7},options={}){
   return new Request('https://sports-edge-eta.vercel.app/api/internal/research-cycle',{
     method:'POST',headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},
@@ -16,7 +20,7 @@ function setup(overrides={}){
     finish:async(...args)=>{calls.push(['finish',...args]);},
     reserve:async track=>{calls.push(['reserve',track]);return true;},
     probe:async()=>{calls.push(['probe']);return {status:'connected',sportsCount:9};},
-    collect:async()=>{calls.push(['collect']);return {status:'completed',tracks:{nba:{gamesProcessed:2}}};},
+    collect:async()=>{calls.push(['collect']);return receipt('saved','saved');},
     ...overrides};
   return {calls,deps};
 }
@@ -118,4 +122,40 @@ test('production refresh is pinned to the original research DB, never preview fi
     {SUPABASE_URL:env.SUPABASE_URL+'?redirect=1'},
     {SUPABASE_URL:'https://user:pass@fzyjazhvkstvwwzjhlrr.supabase.co'}])
     assert.equal(researchCycleEnvironmentReady({...env,...change}),false,JSON.stringify(change));
+});
+
+test('the run receipt is judged per sport and tied to the claimed run id',async()=>{
+  const cases=[[['saved','saved'],200,'refreshed','completed'],[['saved','empty_slate'],200,'refreshed','completed'],
+    [['unchanged','empty_slate'],200,'no_new_quotes','completed'],[['saved','store_failed'],503,'partial_refresh','failed'],
+    [['unchanged','unverified'],503,'refresh_failed','failed']];
+  for(const [[nba,soccer],http,status,finish] of cases){
+    const {calls,deps}=setup({collect:async()=>{calls.push(['collect']);return receipt(nba,soccer);}});
+    const r=await handleResearchCycle(request(),deps);const body=await r.json();
+    assert.equal(r.status,http);assert.equal(body.status,status);assert.equal(body.runId,7);
+    assert.deepEqual(body.tracks,{nba,soccer});
+    const fin=calls.find(c=>c[0]==='finish');
+    assert.equal(fin[1],7);assert.equal(fin[2],finish);assert.equal(fin[3].runId,7);assert.equal(fin[3].tracks.soccer,soccer);
+    assert.equal(fin[3].automaticRetry,false);
+  }
+});
+test('a collector report without per-sport receipts is never reported as refreshed',async()=>{
+  const {calls,deps}=setup({collect:async()=>{calls.push(['collect']);return {status:'completed',tracks:{nba:{gamesProcessed:2}}};}});
+  const r=await handleResearchCycle(request(),deps);
+  assert.equal(r.status,503);assert.equal((await r.json()).status,'refresh_unverified');assert.equal(calls.at(-1)[2],'failed');
+});
+test('concurrent deliveries of one capability: only the atomic claim winner reserves and collects',async()=>{
+  let claimed=false;
+  const {calls,deps}=setup({claim:async(id)=>{await new Promise(r=>setTimeout(r,5));
+    if(claimed)return null;claimed=true;calls.push(['claim',id]);return {id,probe:false};}});
+  const results=await Promise.all(Array.from({length:10},()=>handleResearchCycle(request(),deps)));
+  assert.deepEqual(results.map(r=>r.status).sort(),[200,...Array(9).fill(404)]);
+  assert.equal(calls.filter(c=>c[0]==='reserve').length,2);assert.equal(calls.filter(c=>c[0]==='collect').length,1);
+});
+test('replay after a failed run cannot spend again: the capability was consumed by the first claim',async()=>{
+  let used=false;
+  const {calls,deps}=setup({claim:async(id)=>{if(used)return null;used=true;return {id,probe:false};},
+    collect:async()=>{calls.push(['collect']);throw Error('provider down');}});
+  assert.equal((await handleResearchCycle(request(),deps)).status,503);
+  assert.equal((await handleResearchCycle(request(),deps)).status,404);
+  assert.equal(calls.filter(c=>c[0]==='reserve').length,2);assert.equal(calls.filter(c=>c[0]==='collect').length,1);
 });

@@ -6,7 +6,17 @@ on:
     paths:
       - 'src/app/api/internal/research-cycle/**'
       - 'src/lib/server/research-cycle-handler*'
+      - 'src/app/api/internal/moneyline-refresh/**'
+      - 'src/lib/server/moneyline-refresh*'
+      - 'vercel.json'
+      - 'src/lib/server/collect/**'
+      - 'src/lib/ingestion/**'
+      - 'database/migrations/20261126_research_refresh_slots_v1.sql'
+      - 'database/tests/research_refresh_slots_v1*'
+      - 'scripts/verify-research-refresh-sql.sh'
       - '.github/workflows/research-market-refresh.yml'
+# Contract tests only: this workflow never collects market data or proves that fresh quotes were saved.
+# Fresh ingestion is shown by /api/sports quote timestamps and the moneyline-refresh receipt.
 permissions:
   contents: read
 jobs:
@@ -20,4 +30,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs
+      - run: node --experimental-strip-types --test src/lib/server/research-cycle-handler.test.mjs src/lib/server/moneyline-refresh.test.mjs src/lib/server/collect/dual-track-core.test.mjs src/lib/nba-paper-run-contract.test.mjs src/lib/ingestion/*.test.mjs
+  slot-sql:
+    # Disposable local PostgreSQL only: atomic slot claim, replay after failure and a 20-way race, against a STUB
+    # research_dispatch. Never connects to Supabase or the provider.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo systemctl start postgresql.service
+      - run: sudo bash scripts/verify-research-refresh-sql.sh

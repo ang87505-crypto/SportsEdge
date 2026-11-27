@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {summarizeCollection} from '../ingestion/track-receipt.ts';
 
 type Claim={id:number;probe:boolean};
 type Summary=Record<string,unknown>;
@@ -84,10 +85,14 @@ export async function handleResearchCycle(request:Request,deps:ResearchCycleDepe
       return json({...summary,runId},429);
     }
     const report=await deps.collect();
-    const summary={status:'refreshed',report,automaticBettingEnabled:false,
-      realMoneyEnabled:false};
-    await deps.finish(runId,'completed',summary);
-    return json({...summary,runId});
+    // The run's own receipt, judged per sport: one saved sport never makes a failed or unverified one look
+    // refreshed. Only refreshed/no_new_quotes complete the run; anything else is recorded as failed for review.
+    const {status,tracks}=summarizeCollection(report);
+    const ok=status==='refreshed'||status==='no_new_quotes';
+    const summary={status,runId,tracks,report,automaticRetry:false,automaticBettingEnabled:false,
+      realMoneyEnabled:false,...(ok?{}:{reviewRequired:true})};
+    await deps.finish(runId,ok?'completed':'failed',summary);
+    return json(summary,ok?200:503);
   }catch{
     const summary={status:'refresh_unverified',reviewRequired:true,
       automaticRetry:false,realMoneyEnabled:false};
