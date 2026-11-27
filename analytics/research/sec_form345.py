@@ -22,7 +22,7 @@ import zipfile
 import zlib
 
 from .fetch import Fetcher, FetchError, Response
-from .store import SnapshotStore, sha256
+from .store import SnapshotStore, canonical, sha256
 
 SOURCE_ID = 'sec-form345-dataset'
 VERSION = 'sec-form345-archive-v1'
@@ -190,6 +190,16 @@ def cached_archive(store, quarter, as_of):
     if parsed.get('schemaVersion') != VERSION:
         return None
     try:
+        # Bind bytes, metadata and original availability to the append-only receipt, not just
+        # the record's own hashes. UNCHANGED manifest entries may point to an older OK record.
+        original = next((row for row in store.manifest() if row.get('path') == prior['path']
+                         and row.get('status') == 'OK'), None)
+        binding = ('source_id', 'key', 'url', 'path', 'content_sha256', 'parsed_sha256')
+        if original is None or any(rec.get(k) != original.get(k) or rec.get(k) != prior.get(k)
+                                   for k in binding) or \
+                any(rec.get(k) != original.get(k) for k in ('retrieved_at', 'available_at')) or \
+                sha256(canonical(parsed)) != prior['parsed_sha256']:
+            raise ArchiveError('CACHE_BINDING_INVALID')
         if rec['key'] != quarter or archive_quarter(rec['url']) != quarter or \
                 parsed.get('quarter') != quarter or parsed.get('pointInTimeUsable') is not False or \
                 utc(datetime.fromisoformat(rec['available_at'].replace('Z', '+00:00'))) > as_of:

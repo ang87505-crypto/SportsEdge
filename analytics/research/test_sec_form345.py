@@ -1,5 +1,6 @@
 """SYNTHETIC archive fixtures only. Field names follow the SEC's public tables 5.1–5.8."""
 from datetime import datetime, timedelta, timezone
+import base64
 import gzip
 import io
 import json
@@ -11,7 +12,7 @@ import zipfile
 
 from analytics.research import sec_form345 as sec
 from analytics.research.fetch import FetchError, Response
-from analytics.research.store import SnapshotStore
+from analytics.research.store import SnapshotStore, canonical
 from analytics.research.summary import build_summary
 
 NOW = datetime(2026, 11, 27, 18, tzinfo=timezone.utc)
@@ -205,6 +206,41 @@ class SecArchive(unittest.TestCase):
         f=FakeFetcher({});r=self.collect(f,NOW+timedelta(days=1))
         self.assertEqual(r['failures'][0]['error'],'CACHE_INTEGRITY_FAILED')
         self.assertEqual(f.calls,[])
+
+    def test_self_consistent_cache_rewrites_cannot_replace_the_manifest_receipt(self):
+        self.collect(FakeFetcher(routes()))
+        row=self.store.manifest()[0];path=self.store.root/row['path']
+        original=path.read_bytes()
+        for kind in ('metadata','body','availability'):
+            with self.subTest(kind=kind):
+                rec=json.loads(gzip.decompress(original))
+                if kind=='metadata':
+                    rec['parsed']['usage']='UNAUTHORIZED_DECISION_INPUT'
+                elif kind=='body':
+                    body=archive(marker='TAMPERED')
+                    rec['body_b64']=base64.b64encode(body).decode()
+                    rec['content_sha256']=sec.sha256(body)
+                    rec['parsed'].update(sec.validate_archive(body))
+                else:
+                    rec['available_at']='2026-11-01T00:00:00Z'
+                rec['parsed_sha256']=sec.sha256(canonical(rec['parsed']))
+                with gzip.open(path,'wt',encoding='utf-8') as f:json.dump(rec,f)
+                fetcher=FakeFetcher({});result=self.collect(fetcher,NOW+timedelta(days=1))
+                self.assertEqual(result['failures'][0]['error'],'CACHE_INTEGRITY_FAILED')
+                self.assertEqual(fetcher.calls,[])
+
+    def test_unchanged_cache_keeps_its_original_availability_and_needs_no_request(self):
+        self.collect(FakeFetcher(routes()))
+        row=self.store.manifest()[0];rec=self.store.load(row['path'])
+        self.store.put(source_id=sec.SOURCE_ID,key=row['key'],url=rec['url'],body=rec['body'],
+            retrieved_at=sec.stamp(NOW+timedelta(hours=1)),available_at=sec.stamp(NOW+timedelta(hours=1)),
+            status='OK',parsed=rec['parsed'])
+        before=(self.store.root/'manifest.jsonl').read_bytes()
+        fetcher=FakeFetcher({});result=self.collect(fetcher,NOW+timedelta(days=1))
+        self.assertEqual(result['cached'],['2026q2','2026q3'])
+        self.assertEqual(fetcher.calls,[])
+        self.assertEqual(self.store.load(row['path'])['available_at'],sec.stamp(NOW))
+        self.assertEqual((self.store.root/'manifest.jsonl').read_bytes(),before)
 
     def test_bounded_transport_refuses_non_get_and_oversized_responses(self):
         with self.assertRaises(sec.ArchiveError):
