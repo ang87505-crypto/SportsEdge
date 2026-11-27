@@ -2,7 +2,7 @@
  * AI 2.0 learning engine runner (research only): one complete, idempotent learning cycle.
  *   node --experimental-strip-types scripts/research-engine.ts --registry research/engine/registry.json --out <dir>
  *        [--state <dir>] [--sports-ledger | --sports-rows rows.json --forward-input fwd.json [--sports-coverage coverage.json]] [--stock-weeks weeks.json]
- *        [--result results.json] [--evaluate-forward] [--now ISO]
+ *        [--stock-research summary.json] [--props-research research-data] [--result results.json] [--evaluate-forward] [--now ISO]
  *
  * 1 read newly graded outcomes and frozen predictions (GET-only from the props ledger, host-pinned; or offline JSON)
  * 2 check integrity and timestamps (bad rows excluded and counted)   3 diagnose with clustered uncertainty
@@ -13,7 +13,7 @@
  * A repeat run on the same data changes nothing. It never writes to a database, never calls a provider, broker or
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
-import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync,readdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync,readdirSync,statSync} from 'node:fs';
 import {join} from 'node:path';
 import {adopt,advance,EngineError,fingerprint,register,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
@@ -29,6 +29,7 @@ import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
 import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
 import {evidenceCoverage} from '../src/lib/lab/engine/evidence.ts';
 import {stockResearchResults} from '../src/lib/lab/engine/stock-research.ts';
+import {propsResearchResult,propsResearchFilename,verifyPropsResearchEvidence,PROPS_RESEARCH_DIRECTORY,PROPS_RESEARCH_FILE} from '../src/lib/lab/engine/props-research.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -172,6 +173,33 @@ try{
    reg=r.registry;applied.push({id:e.id,from:e.status,to:n.to,changed:r.changed,weeks:x.result.weeks});
   }
   (report.domains as Record<string,unknown>).stockResearch={applied};
+ }
+ if(opt('props-research')){
+  // Existing scorer output only. Missing first receipt is pending; invalid, future or stale evidence fails closed.
+  // Files are immutable under the existing research-data commit guard; no new mutable latest pointer or index.
+  const dir=join(opt('props-research')!,PROPS_RESEARCH_DIRECTORY);
+  const files=existsSync(dir)?readdirSync(dir).filter(f=>f.endsWith('.json')).sort():[];
+  if(files.length>10000||files.some(f=>!PROPS_RESEARCH_FILE.test(f)))throw Error('PROPS_RESEARCH_BAD_ARCHIVE');
+  const file=files.at(-1);
+  if(file){
+   const path=join(dir,file);if(statSync(path).size>100_000)throw Error('PROPS_RESEARCH_EVIDENCE_TOO_LARGE');
+   const evidence=verifyPropsResearchEvidence(JSON.parse(readFileSync(path,'utf8')));
+   if(propsResearchFilename(evidence)!==file)throw Error('PROPS_RESEARCH_FILENAME_MISMATCH');
+   const x=propsResearchResult(evidence,now),e=reg.experiments.find(y=>y.id===x.experimentId);
+   let applied:unknown={skipped:'NOT_REGISTERED'};
+   if(e){
+    if(e.baseline!==evidence.activeModel)throw Error('PROPS_RESEARCH_BASELINE_MISMATCH');
+    fedByProducer.add(e.id);
+    if(e.status==='REJECTED'||e.status==='FAILED')applied={id:e.id,skipped:'TERMINAL_'+e.status};
+    else{
+     const n=nextStatus(e,x.result);
+     const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'props-research-v1',result:x.result}),x.result,x.result.disposition);
+     reg=r.registry;applied={id:e.id,from:e.status,to:n.to,changed:r.changed,observations:x.result.observations};
+    }
+   }
+   (report.domains as Record<string,unknown>).propsResearch={state:'CONNECTED',asOf:evidence.asOf,runId:evidence.runId,
+    sourceCommit:evidence.sourceCommit,file,applied};
+  }else (report.domains as Record<string,unknown>).propsResearch={state:'PENDING_FIRST_RECEIPT'};
  }
  let ledger:Ledger|null=null;
  if(flag('sports-ledger'))ledger=await readLedger();

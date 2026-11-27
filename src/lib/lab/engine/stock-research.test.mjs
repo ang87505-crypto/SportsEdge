@@ -23,10 +23,24 @@ test('graded weeks are counted as recorded; below 26 weeks it collects, at 26 th
  assert.throws(()=>stockResearchResults({lab:{forward:{variants:{base:{weeks:-1}}}}}),/INVALID_SUMMARY/);
 });
 
+test('QMOM forward sessions connect as evidence without being converted to weeks or qualifying a strategy',()=>{
+ const c={id:'qmom-disclosure-follower-v1',active:false,forward:{sessions:120,status:'INSUFFICIENT FORWARD SAMPLE',totalReturn:-.04}};
+ const result=stockResearchResults({candidates:[c]})[0];
+ assert.equal(result.experimentId,c.id);assert.equal(result.result.observations,0);assert.equal(result.result.weeks,undefined);
+ assert.equal(result.result.disposition,'NO_CLEAR_EFFECT');assert.match(result.result.reason,/120 forward sessions/);
+ assert.match(result.result.reason,/Graded weeks are not supplied/);
+ const explicit=stockResearchResults({candidates:[{...c,forward:{...c.forward,weeks:12}}]})[0];
+ assert.equal(explicit.result.weeks,12);assert.equal(explicit.result.observations,12);
+ assert.throws(()=>stockResearchResults({candidates:[c,c]}),/DUPLICATE_CANDIDATE/);
+ assert.throws(()=>stockResearchResults({candidates:[{...c,active:true}]}),/INVALID_CANDIDATE_FORWARD/);
+ assert.throws(()=>stockResearchResults({candidates:[{...c,forward:{...c.forward,weeks:121}}]}),/INVALID_FORWARD_WEEKS/);
+});
+
 test('end to end: running experiments record forward evidence once; a rejected experiment is never revived',()=>{
  const dir=mkdtempSync(join(tmpdir(),'stock-research-'));
  const seed=JSON.parse(readFileSync(new URL('research/engine/registry.json',ROOT),'utf8'));
- writeFileSync(join(dir,'seed.json'),JSON.stringify(seed));writeFileSync(join(dir,'summary.json'),JSON.stringify(summary()));
+ const input={...summary(),candidates:[{id:'qmom-disclosure-follower-v1',active:false,forward:{sessions:12,status:'INSUFFICIENT FORWARD SAMPLE',totalReturn:-.04}}]};
+ writeFileSync(join(dir,'seed.json'),JSON.stringify(seed));writeFileSync(join(dir,'summary.json'),JSON.stringify(input));
  const run=(out,reg)=>{execFileSync(process.execPath,['--experimental-strip-types','--no-warnings','scripts/research-engine.ts','--registry',reg,
   '--out',join(dir,out),'--now','2026-12-01T12:00:00Z','--stock-research',join(dir,'summary.json')],{cwd:ROOT,stdio:['ignore','pipe','pipe']});
   return {rep:JSON.parse(readFileSync(join(dir,out,'report.json'),'utf8')),reg:JSON.parse(readFileSync(join(dir,out,'registry.json'),'utf8'))};};
@@ -36,6 +50,8 @@ test('end to end: running experiments record forward evidence once; a rejected e
  assert.equal(psych.status,'INSUFFICIENT_DATA','3/26 forward weeks: below the registered minimum');
  assert.equal(a.rep.evidence.inputs.stocks,'CONNECTED');
  assert.ok(!a.rep.evidence.experiments.ownerSuppliedOnly.some(e=>e.id==='lab-stock-psychology-v1'),'fed by the research ledger: not listed as lacking a producer');
+ const qmom=a.reg.experiments.find(e=>e.id==='qmom-disclosure-follower-v1');
+ assert.equal(qmom.status,'INSUFFICIENT_DATA');assert.ok(!a.rep.evidence.experiments.ownerSuppliedOnly.some(e=>e.id===qmom.id));
  // Same input again: applied once.
  const b=run('b',join(dir,'a','registry.json'));
  assert.equal(b.reg.experiments.find(e=>e.id==='lab-stock-psychology-v1').history.length,psych.history.length);
