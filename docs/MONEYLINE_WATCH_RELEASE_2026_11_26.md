@@ -1,5 +1,26 @@
 # Moneyline collection and unattended health — owner release candidate
 
+## Approved activation update — 2026-11-27
+
+The owner approved this data-only release in the SportsEdge conversation. The private `research_refresh_slots_v1` migration was applied to `fzyjazhvkstvwwzjhlrr` at approximately 05:11 UTC. Post-migration checks verified RLS, no browser-role access, select-only service-role table access and restricted wrapper execution. The four existing research function definitions and their grants remained unchanged.
+
+PR #234 merged as `c0137fac9fd491c4174ec14cff8b32eb5e102746` and production deployment `dpl_5qE3XTBoEm9jzffxtuT6uuqRhtuz` was confirmed READY with the schedule still OFF.
+
+One approved initial `research_dispatch(false)` created run **5**, at **2026-11-27 16:23:05 UTC**. It completed at **16:23:37 UTC** with status **refreshed**:
+
+| Sport | Provider games stored | Quotes inserted / verified | Outcome | Newest provider timestamp |
+| --- | --- | --- | --- | --- |
+| NBA | 11 | 198 / 198 | saved | 2026-11-27T16:22:52Z |
+| EPL | 20 | 504 / 504 | saved | 2026-11-27T16:22:52Z |
+
+Both tracks had zero rejected events. The shared budget recorded two reservations, one per sport. The run explicitly recorded `automaticRetry=false`, `automaticBettingEnabled=false` and `realMoneyEnabled=false`. Public `/api/sports` readback independently confirmed the same newest timestamps: 198 fresh NBA quotes and 504 fresh EPL quotes. The NBA board also retains older stored fixtures/quotes; a feed read is not a claim that every stored quote is fresh.
+
+The activation candidate applies the reviewed data-switch patch and updates operational test clocks. Since the Nov 27 firing has passed, the first planned daily slot moves to **Nov 28 at 11:00 UTC / 4:00 AM Mountain**. Operations status uses this first slot so pre-activation dates do not become invented missed runs. Activation still requires green candidate checks and deployment verification; the first real daily slot/run receipt remains pending until that firing.
+
+The original patch file is retained as the reviewed activation record, not a second migration or an instruction to reapply an already installed release. No second provider refresh is requested during activation. Existing caps remain 8 per rolling 24 hours and 240 per rolling 30 days. Model, wager, broker and exchange release gates remain unchanged.
+
+## Original reviewed proposal — historical status before approval
+
 This candidate combines Claude's corrected #229 at `5c27473d496991e6fb5c8c0668dd11917d0d035d` with deployed main `87c013433197b29a3e71dc2a42592dde6929d9f2` and a read-only receipt monitor. **The daily schedule remains OFF. No hosted migration or provider refresh has been performed by this work.**
 
 ## What is prepared

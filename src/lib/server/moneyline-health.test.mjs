@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadMoneylineHealth} from './moneyline-health.ts';
 import {moneylineReceiptFixture as receipt} from '../moneyline-health-fixture.mjs';
-const NOW='2026-11-27T13:00:00.000Z';
+const NOW='2026-11-28T13:00:00.000Z';
 const env={VERCEL_ENV:'production',SUPABASE_URL:'https://fzyjazhvkstvwwzjhlrr.supabase.co',SUPABASE_SECRET_KEY:'synthetic-secret',ODDS_API_KEY:'synthetic-odds-key'};
 function reader(x=receipt()){
  const calls=[];const fetcher=async(url,init)=>{calls.push({url:String(url),init});return Response.json(String(url).includes('/research_refresh_slots?')?x.slots:x.runs);};
@@ -12,7 +12,7 @@ test('an OFF policy performs no metadata, provider or account request',async()=>
  const r=reader();assert.equal((await loadMoneylineHealth(NOW,env,{fetcher:r.fetcher,enabled:false})).state,'OFF');assert.equal(r.calls.length,0);
 });
 test('future first slots are plans, but missing configuration is still visible',async()=>{
- const r=reader();const now='2026-11-27T10:00:00Z';
+ const r=reader();const now='2026-11-28T10:00:00Z';
  assert.equal((await loadMoneylineHealth(now,env,{fetcher:r.fetcher,enabled:true})).state,'PENDING');assert.equal(r.calls.length,0);
  assert.equal((await loadMoneylineHealth(now,{}, {fetcher:r.fetcher,enabled:true})).state,'UNAVAILABLE');
 });

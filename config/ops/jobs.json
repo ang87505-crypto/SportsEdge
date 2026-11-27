@@ -3,8 +3,8 @@
   "site": "https://sports-edge-eta.vercel.app",
   "jobs": [
     {"id": "moneyline-refresh", "label": "Sports moneyline: saved NBA and EPL refresh", "area": "sports",
-     "receiptSource": "moneyline", "required": false, "crons": ["0 11 * * *"],
-     "note": "OFF until owner approval. When released, checked against the daily slot, its exact research run and both sport receipts. The monitor performs GETs only and never dispatches, retries or places orders."},
+     "receiptSource": "moneyline", "required": true, "crons": ["0 11 * * *"],
+     "note": "Owner-approved data collection at 11:00 UTC daily; first planned slot 2026-11-28. Checked against the daily slot, its exact research run and both sport receipts. The monitor performs GETs only and never dispatches, retries or places orders."},
     {"id": "props-daily", "label": "Sports props: collect lines and settle results", "area": "sports",
      "workflow": "props-daily.yml", "required": true, "staleAfterHours": 30, "graceMinutes": 120},
     {"id": "props-research", "label": "Sports props research snapshot", "area": "sports",
