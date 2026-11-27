@@ -51,6 +51,98 @@ Synthetic and local results are recorded in the PR. They do not establish hosted
 
 CI success is separate from operational readiness. The read-only SQL inspects schema configuration; it does not prove write success, an actual worker run, sufficient forward evidence, or model quality. The app's GET preflight proves required table/column reads only.
 
+## Release readiness, 2026-11-27 (candidate on production main `f3a575b`)
+
+**Integration.** Production main `f3a575b` (#234–#236: owner-approved daily moneyline collection, receipt monitoring, read-only receipt clock) is merged cleanly. Every file outside this PR's own 80 is byte-identical to main. The moneyline collector, migration, schedule, `vercel.json`, `config/ops/jobs.json` and the ops monitor are untouched.
+
+**Deployed vs candidate only.** As in the table below, plus:
+- main now also runs the daily NBA/EPL moneyline collection and its monitoring;
+- the candidate adds nothing to either.
+
+### Hosted readiness: still NOT OBTAINED (access blocker, unchanged)
+
+This session has no authorized route to `vfyzbliksooljxrlfadp`: no Supabase connector, no database credentials, and PostgREST-only Actions secrets. No hosted result exists. The primary research project and synthetic PostgreSQL results are not substitutes.
+
+**Owner steps (read-only, about two minutes):**
+1. Open https://supabase.com/dashboard/project/vfyzbliksooljxrlfadp/sql/new. Confirm the project ref in the URL is `vfyzbliksooljxrlfadp`.
+2. Paste the whole of `database/props/checks/forward_studies_readiness.sql` from this PR's final head. Its SHA-256 is `90a2a5d0a6980c9c37fdad220bfde9c7c1ddff0d8c2b9eb46c2536e14db9f6e7`. It only `SELECT`s from the catalogue and changes nothing.
+3. Run it. Expect 13 rows: eleven relations (six `lab`, four `penny`, `shadow | props_predictions`), `penny | penny id sequences` and `zz | OVERALL`.
+4. Paste all 13 rows into PR #216.
+
+**Reading the result:**
+- **All READY:** the database gate is met.
+- **Only study rows are `MISSING`:** the schema is absent. The unchanged `database/props/forward_studies_setup.sql` is the existing setup, but applying it is a **hosted migration that needs separate owner approval**. Re-run the query afterwards.
+- **Any other state**, especially a non-READY `shadow` row (the production `props_predictions` lock guard or append-only trigger): stop and review. Never edit grants, triggers or rows by hand.
+
+### Prediction chain: verified offline
+
+| Requirement | Evidence |
+| --- | --- |
+| Before lock, database timestamps | The `props_check_prediction` BEFORE INSERT trigger stamps `predicted_at` with the database clock and refuses rows at or after lock, or with `data_cutoff` after the prediction or the lock. **New cycle test:** every shadow row is stamped before its observation's lock. |
+| Fixed identities | `model_version = props-nb-monotone-cal-v1`, `reason = research_shadow`, the same `run_id`, `observation_id` and `data_cutoff` as its baseline, calibrator `8b84007d…`, baseline artifact `4ca4be37…`. The writer refuses if the live model digest differs. All asserted in SQL by the new test. |
+| Duplicates and uncertain writes | `UNIQUE(observation_id, model_version)`; one shadow per observation (asserted); a direct duplicate insert is refused (asserted); a repeat write through the writer records 0 (existing integration test); an uncertain or crashing batch is reported as `ATTENTION`/unknown and never retried (asserted). |
+| Verified outcome grading | The engine registers `props-nb-monotone-cal-v1-real-lines` only after a genuine ledger receipt whose probabilities recompute exactly. It grades with the same `ledger-models` pairing against `props_line_results`, under the unchanged `REVIEW_GATE`. No promotion path. |
+| Evidence reaches the engine | `scripts/research-engine.ts` (merged) keeps #233's feeds and `trackMonotoneShadow`. It maps the provenance fields from `props_predictions.inputs`. |
+| Shadow cannot alter picks or stakes | **New test** (`props-cycle.integration.test.mjs`, real `runCollect` on disposable PostgreSQL after `notBefore`): healthy, uncertain-write and crashing shadows all produce identical picks (48 decisions, 23 recorded), entries (6) and stakes (3000 cents). No pick references a shadow prediction. See also the production-read audit below. |
+
+**Production-read audit.** Every read of `props_predictions` was checked:
+- **Picks:** active model only.
+- **Entries:** read from picks.
+- **Safety brake:** the active model's recorded picks only.
+- **Promotion and auto-switch:** `active.shadows`, the learn artifacts only.
+- **Learn training:** keyed by `MODEL_VERSION`.
+- **Lab freeze:** `MODEL_VERSION` only.
+- **Dashboard:** prefers the picked, then active, then baseline version.
+
+A shadow row can appear only in reports:
+- the weekly review's challenger scorecard;
+- the run receipt's prediction count (which already includes the `props-learn` shadows; no gate uses it);
+- research and trace views.
+
+**Test gap closed.** The existing cycle tests run before `MONOTONE_SHADOW.notBefore` (2026-11-21), where the hook returns `NOT_STARTED`. The full cycle had never executed a shadow write. The new test runs at Nov 25.
+
+### The specific frozen-file change requiring owner approval
+
+There is one file: `src/lib/server/props-cycle.ts`, in the `props-paper-v1` manifest. Its hash changes from `825f2c31adeb` to `cbd27dd6d63a` (+9/−1).
+- One import: `recordMonotoneShadows`.
+- At the end of `predictAndPick`, after this run's picks are inserted, it calls `recordMonotoneShadows` for the baselines newly saved in this run.
+- It adds the result to the run summary as `predictions.monotoneShadow`.
+
+It does not change the model, selection, stakes, accounts, budgets, capture plan or settlement. Every shadow error is caught inside `recordMonotoneShadows`.
+
+The other two drift entries are not part of this request: `capture-plan.ts` (`7fb78452` → `a9cb1ec2`) and `props-tick.ts` (`5a0fa8ad` → `2e1a21a0`) changed on main after the Nov 13 snapshot (#183 and the capture fixes).
+
+### Approved-release sequence
+
+1. **Owner:** the hosted readiness above. All 13 rows READY, pasted into #216.
+2. **Owner:** approve the `props-cycle.ts` change above, in writing, in #216. Approval of the moneyline release does not cover it.
+3. **Final-head CI green.** Merge only outside the freeze: from Sun Nov 29 18:00 MST until the Nov 30 stock acceptance gate reads `STOCK_SUPERVISED_SESSION_VERIFIED`. In any case, never between the 08:00 ET decision and the after-close mark on Nov 30.
+4. **Within an hour of the merge:**
+   - Dispatch **Forward paper studies** on main with `mode = preflight`. Require `status: READY`, the props host `vfyzbliksooljxrlfadp` and `GITHUB_SHA` = the merge commit.
+   - Run `node --experimental-strip-types scripts/experiment-manifest.mjs snapshot docs/experiments/manifest-<date>.json` on main, commit it through a reviewed PR, and set `experiment-freeze-check.yml`'s default to it.
+   - The new snapshot absorbs all three drift entries.
+5. **First real receipts.** Check each separately; never backfill:
+   - **(a) Shadow:** the first collect or tick after the merge has `summary.predictions.monotoneShadow.status = OK` and `written > 0`. `props_predictions` gains `props-nb-monotone-cal-v1` rows with `predicted_at` < `lock_at`.
+   - **(b) Studies:** a `Forward paper studies` record run reports `status: OK`.
+   - **(c) Engine:** after the first graded line, the engine report lists `monotoneShadow.added = ["props-nb-monotone-cal-v1-real-lines"]` once. That experiment then shows `INSUFFICIENT_DATA` until the unchanged gate is met (500 lines, 14 dates, 50 games, 100 decisions).
+6. **Rollback:** a reviewed revert of the merge. Keep every stored row. No database change is made by this candidate.
+
+### Handoff for ChatGPT's monitoring integration
+
+Do not change this PR's files.
+
+1. **New job `forward-paper-studies`** (workflow `forward-paper-studies.yml`).
+   - **Expected cadence:** after each successful `NBA props capture tick` or `NBA props paper cycle` on main (`workflow_run`), plus `37 17 * * *`.
+   - **Healthy:** a run whose step summary has `status: OK`.
+   - **Attention:** `ATTENTION`, `UNAVAILABLE` or `BLOCKED`. `BLOCKED`/`NOT_MIGRATED` means the hosted schema is missing.
+   - Manual `preflight` dispatches are checks, not records.
+2. **Shadow receipt.**
+   - **Healthy:** each props collect/tick run's `summary.predictions.monotoneShadow.status` is `OK`, or `NOT_STARTED` only before 2026-11-21.
+   - **Attention:** `ATTENTION` or `BLOCKED`. `unknown > 0` means an uncertain write that is never retried.
+   - Shadow problems never change picks, so they should not page as a picks failure.
+3. **Engine.** Watch for `props-nb-monotone-cal-v1-real-lines` appearing in the evidence coverage as automatic (`fedByProducer`/ledger-models). Until it does, it counts as not yet receiving evidence.
+4. Nothing in this PR changes `config/ops/jobs.json`, `ops-monitor.yml`, `vercel.json` or the moneyline monitor.
+
 ## Status on 2026-11-27 (head merged with production main `87c0134`)
 
 ### Deployed vs candidate only
