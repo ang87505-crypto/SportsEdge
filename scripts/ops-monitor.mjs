@@ -12,6 +12,7 @@ import {compareDeployment} from '../src/lib/deployment-identity.ts';
 import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
 import {MONEYLINE_REFRESH_RELEASE} from '../src/lib/server/moneyline-refresh.ts';
 import {readMoneylineJob} from './moneyline-monitor.mjs';
+import {readNoaaMemory,applyNoaaMemory} from './noaa-memory-monitor.mjs';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -70,6 +71,7 @@ async function evaluate(job){
      const fire=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),d0.getUTCDate(),h,m);return t>=fire+lo*60_000&&t<=fire+hi*60_000;});});
   }
   const e={...base,...evaluateJob(job,{workflowState:d.state,runs,crons:job.crons??d.crons,nowMs,activeSinceMs:d.createdAt})};
+  if(job.receiptSource==='noaa-independent')return applyNoaaMemory(e,await readNoaaMemory());
   // Switch state is read from the reviewed source on main, never inferred from the runs.
   return job.releaseSwitch==='props-capture'?applyReleaseSwitch(e,PROPS_COLLECTION_V2.tickEnabled===true):e;
  }catch(e){
@@ -237,7 +239,9 @@ function blockers(jobs,props,research,release,site,creds){
  const out=[];
  const add=(id,text,action)=>out.push({id,text,action});
  for(const j of jobs){
-  if(['FAILING','DISABLED','STALE'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,`Open ${j.historyUrl} and read the latest failed run.`);
+  if(['FAILING','DISABLED','STALE','UNKNOWN'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,
+   j.status==='UNKNOWN'?`Run history could not be verified. Check GitHub Actions access at ${j.historyUrl} and the next monitor receipt.`:
+   `Open ${j.historyUrl} and read the latest failed run.`);
   if(j.id==='stock-kickoff'&&['MISSED_SLOT','STALE'].includes(j.status))
    add('kickoff',`${j.label}: no early dispatch seen after the latest 09:00 UTC weekday cron.`,
     'Vercel → sports-edge project → Settings → Environment Variables (Production): check CRON_SECRET and SPORTSEDGE_GITHUB_DISPATCH_TOKEN (fine-grained token with Actions: write on this repository, not expired).');

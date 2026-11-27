@@ -230,7 +230,7 @@ export function applyReleaseSwitch(evaluated, released) {
 
 /** Overall roll-up: required jobs decide health; optional jobs only warn. */
 export function rollUp(jobs) {
-  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, MISSED_SLOT: 2, RAN_LATE: 1, RELEASED_OFF: 0, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
+  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, UNKNOWN: 3, MISSED_SLOT: 2, RAN_LATE: 1, RELEASED_OFF: 0, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
   const attention = jobs.filter(j => (j.required ? severity[j.status] >= 2 : severity[j.status] >= 3));
   return { state: attention.some(j => severity[j.status] >= 3) ? 'ATTENTION' : attention.length ? 'WARN' : 'OK',
     attention: attention.map(j => j.id) };

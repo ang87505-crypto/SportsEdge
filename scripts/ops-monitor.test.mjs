@@ -160,6 +160,13 @@ test('roll-up: required problems decide; optional ones only warn when severe', (
   assert.deepEqual(rollUp([{id: 'a', required: true, status: 'FAILING'}]), {state: 'ATTENTION', attention: ['a']});
 });
 
+test('unreadable job history cannot make overall health green or be hidden by a healthy peer', () => {
+  assert.deepEqual(rollUp([{id:'noaa',required:true,status:'UNKNOWN'},
+    {id:'sports',required:true,status:'OK'}]),{state:'ATTENTION',attention:['noaa']});
+  assert.deepEqual(rollUp([{id:'optional',required:false,status:'UNKNOWN'}]),
+    {state:'ATTENTION',attention:['optional']});
+});
+
 test('key expiry is read from the token payload only', () => {
   const jwt = 'x.' + Buffer.from(JSON.stringify({role: 'service_role', exp: 2000000000})).toString('base64url') + '.sig';
   assert.equal(keyExpiry(jwt), '2033-05-18T03:33:20.000Z');
