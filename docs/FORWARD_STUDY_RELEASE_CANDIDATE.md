@@ -51,6 +51,61 @@ Synthetic and local results are recorded in the PR. They do not establish hosted
 
 CI success is separate from operational readiness. The read-only SQL inspects schema configuration; it does not prove write success, an actual worker run, sufficient forward evidence, or model quality. The app's GET preflight proves required table/column reads only.
 
+## Status on 2026-11-27 (head merged with production main `87c0134`)
+
+### Deployed vs candidate only
+
+| Deployed on main `87c0134` | Only in this candidate (not deployed) |
+| --- | --- |
+| Props collect, settle and capture ticks; `props-learn-v1`/`v2` production shadows (ledger-models); research-engine evidence feeds, 6/20 active experiments automatic per #233's archived receipts; props-research snapshots (#233) | The frozen `props-nb-monotone-cal-v1` shadow hook in `props-cycle.ts`; the `forward-paper-studies.yml` recorder (lab freeze, penny paper study); the 13-row readiness query and its 18 synthetic cases; the engine's `trackMonotoneShadow` discovery; stock audit/corporate-action opt-in steps |
+
+### Shadow-learning integration: verification (code and synthetic database)
+
+| Requirement | Mechanism | Verified by |
+| --- | --- | --- |
+| Recorded before lock | Client skips rows with `lock_at <= now`. The database trigger `props_prediction_chronology` (`props_check_prediction`) sets `predicted_at` from the database clock and raises `PROPS_PREDICTION_AFTER_LOCK` at or after lock, or if `data_cutoff` is after the prediction or the lock. It also requires a running run | `props_v1.sql` lines 292–306; `props-monotone-shadow.test.mjs` and integration test; readiness case `disabled-shadow-prediction-lock-guard` → NOT_READY |
+| Original timestamps and model versions | `data_cutoff` copied from the baseline row; `predicted_at` set by the database; `model_version = props-nb-monotone-cal-v1` (constant); `inputs` keep `baselinePredictionId`, `calibratorDigest` `8b84007d…` and `baselineArtifactSha256` `4ca4be37…`; refuses to run if the live model digest differs | `props-monotone-shadow.ts`; `monotone-shadow.ts` |
+| No duplicates | `UNIQUE(observation_id, model_version)` with ignore-duplicates; only newly saved baselines (this run) are shadowed, never backfilled; an uncertain batch is never resubmitted | `props_v1.sql` line 183; shadow tests |
+| Graded against verified outcomes | The engine's ledger loader maps the provenance fields. `trackMonotoneShadow` registers the experiment only after the first genuine ledger receipt whose probabilities recompute exactly. Grading uses the same `ledger-models` pairing as `props-learn-v1/v2` against verified line results, under the unchanged `REVIEW_GATE` minimums. No promotion path | `src/lib/lab/engine/monotone-shadow.ts`, `forward.ts`; engine tests |
+
+Nothing above has run against the hosted props database from this candidate.
+
+### Execution receipts (completed runs, not schedules)
+
+From the archived engine reports on `research-data` (`learning-engine/runs/*/report.json`), which read the props ledger itself:
+- graded picks rose from 144 (Nov 21) to 150, 159, 168, 174 and 185 (Nov 26). Latest: 185 picks, 108 hits; 854 scored lines, 32 games, 17 dates; alarms `OK`.
+- `props-learn-v2-shadow` rose from 250/500 observations over 5/14 dates (Nov 21) to 496/500 over 10/14 dates (Nov 26). Clusters 18/50 and decisions 40/100 remain below the gate.
+- `props-learn-v1-shadow` stands at clusters 27/50 and decisions 75/100. Both remain `INSUFFICIENT_DATA`.
+- No growth from Nov 26 to 27: there were no NBA games on Thanksgiving.
+
+GitHub runs on main since Nov 24, all `success`:
+- props-daily: 27 (scheduled plus Vercel-backup dispatches);
+- props-tick: 40+;
+- props-research: 20;
+- research-engine: 32.
+
+`props-learn` (weekly) last ran on Nov 22: scheduled at 17:37 UTC plus a 16:33 UTC Vercel backup. The next planned run is Sun Nov 29; that is a plan, not a receipt. ops-status (Nov 27 04:44 UTC) agrees.
+
+### Hosted readiness: NOT OBTAINED (access blocker)
+
+The 13 rows are 11 relations, the penny sequences and OVERALL. They read `pg_class`, `pg_trigger` and `has_table_privilege`, which only the Supabase SQL editor or a direct Postgres connection can reach. PostgREST cannot.
+- This session has no credentials for `vfyzbliksooljxrlfadp`.
+- The repository's Actions secrets (`SPORTSEDGE_PROPS_SUPABASE_URL`, `SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY`) are PostgREST credentials and cannot run catalogue SQL.
+- No workflow on main runs this query. `forward-paper-studies.yml` exists only in this candidate, and its preflight is the GET-only ten-table check, not the 13-row query.
+- No hosted readiness has ever been recorded. The primary research project is not a substitute.
+
+**Owner action:** run the step below in the SQL editor of `vfyzbliksooljxrlfadp` and paste the 13 rows into the PR.
+
+### Manifest after an authorized merge
+
+`docs/experiments/manifest-2026-11-13-candidate.json` drifts on three `props-paper-v1` frozen files:
+- `src/lib/server/props-cycle.ts`: this candidate, `825f2c31` → `cbd27dd6`;
+- `src/lib/props/capture-plan.ts` and `src/lib/server/props-tick.ts`: already on main since the Nov 13 snapshot (#183 and the capture fixes).
+
+Recorded-file changes: `props-tick.yml`, `database/props/props_lab_v1.sql` (grant narrowing only, not applied), `config/research/registry.json`, `scheduler-kickoff.ts` and `vercel.json`.
+
+After the owner approves the frozen-file change and merges, run `node --experimental-strip-types scripts/experiment-manifest.mjs snapshot docs/experiments/manifest-<date>.json` on main, and point `experiment-freeze-check.yml` at it.
+
 ## Hosted database readiness
 
 Required before merge, in the active props project vfyzbliksooljxrlfadp:
