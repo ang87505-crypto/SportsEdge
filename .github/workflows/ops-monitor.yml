@@ -28,6 +28,7 @@ on:
       - scripts/ops-monitor*
       - scripts/weather-shadow-monitor.test.mjs
       - scripts/moneyline-monitor*
+      - scripts/noaa-memory-monitor*
       - src/lib/moneyline-health*
       - src/lib/server/moneyline-health*
       - src/app/api/research/moneyline-health/**
@@ -54,7 +55,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs scripts/data-branches.test.mjs scripts/moneyline-monitor.test.mjs src/lib/moneyline-health.test.mjs src/lib/server/moneyline-health.test.mjs
+      - run: node --experimental-strip-types --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs scripts/data-branches.test.mjs scripts/moneyline-monitor.test.mjs scripts/noaa-memory-monitor.test.mjs src/lib/moneyline-health.test.mjs src/lib/server/moneyline-health.test.mjs
   monitor:
     if: github.event_name != 'pull_request' && github.repository == 'ang87505-crypto/SportsEdge'
     runs-on: ubuntu-latest
@@ -73,7 +74,7 @@ jobs:
         with:
           node-version: '24'
       - name: Recheck the monitor before giving it credentials
-        run: node --experimental-strip-types --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs scripts/moneyline-monitor.test.mjs src/lib/moneyline-health.test.mjs src/lib/server/moneyline-health.test.mjs
+        run: node --experimental-strip-types --test scripts/ops-monitor.test.mjs scripts/weather-shadow-monitor.test.mjs scripts/moneyline-monitor.test.mjs scripts/noaa-memory-monitor.test.mjs src/lib/moneyline-health.test.mjs src/lib/server/moneyline-health.test.mjs
       - name: Check jobs, receipts, credentials and the live site
         env:
           GH_TOKEN: ${{ github.token }}

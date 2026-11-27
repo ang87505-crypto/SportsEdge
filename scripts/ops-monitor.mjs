@@ -12,6 +12,7 @@ import {compareDeployment} from '../src/lib/deployment-identity.ts';
 import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
 import {MONEYLINE_REFRESH_RELEASE} from '../src/lib/server/moneyline-refresh.ts';
 import {readMoneylineJob} from './moneyline-monitor.mjs';
+import {readNoaaMemory,applyNoaaMemory} from './noaa-memory-monitor.mjs';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -70,6 +71,7 @@ async function evaluate(job){
      const fire=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),d0.getUTCDate(),h,m);return t>=fire+lo*60_000&&t<=fire+hi*60_000;});});
   }
   const e={...base,...evaluateJob(job,{workflowState:d.state,runs,crons:job.crons??d.crons,nowMs,activeSinceMs:d.createdAt})};
+  if(job.receiptSource==='noaa-independent')return applyNoaaMemory(e,await readNoaaMemory());
   // Switch state is read from the reviewed source on main, never inferred from the runs.
   return job.releaseSwitch==='props-capture'?applyReleaseSwitch(e,PROPS_COLLECTION_V2.tickEnabled===true):e;
  }catch(e){
