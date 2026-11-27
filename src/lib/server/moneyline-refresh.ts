@@ -23,8 +23,8 @@
 import {timingSafeEqual} from 'node:crypto';
 import {researchCycleEnvironmentReady} from './research-cycle-handler.ts';
 
-/** NOT owner-approved. Flip to true only in a reviewed PR after the owner approves the daily schedule. */
-export const MONEYLINE_REFRESH_RELEASE={scheduledRunsEnabled:false,paperOnly:true,realMoneyEnabled:false} as const;
+/** Data-only activation. Apply this prepared change only after the owner approves this reviewed release. */
+export const MONEYLINE_REFRESH_RELEASE={scheduledRunsEnabled:true,paperOnly:true,realMoneyEnabled:false} as const;
 /** 11:00 UTC: before EPL's earliest kickoffs (12:30 UTC) and the same night's NBA tip-offs (23:00-03:30 UTC).
  * No other Odds API job runs in this hour (props collect/ticks run 13:00-02:00 UTC). Must match vercel.json. */
 export const MONEYLINE_REFRESH_SLOT={hourUtc:11,cron:'0 11 * * *',path:'/api/internal/moneyline-refresh'} as const;

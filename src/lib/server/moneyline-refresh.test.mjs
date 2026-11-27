@@ -28,13 +28,13 @@ function slotDb({failFirst=false,cooldownUntil=0,clock=()=>at}={}){
 }
 const deps=(over={})=>({now:()=>at,released:true,dispatchSlot:async()=>{throw Error('unexpected');},...over});
 
-test('the release switch is off: no owner approval is recorded for a daily schedule',()=>{
- assert.equal(MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,false);
+test('the approved data schedule is on while real money remains off',()=>{
+ assert.equal(MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,true);
  assert.equal(MONEYLINE_REFRESH_RELEASE.realMoneyEnabled,false);
 });
-test('with the shipped switch a correctly timed, authorised firing makes no network call',async()=>{
+test('an explicit OFF override still makes no network call',async()=>{
  const db=slotDb();
- const r=await handleMoneylineRefresh(req(),env,deps({released:undefined,dispatchSlot:db.dispatchSlot}));
+ const r=await handleMoneylineRefresh(req(),env,deps({released:false,dispatchSlot:db.dispatchSlot}));
  assert.equal((await body(r)).reason,'moneyline_schedule_off');assert.equal(db.runs,0);assert.equal(db.slots.size,0);
 });
 test('auth, method, query, environment and slot hour are checked before anything else',async()=>{
