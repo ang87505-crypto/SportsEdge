@@ -67,7 +67,11 @@ def cmd_collect(data: Path, now: datetime) -> dict:
     web = Fetcher(user_agent=PUBLIC_UA, min_interval={'funds.alphaarchitect.com': src['qmom-holdings']['min_interval_seconds'],
                                                        'api.openfigi.com': src['openfigi-cusip']['min_interval_seconds']},
                   cache_dir=data / '.cache')
-    out['qmom'] = qmom.collect(web, store, now)['status']
+    qmom_line = qmom.collect(web, store, now)
+    out['qmom'] = qmom_line['status']
+    # Keep the existing rejection and its evidence visible even if a later archive push fails.
+    out['qmom_detail'] = {k: qmom_line.get(k) for k in
+                          ('error', 'effective_date', 'retrieved_at', 'path', 'content_sha256')}
     ua = os.getenv('SEC_EDGAR_USER_AGENT', '').strip() or None
     sec = Fetcher(user_agent=ua or 'unset', min_interval={'data.sec.gov': 0.25, 'www.sec.gov': 0.25})
     line = sec13f.collect(sec, store, now, user_agent=ua)
