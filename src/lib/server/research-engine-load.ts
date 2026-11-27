@@ -14,13 +14,15 @@ export type EngineSnapshot={mode:'live'|'saved';at:string|null;checkedAt:string;
  /** What the latest run reports as missing (engine-evidence-v1) and the sports absolute alarms (sports-alarms-v1). */
  attention:EngineAttention|null;detail:string};
 export type EngineAttention={gaps:{code:string;detail:string}[];inputs:Record<string,string>;
+ /** Counts declared by the verified report, not inferred from connected domains. */
+ coverage:{total:number;active:number;automatic:number;ownerSuppliedOnly:number}|null;
  /** Active experiments with no automatic evidence producer: they advance only on an owner-supplied result. */
  withoutProducer:string[];
  alarms:{status:string;codes:string[];details:string[]}|null};
 const text=(x:unknown,n:number)=>typeof x==='string'?x.slice(0,n):'';
 /** Defensive reader: only short, well-formed strings from the published report reach the page. */
 export function readEngineAttention(report:unknown):EngineAttention|null{
- const r=report as {evidence?:{gaps?:unknown;inputs?:unknown;experiments?:{ownerSuppliedOnly?:unknown}};domains?:{sports?:{alarms?:{status?:unknown;alarms?:unknown}}}}|null;
+ const r=report as {evidence?:{gaps?:unknown;inputs?:unknown;experiments?:{total?:unknown;active?:unknown;automatic?:unknown;ownerSuppliedOnly?:unknown}};domains?:{sports?:{alarms?:{status?:unknown;alarms?:unknown}}}}|null;
  if(!r||typeof r!=='object')return null;
  const gaps=Array.isArray(r.evidence?.gaps)?(r.evidence!.gaps as {code?:unknown;detail?:unknown}[]).slice(0,10)
   .filter(g=>typeof g?.code==='string'&&/^[A-Z_]{3,60}$/.test(g.code)).map(g=>({code:g.code as string,detail:text(g.detail,400)})):[];
@@ -32,7 +34,12 @@ export function readEngineAttention(report:unknown):EngineAttention|null{
   details:(Array.isArray(a.alarms)?a.alarms:[]).map((x:{detail?:unknown})=>text(x?.detail,300)).filter(Boolean).slice(0,8)}:null;
  const own=r.evidence?.experiments?.ownerSuppliedOnly;
  const withoutProducer=Array.isArray(own)?own.map((x:{id?:unknown})=>x?.id).filter((id):id is string=>typeof id==='string'&&/^[a-z0-9][a-z0-9.-]{2,80}$/.test(id)).slice(0,30):[];
- return {gaps,inputs,withoutProducer,alarms};
+ const e=r.evidence?.experiments;
+ const count=(n:unknown):n is number=>typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=1000;
+ const coverage=e&&count(e.total)&&count(e.active)&&count(e.automatic)&&e.active<=e.total&&Array.isArray(own)&&
+  own.length===withoutProducer.length&&new Set(withoutProducer).size===own.length&&e.automatic+own.length===e.active
+  ?{total:e.total,active:e.active,automatic:e.automatic,ownerSuppliedOnly:own.length}:null;
+ return {gaps,inputs,withoutProducer,coverage,alarms};
 }
 let cache:{at:number;value:EngineSnapshot}|null=null;
 export function resetResearchEngineCache(){cache=null;}

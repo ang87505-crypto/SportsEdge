@@ -16,7 +16,7 @@ import {getAlpacaPaperSnapshot} from './alpaca-paper-reader.ts';
 import {loadStockResearch} from './stock-research-load.ts';
 import {loadOpsStatus} from './ops-status-load.ts';
 import {opsSummaryText,opsApprovalsText,type OpsView} from '../ops/status.ts';
-import {buildBriefing,propsInput} from '../briefing/briefing.ts';
+import {buildBriefing,propsInput,engineBriefing} from '../briefing/briefing.ts';
 import {mondayReadiness} from '../briefing/monday.ts';
 import {briefingAnswer,BRIEFING_TOPICS,type BriefingTopic} from '../assistant/briefing-answer.ts';
 import type {PaperAutoLedger} from '../stocks/paper-auto-ledger.ts';
@@ -26,6 +26,7 @@ import {kalshiPublicAnswer,type KalshiPublicResearch} from '../assistant/kalshi-
 import {isFreshnessQuestion,freshnessAnswer} from '../assistant/source-freshness.ts';
 import {loadLatestIndependentWeather,loadLatestWeatherScorecard} from '../prediction-markets/kalshi/weather-memory-view.ts';
 import {loadLab} from './lab-load.ts';
+import {loadResearchEngine,type EngineSnapshot} from './research-engine-load.ts';
 import type {LabView} from '../lab/view.ts';
 type Env=Readonly<Record<string,string|undefined>>;
 export type AssistantAccess={ownerAccess:boolean;ownerExpiresAt:number|null};
@@ -40,11 +41,13 @@ export type SitePorts={access:AssistantAccess;sports:(nowIso:string)=>Promise<Ra
  ops?:(nowIso:string)=>Promise<OpsView>;
  /** AI Learning Lab view (public research evidence; no account data). */
  lab?:(nowIso:string)=>Promise<LabView>;
+ /** Verified public learning evaluation; never an account or execution port. */
+ engine?:(nowIso:string)=>Promise<EngineSnapshot>;
  /** Independently archived public NOAA research; never Kalshi market API. */
  kalshi?:(nowIso:string)=>Promise<KalshiPublicResearch>};
 export function sitePorts(req:SiteRequest,env:Env,sports:SitePorts['sports']):SitePorts{
  const access=assistantAccess(req.ownerCookie);
- return {access,sports,research:loadStockResearch,ops:loadOpsStatus,lab:loadLab,
+ return {access,sports,research:loadStockResearch,ops:loadOpsStatus,lab:loadLab,engine:loadResearchEngine,
   async kalshi(nowIso){
    const [weather,scorecard]=await Promise.all([
     loadLatestIndependentWeather(nowIso),loadLatestWeatherScorecard(nowIso)]);
@@ -163,9 +166,12 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
  if(q.topic==='lab'){
   if(!ports.lab)return respond(simple('The AI Learning Lab is not connected here.',{domain:'all',topic:'lab'}));
   const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
-  const [lab,raw]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null)]);
+  const [lab,raw,engine]=await Promise.allSettled([ports.lab(nowIso),propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null),
+   ports.engine?ports.engine(nowIso):Promise.resolve(null)]);
   if(lab.status!=='fulfilled')return respond(simple('Learning Lab records are unavailable right now; nothing is assumed.',{domain:'all',topic:'lab'}));
-  return respond(labAnswer(understood,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso));
+  const result=labAnswer(understood,lab.value,raw.status==='fulfilled'?raw.value:null,nowIso);
+  const e=engineBriefing(engine.status==='fulfilled'?engine.value:null,nowIso);
+  return respond({...result,text:'Learning engine: '+(e?.note??'A verified current evaluation is unavailable. Automatic evidence coverage cannot be confirmed.')+'\n\n'+result.text});
  }
  if(q.domain==='sports')return respond(await sports());
  if(q.domain==='stocks')return respond(await stocks());
@@ -181,10 +187,11 @@ export async function handleSiteAssistant(req:Pick<SiteRequest,'contentType'|'te
   const topic=q.topic as BriefingTopic;
   // Each source fails on its own; a missing one is reported as unavailable, never as zero.
   const propsConfigured=env.SPORTSEDGE_PREVIEW_FIXTURES!=='1'&&(()=>{try{propsStoreConfig(env);return true;}catch{return false;}})();
-  const [raw,ops,research]=await Promise.allSettled([propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null),
-   ports.ops?ports.ops(nowIso):Promise.resolve(null),ports.research(nowIso)]);
+  const [raw,ops,research,engine]=await Promise.allSettled([propsConfigured?cachedPropsRaw(ports.sports,nowIso):Promise.resolve(null),
+   ports.ops?ports.ops(nowIso):Promise.resolve(null),ports.research(nowIso),
+   ports.engine&&['health','today','improving'].includes(topic)?ports.engine(nowIso):Promise.resolve(null)]);
   const b=buildBriefing({nowIso,props:propsInput(raw.status==='fulfilled'?raw.value:null),ops:ops.status==='fulfilled'?ops.value:null,
-   research:research.status==='fulfilled'?research.value:null});
+   research:research.status==='fulfilled'?research.value:null,engine:engine.status==='fulfilled'?engine.value:null});
   // Owner-only stock details are read only with a validated owner session.
   let stockText:string|null=null,ledger:PaperAutoLedger|null=null;
   if(ports.access.ownerAccess&&(topic==='money'||topic==='opportunity'||topic==='ready')){
