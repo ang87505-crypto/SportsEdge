@@ -1,6 +1,6 @@
 {
  "schemaVersion": "ops-status-v1",
- "generatedAt": "2026-11-27T18:39:07.209Z",
+ "generatedAt": "2026-11-27T19:00:46.300Z",
  "timezoneShown": "America/Denver",
  "monitorRun": {
   "id": 46051043300,
@@ -9,9 +9,7 @@
  },
  "overall": {
   "state": "WARN",
-  "attention": [
-   "kalshi-weather"
-  ]
+  "attention": []
  },
  "jobs": [
   {
@@ -177,24 +175,24 @@
    "workflowState": "active",
    "running": null,
    "lastRun": {
-    "id": 46039638304,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/46039638304",
+    "id": 46052480924,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/46052480924",
     "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-27T17:10:03.000Z",
-    "finishedAt": "2026-11-27T17:10:19.000Z",
-    "headSha": "f3a575b69f5ba38d2617036bec621e52a08bc941"
+    "startedAt": "2026-11-27T18:51:03.000Z",
+    "finishedAt": "2026-11-27T18:51:37.000Z",
+    "headSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a"
    },
    "lastSuccess": {
-    "id": 46039638304,
-    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/46039638304",
+    "id": 46052480924,
+    "url": "https://github.com/ang87505-crypto/SportsEdge/actions/runs/46052480924",
     "event": "workflow_dispatch",
     "status": "completed",
     "conclusion": "success",
-    "startedAt": "2026-11-27T17:10:03.000Z",
-    "finishedAt": "2026-11-27T17:10:19.000Z",
-    "headSha": "f3a575b69f5ba38d2617036bec621e52a08bc941"
+    "startedAt": "2026-11-27T18:51:03.000Z",
+    "finishedAt": "2026-11-27T18:51:37.000Z",
+    "headSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a"
    },
    "lastFailure": null,
    "lastScheduledSuccess": {
@@ -209,13 +207,13 @@
    },
    "consecutiveFailures": 0,
    "slots7d": {
-    "due": 97,
+    "due": 96,
     "missed": 15,
-    "lastMissedAt": "2026-11-21T19:00:00.000Z"
+    "lastMissedAt": "2026-11-21T20:00:00.000Z"
    },
    "nextPlanned": [
-    "2026-11-27T19:00:00.000Z",
-    "2026-11-27T20:00:00.000Z"
+    "2026-11-27T20:00:00.000Z",
+    "2026-11-27T21:00:00.000Z"
    ],
    "schedule": [
     "0 13-23 * * *",
@@ -696,10 +694,10 @@
    "area": "research",
    "required": true,
    "workflow": "kalshi-independent-weather-memory.yml",
-   "note": null,
+   "note": "Daily forecast, CLI, grade and scorecard are verified from saved bytes. Late/missed primary and backup firings remain visible; this monitor never changes the frozen capture horizon or recollects a missed forecast.",
    "historyUrl": "https://github.com/ang87505-crypto/SportsEdge/actions/workflows/kalshi-independent-weather-memory.yml",
-   "status": "MISSED_SLOT",
-   "detail": "The latest planned time passed without a run; GitHub may have dropped it.",
+   "status": "RAN_LATE",
+   "detail": "Verified forecast 2026-11-27 and graded outcome 2026-11-26. Daily evidence is complete; planned firings remain late/missed. See original slot counts and capture timestamps.",
    "workflowState": "active",
    "running": null,
    "lastRun": {
@@ -756,7 +754,40 @@
     "11 1,3 * * *",
     "17 9,11 * * *"
    ],
-   "stuckQueued": 0
+   "stuckQueued": 0,
+   "workflowStatus": "MISSED_SLOT",
+   "dailyEvidence": {
+    "schemaVersion": "noaa-daily-memory-health-v1",
+    "checkedAt": "2026-11-27T19:00:57.406Z",
+    "state": "OK",
+    "issues": [],
+    "requiredForecastDate": "2026-11-27",
+    "requiredOutcomeDate": "2026-11-26",
+    "forecast": {
+     "date": "2026-11-27",
+     "capturedAt": "2026-11-26T09:29:34.442Z",
+     "id": "ebb0caf408df85cd1b2c6494dfcce26967648af32c116523355187f47752cbb9",
+     "hoursBeforeDay": 19.507
+    },
+    "nextForecast": {
+     "date": "2026-11-28",
+     "capturedAt": "2026-11-27T09:39:41.745Z",
+     "id": "101ecdb20ffe383f9c74c00d6e4192bbf6f0c37973a33f866fa4d66e60885507",
+     "hoursBeforeDay": 19.338
+    },
+    "outcome": {
+     "date": "2026-11-26",
+     "fetchedAt": "2026-11-27T09:39:41.487Z",
+     "issuedAt": "2026-11-27T06:30:00.000Z",
+     "id": "2b946e691ad66ec996eeabd8b928f37f088aa4e72956119ac882f1a50b46801e",
+     "gradeId": "e6d7d335a21c40239cfe68a0426f7875e55ec18ef53b37701a6d2b14545f162e"
+    },
+    "scorecard": {
+     "throughDate": "2026-11-26",
+     "days": 9,
+     "id": "949a778bd7823a26dc062ff317509111dd3cbc6a37a838ad463b8943032b5d31"
+    }
+   }
   },
   {
    "id": "kalshi-offline-check",
@@ -903,7 +934,7 @@
    "slots7d": {
     "due": 165,
     "missed": 163,
-    "lastMissedAt": "2026-11-27T14:43:00.000Z"
+    "lastMissedAt": "2026-11-27T15:43:00.000Z"
    },
    "nextPlanned": [],
    "schedule": [
@@ -928,7 +959,7 @@
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-27T18:39:00.000Z",
+    "startedAt": "2026-11-27T19:00:38.000Z",
     "finishedAt": null,
     "headSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a"
    },
@@ -938,7 +969,7 @@
     "event": "workflow_run",
     "status": "in_progress",
     "conclusion": null,
-    "startedAt": "2026-11-27T18:39:00.000Z",
+    "startedAt": "2026-11-27T19:00:38.000Z",
     "finishedAt": null,
     "headSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a"
    },
@@ -986,9 +1017,9 @@
    "lastCollect": {
     "kind": "collect",
     "status": "completed",
-    "outcome": "NOTHING_DUE",
-    "startedAt": "2026-11-27T17:10:12.248274+00:00",
-    "finishedAt": "2026-11-27T17:10:14.682078+00:00"
+    "outcome": "COMPLETED",
+    "startedAt": "2026-11-27T18:51:16.929463+00:00",
+    "finishedAt": "2026-11-27T18:51:28.699953+00:00"
    },
    "lastSettle": {
     "kind": "settle",
@@ -997,7 +1028,7 @@
     "startedAt": "2026-11-27T16:28:23.765558+00:00",
     "finishedAt": "2026-11-27T16:29:25.857533+00:00"
    },
-   "lastCompletedCollectAt": "2026-11-25T22:06:16.536442+00:00",
+   "lastCompletedCollectAt": "2026-11-27T18:51:28.699953+00:00",
    "lastCompletedSettleAt": "2026-11-27T16:29:25.857533+00:00",
    "lastSettleSafetyBrake": {
     "n": 150,
@@ -1098,107 +1129,107 @@
   },
   "kalshi": {
    "schemaVersion": "kalshi-research-health-v1",
-   "checkedAt": "2026-11-27T18:39:20.872Z",
+   "checkedAt": "2026-11-27T19:01:00.328Z",
    "state": "OK",
    "issues": []
   }
  },
  "site": {
   "url": "https://sports-edge-eta.vercel.app",
-  "checkedAt": "2026-11-27T18:39:38.362Z",
+  "checkedAt": "2026-11-27T19:01:17.276Z",
   "ok": true,
   "checks": [
    {
     "name": "Overview page",
     "ok": true,
-    "ms": 4960,
+    "ms": 4712,
     "detail": "HTTP 200"
    },
    {
     "name": "Ask SportsEdge page",
     "ok": true,
-    "ms": 621,
+    "ms": 424,
     "detail": "HTTP 200"
    },
    {
     "name": "Automation page",
     "ok": true,
-    "ms": 3178,
+    "ms": 3193,
     "detail": "HTTP 200"
    },
    {
     "name": "Strategy research page",
     "ok": true,
-    "ms": 278,
+    "ms": 158,
     "detail": "HTTP 200"
    },
    {
     "name": "PrizePicks page",
     "ok": true,
-    "ms": 3038,
+    "ms": 3272,
     "detail": "HTTP 200"
    },
    {
     "name": "Chat: sports",
     "ok": true,
-    "ms": 3814,
+    "ms": 4568,
     "detail": "answered"
    },
    {
     "name": "Chat: research and follow-up",
     "ok": true,
-    "ms": 265,
+    "ms": 175,
     "detail": "answered"
    },
    {
     "name": "Chat: combined status",
     "ok": true,
-    "ms": 142,
+    "ms": 76,
     "detail": "answered"
    },
    {
     "name": "Chat: health briefing",
     "ok": true,
-    "ms": 166,
+    "ms": 102,
     "detail": "answered"
    },
    {
     "name": "Owner protection: stock account in chat",
     "ok": true,
-    "ms": 113,
+    "ms": 40,
     "detail": "requires sign-in"
    },
    {
     "name": "Owner protection: session probe",
     "ok": true,
-    "ms": 107,
+    "ms": 74,
     "detail": "no owner access"
    },
    {
     "name": "Owner protection: stock autopilot API",
     "ok": true,
-    "ms": 114,
+    "ms": 68,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: cron kickoff",
     "ok": true,
-    "ms": 818,
+    "ms": 332,
     "detail": "HTTP 401"
    },
    {
     "name": "Owner protection: backup scheduler",
     "ok": true,
-    "ms": 123,
+    "ms": 68,
     "detail": "HTTP 401"
    }
   ],
   "deployment": {
    "state": "MATCHES_MAIN",
-   "detail": "Production serves main 73a6479.",
-   "deployedSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a",
+   "detail": "Production serves main 0d3fec4.",
+   "deployedSha": "0d3fec456aa57e40d7831c2929bfe5a91ca98821",
    "deployedRef": "main",
-   "mainSha": "73a647912ce5072fa84225da4fa9ed2e81b79c0a"
+   "mainSha": "0d3fec456aa57e40d7831c2929bfe5a91ca98821"
   }
  },
  "credentials": [
