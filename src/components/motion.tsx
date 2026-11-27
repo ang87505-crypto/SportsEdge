@@ -54,7 +54,7 @@ export function MotionLayer(){
     io.unobserve(el);
    }
    order=0;
-  },{rootMargin:'0px 0px -6% 0px',threshold:0.06});
+  },{rootMargin:'0px',threshold:0});
   const arm=()=>{
    main.querySelectorAll<HTMLElement>(REVEAL).forEach(el=>{
     if(el.dataset.reveal==='in')return;

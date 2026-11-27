@@ -7,16 +7,18 @@ export type LoadState<T>={status:'loading'}|{status:'error'}|{status:'ready';dat
 /** Fetch JSON and validate it. A failed or unverifiable response is an error state, never a default value. */
 function useValidated<T>(url:string,validate:(v:unknown)=>T|null){
  const [attempt,setAttempt]=useState(0);
- const [state,setState]=useState<LoadState<T>>({status:'loading'});
+ const [saved,setSaved]=useState<{url:string;attempt:number;state:LoadState<T>}>({url,attempt:0,state:{status:'loading'}});
  useEffect(()=>{
   const controller=new AbortController();
   fetch(url,{signal:controller.signal,cache:'no-store'})
    .then(async r=>{if(!r.ok)throw Error('unavailable');const value=validate(await r.json());if(value===null)throw Error('invalid');return value;})
-   .then(data=>{if(!controller.signal.aborted)setState({status:'ready',data,checkedAt:Date.now()});})
-   .catch(()=>{if(!controller.signal.aborted)setState({status:'error'});});
+   .then(data=>{if(!controller.signal.aborted)setSaved({url,attempt,state:{status:'ready',data,checkedAt:Date.now()}});})
+   .catch(()=>{if(!controller.signal.aborted)setSaved({url,attempt,state:{status:'error'}});});
   return()=>controller.abort();
  },[url,attempt,validate]);
- const retry=useCallback(()=>{setState({status:'loading'});setAttempt(a=>a+1);},[]);
+ // A response belongs to its URL and attempt. Never show NBA data under the EPL tab while it loads.
+ const state:LoadState<T>=saved.url===url&&saved.attempt===attempt?saved.state:{status:'loading'};
+ const retry=useCallback(()=>setAttempt(a=>a+1),[]);
  return [state,retry] as const;
 }
 

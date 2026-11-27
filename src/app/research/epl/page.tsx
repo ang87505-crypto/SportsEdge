@@ -3,25 +3,25 @@ import {PageHeading,Panel,Metric,MetricGrid,Evidence,Callout,Details,Badge} from
 import data from '@/data/research/epl_october_2026_forecasts.json';
 import {dateTimeUtc,pct} from '@/lib/format';
 
-export const metadata={title:'Soccer model · Sports AI · SportsEdge',description:'Archived experimental EPL three-way forecasts with coverage limits.'};
+export const metadata={title:'Soccer model archive · Sports AI · SportsEdge',description:'Archived October 2026 EPL three-way model estimates with dated source coverage.'};
 
 const favourite=(p:{home:number;draw:number;away:number})=>p.home>=p.draw&&p.home>=p.away?'home':p.away>=p.draw?'away':'draw';
 
 export default function EPL(){
  const draws=data.fit_counts.baseline_draws/data.fit_counts.baseline_games;
  return <>
-  <PageHeading title="Soccer model" description="Experimental Elo forecasts for the Premier League with three outcomes: home win, draw or away win. This is an archived snapshot, not a live feed."
-   meta={<><Evidence kind="unverified"/><Badge tone="neutral">{data.model_version}</Badge></>}
+  <PageHeading title="Soccer model archive" description="Saved experimental Premier League estimates for October 10–12, 2026: home win, draw or away win. Current saved sportsbook prices are on the Sports AI board."
+   meta={<><Badge tone="neutral">Archived research</Badge><Evidence kind="unverified"/></>}
    action={<><Link href="/research/backtest" className="button button-secondary">Accuracy history</Link><Link href="/sports" className="button button-secondary">Stored odds</Link></>}/>
-  <Callout tone="warning" title="Archived October 8 snapshot">These are model estimates from a snapshot whose source data ends {data.source_latest_result_date}, with incomplete recent-season coverage. They are not current prices and no paper bets were placed on them.</Callout>
+  <Callout tone="warning" title="October 2026 fixture estimates · source results through September 20">This archive covers the listed October 10–12 fixtures. Its model inputs contain results only through {data.source_latest_result_date}, with incomplete recent-season coverage. These estimates remain saved for research; no paper bets were placed on them.</Callout>
   <MetricGrid columns={4}>
-   <Metric label="Archived forecasts" value={data.forecasts.length} detail="Fixtures for October 10–12, 2026"/>
+   <Metric label="Archived forecasts" value={data.forecasts.length} detail="October 10–12, 2026 fixtures (UTC)"/>
    <Metric label="Games used for ratings" value={data.fit_counts.rated_games} detail="Coverage varies by season"/>
    <Metric label="Fixed draw rate" value={pct(draws,1)} hint="The draw probability is the historical draw share, not tailored per match." detail={`${data.fit_counts.baseline_draws} draws in ${data.fit_counts.baseline_games} earlier matches`}/>
    <Metric label="Betting profitability" value="Unproven" evidence="not-measured" detail="No validated betting ROI"/>
   </MetricGrid>
 
-  <Panel title="Forecasts" description="Each bar splits 100% across home win, draw and away win. The favoured outcome is labelled." flush>
+  <Panel title="Archived fixture estimates" description="Each bar splits 100% across home win, draw and away win. These saved probabilities have not been validated as a betting strategy." flush>
    <div className="three-way-legend"><span><i style={{background:'var(--c1)'}}/>Home win</span><span><i style={{background:'var(--c-ref)'}}/>Draw</span><span><i style={{background:'var(--c2)'}}/>Away win</span></div>
    <ul className="three-way-list">{data.forecasts.map(f=>{const p=f.probabilities,fav=favourite(p);return <li key={f.game_id}>
     <div className="three-way-head"><strong>{f.home} <span>vs</span> {f.away}</strong><time dateTime={f.starts_at}>{dateTimeUtc(f.starts_at)}</time></div>

@@ -1,5 +1,6 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
+import Link from 'next/link';
 import {Panel,Metric,MetricGrid,Evidence,KeyValues,Callout,Details} from '@/components/ui';
 import {ownerHintPresent} from '@/lib/owner-hint';
 import type {KalshiPlatformView} from '@/lib/server/kalshi-platform-view';
@@ -45,7 +46,7 @@ export function KalshiPaperPanel(){
  return <Panel title="Kalshi paper workspace" description="Independent forecasts, system checks and exchange demo records, each tracked separately." className="mt-12"
   actions={<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void read()}>Refresh paper status</button>}>
   {state.kind==='loading'&&<p role="status">Checking owner access…</p>}
-  {state.kind==='login'&&<Callout title="Owner sign-in required"><p>Use <strong>Owner sign-in</strong> at the top of the page, then refresh this panel to see private records and controls.</p></Callout>}
+  {state.kind==='login'&&<Callout title="Owner sign-in required"><p><Link href="/stocks/alpaca">Sign in as the owner</Link>, then return here and refresh this panel to see private records and controls.</p></Callout>}
   {state.kind==='error'&&<Callout tone="warning" title="Paper status unavailable"><p>The database or worker could not be verified. No account balance or result is inferred.</p>{state.code&&<p className="quiet small-print">Diagnostic: {state.code}</p>}</Callout>}
   {state.kind==='ready'&&<>
    <MetricGrid columns={3}>

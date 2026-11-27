@@ -11,6 +11,8 @@ on:
       - 'src/lib/props/research*'
       - 'src/lib/server/props-research*'
       - 'scripts/props-research-snapshot.ts'
+      - 'scripts/props-research-archive.ts'
+      - 'src/lib/lab/engine/props-research*'
       - 'src/data/props/research_v2.json'
       - '.github/workflows/props-research.yml'
   pull_request:
@@ -19,6 +21,8 @@ on:
       - 'src/lib/server/props-research*'
       - 'scripts/props-calibration-study.ts'
       - 'scripts/props-research-snapshot.ts'
+      - 'scripts/props-research-archive.ts'
+      - 'src/lib/lab/engine/props-research*'
       - 'src/data/props/research_v2.json'
       - 'research/props_calibration_20261108/**'
       - '.github/workflows/props-research.yml'
@@ -38,10 +42,15 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '24'
-      - run: node --experimental-strip-types --test src/lib/props/research.test.mjs src/lib/server/props-research-data.test.mjs
+      - run: node --experimental-strip-types --test src/lib/props/research.test.mjs src/lib/server/props-research-data.test.mjs src/lib/props/forecast-trace.test.mjs src/lib/lab/engine/props-research.test.mjs
   snapshot:
     needs: verify
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    concurrency:
+      group: research-data
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -56,7 +65,19 @@ jobs:
           SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
           SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
         run: node --experimental-strip-types scripts/props-research-snapshot.ts
+      - name: Check out append-only research-data for aggregate evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/research-data-branch.sh checkout
+      - name: Publish the existing scorer's immutable aggregate receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --experimental-strip-types scripts/props-research-archive.ts --snapshot artifacts/props-research/snapshot.json \
+            --data research-data --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --source-commit "$(git rev-parse HEAD)"
+          bash .github/scripts/research-data-branch.sh commit "props research evidence $GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
         with:
           name: props-research-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/props-research/snapshot.json

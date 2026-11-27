@@ -158,6 +158,26 @@ e2e('broker writes released OFF: a shadow plan is recorded and nothing is reserv
  assert.deepEqual(intents(w),[]);
 });
 
+e2e('Nov 30 sequence: a main shadow execute first, then the owner execute in the same quarter hour is skipped untouched, and the next one posts',async()=>{
+ // main runs with broker writes released OFF; the owner's run from release/stock-paper-orders has them ON.
+ const w=await armedWithDecision({writes:false});
+ const shadow=await execute(w,'2026-10-19T13:46:00.000Z');
+ assert.equal(shadow.reason,'SHADOW_PLAN_ONLY',JSON.stringify(shadow));
+ w.broker.writesEnabled=true;
+ const sameSlot=await execute(w,'2026-10-19T13:58:00.000Z');
+ assert.equal(sameSlot.outcome,'SKIPPED');assert.equal(sameSlot.reason,'SLOT_ALREADY_FINISHED');
+ assert.equal(sameSlot.posts,0);assert.equal(w.broker.posts.length,0,'a skipped run never reaches the broker');
+ assert.deepEqual(intents(w),[]);
+ const next=await execute(w,'2026-10-19T14:01:00.000Z');
+ assert.equal(next.reason,'ORDERS_COMPLETE',JSON.stringify(next));
+ assert.equal(next.posts,3);assert.equal(w.broker.posts.length,3);
+ // A later main shadow execute after the fills plans nothing new and sends nothing.
+ w.broker.writesEnabled=false;
+ const later=await execute(w,'2026-10-19T14:24:00.000Z');
+ assert.ok(['PLAN_HOLD','SHADOW_PLAN_ONLY'].includes(later.reason),JSON.stringify(later));
+ assert.equal(w.broker.posts.length,3);
+});
+
 e2e('an unknown POST outcome is never retried; the order found later is recorded, then the rest proceed',async()=>{
  const w=await armedWithDecision();
  w.broker.behaviors.push('timeout_late');

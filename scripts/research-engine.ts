@@ -2,7 +2,7 @@
  * AI 2.0 learning engine runner (research only): one complete, idempotent learning cycle.
  *   node --experimental-strip-types scripts/research-engine.ts --registry research/engine/registry.json --out <dir>
  *        [--state <dir>] [--sports-ledger | --sports-rows rows.json --forward-input fwd.json [--sports-coverage coverage.json]] [--stock-weeks weeks.json]
- *        [--result results.json] [--evaluate-forward] [--now ISO]
+ *        [--stock-research summary.json] [--props-research research-data] [--result results.json] [--evaluate-forward] [--now ISO]
  *
  * 1 read newly graded outcomes and frozen predictions (GET-only from the props ledger, host-pinned; or offline JSON)
  * 2 check integrity and timestamps (bad rows excluded and counted)   3 diagnose with clustered uncertainty
@@ -13,7 +13,7 @@
  * A repeat run on the same data changes nothing. It never writes to a database, never calls a provider, broker or
  * AI service, and cannot change a model, pick, entry, stake, budget, schedule or order.
  */
-import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync,readdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync,appendFileSync,readdirSync,statSync} from 'node:fs';
 import {join} from 'node:path';
 import {adopt,advance,EngineError,fingerprint,register,type Experiment,type Registry} from '../src/lib/lab/engine/experiments.ts';
 import {sportsQuality,sportsPatterns,stockPatterns,proposeHypotheses,hitSummary,type SportsRow,type StockWeek,type Hypothesis} from '../src/lib/lab/engine/diagnostics.ts';
@@ -28,6 +28,9 @@ import {trackMonotoneShadow} from '../src/lib/lab/engine/monotone-shadow.ts';
 import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
 import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
+import {evidenceCoverage} from '../src/lib/lab/engine/evidence.ts';
+import {stockResearchResults} from '../src/lib/lab/engine/stock-research.ts';
+import {propsResearchResult,propsResearchFilename,verifyPropsResearchEvidence,PROPS_RESEARCH_DIRECTORY,PROPS_RESEARCH_FILE} from '../src/lib/lab/engine/props-research.ts';
 
 const argv=process.argv;
 const opt=(n:string)=>{const i=argv.indexOf('--'+n);return i<0?null:argv[i+1];};
@@ -143,6 +146,7 @@ const regIn=state&&existsSync(state+'/registry.json')?state+'/registry.json':opt
 if(!regIn)throw new Error('missing --registry');
 let reg:Registry=JSON.parse(readFileSync(regIn,'utf8'));
 const before=fingerprint(reg);
+const fedByProducer=new Set<string>();
 let status='OK',failure:string|null=null;
 
 try{
@@ -157,6 +161,48 @@ try{
    catch(err){if(!(err instanceof EngineError))throw err;refused.push({id:e.id,code:err.code});}
   }
   report.seed={adopted,refused};
+ }
+ if(opt('stock-research')){
+  // Forward evidence from the nightly stock research ledgers (research-data summary.json). Terminal experiments are
+  // reported and never advanced; each input is applied once (fingerprinted).
+  const applied:unknown[]=[];
+  for(const x of stockResearchResults(JSON.parse(readFileSync(opt('stock-research')!,'utf8')))){
+   const e=reg.experiments.find(y=>y.id===x.experimentId);
+   if(!e){applied.push({id:x.experimentId,skipped:'NOT_REGISTERED'});continue;}
+   fedByProducer.add(e.id);
+   if(e.status==='REJECTED'||e.status==='FAILED'){applied.push({id:e.id,skipped:'TERMINAL_'+e.status});continue;}
+   const n=nextStatus(e,x.result);
+   const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'stock-research-v1',result:x.result}),x.result as unknown as Record<string,unknown>,x.result.disposition);
+   reg=r.registry;applied.push({id:e.id,from:e.status,to:n.to,changed:r.changed,weeks:x.result.weeks});
+  }
+  (report.domains as Record<string,unknown>).stockResearch={applied};
+ }
+ if(opt('props-research')){
+  // Existing scorer output only. Missing first receipt is pending; invalid, future or stale evidence fails closed.
+  // Files are immutable under the existing research-data commit guard; no new mutable latest pointer or index.
+  const dir=join(opt('props-research')!,PROPS_RESEARCH_DIRECTORY);
+  const files=existsSync(dir)?readdirSync(dir).filter(f=>f.endsWith('.json')).sort():[];
+  if(files.length>10000||files.some(f=>!PROPS_RESEARCH_FILE.test(f)))throw Error('PROPS_RESEARCH_BAD_ARCHIVE');
+  const file=files.at(-1);
+  if(file){
+   const path=join(dir,file);if(statSync(path).size>100_000)throw Error('PROPS_RESEARCH_EVIDENCE_TOO_LARGE');
+   const evidence=verifyPropsResearchEvidence(JSON.parse(readFileSync(path,'utf8')));
+   if(propsResearchFilename(evidence)!==file)throw Error('PROPS_RESEARCH_FILENAME_MISMATCH');
+   const x=propsResearchResult(evidence,now),e=reg.experiments.find(y=>y.id===x.experimentId);
+   let applied:unknown={skipped:'NOT_REGISTERED'};
+   if(e){
+    if(e.baseline!==evidence.activeModel)throw Error('PROPS_RESEARCH_BASELINE_MISMATCH');
+    fedByProducer.add(e.id);
+    if(e.status==='REJECTED'||e.status==='FAILED')applied={id:e.id,skipped:'TERMINAL_'+e.status};
+    else{
+     const n=nextStatus(e,x.result);
+     const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'props-research-v1',result:x.result}),x.result,x.result.disposition);
+     reg=r.registry;applied={id:e.id,from:e.status,to:n.to,changed:r.changed,observations:x.result.observations};
+    }
+   }
+   (report.domains as Record<string,unknown>).propsResearch={state:'CONNECTED',asOf:evidence.asOf,runId:evidence.runId,
+    sourceCommit:evidence.sourceCommit,file,applied};
+  }else (report.domains as Record<string,unknown>).propsResearch={state:'PENDING_FIRST_RECEIPT'};
  }
  let ledger:Ledger|null=null;
  if(flag('sports-ledger'))ledger=await readLedger();
@@ -209,7 +255,7 @@ try{
   const x=card?.engineResult;
   if(card&&(card.schema!=='kalshi-weather-multisource-paper-scorecard-v1'||x?.result?.evidence!=='forward'))throw new Error('WEATHER_FORWARD_INVALID');
   const e=x?reg.experiments.find(y=>y.id===x.experimentId):null;
-  if(x&&e){const n=nextStatus(e,x.result as Result);
+  if(x&&e){fedByProducer.add(e.id);const n=nextStatus(e,x.result as Result);
    const r=advance(reg,e.id,n.to,n.reason,now,fingerprint({format:'weather-forward-v1',file:files.at(-1),result:x.result}),x.result,x.result.disposition);
    reg=r.registry;(report.forward as unknown[]).push({id:e.id,from:e.status,to:n.to,changed:r.changed,reason:n.reason,details:{scorecard:files.at(-1)}});}
   (report.domains as Record<string,unknown>).weather={scorecard:files.at(-1)??null,summary:card?.summary??null,readiness:card?.readiness??null};
@@ -229,6 +275,9 @@ try{
 }
 report.status=status;report.failure=failure;report.registryChanged=fingerprint(reg)!==before;
 report.registrySummary=reg.experiments.map(e=>({id:e.id,domain:e.domain,status:e.status,disposition:e.disposition}));
+try{report.evidence=evidenceCoverage(reg,{sportsLedger:flag('sports-ledger')||!!opt('sports-rows'),stockWeeks:!!opt('stock-weeks')||!!opt('stock-research'),
+ weatherForward:!!opt('weather-forward'),fedByProducer:[...fedByProducer]},now);}
+catch(e){report.evidence={error:e instanceof Error?e.message:String(e)};}
 report.runtimeMs=Date.now()-t0;
 const run={runId,at:now,status,failure,registryChanged:report.registryChanged,
  proposed:Object.fromEntries(Object.entries(report.domains as Record<string,{proposed?:Hypothesis[]}>).map(([k,v])=>[k,(v.proposed??[]).map(h=>h.key)])),

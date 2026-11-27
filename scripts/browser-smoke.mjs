@@ -95,6 +95,7 @@ try{
      const nav=document.querySelector(mobile?'nav[aria-label="Mobile navigation"]':'nav[aria-label="Primary"]');
      const heading=main?.querySelector('h1');
      return {route:location.pathname,viewport:innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),
+      composerBottom:main?.querySelector(".chat-form input")?.getBoundingClientRect().bottom??null,viewportHeight:innerHeight,
       heading:heading?.textContent?.trim()??null,mainPresent:!!main,navVisible:!!nav&&getComputedStyle(nav).display!=='none',
       currentNav:nav?.querySelectorAll(mobile?'[aria-current]':'a[aria-current="page"]').length??0,
       platformRoute:['/automation','/progress','/testing','/guide'].includes(location.pathname),
@@ -117,6 +118,12 @@ try{
     for(const href of data.links)internalLinks.add(href.split('#')[0]||'/');
     if(pageErrors.length)issues.push('Console/runtime errors: '+[...new Set(pageErrors)].join(' | '));
 
+    if(route==='/'&&(data.composerBottom===null||data.composerBottom>data.viewportHeight-80))issues.push('Initial chat input is below the usable first screen');
+    if(route==='/'){
+     await until(async()=>evaluate(send,`!!document.querySelector('.briefing-engine')`),label+' learning engine summary',25000);
+     const coverage=await evaluate(send,`(()=>{const text=document.querySelector('.briefing-now')?.innerText??'';return ['PrizePicks paper picks','Stock PAPER autopilot','Kalshi weather research','AI learning engine'].every(name=>text.includes(name))})()`);
+     if(!coverage)issues.push('The status panel does not cover all four systems');
+    }
     if(data.placeholders)issues.push('Placeholder links detected');
     if(route==='/paper-betting/props'&&!await evaluate(send,`[...document.querySelectorAll('main h2')].some(h=>h.textContent.trim()==='Model')`))
      issues.push('Model panel missing');
@@ -142,6 +149,28 @@ try{
     console.log(`${issues.length?'FAIL':'PASS'} ${label} [${data.scrollWidth}px] ${data.heading??''}`);
    }catch(error){const reason=`${label}: ${error instanceof Error?error.message:String(error)}`;failures.push(reason);console.error('FAIL '+reason);}
   }
+ }
+ // The learning summary may be well below the initial viewport on a phone.
+ // Inspect that panel itself, including its current-data or unavailable state.
+ for(const width of [320,390,1440]){
+  try{
+   await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+   await send('Page.navigate',{url:base+'/'});
+   await until(async()=>evaluate(send,`!!document.querySelector('.briefing-engine') && !!document.querySelector('.briefing-now a[href="/lab"]')`),'learning summary '+width,25000);
+   await until(async()=>{
+    await evaluate(send,`document.querySelector('.briefing-engine').scrollIntoView({block:'center',behavior:'instant'})`);
+    await delay(250);
+    return evaluate(send,`(()=>{const r=document.querySelector('.briefing-engine').getBoundingClientRect();return r.top>=50 && r.top<innerHeight-200 && r.bottom>120})()`);
+   },'learning summary in the completed viewport '+width,8000);
+   const panel=await evaluate(send,`(()=>{const p=document.querySelector('.briefing-engine'),r=p.getBoundingClientRect();return {
+    left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,opacity:getComputedStyle(p).opacity,text:p.innerText,
+    overflow:document.documentElement.scrollWidth>innerWidth+3};})()`);
+   if(panel.left<0||panel.right>panel.width+3||panel.top>=panel.height-200||panel.bottom<=120||panel.overflow||Number(panel.opacity)<.9)throw Error('learning summary clipped or hidden at '+width);
+   if(!/Automatic evidence paths|Current feed coverage|coverage and review readiness are unknown/.test(panel.text))throw Error('missing current or unavailable evidence state');
+   const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+   await writeFile(path.join(output,`learning-engine-${width}.png`),Buffer.from(shot.data,'base64'));
+   console.log('PASS learning summary: '+width+'px, evidence scope and review boundary visible');
+  }catch(error){const message='Learning summary: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  }
  if(PRODUCTION){
   try{
@@ -183,6 +212,70 @@ try{
  }
  checks:{
  if(PRODUCTION)break checks;
+ // Synthetic saved-moneyline responses only. No provider, owner or database mutation.
+ try{
+  await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});
+  await send('Page.navigate',{url:base+'/sports'});
+  await until(async()=>evaluate(send,`!!document.querySelector('.board-status') && !document.querySelector('.loading-panel')`),'initial saved sports read');
+  const clock=Date.now(),stamp=age=>new Date(clock-age).toISOString();
+  const quotes=(book,at)=>['NBA Home','NBA Away'].map(selection=>({sportsbook:book,selection,americanOdds:100,updatedAt:at,noVigProbability:.5}));
+  const fixture={status:'stored',fetchedAt:stamp(0),games:[{id:'synthetic-nba',home:'NBA Home',away:'NBA Away',startsAt:stamp(-86400_000),
+   bookmakers:[...quotes('Recent book',stamp(3600_000)),...quotes('Older book',stamp(48*3600_000))]}]};
+  await evaluate(send,`(()=>{
+   window.__sportsRealFetch=window.fetch;window.__sportsRealNow=Date.now;window.__sportsClock=${clock};Date.now=()=>window.__sportsClock;
+   window.__sportsFixture=${JSON.stringify(fixture)};window.__sportsMode='mixed';window.__sportsDefer=false;
+   window.fetch=async(input,init)=>{
+    if(String(input).startsWith('/api/sports?')){
+     if(init?.method&&init.method!=='GET')throw Error('Saved feed must be read-only');
+     if(String(input).includes('sport=soccer')){
+      if(window.__sportsDefer)await new Promise(resolve=>window.__sportsRelease=resolve);
+      return Response.json({status:'stored',fetchedAt:new Date(window.__sportsClock).toISOString(),games:[]});
+     }
+     if(window.__sportsMode==='error')return Response.json({status:'unavailable',games:[]},{status:503});
+     const result=structuredClone(window.__sportsFixture);
+     if(window.__sportsMode==='no-prices')result.games[0].bookmakers=[];
+     if(window.__sportsMode==='future')result.games[0].bookmakers[0].updatedAt=new Date(window.__sportsClock+3600_000).toISOString();
+     if(window.__sportsMode==='aging')result.games[0].bookmakers=result.games[0].bookmakers.slice(0,2).map(q=>({...q,updatedAt:new Date(${clock}-86400_000+120_000).toISOString()}));
+     return Response.json(result);
+    }
+    return window.__sportsRealFetch(input,init);
+   };return true;
+  })()`);
+  const reloadSports=()=>evaluate(send,`(()=>{[...document.querySelectorAll('main button')].find(b=>/^(Reload saved feed|Try again)$/.test(b.textContent)).click();return true})()`);
+  await reloadSports();
+  await until(async()=>evaluate(send,`!!document.querySelector('[data-sports-feed-health="mixed"]')`),'mixed saved quote ages');
+  const mixed=await evaluate(send,`document.querySelector('[data-sports-feed-health]').innerText`);
+  if(!mixed.includes('2 quotes within 24 h; 2 older than 24 h')||!mixed.includes('does not collect new quotes'))throw Error('Fresh feed read concealed stale sportsbook quotes');
+  for(const width of [320,390,1440]){
+   await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+   const state=await evaluate(send,`({overflow:document.documentElement.scrollWidth>innerWidth+3,green:!!document.querySelector('.game-card-badges .tone-positive')})`);
+   if(state.overflow||state.green)throw Error('Mixed-age sports layout or misleading healthy badge at '+width+': '+JSON.stringify(state));
+   const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+   await writeFile(path.join(output,`sports-mixed-quotes-${width}.png`),Buffer.from(shot.data,'base64'));
+  }
+  await evaluate(send,`(()=>{window.__sportsDefer=true;[...document.querySelectorAll('[aria-label="Sport"] button')].find(b=>b.textContent==='Soccer (EPL)').click();return true})()`);
+  await until(async()=>evaluate(send,`typeof window.__sportsRelease==='function' && document.querySelector('[aria-label="Sport"] button[aria-pressed="true"]').textContent==='Soccer (EPL)'`),'pending EPL read');
+  if(await evaluate(send,`!!document.querySelector('.game-card-v2') || !document.querySelector('.board-status').innerText.includes('Loading saved EPL')`))throw Error('Previous NBA data appeared under the EPL tab');
+  await evaluate(send,`([...document.querySelectorAll('[aria-label="Sport"] button')].find(b=>b.textContent==='NBA').click(),true)`);
+  await until(async()=>evaluate(send,`!!document.querySelector('[data-sports-feed-health="mixed"]')`),'return to NBA during pending EPL read');
+  await evaluate(send,`(window.__sportsRelease(),window.__sportsDefer=false,true)`);
+  await delay(250);
+  if(!await evaluate(send,`document.querySelector('.game-card-v2')?.innerText.includes('NBA Home')`))throw Error('Late EPL response replaced the active NBA board');
+  await evaluate(send,`([...document.querySelectorAll('[aria-label="Sport"] button')].find(b=>b.textContent==='Soccer (EPL)').click(),true)`);
+  await until(async()=>evaluate(send,`!!document.querySelector('[data-sports-feed-health="empty"]')`),'empty saved EPL feed');
+  if(!await evaluate(send,`document.querySelector('main').innerText.includes('not a confirmed empty slate')`))throw Error('Empty saved feed implied no real-world games');
+  await evaluate(send,`(window.__sportsMode='error',[...document.querySelectorAll('[aria-label="Sport"] button')].find(b=>b.textContent==='NBA').click(),true)`);
+  await until(async()=>evaluate(send,`document.querySelector('main').innerText.includes('Stored odds are unavailable')`),'failed saved read');
+  if(await evaluate(send,`!!document.querySelector('[data-sports-feed-health]')`))throw Error('Failed read was displayed as an empty feed');
+  for(const [mode,state] of [['no-prices','no-prices'],['future','unverified'],['aging','recent']]){
+   await evaluate(send,`(window.__sportsMode=${JSON.stringify(mode)},true)`);await reloadSports();
+   await until(async()=>evaluate(send,`!!document.querySelector('[data-sports-feed-health=${JSON.stringify(state)}]')`),'saved sports '+mode);
+  }
+  await evaluate(send,`(window.__sportsClock+=180_000,window.dispatchEvent(new Event('focus')),true)`);
+  await until(async()=>evaluate(send,`!!document.querySelector('[data-sports-feed-health="stale"]')`),'quote ages advance on return without another feed read');
+  await evaluate(send,`(window.fetch=window.__sportsRealFetch,Date.now=window.__sportsRealNow,true)`);
+  console.log('PASS saved sports: mixed/stale/future/missing/empty/error states, delayed sport-switch isolation, display clock and 320/390/1440 layouts');
+ }catch(error){const message='Saved sports: '+(error instanceof Error?error.message:String(error));failures.push(message);console.error('FAIL '+message);}
  // Exercise actual navigation, not only anchor presence. No forms or mutations are submitted.
  try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:false});

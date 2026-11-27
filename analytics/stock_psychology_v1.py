@@ -260,7 +260,8 @@ FORWARD_MIN_WEEKS = 26
 WEIGHT = 0.10
 
 
-def decide(sessions: list[str], series: dict, universe: dict, k: int, layers: tuple[str, ...], held: set[str]) -> list[str]:
+def decide(sessions: list[str], series: dict, universe: dict, k: int, layers: tuple[str, ...], held: set[str],
+           spec: dict | None = None) -> list[str]:
     """The picks a variant would make for decision session k from completed bars before k only (no k-session data)."""
     sectors = {u['symbol']: u['sector'] for u in universe['securities']}
     cap = float(universe['max_last_close']) if 'max_last_close' in universe else None
@@ -273,7 +274,7 @@ def decide(sessions: list[str], series: dict, universe: dict, k: int, layers: tu
     adj = make_adjust(layers)
     if adj is not None:
         scores = adj(scores, series, k)
-    return wb.select(scores, sectors, held & set(scores), BASE_SPEC, cap)
+    return wb.select(scores, sectors, held & set(scores), spec or BASE_SPEC, cap)
 
 
 def next_decision(sessions: list[str], last_bar: str) -> int | None:
@@ -302,6 +303,32 @@ def freeze(sessions: list[str], series: dict, universe: dict, ledger: list[dict]
                      'data_through': last_bar, 'frozen_at': frozen_at, 'picks': decide(sessions, series, universe, k, layers, held),
                      'held_before': sorted(held), 'dataset_fingerprint': fingerprint, 'rules': RULES})
     return rows
+
+
+# Forward evidence for the RUNNING experiment lab-stock-holdrank10-wholeshare (docs/STOCK_CHALLENGER_HOLDRANK10_PREREG_2026_11_19.md):
+# the live rules with the frozen top-10 hold buffer (analytics/stock_rank_buffer_candidate.py, HOLD_RANK_MAX=10), i.e. the
+# registered weekly spec with buffer 10. Same freeze-before-the-open ledger, kept under its own experiment id.
+HOLDRANK10_EXPERIMENT = 'lab-stock-holdrank10-wholeshare'
+HOLDRANK10_SPEC = {**BASE_SPEC, 'buffer': 10}
+
+
+def freeze_holdrank10(sessions: list[str], series: dict, universe: dict, ledger: list[dict], last_bar: str, frozen_at: str,
+                      fingerprint: str) -> list[dict]:
+    """One new ledger row for the next weekly decision, or [] when nothing is due or it is already frozen (append-only)."""
+    k = next_decision(sessions, last_bar)
+    mine = [r for r in ledger if r.get('experiment') == HOLDRANK10_EXPERIMENT]
+    if k is None or any(r['decision_session'] == sessions[k] for r in mine):
+        return []
+    prev = [r for r in mine if r['decision_session'] < sessions[k]]
+    held = set(max(prev, key=lambda r: r['decision_session'])['picks']) if prev else set()
+    return [{'experiment': HOLDRANK10_EXPERIMENT, 'variant': 'holdrank10', 'layers': [], 'decision_session': sessions[k],
+             'data_through': last_bar, 'frozen_at': frozen_at, 'picks': decide(sessions, series, universe, k, (), held, HOLDRANK10_SPEC),
+             'held_before': sorted(held), 'dataset_fingerprint': fingerprint, 'rules': {'spec': HOLDRANK10_SPEC, 'hold_rank_max': 10}}]
+
+
+def own_rows(ledger: list[dict], experiment: str = EXPERIMENT) -> list[dict]:
+    """Rows of one experiment. Older psychology rows predate the field and default to the psychology experiment."""
+    return [r for r in ledger if r.get('experiment', EXPERIMENT) == experiment]
 
 
 def grade(ledger: list[dict], sessions: list[str], series: dict, cost_bps: float = 10.0) -> dict:
