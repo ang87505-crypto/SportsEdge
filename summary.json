@@ -243,7 +243,7 @@
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
  "forwardAt": "2026-11-27T10:59:15Z",
- "generatedAt": "2026-11-27T10:59:23Z",
+ "generatedAt": "2026-11-27T17:50:19Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -512,21 +512,12 @@
   {
    "id": "sec-form345-dataset",
    "lastBatch": {
-    "failed": [
-     {
-      "error": "HTTP_404 https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/2026q2_form345.zip",
-      "key": "2026q2"
-     },
-     {
-      "error": "HTTP_404 https://www.sec.gov/files/structureddata/data/insider-transactions-data-sets/2026q3_form345.zip",
-      "key": "2026q3"
-     }
-    ],
-    "items": 43
+    "failed": [],
+    "items": 2
    },
-   "lastSuccessAt": "2026-11-10T17:34:55Z",
-   "retrievedAt": "2026-11-10T17:34:55Z",
-   "status": "FETCH_FAILED"
+   "lastSuccessAt": "2026-11-27T17:50:18Z",
+   "retrievedAt": "2026-11-27T17:50:18Z",
+   "status": "OK"
   },
   {
    "id": "sec-xbrl-companyfacts",
