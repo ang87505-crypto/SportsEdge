@@ -1,0 +1,37 @@
+{
+ "schema": "props-research-evidence-v1",
+ "asOf": "2026-11-27T16:44:02.924Z",
+ "runId": "46036034681-1",
+ "sourceCommit": "f3a575b69f5ba38d2617036bec621e52a08bc941",
+ "activeModel": "props-nb-minutes-rate-v1",
+ "protocolSha256": "9d28ceb335b79372c397931c04bc283822f3fa5d36528041f5b24b3145531e60",
+ "gap": {
+  "version": "props-gap-shrink-v1",
+  "protocolId": "props-gap-shrink-20261112-v1",
+  "forwardStartsAt": "2026-11-12T12:00:00Z",
+  "baseline": {
+   "n": 672,
+   "brier": 0.2678130893648681,
+   "logLoss": 0.7832884329006179
+  },
+  "candidate": {
+   "n": 672,
+   "brier": 0.26584264850022227,
+   "logLoss": 0.7787309515754814
+  },
+  "progress": {
+   "dates": 13,
+   "games": 24,
+   "pending": 0,
+   "voided": 14,
+   "preRegistration": 216,
+   "invalid": 0,
+   "missingMean": 0
+  },
+  "interval": null,
+  "status": "collecting",
+  "promotionEnabled": false,
+  "profitabilityDemonstrated": false
+ },
+ "sha256": "ffccdaa70e6fc450ab1632ea4272a2f1aaa1f7d46cbb7b5eb7eb5ede2675dbe9"
+}
