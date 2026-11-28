@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-28T04:43:46Z",
+  "forwardAt": "2026-11-28T10:40:44Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-28T04:43:39Z",
- "generatedAt": "2026-11-28T04:43:55Z",
+ "forwardAt": "2026-11-28T10:40:41Z",
+ "generatedAt": "2026-11-28T10:40:47Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -494,8 +494,8 @@
     "items": 1
    },
    "lastSuccessAt": "2026-11-28T04:43:37Z",
-   "retrievedAt": "2026-11-28T04:43:37Z",
-   "status": "OK"
+   "retrievedAt": "2026-11-28T10:40:39Z",
+   "status": "PARSE_FAILED"
   },
   {
    "id": "sec-company-tickers",
@@ -513,8 +513,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-28T04:43:37Z",
-   "retrievedAt": "2026-11-28T04:43:37Z",
+   "lastSuccessAt": "2026-11-28T10:40:39Z",
+   "retrievedAt": "2026-11-28T10:40:39Z",
    "status": "OK"
   },
   {

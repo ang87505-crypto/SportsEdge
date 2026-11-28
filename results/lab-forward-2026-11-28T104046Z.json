@@ -1,0 +1,149 @@
+{
+ "at": "2026-11-28T10:40:46Z",
+ "data": {
+  "fingerprint": "49a2c411f15222148a4a051cf61cd8ca0b8f5eeab2a9b4db208a31d9e194ff90",
+  "missing": []
+ },
+ "frozen_now": 0,
+ "graded": {
+  "first_decision": "2026-11-16",
+  "min_weeks": 26,
+  "note": "Frozen research picks only: never orders, never the live strategy.",
+  "variants": {
+   "base": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "base+attention_spike": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "base+market_regime": {
+    "latest_picks": [],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "base+short_term_overreaction": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "base+volatility_shock": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "combined": {
+    "latest_picks": [],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "combined-attention_spike": {
+    "latest_picks": [],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "combined-market_regime": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "combined-short_term_overreaction": {
+    "latest_picks": [],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   },
+   "combined-volatility_shock": {
+    "latest_picks": [],
+    "latest_session": "2026-11-30",
+    "pending": 2,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   }
+  }
+ },
+ "holdrank10": {
+  "first_decision": "2026-11-16",
+  "min_weeks": 26,
+  "note": "Frozen research picks only: never orders, never the live strategy.",
+  "variants": {
+   "holdrank10": {
+    "latest_picks": [
+     "CSX",
+     "MO",
+     "KMI",
+     "BMY",
+     "USB"
+    ],
+    "latest_session": "2026-11-30",
+    "pending": 1,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   }
+  }
+ },
+ "kind": "lab-forward",
+ "last_bar": "2026-11-27",
+ "ledger_rows": 21
+}

@@ -1,0 +1,1229 @@
+{
+ "at": "2026-11-28T10:40:45Z",
+ "data": {
+  "fingerprint": "25d1897754e5053daa6861dc6caadee62c46eb7a7e690a5abebacf344345a2ab",
+  "missing": [],
+  "requests": 4,
+  "symbols_rejected": []
+ },
+ "id": "spy-tom-v1",
+ "kind": "tom-forward",
+ "latest_session": "2026-11-27",
+ "ledger": {
+  "first_execution": "2026-11-11",
+  "last_target": {},
+  "result": {
+   "bps0": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps10": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps25": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "bps5": {
+    "as_live": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    },
+    "continuous": {
+     "avg_exposure": 0.0,
+     "blocked_by_unresolved": 0,
+     "cash_end": 30000.0,
+     "costs": 0.0,
+     "curve_end": [
+      "2026-11-27",
+      30000.0
+     ],
+     "dividends": 0.0,
+     "early": {},
+     "equity_after_halt_exit": null,
+     "execution_log": [
+      {
+       "date": "2026-11-11",
+       "filled": [],
+       "label": "close 2026-11-10",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-12",
+       "filled": [],
+       "label": "close 2026-11-11",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-13",
+       "filled": [],
+       "label": "close 2026-11-12",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-16",
+       "filled": [],
+       "label": "close 2026-11-13",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-17",
+       "filled": [],
+       "label": "close 2026-11-16",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-18",
+       "filled": [],
+       "label": "close 2026-11-17",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-19",
+       "filled": [],
+       "label": "close 2026-11-18",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-20",
+       "filled": [],
+       "label": "close 2026-11-19",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-23",
+       "filled": [],
+       "label": "close 2026-11-20",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-24",
+       "filled": [],
+       "label": "close 2026-11-23",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-25",
+       "filled": [],
+       "label": "close 2026-11-24",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      },
+      {
+       "date": "2026-11-27",
+       "filled": [],
+       "label": "close 2026-11-25",
+       "targets": {},
+       "unavailable": [],
+       "unfilled": []
+      }
+     ],
+     "executions": 12,
+     "filled": 0,
+     "full": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "halt_peak": null,
+     "halted_on": null,
+     "integrity_examples": [],
+     "integrity_mismatches": 0,
+     "late": {
+      "cagr": 0.0,
+      "end_value": 30000.0,
+      "max_drawdown": 0.0,
+      "sharpe": null,
+      "total": 0.0,
+      "vol": 0.0,
+      "years": 0.047619047619047616
+     },
+     "open_unresolved_at_end": 0,
+     "orders": 0,
+     "reduced_for_cash": 0,
+     "sells_pending": 0,
+     "stale_marks": 0,
+     "turnover_per_year": 0.0,
+     "unavailable": 0,
+     "unfilled_cash": 0,
+     "unfilled_gap": 0,
+     "unfilled_missing": 0,
+     "unresolved": [],
+     "years": {}
+    }
+   },
+   "decisions": 12
+  },
+  "sessions": 12,
+  "spy_hold": {
+   "early": {},
+   "full": {
+    "cagr": -0.5531483502809622,
+    "end_value": 28871.035940803384,
+    "max_drawdown": -0.09212829523170263,
+    "sharpe": -2.4236359498983258,
+    "total": -0.03763213530655385,
+    "vol": 0.31193574886840403,
+    "years": 0.047619047619047616
+   },
+   "late": {
+    "cagr": -0.5531483502809622,
+    "end_value": 28871.035940803384,
+    "max_drawdown": -0.09212829523170263,
+    "sharpe": -2.4236359498983258,
+    "total": -0.03763213530655385,
+    "vol": 0.31193574886840403,
+    "years": 0.047619047619047616
+   },
+   "years": {}
+  },
+  "status": "INSUFFICIENT FORWARD SAMPLE",
+  "windows_entered": 0
+ },
+ "prereg": "docs/STOCK_TOM_PREREG_2026_11_10.md"
+}
