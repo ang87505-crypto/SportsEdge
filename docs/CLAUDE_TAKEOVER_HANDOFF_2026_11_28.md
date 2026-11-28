@@ -74,7 +74,7 @@ Claude took over as primary SportsEdge agent while GPT's credits were exhausted.
      - or anchor capture time so daily spend lands at a consistent hour.
    - Not implemented.
 6. **Runs are healthy.** 304 runs since Nov 7, with none failed, abandoned or stuck. GitHub schedule lateness: start delay median 37 min, max 10.6 h. Captures are protected by per-game windows.
-7. **Penny cohort `penny-paper-entry-v1`: not yet registered.**
+7. **Penny cohort `penny-paper-entry-v1`: not registered at 06:30Z; registered at 07:37Z (see pending item (b)).**
    - The `record` job of Forward paper studies has never run on main; before #216 there were only PR runs.
    - Registration happens on the first record run, after the next successful props cycle or tick, or at 17:37 UTC.
    - Staking math was re-verified by hand and in #241's tests: 65% × 65% gives 414050 ppm and 8¢, matching the doc.
@@ -83,7 +83,15 @@ Claude took over as primary SportsEdge agent while GPT's credits were exhausted.
 ### Still pending from the #216 release (step 5; never backfill)
 
 - (a) `summary.predictions.monotoneShadow.status=OK` with `written>0` after the next collect, and `props-nb-monotone-cal-v1` rows with `predicted_at < lock_at`. No collect has run since the merge; the first is expected tonight.
-- (b) A Forward paper studies **record** run reporting `status: OK`.
+- (b) **Done (11:06Z follow-up).** The first Forward paper studies **record** run on main was [46122044646](https://github.com/ang87505-crypto/SportsEdge/actions/runs/46122044646) (07:37Z, after capture tick 46122027075, `NOTHING_DUE`). It reported `status: OK` and registered `penny-paper-entry-v1` at 2026-11-28 07:37:37Z, with policy sha `0b79bd54…` matching the SQL check. The next record run, [46135785013](https://github.com/ang87505-crypto/SportsEdge/actions/runs/46135785013) (after settle cycle 46135703633, `COMPLETED`), is also `status: OK`:
+  - `paidRequests: 0`, `brokerRequests: 0`;
+  - penny 0 source entries (no entry has been made since registration, and none is backfilled), both arms at $500.00;
+  - lab report 437 graded / 71 picks, all layers `collecting`.
+- Live verifier rerun [46138393012](https://github.com/ang87505-crypto/SportsEdge/actions/runs/46138393012) after that settle:
+  - all 1,236 lines graded; all 47 entries settled; 0 stale settlements;
+  - pick rule 1,236/1,236 match; coverage 257/257;
+  - `penny.registered:true`, 0 entries, 0 mismatches;
+  - the only issue is still the 10 `DAILY_CAP` misses (finding 5).
 - (c) The engine adds `props-nb-monotone-cal-v1-real-lines`.
 - How to check: rerun the Props pipeline verify (#241, or `workflow_dispatch` after merge). Then check `penny.registered`, and that `penny.mismatches` is 0 once entries exist.
 
