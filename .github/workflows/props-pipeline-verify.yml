@@ -1,0 +1,43 @@
+# Read-only NBA props pipeline verifier: re-derives every stored pick from the frozen 60-80% rule, checks
+# coverage of qualifying lines, chronology, entry construction, duplicate real lines, settlement staleness,
+# capture-plan completion, quote age, run health, and the penny cohort's stakes and returns.
+# PostgREST GET only (the script is handed a select-only store); never writes and never calls a paid provider.
+name: Props pipeline verify (read-only)
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Start date (UTC, YYYY-MM-DD)
+        required: false
+        type: string
+  pull_request:
+    paths:
+      - src/lib/props/pipeline-verify.ts
+      - src/lib/props/pipeline-verify.test.mjs
+      - scripts/props-pipeline-verify.ts
+      - .github/workflows/props-pipeline-verify.yml
+permissions:
+  contents: read
+concurrency:
+  group: props-pipeline-verify
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Unit tests (no database)
+        run: node --experimental-strip-types --no-warnings --test src/lib/props/pipeline-verify.test.mjs
+      - name: Verify (read-only)
+        env:
+          SPORTSEDGE_PROPS_SUPABASE_URL: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_URL }}
+          SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY: ${{ secrets.SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY }}
+          FROM: ${{ inputs.from || '2026-11-07' }}
+        run: node --experimental-strip-types --no-warnings scripts/props-pipeline-verify.ts props-pipeline-verify.json > /dev/null && cat props-pipeline-verify.json
