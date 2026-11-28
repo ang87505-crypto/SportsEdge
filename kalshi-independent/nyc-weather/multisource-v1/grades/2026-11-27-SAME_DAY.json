@@ -1,0 +1,69 @@
+{
+ "id": "93fbc54bbf8e49e8f79d9faeda91ca0b16328a44e2202c14b58c4567094c9903",
+ "schema": "kalshi-weather-multisource-paper-grade-v1",
+ "forecastId": "8846750a0bc41859af78347a5119fce04373cbdcd1e6337482ff0e039c6e2d2a",
+ "localDate": "2026-11-27",
+ "anchor": "SAME_DAY",
+ "observedHighF": 57,
+ "outcomeProvenance": "IEM_AFOS_CLI_ARCHIVE",
+ "outcomeAvailableAt": "2026-11-28T06:31:00.000Z",
+ "combined": {
+  "crps": 1.711546644826,
+  "absErr": 3,
+  "logLoss": 2.5790503102406617,
+  "eventBrier": 0.8576451135040001,
+  "covered": true,
+  "pit": 0.926255
+ },
+ "baselines": {
+  "NBM_RAW": {
+   "crps": 0.6699788244480003,
+   "absErr": 1,
+   "logLoss": 1.7977755294832076,
+   "eventBrier": 0.573996083682,
+   "covered": true,
+   "pit": 0.6749975
+  },
+  "NBM_CORRECTED": {
+   "crps": 0.5449130861230002,
+   "absErr": 1,
+   "logLoss": 1.7134493385226313,
+   "eventBrier": 0.5625917263320002,
+   "covered": true,
+   "pit": 0.6090465
+  },
+  "GFS_MOS_RAW": {
+   "crps": 2.8808767268840003,
+   "absErr": 4,
+   "logLoss": 3.513918251726274,
+   "eventBrier": 1.070765516064,
+   "covered": false,
+   "pit": 0.971036
+  },
+  "GFS_MOS_CORRECTED": {
+   "crps": 3.3568655094000004,
+   "absErr": 4,
+   "logLoss": 4.07383630159075,
+   "eventBrier": 1.147845008868,
+   "covered": false,
+   "pit": 0.985067
+  },
+  "NBM_NATIVE": {
+   "crps": 0.6480792980290001,
+   "absErr": 1,
+   "logLoss": 1.7449255028808448,
+   "eventBrier": 0.541934491176,
+   "covered": true,
+   "pit": 0.686031
+  },
+  "CLIMATOLOGY": {
+   "crps": 2.463266911737001,
+   "absErr": 4,
+   "logLoss": 3.063133555149502,
+   "eventBrier": 1.281569630662,
+   "covered": true,
+   "pit": 0.3149125
+  }
+ },
+ "note": "Forecast accuracy against the NWS CLI report. Not a Kalshi settlement (first non-preliminary report, TWC first), price, fill or profit."
+}
