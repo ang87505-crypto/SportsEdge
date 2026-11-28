@@ -88,6 +88,13 @@ test('inputs are limited to rows the database held at capture time',()=>{
  assert.equal(seen.find(r=>r.espn_event_id==='401997').points,15);
  assert.equal(asOf(rows,'2026-11-14T19:30:00.000Z').find(r=>r.espn_event_id==='401997').points,60);
 });
+test('an interrupted freeze resumes missing variants and flags without replacing a frozen prediction',async()=>{
+ const s=fakeStore(world()),d={store:s,now:()=>NOW,lab,model,seasonStart:'2026-10-01T00:00:00Z'};
+ await runFreeze(d);const first=s.tables.props_lab_predictions[0];s.tables.props_lab_predictions=[first];s.tables.props_lab_flags=[];
+ await runFreeze(d);assert.equal(s.tables.props_lab_predictions.length,9);assert.equal(s.tables.props_lab_predictions[0],first);assert.equal(s.tables.props_lab_flags.length,1);
+ s.tables.props_lab_experiments[0].artifact_sha256='f'.repeat(64);
+ assert.equal((await runFreeze(d)).status,'SPEC_CONFLICT');
+});
 test('report grades frozen forecasts, keeps collecting below the minimums, and never promotes',async()=>{
  const w=world();const s=fakeStore(w);
  const d={store:s,now:()=>NOW,lab,model,seasonStart:'2026-10-01T00:00:00Z'};
@@ -131,4 +138,26 @@ test('shadow stakes: one row per method per new entry, $0-$5, only in props_lab_
  const saved=w.props_lab_reports.at(-1).report;
  assert.equal(saved.methods.find(m=>m.method==='flat').pnlCents,1000);
  assert.ok(saved.verdicts.every(v=>v.verdict==='collecting'));
+});
+
+test('the same graded line on two platforms is one calibration observation',async()=>{
+ const tables={props_entries:[{id:7,account_id:1,stake_cents:500,lock_at:'2026-11-15T00:10:00.000Z',created_at:'2026-11-14T19:00:00.000Z'}],
+  props_accounts:[{id:1,platform:'prizepicks',initial_cents:50000,selection_version:'props-select-v1'}],
+  props_entry_legs:[{entry_id:7,pick_id:21},{entry_id:7,pick_id:22}],
+  props_picks:[{id:21,prediction_id:31,side:'more',status:'recorded',selection_version:'props-select-v1',decided_at:NOW},
+   {id:22,prediction_id:32,side:'less',status:'recorded',selection_version:'props-select-v1',decided_at:NOW}],
+  props_predictions:[{id:31,observation_id:41,p_more:0.7,p_less:0.3,p_tie:0},{id:32,observation_id:42,p_more:0.34,p_less:0.66,p_tie:0}],
+  props_observations:[{id:41,provider_event_id:'new1',player_name:'A',stat:'points',line:20.5,lock_at:'2026-11-15T00:10:00.000Z'},
+   {id:42,provider_event_id:'new2',player_name:'B',stat:'assists',line:6.5,lock_at:'2026-11-15T01:10:00.000Z'}],
+  props_line_results:[],props_entry_settlements:[],props_lab_stakes:[]};
+ let id=1000;
+ for(const probability of [0.7,0.66])for(let game=0;game<50;game++)for(let platform=0;platform<2;platform++){
+  id++;tables.props_observations.push({id,provider_event_id:'old'+probability+'-'+game,player_name:'Same Player',stat:'points',line:10.5});
+  tables.props_predictions.push({id,observation_id:id,p_more:probability,p_less:1-probability,p_tie:0});
+  tables.props_picks.push({id,prediction_id:id,side:'more',status:'recorded',selection_version:'props-select-v1',decided_at:'2026-11-13T12:00:00Z'});
+  tables.props_line_results.push({observation_id:id,revision:1,outcome:'more',graded_at:'2026-11-14T12:00:00Z'});
+ }
+ const s=fakeStore(tables);const {runFreezeStakes}=await import('./lab-sports-worker.ts');await runFreezeStakes({store:s,now:()=>NOW});
+ const confidence=tables.props_lab_stakes.find(r=>r.method==='confidence');assert.equal(confidence.stake_cents,0);
+ assert.deepEqual(confidence.inputs.legs.map(l=>l.n),[50,50]);assert.equal(confidence.reason,'calibration_sample_too_small');
 });

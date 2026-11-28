@@ -1,0 +1,90 @@
+{
+ "id": "props-nb-monotone-cal-v1",
+ "status": "pre-registered before any 2021-22, 2022-23 or 2023-24 line was scored, any calibration map was fit on them, or any forward (2026-11-19+) outcome was opened",
+ "rulesDocument": "docs/PROPS_CHALLENGER_MONOTONE_CAL_PREREG_2026_11_20.md",
+ "hypothesisKey": "sports:monotone-nonparametric-recalibration",
+ "hypothesis": "The frozen baseline's reliability curve is not log-linear: observed More hit rates plateau while stated confidence keeps rising, and Less forecasts are close to calibrated. A per-stat, shrinkage-regularized monotone (isotonic) map of the baseline's binary P(more), fit on one earlier season, improves probability quality on a later untouched season, reduces high-confidence overconfidence, and does more than the already-tested log-odds intercept/slope recalibration.",
+ "baseline": {"model": "props-nb-minutes-rate-v1", "code": "src/lib/props/model.ts predictLine, unchanged"},
+ "relatedButDistinct": {
+  "sports:overall-recalibration": "tested (lab-sports-ablation-v1-recalibration, props-temperature-v2): log-odds intercept/slope or temperature. Linear in log-odds, cannot plateau. Re-fit here as a comparator only.",
+  "sports:side-asymmetric-calibration": "tested (lab-sports-challengers-v2-side-asym): separate linear slopes for positive/negative log-odds. Still linear on each side.",
+  "sports:minutes-uncertainty-shrinkage": "tested: log-odds shrinkage by minutes CV and games of history.",
+  "sports:line-gap-shrinkage": "tested (props-gap-shrink-v1, challengers-v2 line_gap): shrinkage by model-vs-line gap.",
+  "sports:learned-layer-shadow": "tested (props-learn-v1): feature-based learned layer.",
+  "sports:recent-stated-absence-availability": "tested (props-nb-availability-v1, PR #191): NO_CLEAR_EFFECT.",
+  "minutes-spread lead from PR #191": "explored on the inspected 2025-26 season while choosing this hypothesis: Brier 0.23946 -> 0.23885, More 0.90+ gap unchanged at 0.271. Not pursued."
+ },
+ "challenger": {
+  "code": "src/lib/props/monotone-calibration.ts",
+  "input": "baseline binary non-tie P(more) q = pMore / (pMore + pLess) and the stat",
+  "bins": "20 equal-width bins on q: [0,0.05), ..., [0.95,1]",
+  "pooledMap": "per bin, target (hits + 100 x q_mean) / (n + 100): shrunk toward the identity with 100 pseudo-lines; weighted pool-adjacent-violators with weights n + 100",
+  "perStatMap": "per stat and bin, target (hits + 100 x pooledMap(q_mean)) / (n + 100); weighted PAV with weights n + 100",
+  "knots": "each bin's mean q (bin midpoint when empty); piecewise-linear between knots, flat outside the outer knots",
+  "outputClamp": [0.01, 0.99],
+  "minimumTrainingLinesPerStat": 2000,
+  "fixedConstants": "kappa 100, 20 bins and the clamp are fixed here and never tuned"
+ },
+ "comparatorTested": {
+  "id": "single-slope-recal",
+  "rule": "per stat, logistic regression of the outcome on [1, logit(q)] (Newton, 50 iterations, q clamped to [1e-6, 1-1e-6]), fit on the same training lines. Reported, and used in requirement R7 only."
+ },
+ "sources": {
+  "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_nba_player_boxscores/<file>",
+  "license": "CC BY 4.0, SportsDataverse ESPN NBA player box scores",
+  "retrospective": {
+   "trainingPrior": {"file": "player_box_2022.csv", "sha256": "1a639a8c47250a35cb823a17510d6a1a900bbab9bcaec19b7b79abe2f7f803e6", "role": "2021-22: league rates, player priors and NB dispersion for scoring the training season; never scored"},
+   "training": {"file": "player_box_2023.csv", "sha256": "1b797107d4a0b2fbc98862bd283b9e807a05aa11c671b89a471b25591a589493", "role": "2022-23: baseline scored, calibration maps fit; also the prior season for the holdout"},
+   "holdout": {"file": "player_box_2024.csv", "sha256": "c52a708ac80542baa0711f166154e0a647543036854e29aa903bd2fc27b49ae2", "role": "2023-24: UNTOUCHED as a scored season. Previously used only as prior-season input (league rates, player priors, an NB dispersion moment) by the 2024-25 backtest; no probability, calibration or hit rate on its games was ever computed or reported"}
+  },
+  "forward": {
+   "trainingPrior": {"file": "player_box_2025.csv", "sha256": "8e34c5b1b7629dda89483356b5ec40f76a0b534aa273a5ddd8d9ef23f3e0e4f7", "role": "2024-25 priors for scoring the forward training season (as in PR #191)"},
+   "training": {"file": "player_box_2026.csv", "sha256": "7a4868da67ae7f6ebfba23389e04220be2e3f69d2e56a3942c02aa56f1becc89", "role": "2025-26: calibration maps for the forward arm; dispersion through 2025-12-31 (as in PR #191)"},
+   "evaluation": {"file": "player_box_2027.csv", "sha256": "recorded at each forward run (live file grows)", "window": "games starting at or after 2026-11-19T12:00:00Z; every earlier 2026-27 game was inspected by PRs #125, #164 and #191", "baseline": "src/data/props/model_v1.json exactly, as the live worker scores"}
+  }
+ },
+ "pipeline": {
+  "retrospective": "the existing backtest design (scripts/props-model-fit.ts backtest): a season is scored walk-forward with league rates and player priors from the previous season, and NB dispersion from the previous season's own walk-forward with league-rate priors. Training = 2022-23 scored from 2021-22; holdout = 2023-24 scored from 2022-23. Identical procedure, shifted one season. The calibrator is fit only on training-season lines.",
+  "forward": "training = 2025-26 scored with 2024-25 priors and dispersion through 2025-12-31 (PR #191 training pipeline); evaluation = production artifact on 2026-27 games in the forward window.",
+  "lines": "proxy lines floor(median of last 10 played) + 0.5 from earlier games only (all existing props studies). Half-point lines cannot push.",
+  "unit": "one line per played player-game and stat (points, rebounds, assists) the baseline scores; DNPs are not scored (platforms void them)"
+ },
+ "outcome": "y = 1 if the stat is above the line, 0 if below; an exact tie (only possible on integer lines) is a push and is excluded from binary scoring. No multiclass/tie-aware Brier is computed or compared.",
+ "metrics": {
+  "brier": "binary, on P(more)",
+  "logLoss": "binary, P clamped to [1e-6, 1-1e-6]",
+  "ece": "10 equal-width bins on P(more), weighted |mean P - observed more rate|",
+  "reliability": "same 10 bins: n, mean predicted, observed",
+  "confidenceBands": "decision confidence max(P,1-P) bands 0.50-0.60, 0.60-0.70, 0.70-0.80, 0.80-0.90, 0.90+ by direction (More if P>=0.5), each model by its own forecasts: n, mean confidence, hit rate, gap",
+  "highConfidenceFixedSet": "lines where the BASELINE decision confidence >= 0.70 (and separately >= 0.80, >= 0.90 when n >= 200): Brier of each model on that fixed line set",
+  "murphy": "Brier = reliability - resolution + uncertainty over the 20 calibration bins",
+  "auc": "Mann-Whitney AUC of P(more) for outcome more",
+  "spread": "standard deviation of P(more)"
+ },
+ "uncertainty": {"method": "paired bootstrap resampling whole games (ESPN game id); per game, all lines and all stats move together", "replicates": 2000, "seed": 20261121, "interval": "2.5% and 97.5% percentiles"},
+ "requirements": {
+  "R0_data": "holdout >= 20,000 lines and >= 500 games; training >= 2,000 lines per stat. Otherwise INSUFFICIENT_EVIDENCE.",
+  "R1_brier": "challenger - baseline Brier upper95 < 0",
+  "R2_logLoss": "challenger - baseline log loss upper95 < 0",
+  "R3_ece": "challenger - baseline ECE upper95 < 0",
+  "R4_highConfidence": "on the fixed set of lines with baseline confidence >= 0.70: challenger - baseline Brier upper95 < 0",
+  "R5_noSubgroupHarm": "for More and Less (baseline direction) and for each stat: challenger - baseline Brier lower95 <= 0",
+  "R6_noExcessCompression": "challenger resolution >= 0.80 x baseline resolution AND challenger AUC >= baseline AUC - 0.002 AND challenger SD of P(more) >= 0.50 x baseline SD",
+  "R7_beyondTestedRecal": "challenger - single-slope-recal Brier point estimate < 0"
+ },
+ "verdict": {
+  "INSUFFICIENT_EVIDENCE": "R0 fails",
+  "FAILS": "challenger - baseline Brier lower95 > 0, or log loss lower95 > 0 (credibly worse than the frozen baseline)",
+  "QUALIFIES_FOR_FORWARD_TEST": "R1 to R7 all hold",
+  "NO_CLEAR_EFFECT": "otherwise",
+  "note": "The verdict is decided by the untouched 2023-24 holdout only. QUALIFIES_FOR_FORWARD_TEST never promotes: it only admits the frozen forward-arm calibrator to prospective evaluation. Everything else is descriptive."
+ },
+ "forwardEvaluation": {
+  "calibrator": "fit once on 2025-26 (forward pipeline), committed before any forward outcome is opened, then frozen",
+  "minimum": ">= 150 games and >= 5,000 lines in the forward window; below that the forward status is INSUFFICIENT_EVIDENCE",
+  "rule": "the same R1 to R6 against the production artifact; R7 against single-slope recal fit on the same 2025-26 lines",
+  "realLines": "graded real platform lines from the props ledger are scored by Codex's existing paired evaluation (500 lines, 14 dates, 50 games review gate) and are never mixed with proxy lines"
+ },
+ "descriptive": ["per-stat and per-direction splits", "confidence bands of every model", "comparator results", "the exploratory 2025-26 diagnostics that motivated this hypothesis (inspected season)"],
+ "notUsed": ["any game at or after the predicted game", "any 2023-24 outcome in fitting", "pre-game injury reports", "platform lines", "market prices"]
+}

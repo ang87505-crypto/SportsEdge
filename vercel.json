@@ -6,6 +6,14 @@
       "schedule": "35 3 * * *"
     },
     {
+      "path": "/api/internal/scheduler/kalshi-weather-same-day",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/kalshi-weather-day-ahead",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/internal/paper-auto/kickoff",
       "schedule": "0 9 * * *"
     },
@@ -23,6 +31,18 @@
     },
     {
       "path": "/api/internal/scheduler/props-collect-late",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-research-midday",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-research-early",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/internal/scheduler/props-research-late",
       "schedule": "0 23 * * *"
     },
     {
@@ -114,8 +134,20 @@
       "schedule": "0 22 * * 1-5"
     },
     {
+      "path": "/api/internal/scheduler/stock-monitor-late",
+      "schedule": "0 1 * * 2-6"
+    },
+    {
+      "path": "/api/internal/scheduler/stock-decision-backup",
+      "schedule": "0 10 * * 1-5"
+    },
+    {
       "path": "/api/internal/scheduler/props-learn-weekly",
       "schedule": "0 16 * * 0"
+    },
+    {
+      "path": "/api/internal/moneyline-refresh",
+      "schedule": "0 11 * * *"
     }
   ],
   "git": {

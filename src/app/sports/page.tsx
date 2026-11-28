@@ -8,14 +8,13 @@ import summary from '@/data/research/nba_recent_summary.json';
 import epl from '@/data/research/epl_october_2026_forecasts.json';
 import {useNow} from '@/lib/use-now';
 import {useResearch,useSportsFeed} from '@/lib/use-live-data';
-import {marketProbability,latestQuote,type FeedGame,type SnapshotForecast} from '@/lib/dashboard-snapshot';
-import {age,ageHours,american,dateTime,pct,pp} from '@/lib/format';
+import {marketProbability,type FeedGame,type SnapshotForecast} from '@/lib/dashboard-snapshot';
+import {sportsFeedHealth,quoteAge,FEED_HEALTH_LABEL,type FeedHealthState} from '@/lib/sports-feed-health';
+import {age,american,dateTime,pct,pp} from '@/lib/format';
 
 type Sport='nba'|'soccer';
 type Filter='all'|'forecast'|'priced';
-const STALE_HOURS=24;
-
-function quoteTone(hours:number|null):Tone{return hours===null?'neutral':hours>STALE_HOURS?'warning':'positive';}
+function healthTone(state:FeedHealthState):Tone{return state==='recent'?'info':'warning';}
 
 export default function Sports(){
  const [sport,setSport]=useState<Sport>('nba');
@@ -47,20 +46,20 @@ export default function Sports(){
   if(filter==='priced'&&!g.bookmakers.length)return false;
   return true;
  });
- const newest=feed.status==='ready'?latestQuote(games):null;
+ const health=feed.status==='ready'?sportsFeedHealth(games,now):null;
  const withForecast=sport==='nba'?games.filter(g=>forecastsByGame.has(g.id)).length:0;
  const priced=games.filter(g=>g.bookmakers.length).length;
 
  function changeSport(next:Sport){if(next!==sport){setSport(next);setSearch('');setFilter('all');}}
 
  return <>
-  <PageHeading title="Sports AI" description="Upcoming NBA and EPL games with the model's probability beside the market's margin-free probability from stored sportsbook prices. A gap between the two is a research question, not a proven betting edge."
-   action={<><Link href="/research/nba" className="button button-secondary">NBA model</Link><Link href="/paper-betting" className="button button-secondary">Paper ledger</Link></>}/>
+  <PageHeading title="Sports AI" description="Saved NBA and EPL moneyline games, model estimates and margin-free market probabilities. Quote ages describe the saved prices; they do not establish an executable betting edge."
+   action={<><Link href="/paper-betting/props" className="button button-secondary">Player props</Link><Link href="/research/nba" className="button button-secondary">NBA model</Link><Link href="/paper-betting" className="button button-secondary">Moneyline ledger</Link></>}/>
 
   <MetricGrid columns={4} className="sports-models">
    <Metric label="NBA winner accuracy" value={pct(summary.accuracy)} evidence="historical" detail={`${summary.evaluation_games.toLocaleString()} games, 2024–26. Home-team baseline ${pct(summary.baseline_accuracy)}`}/>
    <Metric label="NBA calibration error" value={pct(summary.calibration.expected_calibration_error,1)} evidence="historical" hint="Average gap between forecast probability and observed win rate, weighted by games." detail="Expected calibration error across 10 probability bins"/>
-   <Metric label="EPL archived forecasts" value={epl.forecasts.length} evidence="unverified" detail={`Snapshot model ${epl.model_version.split('-').slice(0,3).join('-')}, results to ${epl.source_latest_result_date}`}/>
+   <Metric label="EPL archived forecasts" value={epl.forecasts.length} evidence="unverified" detail={`October 10–12, 2026 fixtures · source results through ${epl.source_latest_result_date}`}/>
    <Metric label="Proven betting edge" value="None" evidence="not-measured" detail="No forward closing-line or profit evidence yet"/>
   </MetricGrid>
 
@@ -73,21 +72,31 @@ export default function Sports(){
   </div>
 
   <div className="board-status" role="status" aria-live="polite">
-   {feed.status==='loading'?'Loading stored games and prices…':feed.status==='error'?'Stored odds unavailable.':
+   {feed.status==='loading'?`Loading saved ${sport==='nba'?'NBA':'EPL'} games and prices…`:feed.status==='error'?'Stored odds unavailable.':
     <>
      <span><strong>{visible.length}</strong> of {games.length} upcoming game(s)</span>
-     <span>Latest quote {newest?<Badge tone={quoteTone(now?ageHours(newest,now):null)}>{now?age(newest,now):dateTime(newest)}</Badge>:<Badge tone="warning">none stored</Badge>}</span>
+     {health&&<Badge tone={healthTone(health.state)}>{FEED_HEALTH_LABEL[health.state]}</Badge>}
+     <span>Feed read {dateTime(new Date(feed.checkedAt).toISOString())}</span>
      <span>Source: The Odds API, stored snapshots</span>
      {sport==='nba'&&<span>Model: {research.status==='ready'?`${forecastsByGame.size} recorded forecast(s)`:research.status==='loading'?'loading':'unavailable'}</span>}
      {sport==='nba'&&hasShadow&&<span title="Research comparison only; never used for paper bets">Shadow v2: {shadowByGame.size}</span>}
     </>}
   </div>
 
+  {health&&<div data-sports-feed-health={health.state}><Callout tone={healthTone(health.state)} title={`${sport==='nba'?'NBA':'EPL'} saved odds · ${FEED_HEALTH_LABEL[health.state]}`}>
+   <p>{health.games===0?'An empty saved feed does not confirm that there are no real-world games.':
+    <>{health.quotedGames} of {health.games} saved games have prices. {health.recent} quotes within 24 h; {health.stale} older than 24 h; {health.unverified} with unverified times.</>}</p>
+   {health.newest&&<p>Newest quote: <time dateTime={health.newest}>{dateTime(health.newest)}</time>{now>0?` (${age(health.newest,now)})`:''}.
+    {health.oldest!==health.newest&&<> Oldest quote: <time dateTime={health.oldest!}>{dateTime(health.oldest)}</time>.</>}</p>}
+   <p>These are stored sportsbook snapshots. The 24-hour label describes age only; paper bets have separate freshness and validation requirements. Reload reads saved records and does not collect new quotes.</p>
+   <div className="button-row"><button type="button" className="button button-secondary" onClick={retryFeed}>Reload saved feed</button><Link className="text-link" href="/automation">Automation status</Link></div>
+  </Callout></div>}
+
   {feed.status==='loading'?<div className="game-grid"><Loading label="Loading games"/><Loading label="Loading games"/></div>:
    feed.status==='error'?<Panel><Empty title="Stored odds are unavailable" action={<button type="button" className="button button-secondary" onClick={retryFeed}>Try again</button>}>The saved odds service did not respond. No prices are shown in place of real data. Your paper ledger is separate and unaffected.</Empty></Panel>:
    visible.length===0?<Panel><Empty title={games.length?'No games match these filters':'No upcoming games stored'}
      action={games.length?<button type="button" className="button button-secondary" onClick={()=>{setSearch('');setFilter('all');}}>Clear filters</button>:undefined}>
-     {games.length?'Try another team name or show all games.':`There are no scheduled ${sport==='nba'?'NBA':'EPL'} games with stored data right now. Check the other sport or come back after the next collection run.`}</Empty></Panel>:
+     {games.length?'Try another team name or show all games.':`No upcoming ${sport==='nba'?'NBA':'EPL'} fixtures were returned by this saved feed. Collection may be incomplete; this is not a confirmed empty slate.`}</Empty></Panel>:
    <div className="game-grid">{visible.map(g=><GameCard key={g.id} game={g} sport={sport} forecast={sport==='nba'?forecastsByGame.get(g.id)??null:null} shadow={sport==='nba'&&hasShadow?shadowByGame.get(g.id)??null:undefined} now={now}/>)}</div>}
 
   {feed.status==='ready'&&feed.data.quoteLimitReached&&<Callout tone="warning" title="Quote limit reached">This read hit its 1,000-quote limit, so some books may be missing from the comparison.</Callout>}
@@ -103,8 +112,7 @@ function GameCard({game,sport,forecast,shadow,now}:{game:FeedGame;sport:Sport;fo
  const showShadow=shadow!==undefined;
  const outcomes=sport==='soccer'?[game.home,'Draw',game.away]:[game.away,game.home];
  const books=new Set(game.bookmakers.map(q=>q.sportsbook)).size;
- const newest=latestQuote([game]);
- const hours=newest&&now?ageHours(newest,now):null;
+ const health=sportsFeedHealth([game],now);
  const rows=outcomes.map(sel=>{
   const market=marketProbability(game,sel);
   const quotes=game.bookmakers.filter(q=>q.selection===sel);
@@ -122,12 +130,12 @@ function GameCard({game,sport,forecast,shadow,now}:{game:FeedGame;sport:Sport;fo
    </div>
    <div className="game-card-badges">
     {sport==='nba'&&(forecast?<Badge tone="info">Model forecast</Badge>:<Badge tone="neutral">No forecast</Badge>)}
-    {books?<Badge tone={quoteTone(hours)} title={newest?`Latest quote ${dateTime(newest)}`:undefined}>{books} book{books===1?'':'s'}{newest&&now?`, ${age(newest,now)}`:''}</Badge>:<Badge tone="warning">No prices</Badge>}
+    {books?<Badge tone={healthTone(health.state)}>{books} book{books===1?'':'s'} · {FEED_HEALTH_LABEL[health.state]}</Badge>:<Badge tone="warning">No prices</Badge>}
    </div>
   </header>
 
   <table className="game-odds">
-   <thead><tr><th scope="col">Outcome</th>{sport==='nba'&&<th scope="col" className="num">Model</th>}{showShadow&&<th scope="col" className="num" title="Shadow v2 research model. Never used for paper bets.">Shadow</th>}<th scope="col" className="num">Market</th>{sport==='nba'&&<th scope="col" className="num">Diff.</th>}<th scope="col" className="num">Best price</th></tr></thead>
+   <thead><tr><th scope="col">Outcome</th>{sport==='nba'&&<th scope="col" className="num">Model</th>}{showShadow&&<th scope="col" className="num" title="Shadow v2 research model. Never used for paper bets.">Shadow</th>}<th scope="col" className="num">Saved market</th>{sport==='nba'&&<th scope="col" className="num">Diff.</th>}<th scope="col" className="num">Best saved price</th></tr></thead>
    <tbody>{rows.map(r=><tr key={r.sel}>
     <th scope="row">{r.sel}</th>
     {sport==='nba'&&<td className="num">{pct(r.model)}</td>}
@@ -150,7 +158,7 @@ function GameCard({game,sport,forecast,shadow,now}:{game:FeedGame;sport:Sport;fo
    <summary>All {game.bookmakers.length} recorded prices</summary>
    <div className="table-wrap"><table className="data-table">
     <thead><tr><th scope="col">Book</th><th scope="col">Outcome</th><th scope="col" className="num">Odds</th><th scope="col" className="num">No-vig</th><th scope="col">Recorded</th></tr></thead>
-    <tbody>{game.bookmakers.map((q,i)=><tr key={i}><td>{q.sportsbook}</td><td>{q.selection}</td><td className="num">{american(q.americanOdds)}</td><td className="num">{q.noVigProbability===null?<span title="This book's market was incomplete">—</span>:pct(q.noVigProbability)}</td><td>{dateTime(q.updatedAt)}{now?<small>{age(q.updatedAt,now)}</small>:null}</td></tr>)}</tbody>
+    <tbody>{game.bookmakers.map((q,i)=><tr key={i}><td>{q.sportsbook}</td><td>{q.selection}</td><td className="num">{american(q.americanOdds)}</td><td className="num">{q.noVigProbability===null?<span title="This book's market was incomplete">—</span>:pct(q.noVigProbability)}</td><td><time dateTime={q.updatedAt}>{dateTime(q.updatedAt)}</time>{now?<small>{age(q.updatedAt,now)} · {quoteAge(q.updatedAt,now)==='stale'?'Stale':quoteAge(q.updatedAt,now)==='unverified'?'Time unverified':'Within 24 h'}</small>:null}</td></tr>)}</tbody>
    </table></div>
   </details>}
  </article>;

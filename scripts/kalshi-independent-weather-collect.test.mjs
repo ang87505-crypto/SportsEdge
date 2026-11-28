@@ -107,3 +107,39 @@ test('an outcome collected before the next forecast enters its history at the re
   assert.equal(saved.targetLocalDate,'2026-11-16');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
+
+test('archive timestamps record completed source reads, not the start of requests',async()=>{
+ const root=temp();try{
+  const later='2026-11-13T21:00:05Z',cliLater='2026-11-15T12:00:07Z';
+  let clock=at;const fc=fakeFetcher([]);
+  const a=await collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const response=await fc(url,init);if(url===fURL)clock=later;return response;
+  }});
+  assert.equal(JSON.parse(readFileSync(a.file,'utf8')).capturedAt,later);
+  clock=outcomeAt;const b=await collectIndependentWeather({phase:'outcome',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const response=await fc(url,init);clock=cliLater;return response;
+  }});
+  assert.equal(JSON.parse(readFileSync(b.file,'utf8')).fetchedAt,cliLater);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test('a forecast read that completes after New York midnight fails closed and archives nothing',async()=>{
+ const root=temp();try{
+  const start='2026-11-14T04:59:59Z',done='2026-11-14T05:00:01Z';
+  let clock=start;const fc=fakeFetcher([],rawCli,start);
+  await assert.rejects(collectIndependentWeather({phase:'forecast',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const r=await fc(url,init);if(url===fURL)clock=done;return r;}}),/WEATHER_COLLECT_RACE_WITH_DAY_ROLLOVER/);
+  assert.equal(existsSync(join(root,'kalshi-independent/nyc-weather/forecasts/2026-11-14.json')),false);
+  assert.equal(existsSync(join(root,'kalshi-independent/nyc-weather/forecasts/2026-11-15.json')),false);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test('an outcome read that completes after New York midnight fails closed and archives nothing',async()=>{
+ const root=temp();try{
+  const start='2026-11-16T04:59:59Z',done='2026-11-16T05:00:01Z';
+  let clock=start;const fc=fakeFetcher([]);
+  await assert.rejects(collectIndependentWeather({phase:'outcome',root,userAgent:agent,now:()=>clock,fetcher:async(url,init)=>{
+   const r=await fc(url,init);clock=done;return r;}}),/WEATHER_COLLECT_RACE_WITH_DAY_ROLLOVER/);
+  assert.equal(existsSync(join(root,'kalshi-independent/nyc-weather/cli-daily-preliminary/2026-11-14.json')),false);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

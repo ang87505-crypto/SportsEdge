@@ -422,3 +422,76 @@ test('reliability: backup races, late arrivals and partial failures never repeat
  assert.equal(count('SELECT count(*) FROM props_entries'),entriesBefore);
  assert.equal(count('SELECT count(*) FROM props_entry_legs'),legsBefore);
 });
+
+// ---------------------------------------------------------------- frozen monotone shadow inside the real capture cycle
+// The other cycle tests run before MONOTONE_SHADOW.notBefore (2026-11-21), so there the hook returns NOT_STARTED. This one
+// runs after it, on three fresh databases: a healthy shadow, an uncertain shadow write and a shadow write that throws.
+// Production picks and entries must be identical in all three; only the shadow rows and their receipt may differ.
+test('monotone shadow: written before lock with source identity, and a failing shadow never changes picks or entries',
+ {skip:!enabled&&'set PROPS_PG_TEST=1 with local PostgreSQL'},async()=>{
+ const {PropsStoreError}=await import('./props-store.ts');
+ const {MONOTONE_SHADOW}=await import('../props/monotone-shadow.ts');
+ const {MODEL_VERSION}=await import('../props/contract.ts');
+ const results={};
+ for(const mode of ['ok','uncertain','throws']){
+  const db='props_it_shadow_'+mode,dir=mkdtempSync(join(tmpdir(),'props-it-'));
+  const clockFile=join(dir,'clock.sql');writeFileSync(clockFile,testClockSql);
+  resetDb(db,[schema('props_v1.sql'),schema('props_market_v1.sql'),clockFile]);
+  const env={SPORTSEDGE_PROPS_SUPABASE_URL:'https://vfyzbliksooljxrlfadp.supabase.co',SPORTSEDGE_PROPS_SUPABASE_SERVICE_KEY:'sb_secret_TEST_ONLY_local_key_000'};
+  clock='2026-11-25T12:00:00.000Z';
+  const base=propsStore(env,pgFetch(db,now));
+  let shadowAttempts=0;
+  const store={...base,insert:async(t,rows,o)=>{
+   if(t==='props_predictions'&&rows.some(r=>r.model_version===MONOTONE_SHADOW.model)){
+    shadowAttempts++;
+    if(mode==='uncertain')throw new PropsStoreError('STORE_OUTCOME_UNKNOWN',false);
+    if(mode==='throws')throw new Error('TEST_SHADOW_CRASH');
+   }
+   return base.insert(t,rows,o);}};
+  const deps={store,odds:oddsFor(evsAt(25,'evtSHADOW')),espn,model,now,worker:'test:shadow',seasonStart:'2026-10-01T00:00:00Z'};
+  await store.rpc('props_set_control',{p_state:'RUNNING',p_reason:'integration test',p_actor:'owner-test'});
+  for(const day of [21,22,23,24])finals['202611'+day]=day;
+  assert.equal((await runSettle(deps,'backfill-shadow',null,{kind:'backfill',dates:['2026-11-21','2026-11-22','2026-11-23','2026-11-24']})).outcome,'COMPLETED');
+  clock='2026-11-25T19:00:00.000Z';
+  const c=await runCollect(deps,'collect-2026-11-25T19',null);
+  assert.equal(c.outcome,'COMPLETED',mode+': '+JSON.stringify(c.summary));
+  const shadow=c.summary.predictions.monotoneShadow;
+  const baselines=Number(psql(db,`SELECT count(*) FROM props_predictions p JOIN props_observations o ON o.id=p.observation_id
+   WHERE p.model_version='${MODEL_VERSION}' AND p.status='scored' AND o.lock_at>'${clock}'`).out);
+  assert.ok(baselines>0,'the synthetic slate must produce scored baselines');
+  assert.ok(shadowAttempts>0,mode+': the hook ran after notBefore');
+  const shadows=Number(psql(db,`SELECT count(*) FROM props_predictions WHERE model_version='${MONOTONE_SHADOW.model}'`).out);
+  if(mode==='ok'){
+   assert.equal(shadow.status,'OK');assert.equal(shadow.written,baselines);assert.equal(shadows,baselines);
+   // Each shadow names its own baseline, keeps its data cutoff and observation, carries the pinned digests and was
+   // stamped by the database clock strictly before lock.
+   const bad=psql(db,`SELECT count(*) FROM props_predictions s JOIN props_predictions b ON b.id=(s.inputs->>'baselinePredictionId')::bigint
+    JOIN props_observations o ON o.id=s.observation_id
+    WHERE s.model_version='${MONOTONE_SHADOW.model}' AND NOT (b.model_version='${MODEL_VERSION}' AND b.observation_id=s.observation_id
+     AND b.data_cutoff=s.data_cutoff AND s.predicted_at<o.lock_at AND s.reason='research_shadow' AND s.run_id=b.run_id
+     AND s.inputs->>'calibratorDigest'='${MONOTONE_SHADOW.digest}' AND s.inputs->>'baselineArtifactSha256'='${MONOTONE_SHADOW.baselineDigest}')`).out;
+   assert.equal(bad,'0');
+   // One shadow per observation, and the database itself refuses a second one (UNIQUE observation/model). A repeat write
+   // through the writer is covered in props-monotone-shadow.integration.test.mjs; a second collect here would be refused
+   // by the provider budget before reaching it.
+   assert.equal(psql(db,`SELECT count(*)-count(DISTINCT observation_id) FROM props_predictions WHERE model_version='${MONOTONE_SHADOW.model}'`).out,'0');
+   const dup=psql(db,`INSERT INTO props_predictions(observation_id,run_id,model_version,status,reason,athlete_id,p_more,p_less,p_tie,mean,data_cutoff,inputs)
+    SELECT observation_id,run_id,model_version,status,reason,athlete_id,p_more,p_less,p_tie,mean,data_cutoff,inputs FROM props_predictions
+    WHERE model_version='${MONOTONE_SHADOW.model}' LIMIT 1`);
+   assert.equal(dup.ok,false,'a duplicate shadow row must be refused');
+  }else{
+   // An uncertain or crashing write is reported, never retried, and never fills in rows.
+   assert.equal(shadow.status,'ATTENTION');assert.ok(shadow.unknown>0);assert.equal(shadowAttempts,1);assert.equal(shadows,0);
+  }
+  results[mode]={
+   picks:psql(db,`SELECT string_agg(concat_ws('|',o.platform,o.provider_event_id,o.player_name,o.stat,o.line,b.model_version,k.selection_version,k.status,k.side,k.reason),';'
+    ORDER BY o.platform,o.provider_event_id,o.player_name,o.stat,o.line) FROM props_picks k JOIN props_predictions b ON b.id=k.prediction_id
+    JOIN props_observations o ON o.id=b.observation_id WHERE k.run_id=(SELECT min(id) FROM props_runs WHERE kind='collect')`).out,
+   entries:psql(db,`SELECT coalesce(string_agg(concat_ws('|',a.slug,e.stake_cents),';' ORDER BY a.slug,e.id),'') FROM props_entries e
+    JOIN props_accounts a ON a.id=e.account_id WHERE e.run_id=(SELECT min(id) FROM props_runs WHERE kind='collect')`).out,
+   baselines};
+ }
+ assert.ok(results.ok.picks.length>0,'picks were decided');
+ assert.ok(!results.ok.picks.includes(MONOTONE_SHADOW.model),'no pick is ever made from a shadow prediction');
+ for(const mode of ['uncertain','throws'])assert.deepEqual(results[mode],results.ok,mode+' changed production picks, entries or baselines');
+});

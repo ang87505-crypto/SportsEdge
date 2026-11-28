@@ -111,7 +111,7 @@ export async function collectIndependentWeather(opts:{
     historicalTrainingDays:old.historicalTrainingDays};
   }
   const source=await readCentralParkHourlyNws({
-   userAgent:opts.userAgent,now:()=>capturedAt,fetcher:opts.fetcher});
+   userAgent:opts.userAgent,now,fetcher:opts.fetcher});
   const frozen=buildIndependentWeatherMemory(source,knownHistory(root));
   if(frozen.targetLocalDate!==date)throw Error('WEATHER_COLLECT_RACE_WITH_DAY_ROLLOVER');
   appendArchive(file,frozen);
@@ -126,7 +126,8 @@ export async function collectIndependentWeather(opts:{
   return {status:'ALREADY_ARCHIVED',phase:'outcome',date,file,
    independentGraded:existsSync(gradeFile(root,date)),historicalTrainingDays:0};
  }
- const cli=await readCentralParkCli({userAgent:opts.userAgent,now:()=>capturedAt,fetcher:opts.fetcher});
+ const cli=await readCentralParkCli({userAgent:opts.userAgent,now,fetcher:opts.fetcher});
+ if(stationYesterday(cli.fetchedAt)!==date)throw Error('WEATHER_COLLECT_RACE_WITH_DAY_ROLLOVER');
  if(cli.reportDate!==date)throw Error('WEATHER_CLI_NOT_EXPECTED_DATE');
  appendArchive(file,cli);
  const graded=updateDerivedWeather(root,date,cli);

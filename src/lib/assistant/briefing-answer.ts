@@ -60,6 +60,7 @@ export function briefingAnswer(topic:BriefingTopic,b:Briefing,extra:{readiness?:
  }
  if(topic==='improving'){
   const l=b.learning,parts:string[]=[];
+  parts.push('Learning engine: '+(b.engine?.note??'A verified current evaluation is unavailable. Automatic evidence coverage cannot be confirmed.'));
   if(!l)parts.push('The sports model records could not be read, so I cannot say how it is doing.');
   else{
    parts.push(`Sports props: the active model is ${l.activeModel??'the stats model'}${l.lastTrainedAt?`, last trained ${when(l.lastTrainedAt)}`:''}. ${l.note}`);
@@ -71,7 +72,7 @@ export function briefingAnswer(topic:BriefingTopic,b:Briefing,extra:{readiness?:
   const r=b.research.stocks;
   parts.push(r?`Stock strategy research (${r.saved?'saved report':'published'} ${when(r.generatedAt)}): ${r.overall.toLowerCase()}${r.daily?`; daily strategies: ${r.daily.toLowerCase()}`:''}. No research candidate is active.`:
    'Stock strategy research is unavailable right now.');
-  return reply(topic,parts.join('\n\n'),[links([{label:'Sports model',href:'/paper-betting/props#model'},{label:'Stock research',href:'/stocks/research'}])]);
+  return reply(topic,parts.join('\n\n'),[links([{label:'AI Learning Lab',href:'/lab'},{label:'Sports model',href:'/paper-betting/props#model'},{label:'Stock research',href:'/stocks/research'}])]);
  }
  if(topic==='opportunity'){
   const parts=['These are model outputs for PAPER testing, not recommendations or predictions of profit.'];

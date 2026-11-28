@@ -161,14 +161,16 @@ class LabSmoke(unittest.TestCase):
             with mock.patch.object(cli, 'UNIVERSE', ufile), mock.patch.object(cli, 'alpaca', lambda: src):
                 out = cli.cmd_lab_forward(data, data / 'results', '2026-11-20', now)
                 self.assertEqual(out['last_bar'], '2026-11-20')
-                self.assertEqual(out['frozen_now'], 10)
+                self.assertEqual(out['frozen_now'], 11)  # 10 psychology variants + the holdrank10 forward row
+                self.assertEqual(list(out['holdrank10']['variants']), ['holdrank10'])
                 rows = cli._lab_ledger(data)
                 self.assertTrue(all(r['decision_session'] == '2026-11-23' and r['data_through'] == '2026-11-20' for r in rows))
                 again = cli.cmd_lab_forward(data, data / 'results', '2026-11-20', now + timedelta(hours=1))
                 self.assertEqual(again['frozen_now'], 0)
-                self.assertEqual(len(cli._lab_ledger(data)), 10)
+                self.assertEqual(len(cli._lab_ledger(data)), 11)
                 cli.cmd_report(data, now + timedelta(hours=2))
                 summary = json.loads((data / 'summary.json').read_text())
                 self.assertEqual(summary['lab']['experiment'], 'lab-stock-psychology-v1')
                 self.assertEqual(summary['lab']['validated'], [])
                 self.assertEqual(summary['lab']['forward']['frozenRows'], 10)
+                self.assertEqual(summary['labHoldrank10']['frozenRows'], 1)

@@ -1,5 +1,6 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
+import Link from 'next/link';
 import {Panel,Metric,MetricGrid,Evidence,KeyValues,Callout,Details} from '@/components/ui';
 import {ownerHintPresent} from '@/lib/owner-hint';
 import type {KalshiPlatformView} from '@/lib/server/kalshi-platform-view';
@@ -7,18 +8,18 @@ type State={kind:'loading'|'login'|'error';code?:string}|{kind:'ready';data:Kals
 const money=(micros:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:4}).format(micros/1_000_000);
 const date=(value:string)=>new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Denver'}).format(new Date(value))+' MT';
 const readiness=(code:string)=>code==='READY_FOR_OWNER_CHECK'?'Ready for an owner account check':
- code.includes('ACCESS_NOT_REVIEWED')?'Demo access review needed':code.includes('INVALID_KEY')?'Demo credentials need checking':'Demo account setup needed';
+ code.includes('ACCESS_NOT_REVIEWED')?'Trading and market-data access review needed':code.includes('INVALID_KEY')?'Demo credentials need checking':'Demo account setup needed';
 export function KalshiPaperPanel(){
  const [state,setState]=useState<State>({kind:'loading'}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const read=useCallback(async()=>{
-  if(!ownerHintPresent(document.cookie)){setState({kind:'login'});return;}
+  if(!ownerHintPresent(document.cookie)){setNotice('');setState({kind:'login'});return;}
   try{
    const response=await fetch('/api/internal/kalshi-paper',{credentials:'same-origin',cache:'no-store'});
    const data=await response.json();
-   if(response.status===401){setState({kind:'login'});return;}
-   if(!response.ok||data.schemaVersion!=='kalshi-platform-view-v1'){setState({kind:'error',code:data.code});return;}
+   if(response.status===401){setNotice('');setState({kind:'login'});return;}
+   if(!response.ok||data.schemaVersion!=='kalshi-platform-view-v1'){setNotice('');setState({kind:'error',code:data.code});return;}
    setState({kind:'ready',data});
-  }catch{setState({kind:'error'});}
+  }catch{setNotice('');setState({kind:'error'});}
  },[]);
  useEffect(()=>{const timer=window.setTimeout(()=>void read(),0);return()=>window.clearTimeout(timer);},[read]);
  async function act(action:string){
@@ -27,18 +28,25 @@ export function KalshiPaperPanel(){
    const response=await fetch('/api/internal/kalshi-paper',{method:'POST',credentials:'same-origin',
     headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
    const data=await response.json();
-   if(response.status===401){setState({kind:'login'});setNotice('Your owner session expired. Sign in again.');}
-   else if(!response.ok)setNotice('The action was not confirmed. Refresh before another order test. '+(data.code??''));
+   if(response.status===401){setNotice('');setState({kind:'login'});}
+   else if(!response.ok)setNotice((action==='check-demo-connection'?'Demo connection could not be verified. ':'The action was not confirmed. Refresh before another order test. ')+(data.code??''));
+   else if(action==='check-demo-connection'){
+    const r=data.result;
+    if(data.status!=='CHECKED'||r?.status!=='DEMO_CONNECTION_VERIFIED'||r.source!=='KALSHI_DEMO'||r.readOnly!==true||
+     !Number.isSafeInteger(r.cashMicros)||r.cashMicros<0||typeof r.checkedAt!=='string'||!Number.isFinite(Date.parse(r.checkedAt)))
+     setNotice('Demo connection could not be verified. Refresh and try the read-only check again.');
+    else setNotice('Read-only demo connection verified. Available mock cash: '+money(r.cashMicros)+'. Checked '+date(r.checkedAt)+'.');
+   }
    else setNotice(action==='offline-check'?'Synthetic system check saved. This is an engineering test, not a trading result.':
     action==='stop-demo'?'Demo automation stopped.':action==='start-demo'?'Demo automation armed after an account check.':
     action==='smoke-demo'?'Demo test processed. Check the recorded acknowledgement and fills below.':'Run recorded. Status refreshed.');
-  }catch{setNotice('The reply was lost. Refresh and reconcile before another demo order test.');}
+  }catch{setNotice(action==='check-demo-connection'?'Demo connection could not be verified. Try the read-only check again.':'The reply was lost. Refresh and reconcile before another demo order test.');}
   finally{setBusy(false);await read();}
  }
  return <Panel title="Kalshi paper workspace" description="Independent forecasts, system checks and exchange demo records, each tracked separately." className="mt-12"
   actions={<button type="button" className="button button-secondary" disabled={busy} onClick={()=>void read()}>Refresh paper status</button>}>
   {state.kind==='loading'&&<p role="status">Checking owner access…</p>}
-  {state.kind==='login'&&<Callout title="Owner sign-in required"><p>Use <strong>Owner sign-in</strong> at the top of the page, then refresh this panel to see private records and controls.</p></Callout>}
+  {state.kind==='login'&&<Callout title="Owner sign-in required"><p><Link href="/stocks/alpaca">Sign in as the owner</Link>, then return here and refresh this panel to see private records and controls.</p></Callout>}
   {state.kind==='error'&&<Callout tone="warning" title="Paper status unavailable"><p>The database or worker could not be verified. No account balance or result is inferred.</p>{state.code&&<p className="quiet small-print">Diagnostic: {state.code}</p>}</Callout>}
   {state.kind==='ready'&&<>
    <MetricGrid columns={3}>
@@ -73,7 +81,7 @@ export function KalshiPaperPanel(){
     <p className="quiet">Research grades use preliminary NWS reports. They are not exchange settlements or trading returns.</p>
    </Details>
    <Details title="Demo account and automation controls">
-    <p><strong>{readiness(state.data.demo.readiness)}.</strong> Your separate Kalshi demo credentials and reviewed access are required for a connected test. Production trading is disabled.</p>
+    <p><strong>{readiness(state.data.demo.readiness)}.</strong> Test your demo connection to read your mock cash balance. Account history and automated orders require a separate access review.</p>
     {state.data.demo.account&&<KeyValues items={[
      ['Demo available cash',money(state.data.demo.account.cashMicros)],
      ['Demo portfolio value (broker reported)',money(state.data.demo.account.portfolioValueMicros)],
@@ -82,6 +90,7 @@ export function KalshiPaperPanel(){
      ['Engineering order tests',String(state.data.demo.smokeAttempts)],
     ]}/>}
     <div className="button-row">
+     <button type="button" className="button button-secondary" disabled={busy} onClick={()=>void act('check-demo-connection')}>Test demo connection</button>
      <button type="button" className="button button-secondary" disabled={busy||state.data.demo.readiness!=='READY_FOR_OWNER_CHECK'} onClick={()=>void act('check-demo')}>Check demo account</button>
      <button type="button" className="button" disabled={busy||state.data.demo.readiness!=='READY_FOR_OWNER_CHECK'||state.data.demo.state==='ARMED'} onClick={()=>void act('start-demo')}>Start demo automation</button>
      <button type="button" className="button button-secondary" disabled={busy} onClick={()=>void act('stop-demo')}>Stop demo automation</button>
@@ -104,6 +113,6 @@ export function KalshiPaperPanel(){
     <p className="quiet">This fixture tests bookkeeping only. Its invented quotes, probability and outcomes are excluded from research results and demo fills.</p>
    </Details>}
   </>}
-  {notice&&<p role="status" className="quiet mt-12">{notice}</p>}
+  {state.kind==='ready'&&notice&&<p role="status" className="quiet mt-12">{notice}</p>}
  </Panel>;
 }

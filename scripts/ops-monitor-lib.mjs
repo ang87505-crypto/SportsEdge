@@ -4,6 +4,20 @@
 
 const FIELD_RANGES = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
 
+/** The public heartbeat contains research clocks only; insufficient model history is healthy collection. */
+export function kalshiReceiptBlockers(health,nowMs){
+ const codes=new Set(['FORECAST_STALE','FORECAST_UNAVAILABLE','OUTCOME_STALE','OUTCOME_UNAVAILABLE']);
+ const valid=health?.schemaVersion==='kalshi-research-health-v1'&&
+  ['OK','ATTENTION','UNAVAILABLE'].includes(health.state)&&Array.isArray(health.issues)&&health.issues.length<=10&&
+  health.issues.every(x=>codes.has(x))&&
+  Number.isFinite(Date.parse(health.checkedAt))&&Date.parse(health.checkedAt)<=nowMs&&nowMs-Date.parse(health.checkedAt)<=10*60_000;
+ const issues=valid&&health.state==='OK'&&!health.issues.length?[]:
+  valid&&health.issues.length?health.issues:['HEALTH_UNAVAILABLE'];
+ return issues.map(code=>({id:'kalshi:'+code.toLowerCase(),
+  text:'Kalshi weather archive needs attention: '+code+'. A successful workflow alone does not prove a fresh forecast or outcome.',
+  action:'Open Kalshi paper for the public weather archive and inspect Independent NYC weather memory runs. No demo Start is required for research.'}));
+}
+
 /** Parse one five-field cron expression (UTC) into sets of allowed values. Supports *, n, a-b, lists and steps. */
 export function parseCron(expr) {
   const parts = String(expr).trim().split(/\s+/);
@@ -99,6 +113,9 @@ export function runView(r) {
  * (GitHub sometimes starts a scheduled run many hours late). The work happened, late; it still counts as a missed slot.
  */
 export function evaluateJob(job, { workflowState, runs, crons, nowMs, activeSinceMs = -Infinity }) {
+  // One workflow can run different work for different events. A source-only push must not
+  // refresh a nightly ledger's success, hide a nightly failure or cover its scheduled slot.
+  if (job.events) runs = runs.filter(r => job.events.includes(r.event));
   const graceMs = (job.graceMinutes ?? 120) * MINUTE;
   const coverBeforeMs = (job.coverBeforeMinutes ?? 0) * MINUTE;
   const completed = runs.filter(r => r.status === 'completed');
@@ -186,6 +203,17 @@ export function propsReceiptBlockers(props, nowMs, {collectHours = 48, settleHou
   if (hoursSince(props.lastCompletedSettleAt) > settleHours)
     out.push({id: 'props-no-settle', text: `No props settle has completed in ${settleHours} hours (latest: ${props.lastSettle ? props.lastSettle.outcome ?? props.lastSettle.status : 'none'}).`,
       action: 'Open the latest props-daily settle run; pending picks stay pending until a settle completes.'});
+  // The safety brake runs inside every completed settle and is best-effort there, so its failure would otherwise be
+  // silent. Missing, errored or malformed receipts mean the brake could not have paused anything: fail closed by
+  // reporting it. Reporting only: the monitor never pauses or resumes. undefined = no completed settle was read.
+  const brake = props.lastSettleSafetyBrake;
+  if (brake !== undefined && props.lastCompletedSettleAt) {
+    const ok = brake && typeof brake === 'object' && !('error' in brake) && typeof brake.trip === 'boolean' &&
+      Number.isSafeInteger(brake.n) && brake.n >= 0;
+    if (!ok)
+      out.push({id: 'props-safety-brake-unverified', text: `The latest completed props settle did not record a valid safety-brake check (${brake && typeof brake === 'object' && 'error' in brake ? 'error ' + String(brake.error).slice(0, 40) : 'no receipt'}). The automatic pause on confidently losing picks may not be working.`,
+        action: 'Open the latest props-daily settle run summary (safetyBrake). Until it records a valid check, review recent pick results manually and use the owner pause if needed.'});
+  }
   return out;
 }
 
@@ -202,7 +230,7 @@ export function applyReleaseSwitch(evaluated, released) {
 
 /** Overall roll-up: required jobs decide health; optional jobs only warn. */
 export function rollUp(jobs) {
-  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, MISSED_SLOT: 2, RAN_LATE: 1, RELEASED_OFF: 0, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
+  const severity = { FAILING: 3, DISABLED: 3, STALE: 3, UNKNOWN: 3, MISSED_SLOT: 2, RAN_LATE: 1, RELEASED_OFF: 0, EXPIRED: 1, PENDING_FIRST_RUN: 1, RUNNING: 0, OK: 0, RETIRED: 0 };
   const attention = jobs.filter(j => (j.required ? severity[j.status] >= 2 : severity[j.status] >= 3));
   return { state: attention.some(j => severity[j.status] >= 3) ? 'ATTENTION' : attention.length ? 'WARN' : 'OK',
     attention: attention.map(j => j.id) };

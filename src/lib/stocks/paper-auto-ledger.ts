@@ -15,7 +15,9 @@ export type PaperAutoStatus={experimentId:string;state:OperatorState;gateMode:'S
 export type PaperAutoLedger={experimentId:string;registered:true;status:PaperAutoStatus;
  experiment:{registeredAt:string;startingEquityCents:number;brokerAccountNumberSuffix:string;configDigest:string};
  decisions:Array<{decisionId:string;session:string;decisionAt:string;outcome:string;targets:string[];
-  reasons:string[];recordedAt:string}>;
+  reasons:string[];recordedAt:string;
+  /** Universe members the bridge skipped (diagnostics.skipped), by reason code. Lenient: malformed entries are dropped. */
+  rejected:{total:number;byReason:Record<string,number>;symbols:{symbol:string;reason:string}[]}}>;
  intents:Array<{intentId:string;symbol:string;side:'buy'|'sell';phase:string;attempt:number;shares:number;
   limitCents:number;status:string;brokerStatus:string|null;filledQty:string;filledAvgPrice:string|null;
   createdAt:string;updatedAt:string}>;
@@ -66,6 +68,17 @@ function status(v:unknown):PaperAutoStatus{
    'maxOpenOrders','maxAttemptsPerLeg','drawdownStopBps','feeReserveCents'].map(k=>[k,int(limits[k])])),
   checkedAt:time(x.checkedAt)};
 }
+function rejectedOf(v:unknown){
+ const out={total:0,byReason:{} as Record<string,number>,symbols:[] as {symbol:string;reason:string}[]};
+ const d=v&&typeof v==='object'&&!Array.isArray(v)?(v as Obj).skipped:null;
+ if(!d||typeof d!=='object'||Array.isArray(d))return out;
+ for(const [symbol,why] of Object.entries(d as Obj).slice(0,400)){
+  if(!/^[A-Z][A-Z0-9.-]{0,9}$/.test(symbol)||typeof why!=='string')continue;
+  const reason=/^[A-Z][A-Z0-9_]{1,59}/.exec(why)?.[0];if(!reason)continue;
+  out.total++;out.byReason[reason]=(out.byReason[reason]??0)+1;if(out.symbols.length<200)out.symbols.push({symbol,reason});
+ }
+ return out;
+}
 function reasonsOf(v:unknown):string[]{
  if(!v||typeof v!=='object'||Array.isArray(v))return [];
  const d=v as Obj;
@@ -91,7 +104,7 @@ export function parseLedger(raw:unknown):PaperAutoLedger|UnregisteredLedger|null
     session:str(d.session,DAY),decisionAt:time(d.decisionAt),
     outcome:oneOf(d.outcome,['TARGETS','HOLD_NO_TARGETS','MISSED','INPUT_REJECTED'] as const),
     targets:arr(d.targets,50).map(t=>str(obj(t).symbol,/^[A-Z][A-Z0-9.-]{0,9}$/)),
-    reasons:reasonsOf(d.diagnostics),recordedAt:time(d.recordedAt)};}),
+    reasons:reasonsOf(d.diagnostics),recordedAt:time(d.recordedAt),rejected:rejectedOf(d.diagnostics)};}),
    intents:arr(x.intents,200).map(v=>{const i=obj(v);return {intentId:str(i.intentId,/^pai-[a-f0-9]{32}$/),
     symbol:str(i.symbol,/^[A-Z][A-Z0-9.-]{0,9}$/),side:oneOf(i.side,['buy','sell'] as const),
     phase:oneOf(i.phase,['SELL','BUY'] as const),attempt:int(i.attempt,1),shares:int(i.shares,1),

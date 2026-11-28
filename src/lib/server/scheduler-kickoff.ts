@@ -33,11 +33,21 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  'props-settle-midday':{hourUtc:16,workflow:'props-daily.yml',inputs:{kind:'settle',cron:'20 15 * * *'},props:true},
  'props-collect-early':{hourUtc:20,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 19 * * *'},props:true},
  'props-collect-late':{hourUtc:23,workflow:'props-daily.yml',inputs:{kind:'collect',cron:'10 22 * * *'},props:true},
+ // Read-only research receipts have no provider or ledger writes. Recover each missed snapshot independently:
+ // a success before this slot (including a very late prior-day run) must not suppress the next receipt.
+ 'props-research-midday':{hourUtc:16,workflow:'props-research.yml',inputs:{},skipIfSucceededSinceUtc:'15:45'},
+ 'props-research-early':{hourUtc:20,workflow:'props-research.yml',inputs:{},skipIfSucceededSinceUtc:'19:25'},
+ 'props-research-late':{hourUtc:23,workflow:'props-research.yml',inputs:{},skipIfSucceededSinceUtc:'22:25'},
  // Props capture ticks (props-capture-v1). Two hours apart so each NBA capture window (EARLY 8-4 h, LATE 3 h-35 min
  // before tip-off) contains at least one backup hour for 22:00-04:00 UTC tip-offs, even if GitHub drops every tick.
  ...Object.fromEntries([13,14,15,16,17,18,19,20,21,22,23,0,1,2].map(h=>['props-tick-'+String(h).padStart(2,'0'),
   {hourUtc:h,workflow:'props-tick.yml',inputs:{trigger:'backup'},tick:true} satisfies Slot])),
  'research-collect':{hourUtc:4,weekdaysUtc:[2,3,4,5,6],workflow:'research-collect.yml',inputs:{},skipIfSucceededSinceUtc:'02:00'},
+ // Kalshi weather shadow PAPER forecasts (knyc-multisource-emos-v1-research): one dispatch per horizon, inside its capture
+ // window before the anchor (SAME_DAY 11:00Z, DAY_AHEAD 14:00Z). The workflow's preflight skips an already-frozen or late
+ // anchor before any retrieval, so a duplicate dispatch costs nothing. Research only: no market data, orders or stakes.
+ 'kalshi-weather-same-day':{hourUtc:9,workflow:'kalshi-weather-multisource-paper.yml',inputs:{anchor:'SAME_DAY'}},
+ 'kalshi-weather-day-ahead':{hourUtc:12,workflow:'kalshi-weather-multisource-paper.yml',inputs:{anchor:'DAY_AHEAD'}},
  'ops-monitor':{hourUtc:13,workflow:'ops-monitor.yml',inputs:{}},
  // Weekly learning backup (Sunday): GitHub's 10:00 UTC schedule is often late or dropped. Skips if today's run already
  // succeeded or is running; a late GitHub run after this backup skips training itself (minDaysBetweenTrains).
@@ -52,6 +62,19 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
   inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
  'stock-monitor':{hourUtc:22,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
   inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ // Second chance for the same-session close mark (2026-11-25 review): 01:xx UTC Tue-Sat is 20:xx EST / 21:xx EDT on the
+ // SAME New York session, inside the monitor's 16:15 ET-to-midnight window. No skip check is needed: the controller
+ // records one monitor per session and answers a repeat with SLOT_ALREADY_FINISHED (seen every day Nov 16-24).
+ 'stock-monitor-late':{hourUtc:1,weekdaysUtc:[2,3,4,5,6],workflow:'paper-auto-worker.yml',stock:true,
+  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+ // Second chance for the weekly decision kickoff (Vercel 09:00 UTC is its only on-time path; GitHub's 11:20 cron has
+ // arrived 7-13 h late and is refused as REFERENCE_CAPTURE_TOO_LATE). 10:xx UTC is 05:xx EST / 06:xx EDT, before the
+ // 08:00 ET capture. Skipped when today's 09:00 kickoff run is queued, running or succeeded; a failed one gets one retry.
+ // Session is blank (the workflow uses today in New York) and initial is always false: the one-time initial
+ // decision was used on 2026-10-30. The bridge still decides only on the first session of an ISO week, and the
+ // database keeps one decision per session.
+ 'stock-decision-backup':{hourUtc:10,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-decision-weekly.yml',stock:true,
+  inputs:{experiment:'stock-v2-weekly-1',initial:'false'},skipIfSucceededSinceUtc:'09:00'},
  'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
  'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };

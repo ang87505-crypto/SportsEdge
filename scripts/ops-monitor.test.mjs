@@ -1,9 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
+import {parseCron,firesBetween,nextFires,workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,kalshiReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 
 const T = s => Date.parse(s);
+
+test('Kalshi receipts distinguish healthy research from missing, failed and stale heartbeats',()=>{
+ const now=T('2026-11-22T08:00:00Z');
+ const health={schemaVersion:'kalshi-research-health-v1',checkedAt:'2026-11-22T07:59:00Z',state:'OK',issues:[]};
+ assert.deepEqual(kalshiReceiptBlockers(health,now),[]);
+ for(const value of [null,{...health,schemaVersion:'wrong'},{...health,checkedAt:'2026-11-22T07:00:00Z'},
+  {...health,checkedAt:'2026-11-23T07:59:00Z'},{...health,state:'UNAVAILABLE'},
+  {...health,issues:['PRIVATE_BODY\nSECRET']}]){
+  const blockers=kalshiReceiptBlockers(value,now);assert.equal(blockers.length,1);
+  assert.equal(blockers[0].id,'kalshi:health_unavailable');
+  assert.equal(JSON.stringify(blockers).includes('SECRET'),false);
+ }
+ const blockers=kalshiReceiptBlockers({...health,state:'ATTENTION',issues:['OUTCOME_STALE','FORECAST_STALE']},now);
+ assert.deepEqual(blockers.map(b=>b.id),['kalshi:outcome_stale','kalshi:forecast_stale']);
+});
 const run = (startedAt, conclusion = 'success', event = 'schedule', status = 'completed') =>
   ({id: T(startedAt), html_url: 'https://github.com/x/runs/1', event, status, conclusion, run_started_at: startedAt,
     created_at: startedAt, updated_at: startedAt, head_sha: 'a'.repeat(40)});
@@ -31,6 +46,42 @@ test('workflow cron extraction reads every workflow in the repository', () => {
 
 const job = {id: 'j', staleAfterHours: 30, graceMinutes: 120, required: true};
 const daily = ['10 22 * * *'];
+
+test('SEC source-only repairs cannot hide a failed or stale full nightly research run', () => {
+  const configured=JSON.parse(readFileSync(new URL('../config/ops/jobs.json',import.meta.url),'utf8'))
+    .jobs.find(j=>j.id==='research-collect');
+  const crons=workflowCrons(readFileSync(new URL('../.github/workflows/research-collect.yml',import.meta.url),'utf8'));
+  const opts={workflowState:'active',crons,nowMs:T('2026-11-27T18:00Z')};
+  const repair=run('2026-11-27T17:50Z','success','push');
+  const failed=run('2026-11-27T10:58Z','failure');
+  const old=run('2026-11-20T10:58Z');
+  const failure=evaluateJob(configured,{...opts,runs:[repair,failed,old]});
+  assert.equal(failure.status,'FAILING');
+  assert.equal(failure.lastRun.id,failed.id);
+  assert.equal(failure.lastSuccess.id,old.id);
+  const stale=evaluateJob(configured,{...opts,runs:[repair,old]});
+  assert.equal(stale.status,'STALE');
+  assert.equal(stale.lastSuccess.id,old.id);
+  const empty=evaluateJob(configured,{...opts,runs:[repair]});
+  assert.equal(empty.status,'PENDING_FIRST_RUN');
+  assert.equal(empty.lastSuccess,null);
+});
+
+test('source-only success cannot cover a nightly slot; optional repair failure cannot fail a full run', () => {
+  const configured=JSON.parse(readFileSync(new URL('../config/ops/jobs.json',import.meta.url),'utf8'))
+    .jobs.find(j=>j.id==='research-collect');
+  const opts={workflowState:'active',crons:['17 2 * * 2-6'],nowMs:T('2026-11-27T08:00Z')};
+  const before=run('2026-11-26T02:30Z');
+  const repair=run('2026-11-27T02:30Z','success','push');
+  const missed=evaluateJob(configured,{...opts,runs:[repair,before]});
+  assert.equal(missed.status,'MISSED_SLOT');
+  assert.equal(missed.lastSuccess.id,before.id);
+  const manual=run('2026-11-27T02:40Z','success','workflow_dispatch');
+  const healthy=evaluateJob(configured,{...opts,runs:[{...repair,conclusion:'failure'},manual,before]});
+  assert.equal(healthy.status,'OK');
+  assert.equal(healthy.lastSuccess.id,manual.id);
+  assert.equal(healthy.lastFailure,null);
+});
 
 test('a planned time is never an execution: no runs means PENDING_FIRST_RUN with planned times only', () => {
   const e = evaluateJob(job, {workflowState: 'active', runs: [], crons: daily, nowMs: T('2026-11-10T12:00Z')});
@@ -109,6 +160,13 @@ test('roll-up: required problems decide; optional ones only warn when severe', (
   assert.deepEqual(rollUp([{id: 'a', required: true, status: 'FAILING'}]), {state: 'ATTENTION', attention: ['a']});
 });
 
+test('unreadable job history cannot make overall health green or be hidden by a healthy peer', () => {
+  assert.deepEqual(rollUp([{id:'noaa',required:true,status:'UNKNOWN'},
+    {id:'sports',required:true,status:'OK'}]),{state:'ATTENTION',attention:['noaa']});
+  assert.deepEqual(rollUp([{id:'optional',required:false,status:'UNKNOWN'}]),
+    {state:'ATTENTION',attention:['optional']});
+});
+
 test('key expiry is read from the token payload only', () => {
   const jwt = 'x.' + Buffer.from(JSON.stringify({role: 'service_role', exp: 2000000000})).toString('base64url') + '.sig';
   assert.equal(keyExpiry(jwt), '2033-05-18T03:33:20.000Z');
@@ -144,6 +202,20 @@ test('props receipts: green workflows that collect nothing for two days are surf
   // Paused by the owner, or receipts unreadable: no receipt-level claim either way.
   assert.deepEqual(propsReceiptBlockers({...base, controlState: 'PAUSED', lastCompletedCollectAt: null}, now), []);
   assert.deepEqual(propsReceiptBlockers({state: 'UNAVAILABLE'}, now), []);
+});
+
+test('props receipts: a completed settle without a valid safety-brake check is surfaced, never silently passed', () => {
+  const now = T('2026-11-12T00:00Z');
+  const base = {state: 'OK', controlState: 'RUNNING', lastCompletedCollectAt: '2026-11-11T20:11Z', lastCompletedSettleAt: '2026-11-11T16:29Z'};
+  const ids = brake => propsReceiptBlockers({...base, lastSettleSafetyBrake: brake}, now).map(b => b.id);
+  assert.deepEqual(ids({trip: false, n: 87, hitRate: 0.6, upper: 0.7}), [], 'a recorded check passes');
+  assert.deepEqual(ids({trip: false, n: 0, hitRate: null, upper: null}), [], 'no graded picks yet is still a valid check');
+  for (const bad of [null, {error: 'DB_PGRST301'}, {error: 'UNEXPECTED'}, {}, {trip: 'no', n: 3}, {trip: false, n: -1}, 'x'])
+    assert.deepEqual(ids(bad), ['props-safety-brake-unverified'], JSON.stringify(bad));
+  assert.match(propsReceiptBlockers({...base, lastSettleSafetyBrake: {error: 'DB_PGRST301'}}, now)[0].text, /error DB_PGRST301/);
+  // No completed settle read (older receipts) or a paused control: no brake claim either way.
+  assert.deepEqual(ids(undefined), []);
+  assert.deepEqual(propsReceiptBlockers({...base, controlState: 'PAUSED', lastSettleSafetyBrake: null}, now), []);
 });
 
 test('a run GitHub queued hours ago and never started is reported as stuck, not as running', () => {

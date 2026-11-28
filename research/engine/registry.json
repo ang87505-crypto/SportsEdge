@@ -1225,6 +1225,90 @@
    ]
   },
   {
+   "id": "lab-weather-knyc-multisource-emos-v1",
+   "domain": "weather",
+   "hypothesisKey": "weather:knyc-multisource-emos-high-temperature",
+   "hypothesis": "A bias-corrected, spread-calibrated combination of NWS, NBM, GFS MOS and HRRR daily-high forecasts gives a better whole-degree distribution of the Central Park CLI high than the best single corrected model, NBM's own N(TXN, XND) and trailing climatology (CRPS), at a day-ahead and a same-day horizon.",
+   "dataDependencies": [
+    "IEM MOS archive: GFS MOS and NBM NBS for KNYC (retrieved by PR #226's workflow; read-only)",
+    "IEM AFOS archive: CLINYC next-morning reports (PR #226)",
+    "live NWS hourly grid forecast (existing collector, forward only)"
+   ],
+   "frozen": {
+    "features": [
+     "NBM TXN",
+     "NBM XND",
+     "GFS MOS X",
+     "NWS grid max",
+     "HRRR 2 m max (when an archive exists)"
+    ],
+    "parameters": {
+     "protocol": "research/kalshi_weather_multisource_v1_20261126/protocol.json",
+     "protocolSha256": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+     "windowDays": 30,
+     "minTrainingDays": 30,
+     "shrinkToEqual": 0.5,
+     "anchors": [
+      "DAY_AHEAD D-1 14:00Z",
+      "SAME_DAY D 11:00Z"
+     ],
+     "split": "first half BACKTEST, second half HOLDOUT"
+    }
+   },
+   "dataCutoff": "2026-11-26T04:01:56Z",
+   "codeFingerprint": "23762ccab292e7dccabfbb66d3f695cee7792f8c67c90cb7ef0683df1192df77",
+   "datasetFingerprints": [
+    {
+     "name": "eval-2024-knyc.json",
+     "sha256": "f3640fd9a18fbbe830fbcc2104900f239350b5a3e5a2a924c68cfe8caa01b888"
+    }
+   ],
+   "metrics": {
+    "primary": "whole-degree CRPS on HOLDOUT vs the BACKTEST-chosen best corrected member",
+    "secondary": [
+     "MAE",
+     "log loss",
+     "event Brier on the independent ladder",
+     "80% interval coverage",
+     "PIT"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 50,
+    "minDates": 50
+   },
+   "baseline": "best single bias-corrected member; NBM_NATIVE; CLIMATOLOGY",
+   "costAssumptions": null,
+   "decisionRule": "docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md: PROMISING only with >=50 holdout days, CRPS below the best member, NBM native and climatology, bootstrap 95% upper bound of the difference < 0 and 80% coverage in [0.70,0.90]; REJECTED if the lower bound > 0. Forecast accuracy only, never profitability.",
+   "status": "RUNNING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "NO_CLEAR_EFFECT",
+    "observations": 166,
+    "dates": 166,
+    "evaluation": "research/kalshi_weather_multisource_v1_20261126/eval-2024-knyc.json"
+   },
+   "disposition": "NO_CLEAR_EFFECT (2024 retrospective: about 3% lower CRPS than corrected NBM, not established)",
+   "source": "existing",
+   "registeredAt": "2026-11-26T04:01:56Z",
+   "history": [
+    {
+     "at": "2026-11-26T04:01:56Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any outcome was read (docs/KALSHI_WEATHER_MULTISOURCE_PREREG_2026_11_26.md)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-26T05:20:00Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "No clear effect yet; continues only through prospective evaluation. Pre-registered 2024 evaluation (CI run 45760830405, #226 run 45756206033, 166 holdout days per horizon): NO_CLEAR_EFFECT. Combined holdout CRPS 1.223 day-ahead / 0.983 same-day vs corrected NBM 1.258 / 1.013; combined minus corrected NBM -0.035 [-0.093, +0.021] and -0.030 [-0.101, +0.070]; 80% coverage 0.84 / 0.89. Retrospective only; shadow PAPER forecasts and 50 graded forward days per horizon are required before review.",
+     "inputFingerprint": "f3640fd9a18fbbe830fbcc2104900f239350b5a3e5a2a924c68cfe8caa01b888"
+    }
+   ]
+  },
+  {
    "id": "lab-stock-holdrank10-wholeshare",
    "domain": "stocks",
    "hypothesisKey": "stocks:rank-hold-buffer-whole-shares",
@@ -1296,6 +1380,192 @@
      "to": "RUNNING",
      "reason": "No clear effect yet; continues only through prospective evaluation. Pre-registered verdict BEATS_CURRENT_BELOW_MATCHED_SPY (run 44602976829, whole shares, 10 bps). Beats the live rules: Sharpe dev 0.62 vs 0.45, holdout 0.49 vs 0.47, turnover 3.9x vs 8.9x/yr, full Sharpe at 25 bps 0.57 vs 0.40. Holdout edge negligible (paired weekly t 0.17, 203 weeks). Below SPY at its own exposure: holdout Sharpe 0.49 vs 1.27, CAGR 3.8% vs 7.5%. Forward only; never eligible for review until it beats matched SPY forward.",
      "inputFingerprint": "c525ffab94b96dbd78c5577634ab36521b23dc1867a9b9aa66ef41fd8a566558"
+    }
+   ]
+  },
+  {
+   "id": "lab-props-opponent-rate",
+   "domain": "sports",
+   "hypothesisKey": "sports:opponent-allowed-rate-only",
+   "hypothesis": "Scaling the frozen baseline per-minute rate by a walk-forward opponent allowed-rate factor (beta per stat, fit on the preceding season) improves NBA props probability quality. Narrower than lab-sports-ablation-v1-matchup-rest (opponent only, no home/rest).",
+   "dataDependencies": [
+    "SportsDataverse ESPN NBA player box scores (CC BY 4.0), player_box_2017..2021.csv pinned in research/props_opponent_rate_v1_20261124/protocol.json"
+   ],
+   "frozen": {
+    "features": [
+     "opponent allowed per-minute rate / league, season-to-date, >=10 earlier games"
+    ],
+    "parameters": {
+     "betaGrid": "0..1.5 step 0.1",
+     "betaFit": "min binary Brier on the preceding season only",
+     "fittedBetas": {
+      "2018-19": {
+       "points": 0.6,
+       "rebounds": 0.5,
+       "assists": 0.7
+      },
+      "2019-20": {
+       "points": 0.8,
+       "rebounds": 0.5,
+       "assists": 0.6
+      },
+      "2020-21": {
+       "points": 0.7,
+       "rebounds": 0.5,
+       "assists": 0.7
+      }
+     },
+     "minOpponentGames": 10
+    }
+   },
+   "dataCutoff": "2021-05-16T23:59:59Z",
+   "codeFingerprint": "7c926814f6bd975a7765d2c70df8c54691eccd0883dac7e6d409e39feb32f856",
+   "datasetFingerprints": [
+    {
+     "name": "research/props_opponent_rate_v1_20261124/results.json",
+     "sha256": "a814f22fb71fe13e711a352eec88cc64698ee60ee4f6446c083ab2acfa07a6e8"
+    }
+   ],
+   "metrics": {
+    "primary": "paired binary Brier difference vs props-nb-minutes-rate-v1 (game-clustered bootstrap)",
+    "secondary": [
+     "log loss",
+     "residual slope on log opponent factor",
+     "calibration gap"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "docs/PROPS_CHALLENGER_OPPONENT_RATE_PREREG_2026_11_24.md: pooled Brier diff upper 95% < 0, every test season mean < 0, pooled log-loss diff < 0 -> QUALIFIES_FOR_FORWARD_TEST; forward review only under the unchanged production REVIEW_GATE on real lines.",
+   "status": "PROMISING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "PROMISING",
+    "observations": 191607,
+    "clusters": 3231,
+    "reason": "Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2018-19, 2019-20 and 2020-21 proxy lines (chronological folds, beta fit on the preceding season only): pooled paired Brier diff -0.000308 (95% CI -0.000384 to -0.000229, 191,607 lines, 3,231 games), every season improved, log loss -0.00066. Residual-vs-opponent slope ~0.36 -> ~0.02. Effect is ~7x smaller than the production REVIEW_GATE threshold (-0.002); no forward predictions are recorded; never auto-promoted."
+   },
+   "disposition": "PROMISING",
+   "source": "existing",
+   "registeredAt": "2026-11-24T20:59:05Z",
+   "history": [
+    {
+     "at": "2026-11-24T20:59:05Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any 2016-17..2020-21 props line was scored (docs/PROPS_CHALLENGER_OPPONENT_RATE_PREREG_2026_11_24.md); one mechanism, beta per stat from a fixed grid",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:01:27Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "one pre-registered chronological evaluation run (scripts/props-opponent-eval.ts)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:01:27Z",
+     "from": "RUNNING",
+     "to": "PROMISING",
+     "reason": "Retrospective evidence only; forward frozen predictions must meet the registered minimums before review. Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2018-19, 2019-20 and 2020-21 proxy lines (chronological folds, beta fit on the preceding season only): pooled paired Brier diff -0.000308 (95% CI -0.000384 to -0.000229, 191,607 lines, 3,231 games), every season improved, log loss -0.00066. Residual-vs-opponent slope ~0.36 -> ~0.02. Effect is ~7x smaller than the production REVIEW_GATE threshold (-0.002); no forward predictions are recorded; never auto-promoted.",
+     "inputFingerprint": "a814f22fb71fe13e711a352eec88cc64698ee60ee4f6446c083ab2acfa07a6e8"
+    }
+   ]
+  },
+  {
+   "id": "lab-props-low-minutes",
+   "domain": "sports",
+   "hypothesisKey": "sports:low-expected-minutes-adjustment",
+   "hypothesis": "For lines under 15 baseline expected minutes, scaling expected minutes by m and widening the minutes SD by s (fit on the preceding season from realized minutes only) improves NBA props probability quality.",
+   "dataDependencies": [
+    "SportsDataverse ESPN NBA player box scores (CC BY 4.0), player_box_2012..2016.csv pinned in research/props_low_minutes_v1_20261124/protocol.json"
+   ],
+   "frozen": {
+    "features": [
+     "baseline expected minutes < 15"
+    ],
+    "parameters": {
+     "segmentMaxExpectedMinutes": 15,
+     "fit": "fitAdjustment on unique low-minute player-games of the preceding season",
+     "fitted": {
+      "2013-14": {
+       "m": 0.9341,
+       "s": 0.4754
+      },
+      "2014-15": {
+       "m": 0.9089,
+       "s": 0.4423
+      },
+      "2015-16": {
+       "m": 0.9281,
+       "s": 0.4599
+      }
+     }
+    }
+   },
+   "dataCutoff": "2016-04-13T23:59:59Z",
+   "codeFingerprint": "101ccf489b7b7ef3ce0ce9601757e503c021c5293934f1a13e759291f12920ac",
+   "datasetFingerprints": [
+    {
+     "name": "research/props_low_minutes_v1_20261124/results.json",
+     "sha256": "de7930dbed741345ffcffe08967501b31f0e0e1daf6225df820ffd1c5decb0f0"
+    }
+   ],
+   "metrics": {
+    "primary": "paired binary Brier difference vs props-nb-minutes-rate-v1 on all lines (game-clustered bootstrap)",
+    "secondary": [
+     "log loss",
+     "under-15 segment gap and bias",
+     "combined with props-nb-opponent-rate-v1"
+    ]
+   },
+   "sampleRequirements": {
+    "minObservations": 500,
+    "minDates": 14,
+    "minClusters": 50,
+    "minDecisions": 100
+   },
+   "baseline": "props-nb-minutes-rate-v1",
+   "costAssumptions": null,
+   "decisionRule": "docs/PROPS_CHALLENGER_LOW_MINUTES_PREREG_2026_11_24.md: pooled Brier diff upper 95% < 0, every test season mean < 0, pooled log-loss diff < 0 -> QUALIFIES_FOR_FORWARD_TEST; forward review only under the unchanged production REVIEW_GATE on real lines.",
+   "status": "PROMISING",
+   "result": {
+    "evidence": "retrospective",
+    "disposition": "PROMISING",
+    "observations": 213087,
+    "clusters": 3561,
+    "reason": "Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2013-14, 2014-15 and 2015-16 proxy lines (m, s fit on the preceding season from realized minutes only): pooled paired Brier diff -0.00138 (95% CI -0.00152 to -0.00122; 213,087 lines, 3,561 games), every season improved, log loss -0.0039. Under-15-minute segment Brier -0.008 to -0.010, bias about -9 -> -3 points. Additive with the opponent challenger. Below the production REVIEW_GATE (-0.002); no forward predictions are recorded; never auto-promoted."
+   },
+   "disposition": "PROMISING",
+   "source": "existing",
+   "registeredAt": "2026-11-24T21:27:59Z",
+   "history": [
+    {
+     "at": "2026-11-24T21:27:59Z",
+     "from": null,
+     "to": "PROPOSED",
+     "reason": "pre-registered before any 2011-12..2015-16 props line was scored (docs/PROPS_CHALLENGER_LOW_MINUTES_PREREG_2026_11_24.md); m and s from realized minutes only",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:29:21Z",
+     "from": "PROPOSED",
+     "to": "RUNNING",
+     "reason": "one pre-registered chronological evaluation run (scripts/props-low-minutes-eval.ts)",
+     "inputFingerprint": null
+    },
+    {
+     "at": "2026-11-24T21:29:21Z",
+     "from": "RUNNING",
+     "to": "PROMISING",
+     "reason": "Retrospective evidence only; forward frozen predictions must meet the registered minimums before review. Pre-registered verdict QUALIFIES_FOR_FORWARD_TEST on untouched 2013-14, 2014-15 and 2015-16 proxy lines (m, s fit on the preceding season from realized minutes only): pooled paired Brier diff -0.00138 (95% CI -0.00152 to -0.00122; 213,087 lines, 3,561 games), every season improved, log loss -0.0039. Under-15-minute segment Brier -0.008 to -0.010, bias about -9 -> -3 points. Additive with the opponent challenger. Below the production REVIEW_GATE (-0.002); no forward predictions are recorded; never auto-promoted.",
+     "inputFingerprint": "de7930dbed741345ffcffe08967501b31f0e0e1daf6225df820ffd1c5decb0f0"
     }
    ]
   }

@@ -4,12 +4,15 @@
  * job, places an order or prints a secret. Usage: node scripts/ops-monitor.mjs <out-dir>
  */
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
+import {workflowCrons,evaluateJob,rollUp,keyExpiry,propsReceiptBlockers,kalshiReceiptBlockers,applyReleaseSwitch} from './ops-monitor-lib.mjs';
 import {stockReleaseGate,EXPIRES} from './paper-release-gates.mjs';
 import {githubClient,manualStockReceipts} from './paper-release.mjs';
 import {stagingPaperAutoStore} from '../src/lib/server/paper-auto-store.ts';
 import {compareDeployment} from '../src/lib/deployment-identity.ts';
 import {PROPS_COLLECTION_V2} from '../src/lib/props/schedule.ts';
+import {MONEYLINE_REFRESH_RELEASE} from '../src/lib/server/moneyline-refresh.ts';
+import {readMoneylineJob} from './moneyline-monitor.mjs';
+import {readNoaaMemory,applyNoaaMemory} from './noaa-memory-monitor.mjs';
 
 const REPO='ang87505-crypto/SportsEdge',API='https://api.github.com';
 const ROOT=new URL('../',import.meta.url);
@@ -51,12 +54,15 @@ async function workflowData(file){
  return workflowCache.get(file);
 }
 async function evaluate(job){
+ if(job.receiptSource==='moneyline'){
+  return readMoneylineJob(job,{released:MONEYLINE_REFRESH_RELEASE.scheduledRunsEnabled,
+   readHealth:async()=>{const r=await getJson(cfg.site+'/api/research/moneyline-health',{attempts:1});return r.ok?r.json:null;}});
+ }
  const base={id:job.id,label:job.label,area:job.area,required:!!job.required,workflow:job.workflow,note:job.note??null,
   historyUrl:`https://github.com/${REPO}/actions/workflows/${job.workflow}`};
  try{
   const d=await workflowData(job.workflow);
   let runs=d.runs;
-  if(job.events)runs=runs.filter(r=>job.events.includes(r.event));
   if(job.startedWithinMinutes){
    // Only runs that began shortly after one of this job's own planned times are its evidence.
    const [lo,hi]=job.startedWithinMinutes;
@@ -65,6 +71,7 @@ async function evaluate(job){
      const fire=Date.UTC(d0.getUTCFullYear(),d0.getUTCMonth(),d0.getUTCDate(),h,m);return t>=fire+lo*60_000&&t<=fire+hi*60_000;});});
   }
   const e={...base,...evaluateJob(job,{workflowState:d.state,runs,crons:job.crons??d.crons,nowMs,activeSinceMs:d.createdAt})};
+  if(job.receiptSource==='noaa-independent')return applyNoaaMemory(e,await readNoaaMemory());
   // Switch state is read from the reviewed source on main, never inferred from the runs.
   return job.releaseSwitch==='props-capture'?applyReleaseSwitch(e,PROPS_COLLECTION_V2.tickEnabled===true):e;
  }catch(e){
@@ -91,14 +98,17 @@ async function propsEvidence(){
   const [control,collects,settles,doneCollect,doneSettle]=await Promise.all([
    getJson(u.origin+'/rest/v1/props_control?select=state,changed_at&id=eq.1',{headers}),
    getJson(sel+'&kind=eq.collect&limit=40',{headers}),getJson(sel+'&kind=eq.settle&limit=10',{headers}),
-   getJson(done+'&kind=eq.collect',{headers}),getJson(done+'&kind=eq.settle',{headers})]);
+   getJson(done+'&kind=eq.collect',{headers}),
+   // The completed settle also carries its safety-brake receipt, so a brake that silently errors is visible.
+   getJson(done.replace('finished_at&','finished_at,safetyBrake:summary->safetyBrake&')+'&kind=eq.settle',{headers})]);
   const bad=[collects,settles,doneCollect,doneSettle].find(r=>!r.ok||!Array.isArray(r.json));
   if(!control.ok||bad)return {state:'UNAVAILABLE',httpStatus:(bad??control).status};
   const runs={json:[...collects.json,...settles.json].sort((a,b)=>b.id-a.id)};
   const pick=kind=>{const r=runs.json.find(x=>x.kind===kind);return r?{kind,status:r.status,outcome:r.outcome??null,startedAt:r.started_at,finishedAt:r.finished_at??null}:null;};
   const okRun=kind=>(kind==='collect'?doneCollect:doneSettle).json[0]?.finished_at??null;
   return {state:'OK',controlState:control.json?.[0]?.state??null,lastCollect:pick('collect'),lastSettle:pick('settle'),
-   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle')};
+   lastCompletedCollectAt:okRun('collect'),lastCompletedSettleAt:okRun('settle'),
+   lastSettleSafetyBrake:doneSettle.json[0]?doneSettle.json[0].safetyBrake??null:undefined};
  }catch{return {state:'UNAVAILABLE'};}
 }
 async function researchEvidence(){
@@ -111,6 +121,16 @@ async function researchEvidence(){
     failedKeys:Array.isArray(x.lastBatch?.failed)?x.lastBatch.failed.slice(0,6).map(f=>({key:String(f.key).slice(0,40),error:f.error?String(f.error).split(' ')[0].slice(0,40):null})):[]})),
    candidates:(s.candidates||[]).slice(0,3).map(c=>({id:c.id,active:c.active,verdict:c.historical?.verdict??'NOT_EVALUATED',forwardStatus:c.forward?.status??null,forwardSessions:c.forward?.sessions??0}))};
  }catch{return {state:'UNAVAILABLE'};}
+}
+async function kalshiEvidence(){
+ try{
+  const r=await getJson(cfg.site+'/api/research/kalshi-health',{attempts:1});
+  // Do not copy an arbitrary HTTP body into the public status file.
+  const h=r.json;
+  if(!h||h.schemaVersion!=='kalshi-research-health-v1')return null;
+  const summary={schemaVersion:h.schemaVersion,checkedAt:h.checkedAt,state:h.state,issues:h.issues};
+  return kalshiReceiptBlockers(summary,Date.now()).some(b=>b.id==='kalshi:health_unavailable')?null:summary;
+ }catch{return null;}
 }
 /** Check-only evaluation of the pinned stock release gate (the same function the temporary watcher used).
  * Never merges, never extends the watcher's window. Publishes only the gate's outcome code. */
@@ -219,7 +239,9 @@ function blockers(jobs,props,research,release,site,creds){
  const out=[];
  const add=(id,text,action)=>out.push({id,text,action});
  for(const j of jobs){
-  if(['FAILING','DISABLED','STALE'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,`Open ${j.historyUrl} and read the latest failed run.`);
+  if(['FAILING','DISABLED','STALE','UNKNOWN'].includes(j.status))add('job:'+j.id,`${j.label}: ${j.detail}`,
+   j.status==='UNKNOWN'?`Run history could not be verified. Check GitHub Actions access at ${j.historyUrl} and the next monitor receipt.`:
+   `Open ${j.historyUrl} and read the latest failed run.`);
   if(j.id==='stock-kickoff'&&['MISSED_SLOT','STALE'].includes(j.status))
    add('kickoff',`${j.label}: no early dispatch seen after the latest 09:00 UTC weekday cron.`,
     'Vercel → sports-edge project → Settings → Environment Variables (Production): check CRON_SECRET and SPORTSEDGE_GITHUB_DISPATCH_TOKEN (fine-grained token with Actions: write on this repository, not expired).');
@@ -255,14 +277,16 @@ function blockers(jobs,props,research,release,site,creds){
 // ---------- main ----------
 const jobs=[];
 for(const job of cfg.jobs)jobs.push(await evaluate(job));
-const [props,research,release,site]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks()]);
+const [props,research,release,site,kalshi]=await Promise.all([propsEvidence(),researchEvidence(),releaseEvidence(),siteChecks(),kalshiEvidence()]);
 const creds=credentials();
 const blockerList=blockers(jobs,props,research,release,site,creds);
+const kalshiBlockers=kalshiReceiptBlockers(kalshi,Date.now());blockerList.push(...kalshiBlockers);
 const roll=rollUp(jobs);
-const overall={state:!site.ok||roll.state==='ATTENTION'?'ATTENTION':roll.state==='WARN'||blockerList.length?'WARN':'OK',attention:roll.attention};
+const overall={state:!site.ok||roll.state==='ATTENTION'||kalshiBlockers.length?'ATTENTION':roll.state==='WARN'||blockerList.length?'WARN':'OK',
+ attention:[...roll.attention,...(kalshiBlockers.length?['kalshi-research']:[])]};
 const status={schemaVersion:'ops-status-v1',generatedAt:nowIso,timezoneShown:'America/Denver',
  monitorRun:env.GITHUB_RUN_ID?{id:Number(env.GITHUB_RUN_ID),url:`https://github.com/${REPO}/actions/runs/${env.GITHUB_RUN_ID}`,event:env.GITHUB_EVENT_NAME??null}:null,
- overall,jobs,evidence:{props,research,release},site,credentials:creds,blockers:blockerList,
+ overall,jobs,evidence:{props,research,release,kalshi},site,credentials:creds,blockers:blockerList,
  notes:['Planned times come from cron schedules and are not executions. Executions link to real GitHub runs.',
   'GitHub can start scheduled runs late or drop them under load; MISSED_SLOT means a planned time passed without any run.',
   'Stock account balances, positions and gate state are owner-only and are not in this public file.']};

@@ -64,6 +64,23 @@ test('grade corrections after the game replace old results and future grades sta
  const inconsistent=watchOnlyLedger(raw([ob(1)],[pr(1)],[gr(1,'more',6)]));
  assert.equal(inconsistent.rows[0].outcome,'pending');
 });
+test('a forecast cannot predate the line actual database receipt, even when ingestion was earlier',()=>{
+ const o=ob(1,'nba-100','Sample One',{recorded_at:'2026-11-12T19:02:00.000Z'});
+ const x=watchOnlyLedger(raw([o],[pr(1)],[gr(1)]));
+ assert.equal(x.rows.length,1);assert.equal(x.rows[0].recordedAt,o.recorded_at);
+ assert.equal(x.rows[0].outcome,'unscored');assert.equal(x.rows[0].probability,null);
+ assert.equal(x.report(0).wins,0);assert.equal(x.report(0).unscored,1);
+});
+test('replay preserves the original forecast and exposes only the grade revision available as of its clock',()=>{
+ const r=raw([ob(1)],[pr(1)],[gr(1),gr(1,'less',6,2,'2026-11-13T04:00:00Z')]);
+ const original=JSON.stringify(r);
+ const before=watchOnlyLedger(r,'2026-11-13T03:30:00Z').rows[0];
+ const after=watchOnlyLedger(r,'2026-11-13T04:30:00Z').rows[0];
+ assert.equal(before.outcome,'win');assert.equal(before.gradeOutcome,'more');assert.equal(before.gradeRevision,1);
+ assert.equal(after.outcome,'loss');assert.equal(after.gradeOutcome,'less');assert.equal(after.gradeRevision,2);
+ assert.equal(before.probability,after.probability);assert.equal(before.predictedAt,after.predictedAt);
+ assert.equal(JSON.stringify(r),original);
+});
 test('pending is not a loss; ties and voids do not affect directional win rate',()=>{
  const os=[ob(1),ob(2,'nba-200','Second'),ob(3,'nba-300','Third'),ob(4,'nba-400','Fourth')];
  const ps=os.map((o,i)=>pr(i+1,i+1,.65,.35,0,{athlete_id:String(1000+i)}));
@@ -110,4 +127,14 @@ test('Watch Only source has no provider, write, entry, scraping or staking opera
  const code=readFileSync(new URL('./watch-only.ts',import.meta.url),'utf8');
  assert.doesNotMatch(code,/\bfetch\s*\(|\bstore\.(insert|update|upsert|delete)\s*\(/);
  assert.doesNotMatch(code,/\b(recordEntries|buildEntries|placeBet|submitBet|callOddsApi)\s*\(/);
+});
+
+test('global totals use the first received qualifying source, not alphabetical platform display order',()=>{
+ const first=ob(1);
+ const later=ob(2,'nba-100','Sample One',{platform:'pick6',recorded_at:'2026-11-12T19:02:10.000Z',ingested_at:'2026-11-12T19:02:00.000Z'});
+ const x=watchOnlyLedger(raw([later,first],[pr(1),pr(2,2,.25,.75,0,{predicted_at:'2026-11-12T19:02:20.000Z'})],[gr(1),gr(2)]));
+ assert.equal(x.rows.find(r=>r.isUnique).observationId,1);
+ assert.equal(x.report(0).wins,1);assert.equal(x.report(0).losses,0);
+ assert.equal(x.report(.70).losses,1);
+ assert.equal(x.report(0,undefined,'pick6').losses,1);
 });

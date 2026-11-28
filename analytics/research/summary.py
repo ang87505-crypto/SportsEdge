@@ -21,7 +21,10 @@ def build_summary(hist, fwd, manifest, runs, generated_at, source_commit=None):
         batch = [r for r in rows if r['retrieved_at'] == rows[-1]['retrieved_at']]
         failed = [{'key': r.get('key'), 'error': (r.get('error') or '')[:120] or None} for r in batch
                   if r['status'] not in ('OK', 'UNCHANGED') and r.get('key')]
-        sources.append({'id': sid, 'status': rows[-1]['status'], 'retrievedAt': rows[-1]['retrieved_at'],
+        # A successful last file must not hide another failed file from the same batch.
+        batch_failures = [r for r in batch if r['status'] not in ('OK', 'UNCHANGED')]
+        batch_status = batch_failures[0]['status'] if batch_failures else rows[-1]['status']
+        sources.append({'id': sid, 'status': batch_status, 'retrievedAt': rows[-1]['retrieved_at'],
                         'lastSuccessAt': ok[-1]['retrieved_at'] if ok else None,
                         'lastBatch': {'items': len(batch), 'failed': failed[:10]}})
     last_forward = next((r for r in reversed(runs) if r.get('command') == 'forward'), {})

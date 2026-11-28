@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildBriefing,propsInput,propsState,stocksPublicState,OP_STATES,MIN_SETTLED_ENTRIES} from './briefing.ts';
+import {buildBriefing,propsInput,propsState,stocksPublicState,kalshiPublicState,engineBriefing,learningPublicState,OP_STATES,MIN_SETTLED_ENTRIES} from './briefing.ts';
 import {mondayReadiness} from './monday.ts';
 import {makeRaw,NOW} from '../assistant/fixtures.mjs';
 
@@ -15,8 +15,81 @@ const ops=(over={},view={})=>({mode:'live',checkedAt:NOW,monitorStale:false,...v
  evidence:{release:{pr:102,state:'open',merged:false}},credentials:[],...over}});
 const FIRST={id:'stock-first-session',text:'PR #102 is not released: it needs a genuine owner-supervised first paper session.',action:'See the checklist.'};
 
-test('every system state is one of the eight, and failures never read as healthy', () => {
-  assert.equal(Object.keys(OP_STATES).length, 8);
+const engine=(over={})=>({mode:'live',status:'OK',stale:false,at:NOW,checkedAt:NOW,detail:'Synthetic verified report',
+ registry:{schema:'sportsedge-learning-registry-v1',experiments:[
+  {id:'auto-forward',status:'RUNNING'},{id:'needs-results',status:'INSUFFICIENT_DATA'},
+  {id:'failed-shadow',status:'FAILED'},{id:'rejected-model',status:'REJECTED'}]},
+ attention:{coverage:{total:4,active:2,automatic:1,ownerSuppliedOnly:1},withoutProducer:['needs-results'],inputs:{sports:'CONNECTED'},gaps:[],alarms:null},...over});
+
+test('stock jobs cannot imply active paper orders from an old check or an absent release blocker',()=>{
+ const view=ops({jobs:[job({id:'stock-worker',area:'stocks'})]});
+ assert.equal(stocksPublicState({...view,monitorStale:true}).state,'UNAVAILABLE');
+ assert.match(stocksPublicState({...view,monitorStale:true}).reason,/more than 8 hours old/);
+ const current=stocksPublicState(view);
+ assert.equal(current.state,'OWNER_ACTION');
+ assert.match(current.reason,/release switch is off/);
+ assert.doesNotMatch(current.reason,/orders are running|account is armed/i);
+});
+
+test('a pending first run, missing checks and published blockers cannot produce a green overall status',()=>{
+ for(const view of [ops({jobs:[]}),ops({jobs:[job({status:'PENDING_FIRST_RUN'})]}),ops({blockers:[FIRST]}),
+  ops({site:{url:'x',checkedAt:NOW,ok:true,checks:[]}}),ops({overall:{state:'WARN',attention:[]}})]){
+  const h=buildBriefing({nowIso:NOW,props:null,ops:view,research:null}).health;
+  assert.equal(h.tone,'warning');assert.notEqual(h.headline,'Everything is running');
+ }
+ assert.equal(buildBriefing({nowIso:NOW,props:null,ops:ops({}, {monitorStale:true}),research:null}).health.headline,'Status needs a fresh check');
+});
+
+const weatherJobs=(state='OK')=>['kalshi-weather','kalshi-weather-shadow'].map(id=>job({id,label:id,status:state}));
+test('weather status requires both current workflow receipts and never claims exchange or trading activity',()=>{
+ assert.equal(kalshiPublicState(null).state,'UNAVAILABLE');
+ assert.equal(kalshiPublicState(ops()).state,'UNAVAILABLE');
+ assert.equal(kalshiPublicState(ops({jobs:weatherJobs()}, {monitorStale:true})).state,'UNAVAILABLE');
+ const current=kalshiPublicState(ops({jobs:weatherJobs()}));
+ assert.equal(current.state,'EXECUTING');assert.match(current.reason,/not evidence of trading performance/);
+ assert.match(current.reason,/Exchange access remains disabled/);
+ assert.equal(kalshiPublicState(ops({jobs:weatherJobs('FAILING')})).state,'UNAVAILABLE');
+ assert.equal(kalshiPublicState(ops({jobs:weatherJobs('RAN_LATE')})).state,'ATTENTION');
+ assert.equal(kalshiPublicState(ops({jobs:weatherJobs('MISSED_SLOT')})).state,'ATTENTION');
+ assert.equal(kalshiPublicState(ops({jobs:weatherJobs('PENDING_FIRST_RUN')})).state,'WAITING_FOR_DATA');
+});
+
+test('learning coverage uses the reported experiment paths, preserving failed and rejected findings',()=>{
+ const e=engineBriefing(engine(),NOW);
+ assert.equal(e.current,true);assert.deepEqual(e.coverage,{active:2,automatic:1,ownerSuppliedOnly:1});
+ assert.equal(e.total,4);assert.equal(e.failed,1);assert.equal(e.rejected,1);assert.equal(e.readyForReview,0);
+ assert.match(e.note,/1 of 2 active experiments have an automatic evidence path/);
+ assert.match(e.note,/Nothing is promoted automatically/);
+ assert.equal(learningPublicState(e).state,'WAITING_FOR_DATA');
+});
+
+test('saved, failed, old and future engine records never imply current automatic learning',()=>{
+ assert.equal(engineBriefing(null,NOW),null);
+ for(const change of [{mode:'saved'},{status:'FAILED'},{stale:true},{at:'2026-11-01T00:00:00Z'},{at:'2026-11-10T00:00:00Z'}]){
+  const e=engineBriefing(engine(change),NOW);
+  assert.equal(e.current,false);assert.equal(e.coverage,null);assert.equal(learningPublicState(e).state,'UNAVAILABLE');
+  assert.equal(e.failed,1);assert.equal(e.rejected,1);
+ }
+});
+
+test('unknown or registry-mismatched coverage stays unknown even if all domain inputs are connected',()=>{
+ for(const attention of [null,{coverage:null,withoutProducer:[],inputs:{sports:'CONNECTED',stocks:'CONNECTED',weather:'CONNECTED'}},
+  {coverage:{total:4,active:3,automatic:2,ownerSuppliedOnly:1},withoutProducer:['needs-results']},
+  {coverage:{total:4,active:2,automatic:1,ownerSuppliedOnly:1},withoutProducer:['not-registered']}]){
+  const e=engineBriefing(engine({attention}),NOW);assert.equal(e.coverage,null);
+  assert.equal(learningPublicState(e).state,'ATTENTION');
+ }
+});
+
+test('the shared briefing always names sports, stocks, weather and learning with their own evidence states',()=>{
+ const b=buildBriefing({nowIso:NOW,props:null,ops:null,research:null});
+ assert.deepEqual(b.systems.map(s=>s.id),['props','stocks','kalshi','learning']);
+ assert.ok(b.systems.every(s=>s.state==='UNAVAILABLE'));
+ assert.equal(b.engine,null);
+});
+
+test('operating states distinguish warnings and failures from healthy execution', () => {
+  assert.equal(OP_STATES.ATTENTION.tone, 'warning');
   assert.equal(propsState(null).state, 'UNAVAILABLE');
   const brake = propsState({control: {state: 'PAUSED', reason: 'SAFETY_BRAKE: last 60 picks hit 40.0%, confidently below the 57.7% break-even'}, noPicks: {code: 'PAUSED', headline: 'x', detail: null}});
   assert.equal(brake.state, 'SAFETY_STOPPED');
