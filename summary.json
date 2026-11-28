@@ -43,9 +43,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 12,
+    "sessions": 13,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": -0.04753550629999981
+    "totalReturn": -0.032834339633333376
    },
    "historical": null,
    "id": "qmom-disclosure-follower-v1"
@@ -54,9 +54,9 @@
    "active": false,
    "forward": {
     "firstExecution": "2026-11-10",
-    "sessions": 12,
+    "sessions": 13,
     "status": "INSUFFICIENT FORWARD SAMPLE",
-    "totalReturn": -0.024613384999999988
+    "totalReturn": -0.017598051666666614
    },
    "historical": {
     "asLive": {
@@ -87,7 +87,7 @@
  "capital": 30000.0,
  "daily": {
   "datasetFingerprint": "d8763775c703deccf2c3973906f643446d9038d381d43b272475179cf56cb493",
-  "forwardAt": "2026-11-27T10:59:19Z",
+  "forwardAt": "2026-11-28T04:43:46Z",
   "historicalAt": "2026-11-10T03:03:37Z",
   "overall": "NONE QUALIFIES",
   "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md",
@@ -97,15 +97,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "ADI": 0.2,
-      "AMD": 0.2,
-      "INTC": 0.2,
+      "AMAT": 0.2,
+      "LRCX": 0.2,
       "MU": 0.2,
-      "TXN": 0.2
+      "NVDA": 0.2,
+      "ORCL": 0.2
      },
-     "sessions": 12,
+     "sessions": 13,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.12428231883333252
+     "totalReturn": -0.09604772333333256
     },
     "historical": {
      "asLive": {
@@ -150,15 +150,15 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {
-      "DIS": 0.2,
-      "GILD": 0.2,
-      "LOW": 0.2,
-      "TJX": 0.2,
-      "VRTX": 0.2
+      "AMGN": 0.2,
+      "CHTR": 0.2,
+      "F": 0.2,
+      "HD": 0.2,
+      "IBM": 0.2
      },
-     "sessions": 12,
+     "sessions": 13,
      "status": "INSUFFICIENT FORWARD SAMPLE",
-     "totalReturn": -0.08956009683333299
+     "totalReturn": -0.09599834216666614
     },
     "historical": {
      "asLive": {
@@ -203,7 +203,7 @@
     "forward": {
      "firstExecution": "2026-11-10",
      "lastTargets": {},
-     "sessions": 12,
+     "sessions": 13,
      "status": "INSUFFICIENT FORWARD SAMPLE",
      "totalReturn": 0.0
     },
@@ -242,8 +242,8 @@
   ]
  },
  "datasetFingerprint": "db7b70db76fb0f2f8b40efacd9edc7d9b0e0a38a96874d17e474ab4c22a0b938",
- "forwardAt": "2026-11-27T10:59:15Z",
- "generatedAt": "2026-11-27T17:50:19Z",
+ "forwardAt": "2026-11-28T04:43:39Z",
+ "generatedAt": "2026-11-28T04:43:55Z",
  "historicalAt": "2026-11-09T22:39:26Z",
  "lab": {
   "benchmarks": {
@@ -266,75 +266,75 @@
   "experiment": "lab-stock-psychology-v1",
   "forward": {
    "firstDecision": "2026-11-16",
-   "frozenRows": 10,
+   "frozenRows": 20,
    "minWeeks": 26,
    "variants": {
     "base": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "base+attention_spike": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "base+market_regime": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "base+short_term_overreaction": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "base+volatility_shock": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "combined": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "combined-attention_spike": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "combined-market_regime": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "combined-short_term_overreaction": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
     },
     "combined-volatility_shock": {
-     "latest_session": "2026-11-16",
-     "pending": 1,
+     "latest_session": "2026-11-30",
+     "pending": 2,
      "status": "collecting",
      "total_return": null,
      "weeks": 0
@@ -458,8 +458,16 @@
  },
  "labHoldrank10": {
   "experiment": "lab-stock-holdrank10-wholeshare",
-  "forward": {},
-  "frozenRows": 0
+  "forward": {
+   "holdrank10": {
+    "latest_session": "2026-11-30",
+    "pending": 1,
+    "status": "collecting",
+    "total_return": null,
+    "weeks": 0
+   }
+  },
+  "frozenRows": 1
  },
  "limitations": [
   "Historical results use previously inspected data and a survivorship-biased stock universe.",
@@ -485,8 +493,8 @@
     "failed": [],
     "items": 1
    },
-   "lastSuccessAt": "2026-11-27T10:59:15Z",
-   "retrievedAt": "2026-11-27T10:59:15Z",
+   "lastSuccessAt": "2026-11-28T04:43:37Z",
+   "retrievedAt": "2026-11-28T04:43:37Z",
    "status": "OK"
   },
   {
@@ -505,8 +513,8 @@
     "failed": [],
     "items": 3
    },
-   "lastSuccessAt": "2026-11-27T10:59:15Z",
-   "retrievedAt": "2026-11-27T10:59:15Z",
+   "lastSuccessAt": "2026-11-28T04:43:37Z",
+   "retrievedAt": "2026-11-28T04:43:37Z",
    "status": "OK"
   },
   {

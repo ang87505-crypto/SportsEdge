@@ -1,0 +1,5651 @@
+{
+ "at": "2026-11-28T04:43:46Z",
+ "data": {
+  "actions_dropped": [
+   {
+    "date": "2026-07-02",
+    "kind": "name_change",
+    "new_symbol": "XOM",
+    "ratio": 1.0,
+    "source": "alpaca-ca:name_changes:71daae23-2985-4549-870e-a6d678474b6b",
+    "symbol": "XOM",
+    "why": "SAME_SYMBOL"
+   },
+   {
+    "date": "2026-06-29",
+    "expected": 2.0,
+    "factor_ratio": 1.048212,
+    "kind": "split",
+    "ratio": 0.5,
+    "source": "alpaca-ca:reverse_splits:08faf3fd-5e20-43f1-a96d-e858c083cb65",
+    "symbol": "HON",
+    "why": "NO_ADJUSTMENT_FOOTPRINT"
+   }
+  ],
+  "fingerprint": "a3f712daef11cdc54016ae2af17223f8948d44da94e0b95e62ea7a3c5d1f176a",
+  "joins": [],
+  "missing": [],
+  "requests": 13,
+  "symbols_rejected": []
+ },
+ "kind": "daily-forward",
+ "latest_session": "2026-11-27",
+ "ledgers": {
+  "daily-momentum5d-v1": {
+   "benchmarks": {
+    "spy-hold": {
+     "early": {},
+     "full": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "late": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "years": {}
+    }
+   },
+   "decisions": [
+    {
+     "date": "2026-11-09",
+     "targets": {
+      "AMZN": 0.2,
+      "CMG": 0.2,
+      "LOW": 0.2,
+      "MSFT": 0.2,
+      "NEM": 0.2
+     }
+    },
+    {
+     "date": "2026-11-10",
+     "targets": {
+      "AMZN": 0.2,
+      "CHTR": 0.2,
+      "LOW": 0.2,
+      "NEM": 0.2,
+      "TMUS": 0.2
+     }
+    },
+    {
+     "date": "2026-11-11",
+     "targets": {
+      "AMD": 0.2,
+      "CHTR": 0.2,
+      "CVS": 0.2,
+      "EOG": 0.2,
+      "TMUS": 0.2
+     }
+    },
+    {
+     "date": "2026-11-12",
+     "targets": {
+      "ADI": 0.2,
+      "AMD": 0.2,
+      "AVGO": 0.2,
+      "TSLA": 0.2,
+      "TXN": 0.2
+     }
+    },
+    {
+     "date": "2026-11-13",
+     "targets": {
+      "ADI": 0.2,
+      "AVGO": 0.2,
+      "CHTR": 0.2,
+      "TSLA": 0.2,
+      "TXN": 0.2
+     }
+    },
+    {
+     "date": "2026-11-16",
+     "targets": {
+      "CB": 0.2,
+      "CHTR": 0.2,
+      "COP": 0.2,
+      "COST": 0.2,
+      "EOG": 0.2
+     }
+    },
+    {
+     "date": "2026-11-17",
+     "targets": {
+      "CHTR": 0.2,
+      "COP": 0.2,
+      "COST": 0.2,
+      "ORLY": 0.2,
+      "REGN": 0.2
+     }
+    },
+    {
+     "date": "2026-11-18",
+     "targets": {
+      "AVGO": 0.2,
+      "CHTR": 0.2,
+      "DIS": 0.2,
+      "ORLY": 0.2,
+      "TJX": 0.2
+     }
+    },
+    {
+     "date": "2026-11-19",
+     "targets": {
+      "CMG": 0.2,
+      "DIS": 0.2,
+      "GIS": 0.2,
+      "SO": 0.2,
+      "TJX": 0.2
+     }
+    },
+    {
+     "date": "2026-11-20",
+     "targets": {
+      "CMG": 0.2,
+      "DUK": 0.2,
+      "GIS": 0.2,
+      "ORLY": 0.2,
+      "TJX": 0.2
+     }
+    },
+    {
+     "date": "2026-11-23",
+     "targets": {
+      "GILD": 0.2,
+      "HON": 0.2,
+      "MMM": 0.2,
+      "TJX": 0.2,
+      "TSLA": 0.2
+     }
+    },
+    {
+     "date": "2026-11-24",
+     "targets": {
+      "DIS": 0.2,
+      "GILD": 0.2,
+      "LOW": 0.2,
+      "TJX": 0.2,
+      "VRTX": 0.2
+     }
+    },
+    {
+     "date": "2026-11-25",
+     "targets": {
+      "AMGN": 0.2,
+      "CHTR": 0.2,
+      "F": 0.2,
+      "HD": 0.2,
+      "IBM": 0.2
+     }
+    }
+   ],
+   "first_execution": "2026-11-10",
+   "result": {
+    "bps0": {
+     "as_live": {
+      "avg_exposure": 0.6722423845825992,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26984.950000000004,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       26984.950000000004
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26984.950000000004,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "CMG",
+         "GIS",
+         "SO"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "CMG": 0.2,
+         "DIS": 0.2,
+         "GIS": 0.2,
+         "SO": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 9,
+      "filled": 27,
+      "full": {
+       "cagr": -0.8716739789100428,
+       "end_value": 26984.950000000004,
+       "max_drawdown": -0.10336596409436716,
+       "sharpe": -9.579609006793694,
+       "total": -0.10050166666666649,
+       "vol": 0.21108578007454426,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30095.835000000003,
+      "halted_on": "2026-11-20",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8716739789100428,
+       "end_value": 26984.950000000004,
+       "max_drawdown": -0.10336596409436716,
+       "sharpe": -9.579609006793694,
+       "total": -0.10050166666666649,
+       "vol": 0.21108578007454426,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 27,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 205.50469583303575,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.9773507261518362,
+      "blocked_by_unresolved": 0,
+      "cash_end": 159.10500000000593,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       27542.675000000007
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "CMG",
+         "GIS",
+         "SO"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "CMG": 0.2,
+         "DIS": 0.2,
+         "GIS": 0.2,
+         "SO": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "ORLY",
+         "DUK"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "CMG": 0.2,
+         "DUK": 0.2,
+         "GIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "HON",
+         "GILD",
+         "MMM",
+         "TSLA"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "GILD": 0.2,
+         "HON": 0.2,
+         "MMM": 0.2,
+         "TJX": 0.2,
+         "TSLA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "VRTX",
+         "LOW",
+         "DIS"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "DIS": 0.2,
+         "GILD": 0.2,
+         "LOW": 0.2,
+         "TJX": 0.2,
+         "VRTX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "F",
+         "HD",
+         "IBM",
+         "AMGN",
+         "CHTR"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMGN": 0.2,
+         "CHTR": 0.2,
+         "F": 0.2,
+         "HD": 0.2,
+         "IBM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 41,
+      "full": {
+       "cagr": -0.8092180249351035,
+       "end_value": 27542.675000000007,
+       "max_drawdown": -0.1008194323234427,
+       "sharpe": -6.57221720240231,
+       "total": -0.08191083333333316,
+       "vol": 0.24655647002773487,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8092180249351035,
+       "end_value": 27542.675000000007,
+       "max_drawdown": -0.1008194323234427,
+       "sharpe": -6.57221720240231,
+       "total": -0.08191083333333316,
+       "vol": 0.24655647002773487,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 41,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 288.37569012572595,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps10": {
+     "as_live": {
+      "avg_exposure": 0.5969680436499162,
+      "blocked_by_unresolved": 0,
+      "cash_end": 27055.391955000006,
+      "costs": 265.793045,
+      "curve_end": [
+       "2026-11-27",
+       27055.391955000006
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 27055.391955000006,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 8,
+      "filled": 24,
+      "full": {
+       "cagr": -0.8650222363295206,
+       "end_value": 27055.391955000006,
+       "max_drawdown": -0.10415599427017086,
+       "sharpe": -8.815417718313784,
+       "total": -0.09815360149999974,
+       "vol": 0.22338807303329417,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30044.105305,
+      "halted_on": "2026-11-19",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8650222363295206,
+       "end_value": 27055.391955000006,
+       "max_drawdown": -0.10415599427017086,
+       "sharpe": -8.815417718313784,
+       "total": -0.09815360149999974,
+       "vol": 0.22338807303329417,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 24,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 183.0633450309158,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.9791512791541579,
+      "blocked_by_unresolved": 0,
+      "cash_end": 118.19973500001379,
+      "costs": 418.795265,
+      "curve_end": [
+       "2026-11-27",
+       27120.049735000015
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "CMG",
+         "GIS",
+         "SO"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "CMG": 0.2,
+         "DIS": 0.2,
+         "GIS": 0.2,
+         "SO": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "ORLY",
+         "DUK"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "CMG": 0.2,
+         "DUK": 0.2,
+         "GIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "HON",
+         "GILD",
+         "MMM",
+         "TSLA"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "GILD": 0.2,
+         "HON": 0.2,
+         "MMM": 0.2,
+         "TJX": 0.2,
+         "TSLA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "VRTX",
+         "LOW",
+         "DIS"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "DIS": 0.2,
+         "GILD": 0.2,
+         "LOW": 0.2,
+         "TJX": 0.2,
+         "VRTX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "F",
+         "HD",
+         "IBM",
+         "AMGN",
+         "CHTR"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMGN": 0.2,
+         "CHTR": 0.2,
+         "F": 0.2,
+         "HD": 0.2,
+         "IBM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 41,
+      "full": {
+       "cagr": -0.8586299792117749,
+       "end_value": 27120.049735000015,
+       "max_drawdown": -0.10824700509416585,
+       "sharpe": -7.7938581643931455,
+       "total": -0.09599834216666614,
+       "vol": 0.24610508559517588,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8586299792117749,
+       "end_value": 27120.049735000015,
+       "max_drawdown": -0.10824700509416585,
+       "sharpe": -7.7938581643931455,
+       "total": -0.09599834216666614,
+       "vol": 0.24610508559517588,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 41,
+      "reduced_for_cash": 2,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 288.32047033676537,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps25": {
+     "as_live": {
+      "avg_exposure": 0.5978306378494953,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26680.049675000017,
+      "costs": 660.6103250000001,
+      "curve_end": [
+       "2026-11-27",
+       26680.049675000017
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26680.049675000017,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 8,
+      "filled": 24,
+      "full": {
+       "cagr": -0.8970439280642606,
+       "end_value": 26680.049675000017,
+       "max_drawdown": -0.11394391416666605,
+       "sharpe": -9.887988528169384,
+       "total": -0.1106650108333328,
+       "vol": 0.22624369642239173,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30000.0,
+      "halted_on": "2026-11-19",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8970439280642606,
+       "end_value": 26680.049675000017,
+       "max_drawdown": -0.11394391416666605,
+       "sharpe": -9.887988528169384,
+       "total": -0.1106650108333328,
+       "vol": 0.22624369642239173,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 24,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 183.576804914862,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.9792553421754513,
+      "blocked_by_unresolved": 0,
+      "cash_end": 69.24565000002531,
+      "costs": 1036.75435,
+      "curve_end": [
+       "2026-11-27",
+       26516.095650000025
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "CMG",
+         "GIS",
+         "SO"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "CMG": 0.2,
+         "DIS": 0.2,
+         "GIS": 0.2,
+         "SO": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "ORLY",
+         "DUK"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "CMG": 0.2,
+         "DUK": 0.2,
+         "GIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "HON",
+         "GILD",
+         "MMM",
+         "TSLA"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "GILD": 0.2,
+         "HON": 0.2,
+         "MMM": 0.2,
+         "TJX": 0.2,
+         "TSLA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "VRTX",
+         "LOW",
+         "DIS"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "DIS": 0.2,
+         "GILD": 0.2,
+         "LOW": 0.2,
+         "TJX": 0.2,
+         "VRTX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "F",
+         "HD",
+         "IBM",
+         "AMGN",
+         "CHTR"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMGN": 0.2,
+         "CHTR": 0.2,
+         "F": 0.2,
+         "HD": 0.2,
+         "IBM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 41,
+      "full": {
+       "cagr": -0.9086395465614789,
+       "end_value": 26516.095650000025,
+       "max_drawdown": -0.11947991666666591,
+       "sharpe": -9.710620256186372,
+       "total": -0.11613014499999919,
+       "vol": 0.24219223179867402,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.9086395465614789,
+       "end_value": 26516.095650000025,
+       "max_drawdown": -0.11947991666666591,
+       "sharpe": -9.710620256186372,
+       "total": -0.11613014499999919,
+       "vol": 0.24219223179867402,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 41,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 288.3693456406207,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps5": {
+     "as_live": {
+      "avg_exposure": 0.5966634392531283,
+      "blocked_by_unresolved": 0,
+      "cash_end": 27190.949477500024,
+      "costs": 133.2355225,
+      "curve_end": [
+       "2026-11-27",
+       27190.949477500024
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 27190.949477500024,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 8,
+      "filled": 24,
+      "full": {
+       "cagr": -0.8512909605655534,
+       "end_value": 27190.949477500024,
+       "max_drawdown": -0.100891491731253,
+       "sharpe": -8.44850943539069,
+       "total": -0.09363501741666591,
+       "vol": 0.22175610864802373,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30069.970152500005,
+      "halted_on": "2026-11-19",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8512909605655534,
+       "end_value": 27190.949477500024,
+       "max_drawdown": -0.100891491731253,
+       "sharpe": -8.44850943539069,
+       "total": -0.09363501741666591,
+       "vol": 0.22175610864802373,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 24,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 182.9607294117081,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.9777427699113093,
+      "blocked_by_unresolved": 0,
+      "cash_end": 146.45550250003726,
+      "costs": 210.02949750000002,
+      "curve_end": [
+       "2026-11-27",
+       27339.16550250004
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NEM",
+         "AMZN",
+         "CMG",
+         "MSFT",
+         "LOW"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "AMZN": 0.2,
+         "CMG": 0.2,
+         "LOW": 0.2,
+         "MSFT": 0.2,
+         "NEM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "CHTR",
+         "TMUS"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "AMZN": 0.2,
+         "CHTR": 0.2,
+         "LOW": 0.2,
+         "NEM": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "AMD",
+         "CVS",
+         "EOG"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "CVS": 0.2,
+         "EOG": 0.2,
+         "TMUS": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "AVGO",
+         "TSLA",
+         "ADI",
+         "TXN"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "CHTR"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "ADI": 0.2,
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "TSLA": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "COP",
+         "CB",
+         "EOG",
+         "COST"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "CB": 0.2,
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "EOG": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "REGN",
+         "ORLY"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CHTR": 0.2,
+         "COP": 0.2,
+         "COST": 0.2,
+         "ORLY": 0.2,
+         "REGN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "TJX",
+         "AVGO",
+         "DIS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "AVGO": 0.2,
+         "CHTR": 0.2,
+         "DIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "CMG",
+         "GIS",
+         "SO"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "CMG": 0.2,
+         "DIS": 0.2,
+         "GIS": 0.2,
+         "SO": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "ORLY",
+         "DUK"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "CMG": 0.2,
+         "DUK": 0.2,
+         "GIS": 0.2,
+         "ORLY": 0.2,
+         "TJX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "HON",
+         "GILD",
+         "MMM",
+         "TSLA"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "GILD": 0.2,
+         "HON": 0.2,
+         "MMM": 0.2,
+         "TJX": 0.2,
+         "TSLA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "VRTX",
+         "LOW",
+         "DIS"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "DIS": 0.2,
+         "GILD": 0.2,
+         "LOW": 0.2,
+         "TJX": 0.2,
+         "VRTX": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "F",
+         "HD",
+         "IBM",
+         "AMGN",
+         "CHTR"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMGN": 0.2,
+         "CHTR": 0.2,
+         "F": 0.2,
+         "HD": 0.2,
+         "IBM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 41,
+      "full": {
+       "cagr": -0.8347649632221473,
+       "end_value": 27339.16550250004,
+       "max_drawdown": -0.10442634176472287,
+       "sharpe": -7.160027752263072,
+       "total": -0.08869448324999862,
+       "vol": 0.24626393985281514,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8347649632221473,
+       "end_value": 27339.16550250004,
+       "max_drawdown": -0.10442634176472287,
+       "sharpe": -7.160027752263072,
+       "total": -0.08869448324999862,
+       "vol": 0.24626393985281514,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 41,
+      "reduced_for_cash": 2,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 288.15845363576074,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "decisions": 13
+   },
+   "sessions": 13,
+   "status": "INSUFFICIENT FORWARD SAMPLE"
+  },
+  "daily-reversal5-v1": {
+   "benchmarks": {
+    "spy-hold": {
+     "early": {},
+     "full": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "late": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "years": {}
+    }
+   },
+   "decisions": [
+    {
+     "date": "2026-11-09",
+     "targets": {
+      "ACN": 0.2,
+      "COF": 0.2,
+      "GIS": 0.2,
+      "NVDA": 0.2,
+      "PM": 0.2
+     }
+    },
+    {
+     "date": "2026-11-10",
+     "targets": {
+      "FCX": 0.2,
+      "NEM": 0.2,
+      "NKE": 0.2,
+      "NOW": 0.2,
+      "NVDA": 0.2
+     }
+    },
+    {
+     "date": "2026-11-11",
+     "targets": {
+      "ACN": 0.2,
+      "AMZN": 0.2,
+      "MCD": 0.2,
+      "META": 0.2,
+      "MSFT": 0.2
+     }
+    },
+    {
+     "date": "2026-11-12",
+     "targets": {
+      "AMAT": 0.2,
+      "CMG": 0.2,
+      "GE": 0.2,
+      "NEM": 0.2,
+      "NVDA": 0.2
+     }
+    },
+    {
+     "date": "2026-11-13",
+     "targets": {
+      "AMD": 0.2,
+      "AVGO": 0.2,
+      "CSCO": 0.2,
+      "LRCX": 0.2,
+      "NUE": 0.2
+     }
+    },
+    {
+     "date": "2026-11-16",
+     "targets": {
+      "AMD": 0.2,
+      "FCX": 0.2,
+      "INTC": 0.2,
+      "LRCX": 0.2,
+      "MU": 0.2
+     }
+    },
+    {
+     "date": "2026-11-17",
+     "targets": {
+      "CRM": 0.2,
+      "INTU": 0.2,
+      "NKE": 0.2,
+      "NOW": 0.2,
+      "UNH": 0.2
+     }
+    },
+    {
+     "date": "2026-11-18",
+     "targets": {
+      "CVS": 0.2,
+      "FCX": 0.2,
+      "MPC": 0.2,
+      "NEM": 0.2,
+      "UNH": 0.2
+     }
+    },
+    {
+     "date": "2026-11-19",
+     "targets": {
+      "AMD": 0.2,
+      "CHTR": 0.2,
+      "FCX": 0.2,
+      "NKE": 0.2,
+      "UNH": 0.2
+     }
+    },
+    {
+     "date": "2026-11-20",
+     "targets": {
+      "AMD": 0.2,
+      "AVGO": 0.2,
+      "INTU": 0.2,
+      "MU": 0.2,
+      "NVDA": 0.2
+     }
+    },
+    {
+     "date": "2026-11-23",
+     "targets": {
+      "AMT": 0.2,
+      "COP": 0.2,
+      "EOG": 0.2,
+      "MPC": 0.2,
+      "OXY": 0.2
+     }
+    },
+    {
+     "date": "2026-11-24",
+     "targets": {
+      "ADI": 0.2,
+      "AMD": 0.2,
+      "INTC": 0.2,
+      "MU": 0.2,
+      "TXN": 0.2
+     }
+    },
+    {
+     "date": "2026-11-25",
+     "targets": {
+      "AMAT": 0.2,
+      "LRCX": 0.2,
+      "MU": 0.2,
+      "NVDA": 0.2,
+      "ORCL": 0.2
+     }
+    }
+   ],
+   "first_execution": "2026-11-10",
+   "result": {
+    "bps0": {
+     "as_live": {
+      "avg_exposure": 0.5988404984751061,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26028.589999999993,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       26028.589999999993
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26028.589999999993,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "FCX",
+         "NEM",
+         "MPC",
+         "CVS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "CVS": 0.2,
+         "FCX": 0.2,
+         "MPC": 0.2,
+         "NEM": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 8,
+      "filled": 36,
+      "full": {
+       "cagr": -0.9362413810454419,
+       "end_value": 26028.589999999993,
+       "max_drawdown": -0.13238033333333354,
+       "sharpe": -10.529977548978694,
+       "total": -0.13238033333333354,
+       "vol": 0.256785906090652,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30000.0,
+      "halted_on": "2026-11-19",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.9362413810454419,
+       "end_value": 26028.589999999993,
+       "max_drawdown": -0.13238033333333354,
+       "sharpe": -10.529977548978694,
+       "total": -0.13238033333333354,
+       "vol": 0.256785906090652,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 36,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 280.56907968204507,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.8933868865203678,
+      "blocked_by_unresolved": 0,
+      "cash_end": 11876.107999999993,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       27782.487999999994
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "FCX",
+         "NEM",
+         "MPC",
+         "CVS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "CVS": 0.2,
+         "FCX": 0.2,
+         "MPC": 0.2,
+         "NEM": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "AMD",
+         "NKE",
+         "CHTR"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "FCX": 0.2,
+         "NKE": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "INTU"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "INTU": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "NVDA",
+         "MU",
+         "AVGO"
+        ]
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "COP",
+         "AMT",
+         "MPC",
+         "OXY",
+         "EOG"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "AMT": 0.2,
+         "COP": 0.2,
+         "EOG": 0.2,
+         "MPC": 0.2,
+         "OXY": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "ADI",
+         "TXN",
+         "MU",
+         "AMD",
+         "INTC"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "INTC": 0.2,
+         "MU": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "ORCL",
+         "NVDA"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMAT": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2,
+         "ORCL": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "LRCX",
+         "AMAT"
+        ]
+       }
+      ],
+      "executions": 13,
+      "filled": 52,
+      "full": {
+       "cagr": -0.7743056097167906,
+       "end_value": 27782.487999999994,
+       "max_drawdown": -0.17098666666666695,
+       "sharpe": -2.889895554629125,
+       "total": -0.07391706666666686,
+       "vol": 0.4746971726971281,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.7743056097167906,
+       "end_value": 27782.487999999994,
+       "max_drawdown": -0.17098666666666695,
+       "sharpe": -2.889895554629125,
+       "total": -0.07391706666666686,
+       "vol": 0.4746971726971281,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 57,
+      "reduced_for_cash": 2,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 382.0692411518809,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 5,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps10": {
+     "as_live": {
+      "avg_exposure": 0.5261195449313405,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26723.27621000001,
+      "costs": 355.71378999999996,
+      "curve_end": [
+       "2026-11-27",
+       26723.27621000001
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26723.27621000001,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 7,
+      "filled": 32,
+      "full": {
+       "cagr": -0.893761815123497,
+       "end_value": 26723.27621000001,
+       "max_drawdown": -0.109224126333333,
+       "sharpe": -9.602998622327506,
+       "total": -0.109224126333333,
+       "vol": 0.22962866722223643,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30000.0,
+      "halted_on": "2026-11-18",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.893761815123497,
+       "end_value": 26723.27621000001,
+       "max_drawdown": -0.109224126333333,
+       "sharpe": -9.602998622327506,
+       "total": -0.109224126333333,
+       "vol": 0.22962866722223643,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 32,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 248.55733768049086,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.8949058354868047,
+      "blocked_by_unresolved": 0,
+      "cash_end": 11966.268300000022,
+      "costs": 539.4617000000001,
+      "curve_end": [
+       "2026-11-27",
+       27118.568300000024
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "FCX",
+         "NEM",
+         "MPC",
+         "CVS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "CVS": 0.2,
+         "FCX": 0.2,
+         "MPC": 0.2,
+         "NEM": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "AMD",
+         "NKE",
+         "CHTR"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "FCX": 0.2,
+         "NKE": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "INTU"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "INTU": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "NVDA",
+         "MU",
+         "AVGO"
+        ]
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "COP",
+         "AMT",
+         "MPC",
+         "OXY",
+         "EOG"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "AMT": 0.2,
+         "COP": 0.2,
+         "EOG": 0.2,
+         "MPC": 0.2,
+         "OXY": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "ADI",
+         "TXN",
+         "MU",
+         "AMD",
+         "INTC"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "INTC": 0.2,
+         "MU": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "ORCL",
+         "NVDA"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMAT": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2,
+         "ORCL": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "LRCX",
+         "AMAT"
+        ]
+       }
+      ],
+      "executions": 13,
+      "filled": 52,
+      "full": {
+       "cagr": -0.8587795988400426,
+       "end_value": 27118.568300000024,
+       "max_drawdown": -0.18390855499999959,
+       "sharpe": -3.9032370795217686,
+       "total": -0.09604772333333256,
+       "vol": 0.471118448877964,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8587795988400426,
+       "end_value": 27118.568300000024,
+       "max_drawdown": -0.18390855499999959,
+       "sharpe": -3.9032370795217686,
+       "total": -0.09604772333333256,
+       "vol": 0.471118448877964,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 57,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 383.5601531237798,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 5,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps25": {
+     "as_live": {
+      "avg_exposure": 0.5251222042585331,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26254.94037500001,
+      "costs": 878.6896250000003,
+      "curve_end": [
+       "2026-11-27",
+       26254.94037500001
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26254.94037500001,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 7,
+      "filled": 32,
+      "full": {
+       "cagr": -0.9245893490110331,
+       "end_value": 26254.94037500001,
+       "max_drawdown": -0.12483532083333304,
+       "sharpe": -10.546821457040013,
+       "total": -0.12483532083333304,
+       "vol": 0.2410017121844573,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30000.0,
+      "halted_on": "2026-11-18",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.9245893490110331,
+       "end_value": 26254.94037500001,
+       "max_drawdown": -0.12483532083333304,
+       "sharpe": -10.546821457040013,
+       "total": -0.12483532083333304,
+       "vol": 0.2410017121844573,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 32,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 248.55973390460792,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.8927965008164589,
+      "blocked_by_unresolved": 0,
+      "cash_end": 11479.284420000018,
+      "costs": 1326.9075799999998,
+      "curve_end": [
+       "2026-11-27",
+       26373.96442000002
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "FCX",
+         "NEM",
+         "MPC",
+         "CVS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "CVS": 0.2,
+         "FCX": 0.2,
+         "MPC": 0.2,
+         "NEM": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "AMD",
+         "NKE",
+         "CHTR"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "FCX": 0.2,
+         "NKE": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "INTU"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "INTU": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "NVDA",
+         "MU",
+         "AVGO"
+        ]
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "COP",
+         "AMT",
+         "MPC",
+         "OXY",
+         "EOG"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "AMT": 0.2,
+         "COP": 0.2,
+         "EOG": 0.2,
+         "MPC": 0.2,
+         "OXY": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "ADI",
+         "TXN",
+         "MU",
+         "AMD",
+         "INTC"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "INTC": 0.2,
+         "MU": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "ORCL",
+         "NVDA"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMAT": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2,
+         "ORCL": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "LRCX",
+         "AMAT"
+        ]
+       }
+      ],
+      "executions": 13,
+      "filled": 52,
+      "full": {
+       "cagr": -0.9176788491273006,
+       "end_value": 26373.96442000002,
+       "max_drawdown": -0.2006935458333331,
+       "sharpe": -5.011051370552998,
+       "total": -0.120867852666666,
+       "vol": 0.4734426926199182,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.9176788491273006,
+       "end_value": 26373.96442000002,
+       "max_drawdown": -0.2006935458333331,
+       "sharpe": -5.011051370552998,
+       "total": -0.120867852666666,
+       "vol": 0.4734426926199182,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 57,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 382.7022902321846,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 5,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps5": {
+     "as_live": {
+      "avg_exposure": 0.5246665627191383,
+      "blocked_by_unresolved": 0,
+      "cash_end": 26897.86358500001,
+      "costs": 177.94641500000003,
+      "curve_end": [
+       "2026-11-27",
+       26897.86358500001
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": 26897.86358500001,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 7,
+      "filled": 32,
+      "full": {
+       "cagr": -0.8794680995124381,
+       "end_value": 26897.86358500001,
+       "max_drawdown": -0.10340454716666636,
+       "sharpe": -9.250159610255135,
+       "total": -0.10340454716666636,
+       "vol": 0.22497751943450642,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": 30000.0,
+      "halted_on": "2026-11-18",
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8794680995124381,
+       "end_value": 26897.86358500001,
+       "max_drawdown": -0.10340454716666636,
+       "sharpe": -9.250159610255135,
+       "total": -0.10340454716666636,
+       "vol": 0.22497751943450642,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 32,
+      "reduced_for_cash": 1,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 247.60913867064923,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.8927484855844887,
+      "blocked_by_unresolved": 0,
+      "cash_end": 12172.841525500022,
+      "costs": 270.58747450000004,
+      "curve_end": [
+       "2026-11-27",
+       27432.271525500022
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [
+         "NVDA",
+         "PM",
+         "ACN",
+         "GIS",
+         "COF"
+        ],
+        "label": "close 2026-11-09",
+        "targets": {
+         "ACN": 0.2,
+         "COF": 0.2,
+         "GIS": 0.2,
+         "NVDA": 0.2,
+         "PM": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [
+         "NEM",
+         "FCX",
+         "NOW",
+         "NKE"
+        ],
+        "label": "close 2026-11-10",
+        "targets": {
+         "FCX": 0.2,
+         "NEM": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [
+         "MCD",
+         "MSFT",
+         "META",
+         "ACN",
+         "AMZN"
+        ],
+        "label": "close 2026-11-11",
+        "targets": {
+         "ACN": 0.2,
+         "AMZN": 0.2,
+         "MCD": 0.2,
+         "META": 0.2,
+         "MSFT": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [
+         "NEM",
+         "NVDA",
+         "CMG",
+         "AMAT",
+         "GE"
+        ],
+        "label": "close 2026-11-12",
+        "targets": {
+         "AMAT": 0.2,
+         "CMG": 0.2,
+         "GE": 0.2,
+         "NEM": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [
+         "AMD",
+         "CSCO",
+         "AVGO",
+         "NUE",
+         "LRCX"
+        ],
+        "label": "close 2026-11-13",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "CSCO": 0.2,
+         "LRCX": 0.2,
+         "NUE": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [
+         "MU",
+         "INTC",
+         "FCX"
+        ],
+        "label": "close 2026-11-16",
+        "targets": {
+         "AMD": 0.2,
+         "FCX": 0.2,
+         "INTC": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [
+         "CRM",
+         "INTU",
+         "NOW",
+         "NKE",
+         "UNH"
+        ],
+        "label": "close 2026-11-17",
+        "targets": {
+         "CRM": 0.2,
+         "INTU": 0.2,
+         "NKE": 0.2,
+         "NOW": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [
+         "FCX",
+         "NEM",
+         "MPC",
+         "CVS"
+        ],
+        "label": "close 2026-11-18",
+        "targets": {
+         "CVS": 0.2,
+         "FCX": 0.2,
+         "MPC": 0.2,
+         "NEM": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [
+         "AMD",
+         "NKE",
+         "CHTR"
+        ],
+        "label": "close 2026-11-19",
+        "targets": {
+         "AMD": 0.2,
+         "CHTR": 0.2,
+         "FCX": 0.2,
+         "NKE": 0.2,
+         "UNH": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [
+         "INTU"
+        ],
+        "label": "close 2026-11-20",
+        "targets": {
+         "AMD": 0.2,
+         "AVGO": 0.2,
+         "INTU": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "NVDA",
+         "MU",
+         "AVGO"
+        ]
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [
+         "COP",
+         "AMT",
+         "MPC",
+         "OXY",
+         "EOG"
+        ],
+        "label": "close 2026-11-23",
+        "targets": {
+         "AMT": 0.2,
+         "COP": 0.2,
+         "EOG": 0.2,
+         "MPC": 0.2,
+         "OXY": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [
+         "ADI",
+         "TXN",
+         "MU",
+         "AMD",
+         "INTC"
+        ],
+        "label": "close 2026-11-24",
+        "targets": {
+         "ADI": 0.2,
+         "AMD": 0.2,
+         "INTC": 0.2,
+         "MU": 0.2,
+         "TXN": 0.2
+        },
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [
+         "ORCL",
+         "NVDA"
+        ],
+        "label": "close 2026-11-25",
+        "targets": {
+         "AMAT": 0.2,
+         "LRCX": 0.2,
+         "MU": 0.2,
+         "NVDA": 0.2,
+         "ORCL": 0.2
+        },
+        "unavailable": [],
+        "unfilled": [
+         "LRCX",
+         "AMAT"
+        ]
+       }
+      ],
+      "executions": 13,
+      "filled": 52,
+      "full": {
+       "cagr": -0.8235084773368402,
+       "end_value": 27432.271525500022,
+       "max_drawdown": -0.17759258074999962,
+       "sharpe": -3.425753245284917,
+       "total": -0.08559094914999932,
+       "vol": 0.4720850290922622,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": -0.8235084773368402,
+       "end_value": 27432.271525500022,
+       "max_drawdown": -0.17759258074999962,
+       "sharpe": -3.425753245284917,
+       "total": -0.08559094914999932,
+       "vol": 0.4720850290922622,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 57,
+      "reduced_for_cash": 2,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 382.7312874734302,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 5,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "decisions": 13
+   },
+   "sessions": 13,
+   "status": "INSUFFICIENT FORWARD SAMPLE"
+  },
+  "daily-spy-trend50-v1": {
+   "benchmarks": {
+    "spy-hold": {
+     "early": {},
+     "full": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "late": {
+      "cagr": -0.4026706657073068,
+      "end_value": 29213.03847902238,
+      "max_drawdown": -0.09212829523170263,
+      "sharpe": -1.5244664980967662,
+      "total": -0.02623205069925405,
+      "vol": 0.30699215074371,
+      "years": 0.051587301587301584
+     },
+     "years": {}
+    }
+   },
+   "decisions": [
+    {
+     "date": "2026-11-09",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-10",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-11",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-12",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-13",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-16",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-17",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-18",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-19",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-20",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-23",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-24",
+     "targets": {}
+    },
+    {
+     "date": "2026-11-25",
+     "targets": {}
+    }
+   ],
+   "first_execution": "2026-11-10",
+   "result": {
+    "bps0": {
+     "as_live": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps10": {
+     "as_live": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps25": {
+     "as_live": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "bps5": {
+     "as_live": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     },
+     "continuous": {
+      "avg_exposure": 0.0,
+      "blocked_by_unresolved": 0,
+      "cash_end": 30000.0,
+      "costs": 0.0,
+      "curve_end": [
+       "2026-11-27",
+       30000.0
+      ],
+      "dividends": 0.0,
+      "early": {},
+      "equity_after_halt_exit": null,
+      "execution_log": [
+       {
+        "date": "2026-11-10",
+        "filled": [],
+        "label": "close 2026-11-09",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-11",
+        "filled": [],
+        "label": "close 2026-11-10",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-12",
+        "filled": [],
+        "label": "close 2026-11-11",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-13",
+        "filled": [],
+        "label": "close 2026-11-12",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-16",
+        "filled": [],
+        "label": "close 2026-11-13",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-17",
+        "filled": [],
+        "label": "close 2026-11-16",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-18",
+        "filled": [],
+        "label": "close 2026-11-17",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-19",
+        "filled": [],
+        "label": "close 2026-11-18",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-20",
+        "filled": [],
+        "label": "close 2026-11-19",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-23",
+        "filled": [],
+        "label": "close 2026-11-20",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-24",
+        "filled": [],
+        "label": "close 2026-11-23",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-25",
+        "filled": [],
+        "label": "close 2026-11-24",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       },
+       {
+        "date": "2026-11-27",
+        "filled": [],
+        "label": "close 2026-11-25",
+        "targets": {},
+        "unavailable": [],
+        "unfilled": []
+       }
+      ],
+      "executions": 13,
+      "filled": 0,
+      "full": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "halt_peak": null,
+      "halted_on": null,
+      "integrity_examples": [],
+      "integrity_mismatches": 0,
+      "late": {
+       "cagr": 0.0,
+       "end_value": 30000.0,
+       "max_drawdown": 0.0,
+       "sharpe": null,
+       "total": 0.0,
+       "vol": 0.0,
+       "years": 0.051587301587301584
+      },
+      "open_unresolved_at_end": 0,
+      "orders": 0,
+      "reduced_for_cash": 0,
+      "sells_pending": 0,
+      "stale_marks": 0,
+      "turnover_per_year": 0.0,
+      "unavailable": 0,
+      "unfilled_cash": 0,
+      "unfilled_gap": 0,
+      "unfilled_missing": 0,
+      "unresolved": [],
+      "years": {}
+     }
+    },
+    "decisions": 13
+   },
+   "sessions": 13,
+   "status": "INSUFFICIENT FORWARD SAMPLE"
+  }
+ },
+ "prereg": "docs/STOCK_DAILY_STRATEGIES_PREREG_2026_11_10.md"
+}
