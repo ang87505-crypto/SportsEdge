@@ -81,7 +81,28 @@ ROUND3 = {
     'challenger-fractional':       {'model': 'momentum', **_LIVE, 'buffer': 10},
 }
 ROUND3_END = '2026-11-18'
-ROUNDS = {1: VARIANTS, 2: ROUND2, 3: ROUND3}
+# Round 4 (docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md, committed before its run): ONE allocation challenger,
+# cash-aware band-rebalanced whole-share sizing on the unchanged live selection. Ablations and the holdrank10
+# combination are descriptive only. The historical end is fixed; later sessions form the frozen forward window.
+CASHAWARE = 'cashaware'
+ROUND4_END = '2026-11-18'
+FORWARD_START = '2026-11-19'
+MIN_FORWARD_WEEKS = 26
+BAND = (0.05, 0.15)      # continuing pick kept while its value is within 5-15% of equity
+NAME_CAP = 0.15          # $150 maxOrderNotional on the $1,000 account
+GROSS_CAP = 0.50         # live planner GROSS_CAP
+BOOT_BLOCK, BOOT_REPS, BOOT_SEED = 8, 2000, 20261120
+ROUND4 = {
+    CURRENT:                    {'model': 'momentum', **_LIVE, 'whole_shares': True},
+    'holdrank10':               {'model': 'momentum', **_LIVE, 'buffer': 10, 'whole_shares': True},
+    CASHAWARE:                  {'model': 'momentum', **_LIVE, 'whole_shares': True, 'sizing': 'cashaware'},
+    'cashaware-nearest-only':   {'model': 'momentum', **_LIVE, 'whole_shares': True, 'sizing': 'nearest'},
+    'cashaware-band-only':      {'model': 'momentum', **_LIVE, 'whole_shares': True, 'sizing': 'band'},
+    'holdrank10-cashaware':     {'model': 'momentum', **_LIVE, 'buffer': 10, 'whole_shares': True, 'sizing': 'cashaware'},
+    'current-fractional':       {'model': 'momentum', **_LIVE},
+}
+ROUND4_JUDGED = (CURRENT, CASHAWARE)
+ROUNDS = {1: VARIANTS, 2: ROUND2, 3: ROUND3, 4: ROUND4}
 
 
 # ---------------------------------------------------------------- data
@@ -191,7 +212,7 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
             elif spec.get('whole_shares'):
                 picks = set(select(scores, sectors, held, spec, cap))
                 cash, moved, blocked = _whole_share_trades(series, k, units, cash, held | picks, picks, weight,
-                                                            cost_bps)
+                                                            cost_bps, spec.get('sizing', 'floor'))
                 traded += moved
                 cash_blocked += blocked
                 units = {s: u for s, u in units.items() if u > 1e-12}
@@ -216,8 +237,36 @@ def replay(sessions: list[str], series: dict, universe: dict, spec: dict, *, sta
             'avg_exposure': fmean(exposure) if exposure else 0.0, 'exposure': exposure, 'cash_blocked': cash_blocked}
 
 
+def _target_shares(sizing: str, raw: dict, held: dict, picks: set, budget: float, equity: float) -> dict:
+    """Whole-share targets. 'floor' is the live planner exactly. Round 4 sizings
+    (docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md):
+    - 'nearest': round_half_up(budget / price), at most floor(15% of equity / price);
+    - 'band': floor sizing, but a continuing pick keeps its shares while its value is within 5-15% of equity;
+    - 'cashaware': nearest sizing plus the band.
+    Non-floor sizings then enforce the 50% gross cap by removing one share at a time from the largest position."""
+    want = {}
+    for s in sorted(raw):
+        if s not in picks:
+            want[s] = 0
+            continue
+        cap = math.floor(NAME_CAP * equity / raw[s] + 1e-9)
+        fresh = math.floor(budget / raw[s] + (0.5 if sizing in ('nearest', 'cashaware') else 0.0) + 1e-9)
+        if sizing != 'floor':
+            fresh = min(fresh, cap)
+        h = held.get(s, 0)
+        if sizing in ('band', 'cashaware') and h > 0 and BAND[0] * equity <= h * raw[s] <= BAND[1] * equity:
+            want[s] = h
+        else:
+            want[s] = fresh
+    if sizing != 'floor':
+        while sum(n * raw[s] for s, n in want.items()) > GROSS_CAP * equity + 1e-9:
+            s = max((x for x in want if want[x] > 0), key=lambda x: (want[x] * raw[x], x))
+            want[s] -= 1
+    return want
+
+
 def _whole_share_trades(series: dict, k: int, units: dict, cash: float, names: set, picks: set, weight: float,
-                        cost_bps: float):
+                        cost_bps: float, sizing: str = 'floor'):
     """The live planner's sizing at session k's open (src/lib/stocks/paper-strategy-rebalance.ts): budget = 10% of
     equity, target = floor(budget / price) whole shares, held stocks not picked go to 0. Positions are kept in
     all-adjusted units (value = units x adjusted price); held raw shares are recovered with the raw/adjusted ratio, so
@@ -227,13 +276,19 @@ def _whole_share_trades(series: dict, k: int, units: dict, cash: float, names: s
     equity = cash + sum(u * adj[s] for s, u in units.items())  # every holding is in `names` (held | picks)
     budget = math.floor(weight * equity * 100) / 100
     delta = {}
-    for s in sorted(names):
-        if raw[s] is None or adj[s] is None or raw[s] <= 0 or adj[s] <= 0:
-            continue
-        held = round(units.get(s, 0.0) * adj[s] / raw[s])
-        want = math.floor(budget / raw[s]) if s in picks else 0
-        if want != held:
-            delta[s] = want - held
+    if sizing == 'floor':
+        for s in sorted(names):
+            if raw[s] is None or adj[s] is None or raw[s] <= 0 or adj[s] <= 0:
+                continue
+            held = round(units.get(s, 0.0) * adj[s] / raw[s])
+            want = math.floor(budget / raw[s]) if s in picks else 0
+            if want != held:
+                delta[s] = want - held
+    else:
+        ok = {s for s in names if raw[s] is not None and adj[s] is not None and raw[s] > 0 and adj[s] > 0}
+        held_n = {s: round(units.get(s, 0.0) * adj[s] / raw[s]) for s in ok}
+        want_n = _target_shares(sizing, {s: raw[s] for s in ok}, held_n, picks & ok, budget, equity)
+        delta = {s: want_n[s] - held_n[s] for s in sorted(ok) if want_n[s] != held_n[s]}
     moved, blocked = 0.0, 0
     for s, d in sorted(delta.items()):
         if d < 0:
@@ -300,6 +355,8 @@ def combine(a: list, b: list) -> list:
 def evaluate(data: dict, universe: dict, end: str | None = None, round_: int = 1) -> dict:
     if round_ == 3:
         return evaluate_round3(data, universe, end)
+    if round_ == 4:
+        return evaluate_round4(data, universe, end)
     variants = ROUNDS[round_]
     sessions, series = align(data)
     end = end or sessions[-1]
@@ -407,6 +464,213 @@ def verdicts_round3(out: dict) -> dict:
             'registry_status': status}
 
 
+# ---------------------------------------------------------------- round 4 (cash-aware sizing)
+
+def metrics4(curve: list, exposure: list, lo: str, hi: str) -> dict:
+    """Round 3 metrics plus Sortino, downside deviation and capital utilization for one period."""
+    m = metrics(curve, lo, hi)
+    if not m:
+        return {}
+    pts = [(d, v) for d, v in curve if lo <= d <= hi]
+    prev = [v for d, v in curve if d < lo]
+    values = [prev[-1] if prev else pts[0][1]] + [v for _, v in pts]
+    rets = [b / a - 1 for a, b in zip(values, values[1:])]
+    down = math.sqrt(sum(min(r, 0.0) ** 2 for r in rets) / len(rets))
+    exp = [x for (d, _), x in zip(curve, exposure) if lo <= d <= hi]
+    m.update({'downside_deviation': down * math.sqrt(252),
+              'sortino': fmean(rets) / down * math.sqrt(252) if down > 0 else None,
+              'avg_invested': fmean(exp) if exp else None, 'min_invested': min(exp) if exp else None,
+              'avg_equity': fmean(v for _, v in pts)})
+    return m
+
+
+def block_bootstrap(a: dict, b: dict, *, block: int = BOOT_BLOCK, reps: int = BOOT_REPS, seed: int = BOOT_SEED) -> dict | None:
+    """Circular block bootstrap of PAIRED weekly returns: 95% intervals for the annualized Sharpe difference (a - b) and the
+    mean weekly difference. Deterministic for a given seed."""
+    import random
+    weeks = sorted(set(a) & set(b))
+    n = len(weeks)
+    if n < 2 * block:
+        return None
+    x, y = [a[w] for w in weeks], [b[w] for w in weeks]
+
+    def sharpe(r):
+        sd = pstdev(r)
+        return fmean(r) / sd * math.sqrt(52) if sd > 0 else 0.0
+    rng = random.Random(seed)
+    ds, ms = [], []
+    for _ in range(reps):
+        idx = []
+        while len(idx) < n:
+            start = rng.randrange(n)
+            idx.extend((start + j) % n for j in range(block))
+        idx = idx[:n]
+        xs, ys = [x[i] for i in idx], [y[i] for i in idx]
+        ds.append(sharpe(xs) - sharpe(ys))
+        ms.append(fmean(xs) - fmean(ys))
+    ds.sort()
+    ms.sort()
+    lo, hi = int(0.025 * reps), math.ceil(0.975 * reps) - 1
+    return {'weeks': n, 'sharpe_difference': sharpe(x) - sharpe(y), 'sharpe_difference_95': [ds[lo], ds[hi]],
+            'mean_weekly_difference': fmean(x) - fmean(y), 'mean_weekly_difference_95': [ms[lo], ms[hi]],
+            'block_weeks': block, 'replicates': reps, 'seed': seed}
+
+
+def evaluate_round4(data: dict, universe: dict, end: str | None = None) -> dict:
+    """Round 4: cash-aware whole-share sizing against the live rules, holdrank10 and SPY at matched exposure."""
+    sessions, series = align(data)
+    end = end or sessions[-1]
+    hist_end = min(end, ROUND4_END)
+    periods = {'dev': DEV, 'holdout': (HOLDOUT_START, hist_end), 'full': (DEV[0], hist_end)}
+    if end >= FORWARD_START:
+        periods['forward'] = (FORWARD_START, end)
+    out = {'round': 4, 'variants': {}, 'benchmarks': {}, 'matched_spy': {}, 'bootstrap': {},
+           'periods': {k: list(v) for k, v in periods.items()}, 'sessions': [sessions[0], sessions[-1]], 'end': end,
+           'universe_revision': universe.get('revision'),
+           'members_with_data': len([s for s in universe['securities'] if s['symbol'] in series]),
+           'evidence': 'exploratory: every historical period was inspected in rounds 1-3'}
+    curves, spy_curves = {}, {}
+    spy = series.get('SPY')
+    if spy:
+        spy_full = benchmark(sessions, spy, start=DEV[0], end=end, weight=1.0)['curve']
+        out['benchmarks']['spy'] = {p: metrics(spy_full, *rng) for p, rng in periods.items()}
+        out['benchmarks']['spy-50'] = {p: metrics(benchmark(sessions, spy, start=DEV[0], end=end, weight=0.5)['curve'], *rng)
+                                       for p, rng in periods.items()}
+    for name, spec in ROUND4.items():
+        r = replay(sessions, series, universe, spec, start=DEV[0], end=end)
+        curves[name] = r['curve']
+        years = len(r['curve']) / 252
+        avg_equity = fmean(v for _, v in r['curve'])
+        row = {'spec': spec, 'judged': name in ROUND4_JUDGED, 'decisions': r['decisions'], 'rejected': r['rejected'],
+               'cash_blocked': r['cash_blocked'], 'turnover_per_year': r['traded'] / STARTING / years if years else None,
+               'turnover_per_avg_equity': r['traded'] / avg_equity / years if years else None,
+               'costs_paid': r['traded'] * COST_BPS / 1e4,
+               'costs_pct_avg_equity_per_year': r['traded'] * COST_BPS / 1e4 / avg_equity / years if years else None,
+               'avg_exposure': r['avg_exposure'],
+               **{p: metrics4(r['curve'], r['exposure'], *rng) for p, rng in periods.items()}}
+        row['exposure_by_period'] = {p: (row[p] or {}).get('avg_invested') for p in periods}
+        if spec.get('whole_shares'):
+            r25 = replay(sessions, series, universe, spec, start=DEV[0], end=end, cost_bps=25)
+            row['full_at_25bps'] = metrics4(r25['curve'], r25['exposure'], *periods['full'])
+            row['holdout_at_25bps'] = metrics4(r25['curve'], r25['exposure'], *periods['holdout'])
+            if spy:
+                out['matched_spy'][name] = {}
+                for p, rng in periods.items():
+                    w = row['exposure_by_period'][p]
+                    if w is None:
+                        continue
+                    c = benchmark(sessions, spy, start=DEV[0], end=end, weight=w)['curve']
+                    spy_curves[(name, p)] = c
+                    out['matched_spy'][name][p] = {**metrics(c, *rng), 'weight': w}
+                    full = out['benchmarks']['spy'].get(p, {}).get('cagr')
+                    matched = out['matched_spy'][name][p].get('cagr')
+                    row[p]['cash_drag_vs_spy'] = full - matched if full is not None and matched is not None else None
+        out['variants'][name] = row
+    for p, (lo, hi) in periods.items():
+        a = weekly_returns(curves[CASHAWARE], lo, hi)
+        out['bootstrap'][p] = {'cashaware_minus_current': block_bootstrap(a, weekly_returns(curves[CURRENT], lo, hi)),
+                               'cashaware_minus_holdrank10': block_bootstrap(a, weekly_returns(curves['holdrank10'], lo, hi))}
+        if (CASHAWARE, p) in spy_curves:
+            out['bootstrap'][p]['cashaware_minus_matched_spy'] = block_bootstrap(a, weekly_returns(spy_curves[(CASHAWARE, p)], lo, hi))
+    out['verdicts'] = verdicts_round4(out)
+    return out
+
+
+def verdicts_round4(out: dict) -> dict:
+    """docs/STOCK_CHALLENGER_CASHAWARE_PREREG_2026_11_20.md. A tie is not better; a missing judged metric is
+    INSUFFICIENT_EVIDENCE. Exploratory only: no historical period is untouched."""
+    a, b = out['variants'].get(CASHAWARE, {}), out['variants'].get(CURRENT, {})
+    m = out.get('matched_spy', {}).get(CASHAWARE, {})
+    def get(r, *keys):
+        for k in keys:
+            r = (r or {}).get(k)
+        return r
+    need = [get(a, 'exposure_by_period', 'holdout'), get(b, 'exposure_by_period', 'holdout'),
+            get(a, 'dev', 'sharpe'), get(b, 'dev', 'sharpe'), get(a, 'holdout', 'sharpe'), get(b, 'holdout', 'sharpe'),
+            get(a, 'holdout', 'max_drawdown'), get(b, 'holdout', 'max_drawdown'),
+            a.get('turnover_per_avg_equity'), b.get('turnover_per_avg_equity'),
+            get(a, 'full_at_25bps', 'sharpe'), get(b, 'full_at_25bps', 'sharpe'),
+            get(m, 'dev', 'sharpe'), get(m, 'holdout', 'sharpe')]
+    fw = out.get('bootstrap', {}).get('forward', {}).get('cashaware_minus_matched_spy')
+    forward = ({'weeks': fw['weeks'] if fw else 0, 'status': 'INSUFFICIENT_FORWARD_WEEKS'}
+               if not fw or fw['weeks'] < MIN_FORWARD_WEEKS else
+               {'weeks': fw['weeks'], 'status': 'FORWARD_EVALUABLE',
+                'beats_matched_spy': get(a, 'forward', 'sharpe') is not None and get(m, 'forward', 'sharpe') is not None
+                and a['forward']['sharpe'] > m['forward']['sharpe']})
+    if any(v is None for v in need):
+        return {'R0_mechanism': None, 'R1_beats_current': None, 'R2_survives_25bps': None, 'R3_beats_matched_spy': None,
+                'verdict': 'INSUFFICIENT_EVIDENCE', 'registry_status': 'INSUFFICIENT_DATA', 'forward': forward}
+    r0 = a['exposure_by_period']['holdout'] >= b['exposure_by_period']['holdout'] + 0.05
+    r1 = (a['dev']['sharpe'] > b['dev']['sharpe'] and a['holdout']['sharpe'] > b['holdout']['sharpe']
+          and a['holdout']['max_drawdown'] >= b['holdout']['max_drawdown'] - 0.05
+          and a['turnover_per_avg_equity'] <= b['turnover_per_avg_equity'])
+    r2 = a['full_at_25bps']['sharpe'] > b['full_at_25bps']['sharpe']
+    r3 = a['dev']['sharpe'] > m['dev']['sharpe'] and a['holdout']['sharpe'] > m['holdout']['sharpe']
+    if r0 and r1 and r2 and r3:
+        verdict, status = 'QUALIFIES_FOR_FORWARD_TEST', 'RUNNING'
+    elif r0 and r1 and r2:
+        verdict, status = 'BEATS_CURRENT_BELOW_MATCHED_SPY', 'RUNNING'
+    else:
+        verdict, status = 'FAILS', 'REJECTED'
+    return {'R0_mechanism': r0, 'R1_beats_current': r1, 'R2_survives_25bps': r2, 'R3_beats_matched_spy': r3,
+            'verdict': verdict, 'registry_status': status, 'forward': forward}
+
+
+def markdown_round4(out: dict) -> str:
+    pct = lambda x: '—' if x is None else f'{x * 100:+.1f}%'
+    num = lambda x: '—' if x is None else f'{x:.2f}'
+    lines = [f"Round 4 · sessions {out['sessions'][0]} to {out['sessions'][1]} · end {out['end']} · universe "
+             f"{out['universe_revision']} · members with data {out['members_with_data']} · {COST_BPS:g} bps per side · "
+             'whole shares from $1,000 · EXPLORATORY (all historical periods inspected) · NOT survivorship-free', '']
+    for p, (lo, hi) in out['periods'].items():
+        lines += [f'### {p} ({lo} to {hi})', '',
+                  '| Strategy | CAGR | Vol | Sharpe | Sortino | Max DD | Avg invested | Min invested | Cash drag vs SPY |',
+                  '|---|---|---|---|---|---|---|---|---|']
+        for name, r in out['variants'].items():
+            m = r.get(p) or {}
+            if m:
+                lines.append(f"| {name} | {pct(m['cagr'])} | {pct(m['vol'])} | {num(m['sharpe'])} | {num(m.get('sortino'))} | "
+                             f"{pct(m['max_drawdown'])} | {pct(m.get('avg_invested'))} | {pct(m.get('min_invested'))} | "
+                             f"{pct(m.get('cash_drag_vs_spy'))} |")
+        for name, ms in out['matched_spy'].items():
+            m = ms.get(p)
+            if m and name in ROUND4_JUDGED:
+                lines.append(f"| SPY at {name} exposure ({m['weight'] * 100:.0f}%) | {pct(m['cagr'])} | {pct(m['vol'])} | "
+                             f"{num(m['sharpe'])} | — | {pct(m['max_drawdown'])} | | | |")
+        for label in ('spy', 'spy-50'):
+            m = out['benchmarks'].get(label, {}).get(p)
+            if m:
+                lines.append(f"| {label.upper()} | {pct(m['cagr'])} | {pct(m['vol'])} | {num(m['sharpe'])} | — | "
+                             f"{pct(m['max_drawdown'])} | | | |")
+        lines.append('')
+    lines += ['### Trading and costs (whole run)', '', '| Strategy | Judged | Decisions | Rejected | Cash-blocked | '
+              'Turnover / avg equity / yr | Turnover / $1,000 / yr | Costs % avg equity / yr | Full Sharpe 25 bps | '
+              'Full CAGR 25 bps |', '|---|---|---|---|---|---|---|---|---|---|']
+    for name, r in out['variants'].items():
+        f25 = r.get('full_at_25bps') or {}
+        lines.append(f"| {name} | {'yes' if r['judged'] else 'no'} | {r['decisions']} | {r['rejected']} | {r['cash_blocked']} | "
+                     f"{r['turnover_per_avg_equity']:.1f}× | {r['turnover_per_year']:.1f}× | "
+                     f"{pct(r['costs_pct_avg_equity_per_year'])} | {num(f25.get('sharpe'))} | {pct(f25.get('cagr'))} |")
+    lines += ['', '### Paired weekly block bootstrap (95%)', '', '| Period | Comparison | Weeks | Sharpe diff | 95% | Mean weekly diff | 95% |',
+              '|---|---|---|---|---|---|---|']
+    for p, comps in out['bootstrap'].items():
+        for c, b in comps.items():
+            if b:
+                lines.append(f"| {p} | {c} | {b['weeks']} | {b['sharpe_difference']:+.2f} | "
+                             f"[{b['sharpe_difference_95'][0]:+.2f}, {b['sharpe_difference_95'][1]:+.2f}] | "
+                             f"{b['mean_weekly_difference'] * 100:+.3f}% | [{b['mean_weekly_difference_95'][0] * 100:+.3f}%, "
+                             f"{b['mean_weekly_difference_95'][1] * 100:+.3f}%] |")
+    v = out['verdicts']
+    lines += ['', '### Pre-registered verdict', '',
+              f"- R0 mechanism (holdout invested ≥ current + 5 pts): **{v['R0_mechanism']}**",
+              f"- R1 beats current (Sharpe dev and holdout, drawdown, turnover): **{v['R1_beats_current']}**",
+              f"- R2 survives 25 bps: **{v['R2_survives_25bps']}**",
+              f"- R3 beats SPY at its own exposure (dev and holdout): **{v['R3_beats_matched_spy']}**",
+              f"- Verdict: **{v['verdict']}** → learning registry `{v['registry_status']}`",
+              f"- Forward window: {v.get('forward')}"]
+    return '\n'.join(lines) + '\n'
+
+
 def verdicts(out: dict) -> dict:
     """Pre-registered rule: a variant is promising only if its Sharpe beats its baseline in BOTH the
     development and the holdout period, and its holdout drawdown is no more than 5 points worse."""
@@ -485,6 +749,8 @@ def markdown_round3(out: dict) -> str:
 def markdown(out: dict) -> str:
     if out.get('round') == 3:
         return markdown_round3(out)
+    if out.get('round') == 4:
+        return markdown_round4(out)
     pct = lambda x: '—' if x is None else f'{x * 100:+.1f}%'
     num = lambda x: '—' if x is None else f'{x:.2f}'
     lines = [f"Sessions {out['sessions'][0]} to {out['sessions'][1]} · members with data {out['members_with_data']} · "
