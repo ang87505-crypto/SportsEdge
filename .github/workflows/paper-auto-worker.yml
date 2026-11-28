@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       kind:
-        description: Run kind (execute records only a shadow plan while writes are released OFF)
+        description: Run kind (execute may send PAPER orders while the owner gate is armed)
         required: true
         type: choice
         options: [reconcile, monitor, execute]

@@ -24,8 +24,8 @@ function recorder(routes){
  return {calls,fetcher};
 }
 
-test('the recurring release manifest: schedules on; broker writes and real money off',()=>{
- assert.deepEqual(PAPER_AUTO_RELEASE,{paperOnly:true,brokerWritesEnabled:false,scheduledRunsEnabled:true,
+test('the recurring release manifest allows PAPER orders and schedules; real money stays off',()=>{
+ assert.deepEqual(PAPER_AUTO_RELEASE,{paperOnly:true,brokerWritesEnabled:true,scheduledRunsEnabled:true,
   realMoneyEnabled:false});
 });
 
@@ -92,13 +92,33 @@ test('activities: fills keep their order id; dated activities land at 00:00 New 
  assert.equal(classifyActivityType('MISC'),'other');
 });
 
-test('with writes released OFF, POST and DELETE never reach the network',async()=>{
- const {calls,fetcher}=recorder([]);
+test('released writes use one exact fixed PAPER request, never redirects or a live host',async()=>{
+ const calls=[];
+ const fetcher=async(url,init)=>{
+  calls.push({url,init});
+  return init.method==='DELETE'?new Response(null,{status:204}):new Response(JSON.stringify(order()),{status:200});
+ };
  const broker=alpacaPaperAutoBroker(KEYS,fetcher);
- assert.equal(broker.writesEnabled,false);
- await assert.rejects(()=>broker.submitLimitOrder(REQ),e=>e instanceof PaperAutoBrokerError&&e.code==='RELEASE_OFF');
- await assert.rejects(()=>broker.cancelOrder('b-1'),e=>e instanceof PaperAutoBrokerError&&e.code==='RELEASE_OFF');
- assert.equal(calls.length,0);
+ assert.equal(broker.writesEnabled,true);
+ assert.equal((await broker.submitLimitOrder(REQ)).kind,'acknowledged');
+ assert.equal(await broker.cancelOrder('b-1'),'requested');
+ assert.equal(calls.length,2);
+ assert.equal(calls[0].url,'https://paper-api.alpaca.markets/v2/orders');
+ assert.equal(calls[1].url,'https://paper-api.alpaca.markets/v2/orders/b-1');
+ assert.deepEqual(JSON.parse(calls[0].init.body),{symbol:'AAA',qty:'3',side:'buy',type:'limit',time_in_force:'day',
+  limit_price:'30.01',client_order_id:REQ.clientOrderId,extended_hours:false});
+ for(const c of calls)assert.equal(c.init.redirect,'error');
+ await assert.rejects(()=>broker.submitLimitOrder({...REQ,symbol:'https://api.alpaca.markets'}),
+  e=>e.code==='INVALID_REQUEST');
+ await assert.rejects(()=>broker.cancelOrder('../live'),e=>e.code==='INVALID_REQUEST');
+ assert.equal(calls.length,2,'invalid inputs never reach the network');
+});
+
+test('a lost PAPER order reply is uncertain and is never retried by the adapter',async()=>{
+ let calls=0;
+ const broker=alpacaPaperAutoBroker(KEYS,async()=>{calls++;throw Error('lost response');});
+ assert.deepEqual(await broker.submitLimitOrder(REQ),{kind:'uncertain',reason:'NETWORK'});
+ assert.equal(calls,1);
 });
 
 test('reads use GET on the fixed PAPER and data hosts only, with no redirects',async()=>{
