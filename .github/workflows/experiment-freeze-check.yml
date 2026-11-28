@@ -6,7 +6,7 @@ on:
     inputs:
       manifest:
         description: Manifest to verify against (committed path)
-        default: docs/experiments/manifest-2026-11-13-candidate.json
+        default: docs/experiments/manifest-2026-11-28.json
         required: true
 permissions:
   contents: read
