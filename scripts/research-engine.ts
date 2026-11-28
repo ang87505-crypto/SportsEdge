@@ -24,6 +24,7 @@ import {MODEL_VERSION} from '../src/lib/props/contract.ts';
 import {playerKey} from '../src/lib/props/identity.ts';
 import {validProbabilities} from '../src/lib/props/research.ts';
 import {trackProductionShadows,type ShadowArtifact} from '../src/lib/lab/engine/production-shadows.ts';
+import {trackMonotoneShadow} from '../src/lib/lab/engine/monotone-shadow.ts';
 import {sportsScorecard} from '../src/lib/lab/engine/scorecard.ts';
 import {sportsDrift} from '../src/lib/lab/engine/drift.ts';
 import {sportsAlarms,ALARM_POLICY,type Coverage} from '../src/lib/lab/engine/alarms.ts';
@@ -93,6 +94,8 @@ async function readLedger():Promise<Ledger>{
   const ob=o.get(Number(p.observation_id)) as Ob|undefined;if(!ob)continue;
   const key=keyOf(ob);
   fp.push({key,eventId:ob.provider_event_id,date:dateOf(ob.lock_at),stat:ob.stat as FrozenPrediction['stat'],model:p.model_version,predictedAt:p.predicted_at,lockAt:ob.lock_at,recordedAt:ob.recorded_at,dataCutoff:p.data_cutoff,
+   predictionId:Number(p.id),observationId:Number(p.observation_id),
+   baselinePredictionId:p.inputs?.baselinePredictionId,artifactSha256:p.inputs?.calibratorDigest,baselineArtifactSha256:p.inputs?.baselineArtifactSha256,
    p:{pMore:Number(p.p_more),pLess:Number(p.p_less),pTie:Number(p.p_tie)}});
   const res=latest.get(Number(p.observation_id));
   const actual=numberOrNull(res?.actual),validGrade=res&&actual!==null&&(actual>Number(ob.line)?'more':actual<Number(ob.line)?'less':'tie')===res.outcome;
@@ -215,6 +218,8 @@ try{
   const drift=sportsDrift(clean,now);
   const tracked=trackProductionShadows(reg,ledger.artifacts??[],now);reg=tracked.registry;
   report.productionShadows={added:tracked.added,ignored:tracked.ignored};
+  const monotone=trackMonotoneShadow(reg,ledger.preds,now);reg=monotone.registry;
+  report.monotoneShadow={added:monotone.added};
   const fp=fingerprint([...clean].sort((a,b)=>a.key.localeCompare(b.key)));
   const prop=proposeHypotheses(patterns,reg,LIMITS.maxNewHypothesesPerDomain);
   for(const h of prop.proposed)reg=register(reg,newExperiment(h,fp),now);

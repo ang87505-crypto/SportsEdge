@@ -73,7 +73,7 @@ export function pairedInterval(rows:EvaluationRow[],replicates=1000,seed=2026110
 
 /**
  * Forward evaluation rows under the registered admission rules (shared by every candidate so none is judged on looser
- * terms): first archived forecast per exact line, ingested before lock and at/after `forwardStartsAt`, final result
+ * terms): first archived forecast per exact line, saved before its forecast, ingested before lock and at/after `forwardStartsAt`, final result
  * graded after lock and consistent with the box-score actual. `candidateOf` maps the baseline forecast to the candidate.
  */
 function forwardRows(r:ResearchRaw,now:number,forwardStartsAt:string,
@@ -94,7 +94,7 @@ function forwardRows(r:ResearchRaw,now:number,forwardStartsAt:string,
   if(!p.athlete_id||!validProbabilities(base)||!dates.every(finiteDate)||Date.parse(o.ingested_at)>now||
    Date.parse(o.ingested_at)>Date.parse(o.recorded_at)||Date.parse(o.recorded_at)>=Date.parse(o.lock_at)||
    Date.parse(p.predicted_at)>now||Date.parse(p.predicted_at)>=Date.parse(o.lock_at)||Date.parse(p.data_cutoff)>Date.parse(p.predicted_at)||
-   Date.parse(o.ingested_at)>Date.parse(p.predicted_at)||!Number.isFinite(Number(o.line))){invalid++;continue;}
+   Date.parse(o.recorded_at)>Date.parse(p.predicted_at)||!Number.isFinite(Number(o.line))){invalid++;continue;}
   scored.push({o,p,base,candidate:candidateOf(base,o,p),
    key:[o.provider_event_id,p.athlete_id,o.stat,Number(o.line)].join('|'),pick:pick.get(p.id)});
  }
