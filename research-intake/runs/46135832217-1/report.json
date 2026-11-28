@@ -1,0 +1,1652 @@
+{
+ "generatedBy": "scripts/research-intake-collect.ts",
+ "retrievedAt": "2026-11-28T10:35:02.601Z",
+ "datasetVersion": "619d71640ea73b4fc95be7618a75c253623f7d3e142ff589d0496bb5d20f61c3",
+ "diff": {
+  "added": [],
+  "changed": [
+   "CIK0000019617"
+  ],
+  "unchanged": [
+   "CIK0000320193",
+   "CIK0000789019",
+   "CIK0001045810",
+   "CIK0002115436",
+   "CIK0000200406",
+   "CIK0000080424",
+   "CIK0000021344",
+   "CIK0000104169",
+   "CIK0000018230",
+   "arxiv:https://arxiv.org/abs/2611.34942v1",
+   "arxiv:https://arxiv.org/abs/2611.34941v1",
+   "arxiv:https://arxiv.org/abs/2611.34926v1",
+   "arxiv:https://arxiv.org/abs/2611.34923v1",
+   "arxiv:https://arxiv.org/abs/2611.34912v1",
+   "arxiv:https://arxiv.org/abs/2611.34908v1",
+   "arxiv:https://arxiv.org/abs/2611.34897v1",
+   "arxiv:https://arxiv.org/abs/2611.34871v1",
+   "arxiv:https://arxiv.org/abs/2611.34868v1",
+   "arxiv:https://arxiv.org/abs/2611.34866v1",
+   "arxiv:https://arxiv.org/abs/2611.34929v1",
+   "arxiv:https://arxiv.org/abs/2611.34910v1",
+   "arxiv:https://arxiv.org/abs/2611.34907v1",
+   "arxiv:https://arxiv.org/abs/2611.34905v1",
+   "arxiv:https://arxiv.org/abs/2611.34903v1",
+   "arxiv:https://arxiv.org/abs/2611.34901v1",
+   "arxiv:https://arxiv.org/abs/2611.34888v1",
+   "arxiv:https://arxiv.org/abs/2611.34883v1",
+   "arxiv:https://arxiv.org/abs/2611.34878v1",
+   "arxiv:https://arxiv.org/abs/2611.34858v1",
+   "arxiv:https://arxiv.org/abs/2611.34939v1",
+   "arxiv:https://arxiv.org/abs/2611.34899v1",
+   "arxiv:https://arxiv.org/abs/2611.34898v1",
+   "arxiv:https://arxiv.org/abs/2611.34894v1",
+   "arxiv:https://arxiv.org/abs/2611.34874v1",
+   "arxiv:https://arxiv.org/abs/2611.34861v1",
+   "arxiv:https://arxiv.org/abs/2611.34848v1"
+  ],
+  "duplicateDataset": false
+ },
+ "requests": 28,
+ "budget": 40,
+ "sources": {
+  "sec-edgar-companyfacts": {
+   "attempted": 10,
+   "succeeded": 10,
+   "failures": [],
+   "connected": "VERIFIED_THIS_RUN"
+  },
+  "openalex": {
+   "attempted": 5,
+   "succeeded": 0,
+   "failures": [
+    "HTTP_429 https://api.openalex.org/works?search=player+prop+betting+market+efficiency&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_p",
+    "HTTP_429 https://api.openalex.org/works?search=sports+betting+probability+calibration&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_",
+    "HTTP_429 https://api.openalex.org/works?search=basketball+player+minutes+projection&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_pu",
+    "HTTP_429 https://api.openalex.org/works?search=time+series+momentum+low+volatility+anomaly&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=",
+    "HTTP_429 https://api.openalex.org/works?search=post+earnings+announcement+drift&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_public"
+   ],
+   "connected": "FAILED"
+  },
+  "arxiv": {
+   "attempted": 3,
+   "succeeded": 3,
+   "failures": [],
+   "connected": "VERIFIED_THIS_RUN"
+  }
+ },
+ "survivorship": "The ticker list is a CURRENT list chosen for verification; it is not survivorship-free and must not be treated as a research universe.",
+ "sec": [
+  {
+   "ticker": "AAPL",
+   "cik": "0000320193",
+   "rawChecksum": "536e8bee446d6463",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1361,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1361,
+    "dropped": 47,
+    "byTag": {
+     "Assets": 144,
+     "Liabilities": 142,
+     "NetCashProvidedByUsedInOperatingActivities": 134,
+     "NetIncomeLoss": 319,
+     "OperatingIncomeLoss": 231,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 120,
+     "Revenues": 11,
+     "StockholdersEquity": 260
+    },
+    "periodsWithMultipleFilings": 316,
+    "latestFiled": "2026-11-03",
+    "latestFiledAgeDays": 25,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1361,
+    "dropped": 47,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 25,
+     "endsWithSeveralDurations": 10,
+     "endsWithSeveralLengths": 10
+    },
+    "restatements": {
+     "periods": 588,
+     "repeatedSameValue": 373,
+     "trueRestatements": 23,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2008-09-27",
+       "first": 39572000000,
+       "latest": 36171000000,
+       "restatedOn": "2010-01-25"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2009-09-26",
+       "first": 53851000000,
+       "latest": 47501000000,
+       "restatedOn": "2010-01-25"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-09-26",
+       "first": 290479000000,
+       "latest": 290345000000,
+       "restatedOn": "2016-10-26"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2008-09-27",
+       "first": 18542000000,
+       "latest": 13874000000,
+       "restatedOn": "2010-01-25"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2009-09-26",
+       "first": 26019000000,
+       "latest": 15861000000,
+       "restatedOn": "2010-01-25"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2015-09-26",
+       "first": 171124000000,
+       "latest": 170990000000,
+       "restatedOn": "2016-10-26"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2015-09-27",
+       "periodEnd": "2016-09-24",
+       "first": 65824000000,
+       "latest": 66231000000,
+       "restatedOn": "2018-11-05"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-09-25",
+       "periodEnd": "2017-04-01",
+       "first": 39579000000,
+       "latest": 39804000000,
+       "restatedOn": "2018-05-02"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-09-25",
+       "periodEnd": "2017-07-01",
+       "first": 47942000000,
+       "latest": 48476000000,
+       "restatedOn": "2018-08-01"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-09-25",
+       "periodEnd": "2017-09-30",
+       "first": 63598000000,
+       "latest": 64225000000,
+       "restatedOn": "2018-11-05"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1361,
+     "earliestFiled": "2009-07-22",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "MSFT",
+   "cik": "0000789019",
+   "rawChecksum": "985d42de4569d154",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1388,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1388,
+    "dropped": 74,
+    "byTag": {
+     "Assets": 138,
+     "Liabilities": 130,
+     "NetCashProvidedByUsedInOperatingActivities": 169,
+     "NetIncomeLoss": 317,
+     "OperatingIncomeLoss": 263,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 133,
+     "Revenues": 31,
+     "StockholdersEquity": 207
+    },
+    "periodsWithMultipleFilings": 344,
+    "latestFiled": "2026-10-28",
+    "latestFiledAgeDays": 31,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1388,
+    "dropped": 74,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 25,
+     "endsWithSeveralDurations": 13,
+     "endsWithSeveralLengths": 13
+    },
+    "restatements": {
+     "periods": 632,
+     "repeatedSameValue": 410,
+     "trueRestatements": 30,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-06-30",
+       "first": 176223000000,
+       "latest": 174472000000,
+       "restatedOn": "2016-07-28"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2016-06-30",
+       "first": 193694000000,
+       "latest": 193468000000,
+       "restatedOn": "2016-10-20"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2017-06-30",
+       "first": 241086000000,
+       "latest": 250312000000,
+       "restatedOn": "2017-10-26"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2015-06-30",
+       "first": 96140000000,
+       "latest": 94389000000,
+       "restatedOn": "2016-07-28"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2016-06-30",
+       "first": 121697000000,
+       "latest": 121471000000,
+       "restatedOn": "2016-10-20"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2017-06-30",
+       "first": 168692000000,
+       "latest": 162601000000,
+       "restatedOn": "2017-10-26"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2015-07-01",
+       "periodEnd": "2015-09-30",
+       "first": 4620000000,
+       "latest": 4902000000,
+       "restatedOn": "2016-04-21"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2015-07-01",
+       "periodEnd": "2015-12-31",
+       "first": 9618000000,
+       "latest": 9920000000,
+       "restatedOn": "2017-01-26"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2015-07-01",
+       "periodEnd": "2016-06-30",
+       "first": 16798000000,
+       "latest": 20539000000,
+       "restatedOn": "2018-08-03"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2015-10-01",
+       "periodEnd": "2015-12-31",
+       "first": 4998000000,
+       "latest": 5018000000,
+       "restatedOn": "2016-04-21"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1388,
+     "earliestFiled": "2009-10-23",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "NVDA",
+   "cik": "0001045810",
+   "rawChecksum": "c8d2deb79257bf63",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1475,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 1475,
+    "dropped": 5,
+    "byTag": {
+     "Assets": 138,
+     "Liabilities": 86,
+     "NetCashProvidedByUsedInOperatingActivities": 161,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 225,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 28,
+     "Revenues": 280,
+     "StockholdersEquity": 248
+    },
+    "periodsWithMultipleFilings": 355,
+    "latestFiled": "2026-08-26",
+    "latestFiledAgeDays": 94,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1475,
+    "dropped": 5,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 25,
+     "endsWithSeveralDurations": 10,
+     "endsWithSeveralLengths": 10
+    },
+    "restatements": {
+     "periods": 637,
+     "repeatedSameValue": 415,
+     "trueRestatements": 40,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-01-25",
+       "first": 7201368000,
+       "latest": 7201000000,
+       "restatedOn": "2015-05-20"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2013-01-28",
+       "periodEnd": "2014-01-26",
+       "first": 835146000,
+       "latest": 835000000,
+       "restatedOn": "2016-03-17"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-01-27",
+       "periodEnd": "2014-04-27",
+       "first": 151022000,
+       "latest": 151000000,
+       "restatedOn": "2015-05-20"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-01-27",
+       "periodEnd": "2014-07-27",
+       "first": 247304000,
+       "latest": 247000000,
+       "restatedOn": "2015-08-19"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-01-27",
+       "periodEnd": "2014-10-26",
+       "first": 462927000,
+       "latest": 463000000,
+       "restatedOn": "2015-11-18"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-01-27",
+       "periodEnd": "2015-01-25",
+       "first": 905656000,
+       "latest": 906000000,
+       "restatedOn": "2016-03-17"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-02-01",
+       "periodEnd": "2016-05-01",
+       "first": 309000000,
+       "latest": 319000000,
+       "restatedOn": "2016-11-22"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-02-01",
+       "periodEnd": "2016-07-31",
+       "first": 493000000,
+       "latest": 519000000,
+       "restatedOn": "2016-11-22"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2013-01-28",
+       "periodEnd": "2014-01-26",
+       "first": 439990000,
+       "latest": 440000000,
+       "restatedOn": "2016-03-17"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2014-01-27",
+       "periodEnd": "2014-04-27",
+       "first": 136516000,
+       "latest": 137000000,
+       "restatedOn": "2015-05-20"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1475,
+     "earliestFiled": "2009-08-20",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "JPM",
+   "cik": "0000019617",
+   "rawChecksum": "2674144a4b3091f6",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1034,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 1034,
+    "dropped": 48,
+    "byTag": {
+     "Assets": 203,
+     "Liabilities": 143,
+     "NetCashProvidedByUsedInOperatingActivities": 159,
+     "NetIncomeLoss": 231,
+     "Revenues": 111,
+     "StockholdersEquity": 187
+    },
+    "periodsWithMultipleFilings": 307,
+    "latestFiled": "2026-11-03",
+    "latestFiledAgeDays": 25,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1034,
+    "dropped": 48,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 15,
+     "endsWithSeveralDurations": 3,
+     "endsWithSeveralLengths": 3
+    },
+    "restatements": {
+     "periods": 455,
+     "repeatedSameValue": 289,
+     "trueRestatements": 54,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2009-12-31",
+       "first": 2031989000000,
+       "latest": 2119673000000,
+       "restatedOn": "2010-08-06"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2012-03-31",
+       "first": 2320330000000,
+       "latest": 2320164000000,
+       "restatedOn": "2012-08-09"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2013-12-31",
+       "first": 2415689000000,
+       "latest": 2414879000000,
+       "restatedOn": "2016-02-23"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-03-31",
+       "first": 2476986000000,
+       "latest": 2476650000000,
+       "restatedOn": "2015-05-05"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-06-30",
+       "first": 2520336000000,
+       "latest": 2519995000000,
+       "restatedOn": "2015-08-03"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-09-30",
+       "first": 2527005000000,
+       "latest": 2526655000000,
+       "restatedOn": "2015-11-02"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-12-31",
+       "first": 2573126000000,
+       "latest": 2572274000000,
+       "restatedOn": "2015-05-05"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-03-31",
+       "first": 2577148000000,
+       "latest": 2576619000000,
+       "restatedOn": "2016-04-29"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-06-30",
+       "first": 2449599000000,
+       "latest": 2449098000000,
+       "restatedOn": "2016-08-03"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-09-30",
+       "first": 2417121000000,
+       "latest": 2416635000000,
+       "restatedOn": "2016-11-01"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1034,
+     "earliestFiled": "2009-08-10",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "XOM",
+   "cik": "0002115436",
+   "rawChecksum": "94b21a95979a76ea",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 32,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 32,
+    "dropped": 0,
+    "byTag": {
+     "Assets": 4,
+     "Liabilities": 4,
+     "NetCashProvidedByUsedInOperatingActivities": 4,
+     "NetIncomeLoss": 8,
+     "Revenues": 8,
+     "StockholdersEquity": 4
+    },
+    "periodsWithMultipleFilings": 11,
+    "latestFiled": "2026-11-02",
+    "latestFiledAgeDays": 26,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 32,
+    "dropped": 0,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 3,
+     "endsWithSeveralDurations": 2,
+     "endsWithSeveralLengths": 2
+    },
+    "restatements": {
+     "periods": 29,
+     "repeatedSameValue": 3,
+     "trueRestatements": 0,
+     "examples": []
+    },
+    "identity": {
+     "facts": 32,
+     "earliestFiled": "2026-08-03",
+     "flags": [
+      "HISTORY_STARTS_AFTER_WINDOW",
+      "FEW_FACTS"
+     ],
+     "usable": false
+    }
+   }
+  },
+  {
+   "ticker": "JNJ",
+   "cik": "0000200406",
+   "rawChecksum": "7d03f3a804777f55",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 940,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 40
+   },
+   "quality": {
+    "facts": 940,
+    "dropped": 0,
+    "byTag": {
+     "Assets": 145,
+     "Liabilities": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 157,
+     "NetIncomeLoss": 274,
+     "OperatingIncomeLoss": 52,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 132,
+     "Revenues": 18,
+     "StockholdersEquity": 22
+    },
+    "periodsWithMultipleFilings": 230,
+    "latestFiled": "2026-10-21",
+    "latestFiledAgeDays": 38,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 940,
+    "dropped": 0,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 25,
+     "endsWithSeveralDurations": 13,
+     "endsWithSeveralLengths": 13
+    },
+    "restatements": {
+     "periods": 455,
+     "repeatedSameValue": 259,
+     "trueRestatements": 18,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-12-28",
+       "first": 131119000000,
+       "latest": 130358000000,
+       "restatedOn": "2016-02-24"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2014-12-28",
+       "first": 61367000000,
+       "latest": 60606000000,
+       "restatedOn": "2016-02-24"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2012-01-02",
+       "periodEnd": "2012-07-01",
+       "first": 7523000000,
+       "latest": 7040000000,
+       "restatedOn": "2013-08-01"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2013-12-30",
+       "periodEnd": "2014-12-28",
+       "first": 18471000000,
+       "latest": 18710000000,
+       "restatedOn": "2017-02-27"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-12-29",
+       "periodEnd": "2015-06-28",
+       "first": 8072000000,
+       "latest": 8344000000,
+       "restatedOn": "2016-08-04"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-12-29",
+       "periodEnd": "2015-09-27",
+       "first": 14197000000,
+       "latest": 14484000000,
+       "restatedOn": "2016-11-04"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2014-12-29",
+       "periodEnd": "2016-01-03",
+       "first": 19279000000,
+       "latest": 19569000000,
+       "restatedOn": "2017-02-27"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-01-04",
+       "periodEnd": "2016-04-03",
+       "first": 1763000000,
+       "latest": 2189000000,
+       "restatedOn": "2017-05-08"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2016-01-04",
+       "periodEnd": "2016-04-03",
+       "first": 4292000000,
+       "latest": 4457000000,
+       "restatedOn": "2017-02-27"
+      },
+      {
+       "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+       "start": "2021-01-04",
+       "periodEnd": "2022-01-02",
+       "first": 93775000000,
+       "latest": 78740000000,
+       "restatedOn": "2024-02-16"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 940,
+     "earliestFiled": "2009-08-04",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "PG",
+   "cik": "0000080424",
+   "rawChecksum": "f18d52da31bf6334",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1221,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 1221,
+    "dropped": 133,
+    "byTag": {
+     "Assets": 156,
+     "Liabilities": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 158,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 322,
+     "Revenues": 136
+    },
+    "periodsWithMultipleFilings": 278,
+    "latestFiled": "2026-10-22",
+    "latestFiledAgeDays": 37,
+    "missingCoreTags": [
+     "StockholdersEquity"
+    ],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1221,
+    "dropped": 133,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 20,
+     "endsWithSeveralDurations": 7,
+     "endsWithSeveralLengths": 7
+    },
+    "restatements": {
+     "periods": 520,
+     "repeatedSameValue": 328,
+     "trueRestatements": 42,
+     "examples": [
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2009-07-01",
+       "periodEnd": "2010-06-30",
+       "first": 16072000000,
+       "latest": 16131000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2010-07-01",
+       "periodEnd": "2010-12-31",
+       "first": 5329000000,
+       "latest": 5376000000,
+       "restatedOn": "2012-01-27"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2010-07-01",
+       "periodEnd": "2011-03-31",
+       "first": 9385000000,
+       "latest": 9452000000,
+       "restatedOn": "2012-04-27"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2010-07-01",
+       "periodEnd": "2011-06-30",
+       "first": 13231000000,
+       "latest": 13330000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2009-07-01",
+       "periodEnd": "2010-06-30",
+       "first": 16021000000,
+       "latest": 15732000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2010-07-01",
+       "periodEnd": "2010-09-30",
+       "first": 4501000000,
+       "latest": 4425000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2010-07-01",
+       "periodEnd": "2011-03-31",
+       "first": 12533000000,
+       "latest": 12316000000,
+       "restatedOn": "2012-04-27"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2010-07-01",
+       "periodEnd": "2011-06-30",
+       "first": 15818000000,
+       "latest": 15495000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2010-10-01",
+       "periodEnd": "2010-12-31",
+       "first": 4260000000,
+       "latest": 4186000000,
+       "restatedOn": "2012-08-08"
+      },
+      {
+       "tag": "OperatingIncomeLoss",
+       "start": "2011-01-01",
+       "periodEnd": "2011-03-31",
+       "first": 3772000000,
+       "latest": 3705000000,
+       "restatedOn": "2012-04-27"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1221,
+     "earliestFiled": "2009-10-29",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "KO",
+   "cik": "0000021344",
+   "rawChecksum": "0547cd4fedfcf8be",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 995,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 995,
+    "dropped": 59,
+    "byTag": {
+     "Assets": 140,
+     "NetCashProvidedByUsedInOperatingActivities": 147,
+     "NetIncomeLoss": 229,
+     "OperatingIncomeLoss": 229,
+     "Revenues": 108,
+     "StockholdersEquity": 142
+    },
+    "periodsWithMultipleFilings": 271,
+    "latestFiled": "2026-10-28",
+    "latestFiledAgeDays": 31,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 995,
+    "dropped": 59,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 20,
+     "endsWithSeveralDurations": 9,
+     "endsWithSeveralLengths": 9
+    },
+    "restatements": {
+     "periods": 502,
+     "repeatedSameValue": 304,
+     "trueRestatements": 34,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-12-31",
+       "first": 90093000000,
+       "latest": 89996000000,
+       "restatedOn": "2016-04-28"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2016-01-01",
+       "periodEnd": "2016-12-31",
+       "first": 8796000000,
+       "latest": 8792000000,
+       "restatedOn": "2019-02-21"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2017-01-01",
+       "periodEnd": "2017-12-31",
+       "first": 6995000000,
+       "latest": 7041000000,
+       "restatedOn": "2019-02-21"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2018-01-01",
+       "periodEnd": "2018-12-31",
+       "first": 7320000000,
+       "latest": 7627000000,
+       "restatedOn": "2020-02-24"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2010-01-01",
+       "periodEnd": "2010-12-31",
+       "first": 11809000000,
+       "latest": 11787000000,
+       "restatedOn": "2013-02-27"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2011-01-01",
+       "periodEnd": "2011-04-01",
+       "first": 1900000000,
+       "latest": 1903000000,
+       "restatedOn": "2012-04-26"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2011-01-01",
+       "periodEnd": "2011-07-01",
+       "first": 4697000000,
+       "latest": 4703000000,
+       "restatedOn": "2012-07-26"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2011-01-01",
+       "periodEnd": "2011-09-30",
+       "first": 6918000000,
+       "latest": 6927000000,
+       "restatedOn": "2012-10-25"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2011-01-01",
+       "periodEnd": "2011-12-31",
+       "first": 8572000000,
+       "latest": 8584000000,
+       "restatedOn": "2013-02-27"
+      },
+      {
+       "tag": "NetIncomeLoss",
+       "start": "2011-07-02",
+       "periodEnd": "2011-09-30",
+       "first": 2221000000,
+       "latest": 2224000000,
+       "restatedOn": "2012-10-25"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 995,
+     "earliestFiled": "2009-07-30",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "WMT",
+   "cik": "0000104169",
+   "rawChecksum": "bbcfd671c4535bc2",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 1508,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 35
+   },
+   "quality": {
+    "facts": 1508,
+    "dropped": 10,
+    "byTag": {
+     "Assets": 207,
+     "NetCashProvidedByUsedInOperatingActivities": 157,
+     "NetIncomeLoss": 309,
+     "OperatingIncomeLoss": 229,
+     "RevenueFromContractWithCustomerExcludingAssessedTax": 120,
+     "Revenues": 293,
+     "StockholdersEquity": 193
+    },
+    "periodsWithMultipleFilings": 445,
+    "latestFiled": "2026-08-28",
+    "latestFiledAgeDays": 92,
+    "missingCoreTags": [],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 1508,
+    "dropped": 10,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 25,
+     "endsWithSeveralDurations": 16,
+     "endsWithSeveralLengths": 16
+    },
+    "restatements": {
+     "periods": 633,
+     "repeatedSameValue": 499,
+     "trueRestatements": 62,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2009-07-31",
+       "first": 168942000000,
+       "latest": 168609000000,
+       "restatedOn": "2010-09-01"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2009-10-31",
+       "first": 172934000000,
+       "latest": 172502000000,
+       "restatedOn": "2010-12-06"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2010-01-31",
+       "first": 170706000000,
+       "latest": 170407000000,
+       "restatedOn": "2010-09-01"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2010-04-30",
+       "first": 174371000000,
+       "latest": 174043000000,
+       "restatedOn": "2011-06-03"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2011-01-31",
+       "first": 180663000000,
+       "latest": 180782000000,
+       "restatedOn": "2012-03-27"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2011-04-30",
+       "first": 186065000000,
+       "latest": 186225000000,
+       "restatedOn": "2012-06-01"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2011-07-31",
+       "first": 193656000000,
+       "latest": 193872000000,
+       "restatedOn": "2012-09-06"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2011-10-31",
+       "first": 195039000000,
+       "latest": 195244000000,
+       "restatedOn": "2012-12-04"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-01-31",
+       "first": 204751000000,
+       "latest": 204541000000,
+       "restatedOn": "2016-03-30"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-04-30",
+       "first": 202746000000,
+       "latest": 202517000000,
+       "restatedOn": "2015-06-05"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 1508,
+     "earliestFiled": "2009-09-09",
+     "flags": [],
+     "usable": true
+    }
+   }
+  },
+  {
+   "ticker": "CAT",
+   "cik": "0000018230",
+   "rawChecksum": "350be4305f0959a7",
+   "provenance": {
+    "usable": true,
+    "pointInTime": true,
+    "reasons": []
+   },
+   "pointInTime": {
+    "ok": true,
+    "facts": 969,
+    "filedBeforePeriodEnd": 0,
+    "filedAfterRetrieval": 0,
+    "asOfLeaks": 0,
+    "cutoffsChecked": 30
+   },
+   "quality": {
+    "facts": 969,
+    "dropped": 70,
+    "byTag": {
+     "Assets": 150,
+     "Liabilities": 146,
+     "NetCashProvidedByUsedInOperatingActivities": 85,
+     "NetIncomeLoss": 42,
+     "OperatingIncomeLoss": 229,
+     "Revenues": 317
+    },
+    "periodsWithMultipleFilings": 224,
+    "latestFiled": "2026-11-04",
+    "latestFiledAgeDays": 24,
+    "missingCoreTags": [
+     "StockholdersEquity"
+    ],
+    "stale": false
+   },
+   "v2": {
+    "schema": "sec-pit-v2",
+    "facts": 969,
+    "dropped": 70,
+    "windowStart": "2017-01-01",
+    "pointInTime": {
+     "ok": true,
+     "asOfLeaks": 0,
+     "filedAfterRetrieval": 0,
+     "cutoffsChecked": 160
+    },
+    "durationAmbiguity": {
+     "checked": 20,
+     "endsWithSeveralDurations": 11,
+     "endsWithSeveralLengths": 11
+    },
+    "restatements": {
+     "periods": 470,
+     "repeatedSameValue": 265,
+     "trueRestatements": 24,
+     "examples": [
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2011-12-31",
+       "first": 81446000000,
+       "latest": 81218000000,
+       "restatedOn": "2014-02-18"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2012-12-31",
+       "first": 89356000000,
+       "latest": 88970000000,
+       "restatedOn": "2014-02-18"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2014-12-31",
+       "first": 84681000000,
+       "latest": 84498000000,
+       "restatedOn": "2017-02-15"
+      },
+      {
+       "tag": "Assets",
+       "start": null,
+       "periodEnd": "2015-12-31",
+       "first": 78497000000,
+       "latest": 78342000000,
+       "restatedOn": "2016-05-02"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2011-12-31",
+       "first": 68044000000,
+       "latest": 67816000000,
+       "restatedOn": "2014-02-18"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2012-12-31",
+       "first": 71774000000,
+       "latest": 71388000000,
+       "restatedOn": "2014-02-18"
+      },
+      {
+       "tag": "Liabilities",
+       "start": null,
+       "periodEnd": "2015-12-31",
+       "first": 63612000000,
+       "latest": 63457000000,
+       "restatedOn": "2016-05-02"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2008-01-01",
+       "periodEnd": "2008-12-31",
+       "first": 4797000000,
+       "latest": 4672000000,
+       "restatedOn": "2011-02-22"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2010-01-01",
+       "periodEnd": "2010-03-31",
+       "first": 551000000,
+       "latest": 716000000,
+       "restatedOn": "2011-05-09"
+      },
+      {
+       "tag": "NetCashProvidedByUsedInOperatingActivities",
+       "start": "2010-01-01",
+       "periodEnd": "2010-06-30",
+       "first": 1743000000,
+       "latest": 1911000000,
+       "restatedOn": "2011-08-04"
+      }
+     ]
+    },
+    "identity": {
+     "facts": 969,
+     "earliestFiled": "2009-08-12",
+     "flags": [],
+     "usable": true
+    }
+   }
+  }
+ ],
+ "literature": {
+  "leads": 27,
+  "duplicatesRemoved": 3,
+  "overCapExcluded": 0,
+  "suspectedInjection": 0,
+  "reviewQueue": 1,
+  "quarantined": 26,
+  "policy": {
+   "version": "research-quality-v1",
+   "maxRetrievalAgeHours": 72,
+   "minMatchedTerms": 2,
+   "maxLeadsPerRun": 80,
+   "reviewRequired": true
+  },
+  "allHypothesisOnly": true
+ },
+ "requestLog": [
+  {
+   "url": "https://www.sec.gov/files/company_tickers.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 165
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 190
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 277
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 214
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000019617.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 52
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0002115436.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 132
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000200406.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 209
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000080424.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 199
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000021344.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 152
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000104169.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 186
+  },
+  {
+   "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000018230.json",
+   "status": 200,
+   "attempt": 0,
+   "ms": 35
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 0,
+   "ms": 59
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 1,
+   "ms": 55
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 2,
+   "ms": 55
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 3,
+   "ms": 70
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 0,
+   "ms": 43
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 1,
+   "ms": 53
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 2,
+   "ms": 72
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 0,
+   "ms": 42
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 1,
+   "ms": 67
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 0,
+   "ms": 42
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 1,
+   "ms": 49
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 2,
+   "ms": 51
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 3,
+   "ms": 48
+  },
+  {
+   "url": "https://api.openalex.org/works?search=…&per-page=10&sort=publication_date%3Adesc&include_pulled=false&filter=from_publication_date%3A2025-01-01",
+   "status": 429,
+   "attempt": 0,
+   "ms": 62
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 301
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 321
+  },
+  {
+   "url": "https://export.arxiv.org/api/query?search=…&max_results=10&sortBy=submittedDate&sortOrder=descending",
+   "status": 200,
+   "attempt": 0,
+   "ms": 494
+  }
+ ]
+}
