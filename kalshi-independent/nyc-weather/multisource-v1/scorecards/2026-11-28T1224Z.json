@@ -1,0 +1,103 @@
+{
+ "schema": "kalshi-weather-multisource-paper-scorecard-v1",
+ "at": "2026-11-28T12:24:12.473Z",
+ "anchor": "DAY_AHEAD",
+ "inputsDigest": "a283193134b76e4f8d2ec77382ccbfe3b8a2a4fb3429a552d9a2c02cab99feaa",
+ "inputsRetrievedAt": "2026-11-28T12:23:42.799837+00:00",
+ "inputsCapturedAt": "2026-11-28T12:23:42.799790+00:00",
+ "frozenNow": [
+  "2026-11-29-DAY_AHEAD"
+ ],
+ "gradedNow": [],
+ "skipped": {},
+ "outcomeConflicts": [],
+ "summary": [
+  {
+   "anchor": "DAY_AHEAD",
+   "frozen": 3,
+   "awaitingHistory": 0,
+   "graded": 1,
+   "ungraded": 2,
+   "missedSince": [],
+   "firstDate": "2026-11-27",
+   "lastDate": "2026-11-29",
+   "meanCrps": {
+    "COMBINED": 0.784241,
+    "NBM_RAW": 0.452758,
+    "NBM_CORRECTED": 0.456947,
+    "GFS_MOS_RAW": 2.722149,
+    "GFS_MOS_CORRECTED": 1.94438,
+    "NBM_NATIVE": 0.450675,
+    "CLIMATOLOGY": 2.556346
+   },
+   "coverage80": 1,
+   "vsBest": {
+    "against": "NBM_NATIVE",
+    "n": 1,
+    "mean": 0.33356568681100035,
+    "lower95": null,
+    "upper95": null
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "1/50 graded forward days."
+  },
+  {
+   "anchor": "SAME_DAY",
+   "frozen": 3,
+   "awaitingHistory": 0,
+   "graded": 2,
+   "ungraded": 1,
+   "missedSince": [],
+   "firstDate": "2026-11-26",
+   "lastDate": "2026-11-28",
+   "meanCrps": {
+    "COMBINED": 1.357738,
+    "NBM_RAW": 2.812458,
+    "NBM_CORRECTED": 3.097832,
+    "GFS_MOS_RAW": 2.890184,
+    "GFS_MOS_CORRECTED": 3.461703,
+    "NBM_NATIVE": 2.311508,
+    "CLIMATOLOGY": 4.029982
+   },
+   "coverage80": 1,
+   "vsBest": {
+    "against": "NBM_NATIVE",
+    "n": 2,
+    "mean": -0.95377,
+    "lower95": -0.95377,
+    "upper95": -0.95377
+   },
+   "disposition": "NO_CLEAR_EFFECT",
+   "reason": "2/50 graded forward days."
+  }
+ ],
+ "readiness": {
+  "modelId": "knyc-multisource-emos-v1-research",
+  "paperForecasting": {
+   "status": "READY",
+   "missing": []
+  },
+  "ownerReview": {
+   "status": "NOT_READY",
+   "missing": [
+    "DAY_AHEAD: 1/50 graded forward days",
+    "DAY_AHEAD: forward rule NO_CLEAR_EFFECT",
+    "SAME_DAY: 2/50 graded forward days",
+    "SAME_DAY: forward rule NO_CLEAR_EFFECT"
+   ]
+  },
+  "exchange": "DISABLED",
+  "ordersEnabled": false,
+  "note": "PAPER forecasting means frozen forecasts graded against NWS CLI reports. It uses no market data and places no order. Exchange access is a separate owner decision."
+ },
+ "engineResult": {
+  "experimentId": "lab-weather-knyc-multisource-emos-v1",
+  "result": {
+   "evidence": "forward",
+   "disposition": "NO_CLEAR_EFFECT",
+   "observations": 1,
+   "dates": 1,
+   "reason": "DAY_AHEAD: NO_CLEAR_EFFECT, 1 graded forward days, 0 missed anchors (1/50 graded forward days.) SAME_DAY: NO_CLEAR_EFFECT, 2 graded forward days, 0 missed anchors (2/50 graded forward days.) Frozen before each anchor; forecast accuracy only, no market data."
+  }
+ }
+}
