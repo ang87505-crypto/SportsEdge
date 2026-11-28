@@ -95,7 +95,7 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  assert.deepEqual(kinds,['execute','execute','execute','monitor','monitor']);
  for(const [name,s] of stock){
   assert.deepEqual(Object.keys(s.inputs).sort(),['experiment','kind','trigger'],name);
-  assert.equal(s.inputs.experiment,'stock-v2-weekly-1');assert.equal(s.inputs.trigger,'backup');
+  assert.equal(s.inputs.experiment,'all','every listed experiment (the worker matrix expands it)');assert.equal(s.inputs.trigger,'backup');
   // Vercel Hobby fires somewhere inside the hour: [h:00, h:59]. Check New York local time and weekday in both offsets.
   for(const offset of [4,5]){ // EDT, EST
    for(const utcDay of s.weekdaysUtc){
@@ -111,7 +111,7 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  const calls=[];
  const r=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-16T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal(r.status,202);
- assert.deepEqual(calls[0].body,{ref:'main',inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}});
+ assert.deepEqual(calls[0].body,{ref:'main',inputs:{kind:'execute',experiment:'all',trigger:'backup'}});
  assert.match(calls[0].url,/paper-auto-worker\.yml\/dispatches$/);
  const saturday=await handleSchedulerKickoff(req(),'stock-execute-early',env,{now:at('2026-11-14T15:05:00Z'),fetcher:fetcher(calls)});
  assert.equal((await saturday.json()).reason,'outside_slot_hour');
@@ -119,14 +119,14 @@ test('stock worker backups: weekday execute slots inside the trading window in b
  // The late monitor backs up Monday's close mark at 01:xx UTC Tuesday, and never runs on a Monday UTC morning.
  const late=[];
  assert.equal((await handleSchedulerKickoff(req(),'stock-monitor-late',env,{now:at('2026-12-01T01:20:00Z'),fetcher:fetcher(late)})).status,202);
- assert.deepEqual(late[0].body,{ref:'main',inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}});
+ assert.deepEqual(late[0].body,{ref:'main',inputs:{kind:'monitor',experiment:'all',trigger:'backup'}});
  assert.equal((await (await handleSchedulerKickoff(req(),'stock-monitor-late',env,{now:at('2026-11-30T01:20:00Z'),fetcher:fetcher(late)})).json()).reason,'outside_slot_hour');
 });
 
 test('weekly decision backup: before 08:00 ET in both offsets, never initial, skipped when today\'s kickoff run exists',async()=>{
  const s=SCHEDULER_SLOTS['stock-decision-backup'];
  assert.equal(s.workflow,'paper-auto-decision-weekly.yml');
- assert.deepEqual(s.inputs,{experiment:'stock-v2-weekly-1',initial:'false'},'no session (today in New York), never initial');
+ assert.deepEqual(s.inputs,{experiment:'all',initial:'false'},'no session (today in New York), never initial');
  assert.deepEqual(s.weekdaysUtc,[1,2,3,4,5]);assert.equal(s.skipIfSucceededSinceUtc,'09:00');
  for(const offset of [4,5]){const last=s.hourUtc*60+59-offset*60;assert.ok(last<7*60+55,`must start before 07:55 ET at UTC-${offset}`);assert.ok(s.hourUtc*60-offset*60>=3*60);}
  const monday='2026-11-30T10:10:00Z';
@@ -142,7 +142,7 @@ test('weekly decision backup: before 08:00 ET in both offsets, never initial, sk
   const r=await handleSchedulerKickoff(req(),'stock-decision-backup',env,{now:at(monday),fetcher:fetcher(calls,{runs})});
   assert.equal(r.status,202);
   const post=calls.filter(c=>c.method==='POST');assert.equal(post.length,1);
-  assert.deepEqual(post[0].body,{ref:'main',inputs:{experiment:'stock-v2-weekly-1',initial:'false'}});
+  assert.deepEqual(post[0].body,{ref:'main',inputs:{experiment:'all',initial:'false'}});
   assert.match(post[0].url,/paper-auto-decision-weekly\.yml\/dispatches$/);
  }
  const saturday=await handleSchedulerKickoff(req(),'stock-decision-backup',env,{now:at('2026-11-28T10:10:00Z'),fetcher:fetcher([])});

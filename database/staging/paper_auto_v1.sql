@@ -77,7 +77,8 @@ END $$;
 CREATE TABLE sportsedge_paper_auto.experiments(
  experiment_id text PRIMARY KEY CHECK(experiment_id ~ '^[a-z0-9][a-z0-9-]{2,62}$'),
  model_version text NOT NULL CHECK(model_version IN (
-  'stock-mom252-skip21-trend200-v1','stock-mom252-skip21-trend200-holdrank10-v1')),
+  'stock-mom252-skip21-trend200-v1','stock-mom252-skip21-trend200-holdrank10-v1',
+  'stock-lowvol252-trend200-v1')),
  signal_version text NOT NULL CHECK(signal_version='stock-forward-signal-v1'),
  planner_version text NOT NULL CHECK(planner_version='stock-forward-rebalance-v1'),
  broker_environment text NOT NULL CHECK(broker_environment='alpaca-paper'),
@@ -492,7 +493,7 @@ BEGIN
  END IF;
  cfg:=jsonb_build_object(
   'experiment_id',e,
-  'model_version',sportsedge_paper_auto._text(p,'model_version','^stock-mom252-skip21-trend200-(v1|holdrank10-v1)$'),
+  'model_version',sportsedge_paper_auto._text(p,'model_version','^(stock-mom252-skip21-trend200-(v1|holdrank10-v1)|stock-lowvol252-trend200-v1)$'),
   'broker_account_id',sportsedge_paper_auto._text(p,'broker_account_id','^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'),
   'broker_account_number',sportsedge_paper_auto._text(p,'broker_account_number','^[A-Z0-9]{4,32}$'),
   'decision_window_start',sportsedge_paper_auto._text(p,'decision_window_start','^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),

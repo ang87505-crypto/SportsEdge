@@ -36,6 +36,7 @@ from .stock_forward_bridge_v1 import (Rejected, Source, EXCHANGES, SYMBOL, PAPER
 from .stock_momentum_v1 import VERSION as BASELINE, digest
 from .stock_rank_buffer_candidate import VERSION as CANDIDATE, choose
 from .stock_weekly_scoring_v2 import score_universe_weekly, rebalance_rule, _week
+from .stock_lowvol_weekly_v1 import VERSION as LOWVOL, choose as choose_lowvol, volatility_by_symbol
 
 VERSION = 'stock-weekly-bridge-v2'
 UNIVERSE_VERSION = 'sportsedge-weekly-universe-v1'
@@ -162,7 +163,7 @@ def member_actions(pages, members: set, window: tuple[str, str]):
 def assemble(capture: dict, universe, *, experiment_id: str, registered_at: str, model_version: str,
              held_security_ids: list[str], initial: bool):
     """The scoring inputs plus the skipped members, or Rejected with every reason found."""
-    if model_version not in (BASELINE, CANDIDATE):
+    if model_version not in (BASELINE, CANDIDATE, LOWVOL):
         raise Rejected(['UNREGISTERED_MODEL'])
     sessions = parse_calendar(capture['calendar']['rows'])
     point = decision_point(sessions, capture['session'], initial)
@@ -266,7 +267,7 @@ def weekly_signal(bundle, initial: bool):
     """The v1 signal artifact format, scored with the weekly calendar rule. No year limit."""
     experiment = bundle['experiment_id']
     model = bundle['model_version']
-    require(model in (BASELINE, CANDIDATE), 'Unregistered model')
+    require(model in (BASELINE, CANDIDATE, LOWVOL), 'Unregistered model')
     evidence = bundle['evidence']
     decision = strict_stamp(evidence['decision_at'])
     require(strict_stamp(bundle['registered_at']) < decision <= strict_stamp(bundle['observed_at'])
@@ -279,7 +280,11 @@ def weekly_signal(bundle, initial: bool):
     held = bundle['held_security_ids']
     require(set(held) <= set(scored['members']), 'Held security missing; reconcile event first')
     held_symbols = {scored['members'][sid]['symbol'] for sid in held}
-    selected = choose(scored['scores'], held_symbols if model == CANDIDATE else set())
+    if model == LOWVOL:
+        # Steady stocks: same validated scores, ranked by window volatility instead of momentum.
+        selected = choose_lowvol(scored['scores'], volatility_by_symbol(evidence))
+    else:
+        selected = choose(scored['scores'], held_symbols if model == CANDIDATE else set())
     result = {
         # Artifact format consumed unchanged by the planner and the database.
         'version': 'stock-forward-signal-v1', 'experimentId': experiment,
@@ -296,6 +301,8 @@ def weekly_signal(bundle, initial: bool):
         'variant': {'bridge': VERSION, 'scoring': scored['adapter_version'], 'rebalance': rebalance_rule(initial),
                     'universe': UNIVERSE_VERSION},
     }
+    if model == LOWVOL:
+        result['variant']['selection'] = 'lowest-252-session-volatility-trend200'
     result['decisionId'] = digest(result)
     return result
 

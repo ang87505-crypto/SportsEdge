@@ -55,18 +55,18 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  // Stock PAPER worker backups (weekdays). Execute hours sit inside 09:30 ET + 30 min to 16:00 ET - 20 min in both
  // offsets; the controller re-checks the exchange session, the owner gate and the same-day decision itself.
  'stock-execute-early':{hourUtc:15,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-execute-midday':{hourUtc:16,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-execute-late':{hourUtc:18,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'execute',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'execute',experiment:'all',trigger:'backup'}},
  'stock-monitor':{hourUtc:22,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'monitor',experiment:'all',trigger:'backup'}},
  // Second chance for the same-session close mark (2026-11-25 review): 01:xx UTC Tue-Sat is 20:xx EST / 21:xx EDT on the
  // SAME New York session, inside the monitor's 16:15 ET-to-midnight window. No skip check is needed: the controller
  // records one monitor per session and answers a repeat with SLOT_ALREADY_FINISHED (seen every day Nov 16-24).
  'stock-monitor-late':{hourUtc:1,weekdaysUtc:[2,3,4,5,6],workflow:'paper-auto-worker.yml',stock:true,
-  inputs:{kind:'monitor',experiment:'stock-v2-weekly-1',trigger:'backup'}},
+  inputs:{kind:'monitor',experiment:'all',trigger:'backup'}},
  // Second chance for the weekly decision kickoff (Vercel 09:00 UTC is its only on-time path; GitHub's 11:20 cron has
  // arrived 7-13 h late and is refused as REFERENCE_CAPTURE_TOO_LATE). 10:xx UTC is 05:xx EST / 06:xx EDT, before the
  // 08:00 ET capture. Skipped when today's 09:00 kickoff run is queued, running or succeeded; a failed one gets one retry.
@@ -74,7 +74,7 @@ export const SCHEDULER_SLOTS:Record<string,Slot>={
  // decision was used on 2026-10-30. The bridge still decides only on the first session of an ISO week, and the
  // database keeps one decision per session.
  'stock-decision-backup':{hourUtc:10,weekdaysUtc:[1,2,3,4,5],workflow:'paper-auto-decision-weekly.yml',stock:true,
-  inputs:{experiment:'stock-v2-weekly-1',initial:'false'},skipIfSucceededSinceUtc:'09:00'},
+  inputs:{experiment:'all',initial:'false'},skipIfSucceededSinceUtc:'09:00'},
  'daily-shadow-plan':{hourUtc:12,dateUtc:'2026-11-10',workflow:'daily-shadow-test.yml',inputs:{phase:'plan'}},
  'daily-shadow-grade':{hourUtc:0,dateUtc:'2026-11-11',workflow:'daily-shadow-test.yml',inputs:{phase:'grade'}},
 };

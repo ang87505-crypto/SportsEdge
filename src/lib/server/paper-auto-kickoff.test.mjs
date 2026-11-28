@@ -27,7 +27,7 @@ test('weekday kickoff uses only the reviewed weekly decision on main, early in b
   const r=await run(at);assert.equal(r.status,202);assert.equal(r.calls.length,1);assert.equal(r.reads,0);
   assert.equal(r.calls[0].url,'https://api.github.com/repos/ang87505-crypto/SportsEdge/actions/workflows/paper-auto-decision-weekly.yml/dispatches');
   assert.equal(r.calls[0].init.redirect,'error');
-  assert.deepEqual(JSON.parse(r.calls[0].init.body),{ref:'main',inputs:{experiment:'stock-v2-weekly-1',session:at.slice(0,10),initial:'false'}});
+  assert.deepEqual(JSON.parse(r.calls[0].init.body),{ref:'main',inputs:{experiment:'all',session:at.slice(0,10),initial:'false'}});
  }
  for(const at of ['2026-11-09T12:45:00Z','2026-11-09T19:00:00Z','2026-11-14T09:00:00Z']){
   const r=await run(at);assert.equal(r.calls.length,0);assert.equal(r.body.status,'skipped');
